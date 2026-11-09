@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "p0ssess": {
+      "type": "stdio",
+      "command": "${HOME}/.config/p0ssess/bin/p0ssess",
+      "args": ["mcp"]
+    }
+  }
+}

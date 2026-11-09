@@ -66,10 +66,18 @@ func (e *Engine) Models(ctx context.Context, req ModelsRequest) ([]ModelInfo, st
 	if err != nil {
 		return nil, "", err
 	}
-	q := strings.ToLower(strings.TrimSpace(req.Query))
-	var out []ModelInfo
+	terms := strings.Fields(strings.ToLower(req.Query))
+	out := []ModelInfo{}
 	for _, m := range list {
-		if q == "" || strings.Contains(strings.ToLower(m.ID+" "+m.Name+" "+strings.Join(m.Input, " ")+" "+strings.Join(m.Output, " ")), q) {
+		hay := strings.ToLower(m.ID + " " + m.Name + " " + strings.Join(m.Input, " ") + " " + strings.Join(m.Output, " "))
+		match := true
+		for _, t := range terms {
+			if !strings.Contains(hay, t) {
+				match = false
+				break
+			}
+		}
+		if match {
 			out = append(out, m)
 		}
 	}

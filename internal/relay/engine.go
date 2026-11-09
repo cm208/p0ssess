@@ -286,6 +286,9 @@ func (e *Engine) Answer(ctx context.Context, sid, requestID, decision, message s
 	if w == nil {
 		w = e.startWatch(c, rec)
 	}
+	w.mu.Lock()
+	w.seen[requestID] = true
+	w.mu.Unlock()
 	if err := c.ReplyPermission(ctx, sid, requestID, decision, message); err != nil {
 		return nil, err
 	}

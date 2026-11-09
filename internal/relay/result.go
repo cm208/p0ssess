@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -84,7 +85,7 @@ func (e *Engine) result(w *watch, status string) (*Result, error) {
 		r.Error, _ = clip(errMsg, errorCap, "…")
 	}
 	if s, err := w.c.GetSession(ctx, rec.SessionID); err == nil {
-		r.CostUSD = s.Cost - rec.CostBefore
+		r.CostUSD = math.Round((s.Cost-rec.CostBefore)*1e6) / 1e6
 		t := subTokens(s.Tokens, rec.TokensBefore)
 		r.Tokens = &t
 	}

@@ -1,0 +1,12 @@
+{
+  "enabledMcpjsonServers": ["p0ssess"],
+  "permissions": {
+    "allow": [
+      "mcp__p0ssess__run",
+      "mcp__p0ssess__wait",
+      "mcp__p0ssess__answer_permission",
+      "mcp__p0ssess__abort",
+      "mcp__p0ssess__models"
+    ]
+  }
+}

@@ -214,8 +214,9 @@ func runCmd(ctx context.Context, name string, args []string) error {
 	if err != nil {
 		return err
 	}
+	// No Shutdown here: a run that is paused on a permission request or still running stays alive for a
+	// later answer or wait. Ctrl-C still interrupts the run being waited on.
 	e := relay.NewEngine(cfg, version, os.Stderr)
-	defer e.Shutdown()
 	progress := func(v float64, msg string) { fmt.Fprintf(os.Stderr, "progress: %s\n", msg) }
 	var res *relay.Result
 	switch name {
