@@ -42,7 +42,7 @@ Each section holds its scene as plain markup in a `<figure class="scene">` insid
 
 The `.foot` inside each figure is the final status line for the static version; keep it in step with the last `data-st`.
 
-Transcripts must match what the plugin does (see `docs/`). Costs come from measured runs, or from `p0ssess engine recommend --json` for the comparison charts: a score is 100 × (1 − `p_fail_upper`), a cost is the option's `total_usd`, rounded. The usage example feeds two status-line readings through `p0ssess statusline` in a scratch `P0SSESS_HOME`.
+Transcripts must match what the plugin does (see `docs/`). Costs come from measured runs, or from `p0ssess engine recommend --json` for the comparison charts: a score is 100 × (1 − `p_fail_upper`), a cost is the option's `total_usd`, rounded. Rows are sorted by total, and each bar is the total as a share of the largest total in that chart (an SVG `rect` width, since the CSP forbids inline styles), so the shortest bar wins. The engine example is `--use-case pdf-table-extract` and the media one `--use-case audio-transcribe --audio-seconds 16.2`, both in a scratch `P0SSESS_HOME` with `plan = "api"` and no history. The usage example feeds two status-line readings through `p0ssess statusline` in a scratch `P0SSESS_HOME`.
 
 ## Deploy
 

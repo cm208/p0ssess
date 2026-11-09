@@ -31,9 +31,9 @@ url = origin + "/index.html"
 log = []
 
 desk = ["top", "engine", "gauge", "media", "chores", "review", "usage", "stakes", "rules", "ghost", "sandbox", "wont", "data", "try", "end"]
-phone = ["top", "engine", "gauge", "media-cmp", "chores-cmp", "review-cmp", "usage-cmp", "stakes-cmp", "data"]
+phone = ["top", "engine", "gauge", "media-cmp", "chores-cmp", "review-cmp", "usage-cmp", "data"]
 # Shots that start at a part of a section rather than the section itself.
-parts = {"gauge": "#engine .gauge", "gates": "#engine .gates", "media-cmp": "#cmp-media", "chores-cmp": "#cmp-chores", "review-cmp": "#cmp-review", "stakes-cmp": "#cmp-stakes"}
+parts = {"gauge": "#engine .gauge", "gates": "#engine .gates", "media-cmp": "#cmp-media", "chores-cmp": "#cmp-chores", "review-cmp": "#cmp-review"}
 
 with sync_playwright() as p:
     b = p.chromium.launch(executable_path=args.browser, headless=True,

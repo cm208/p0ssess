@@ -49,8 +49,8 @@
 
 <section class="sec engine" id="engine" aria-labelledby="engine-h">
   <div class="copy">
-    <h2 id="engine-h">The Predictive Model Engine</h2>
-    <p>Every model that could do a job, Claude included, gets a confidence score out of 100: a cautious estimate that its result will be accepted, from licensed benchmarks, the use-case research and your own history.</p>
+    <h2 id="engine-h">Predictive Model Engine</h2>
+    <p>Every model that could do a job, Claude included, gets a score out of 100: a cautious estimate that its result will be accepted, from licensed benchmarks, the use-case research and your own history.</p>
     <p>Each severity has a gate. Below it, a model isn’t considered. Critical work stays with Claude unless your rule names a model.</p>
     <table class="gates">
       <thead><tr><th scope="col">Severity</th><th scope="col">For example</th><th scope="col">Gate</th><th scope="col">A mistake costs</th></tr></thead>
@@ -61,35 +61,37 @@
         <tr><th scope="row">Critical</th><td data-label="For example">Auth, firewalls, production, money</td><td data-label="Gate">80</td><td data-label="A mistake costs">$10</td></tr>
       </tbody>
     </table>
-    <p>Above the gate, the lowest total wins. Total = the call, plus the Claude time it uses or saves, plus the risk of a redo.</p>
+    <p>Above the gate, the lowest total wins. The total adds the call, the Claude time it uses or saves, and the risk of a redo.</p>
     <figure class="gauge" aria-labelledby="gauge-cap">
-      <p class="gauge-task">Build a feature from a spec; the tests decide. Important, so the gate is 60.</p>
-      <p class="gauge-def" id="total-def">Small figure: the call’s price. Big figure: the total that decides.</p>
-      <div class="axis" aria-hidden="true"><span class="t20">20</span><span class="t35">35</span><span class="t60">60</span><span class="t80">80</span></div>
+      <p class="gauge-task">Pull the tables from a 50-page PDF statement into CSV. Routine, so the gate is 35.</p>
+      <p class="gauge-def">Bars and big figures are totals; the shortest bar wins. Small print: the score and the call’s price.</p>
       <ol class="bars">
-      <li class="pass"><span class="who">Claude Opus 5.5 <small>as an agent</small></span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="82" height="10"/><line class="gate-line" x1="60" x2="60" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">82</span><span class="cost"><span class="call">call $0.84</span><span class="tot"><small>$</small>1.03</span></span><span class="sr-only">clears the gate</span></li>
-      <li class="pass"><span class="who">Claude Sonnet 5.5 <small>in your session</small></span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="71" height="10"/><line class="gate-line" x1="60" x2="60" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">71</span><span class="cost"><span class="call">Claude usage</span><span class="tot"><small>$</small>0.54</span></span><span class="sr-only">clears the gate</span></li>
-      <li class="pass win"><span class="who">GPT-6.1 Sol</span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="65" height="10"/><line class="gate-line" x1="60" x2="60" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">65</span><span class="cost"><span class="call">call $0.21</span><span class="tot"><small>$</small>0.51</span></span><span class="sr-only">clears the gate; lowest total, gets the job</span></li>
-      <li class="fail"><span class="who">DeepSeek V4.1 Flash</span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="40" height="10"/><line class="gate-line" x1="60" x2="60" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">40</span><span class="cost">below the gate</span><span class="sr-only">below the gate</span></li>
-      <li class="fail"><span class="who">GLM-5.3-Flash</span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="35" height="10"/><line class="gate-line" x1="60" x2="60" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">35</span><span class="cost">below the gate</span><span class="sr-only">below the gate</span></li>
+      <li class="win"><span class="who">GPT-6 Luna<span class="score"><span class="sr-only">score </span>98, clears 35</span></span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect width="24.4%" height="100%" rx="3"/><rect width="4" height="100%"/></svg></span><span class="cost"><span class="call">call $0.0082</span><span class="tot"><small>$</small>0.072</span></span><span class="sr-only">, lowest total, gets the job</span></li>
+      <li><span class="who">Claude Haiku 5.5 <small>subagent</small><span class="score"><span class="sr-only">score </span>97, clears 35</span></span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect width="27.7%" height="100%" rx="3"/><rect width="4" height="100%"/></svg></span><span class="cost"><span class="call">Claude usage</span><span class="tot"><small>$</small>0.082</span></span></li>
+      <li><span class="who">Gemini 3.8 Flash<span class="score"><span class="sr-only">score </span>100, clears 35</span></span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect width="41.6%" height="100%" rx="3"/><rect width="4" height="100%"/></svg></span><span class="cost"><span class="call">call $0.062</span><span class="tot"><small>$</small>0.123</span></span></li>
+      <li><span class="who">Gemini 4 Argon<span class="score"><span class="sr-only">score </span>100, clears 35</span></span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect width="74.8%" height="100%" rx="3"/><rect width="4" height="100%"/></svg></span><span class="cost"><span class="call">call $0.16</span><span class="tot"><small>$</small>0.221</span></span></li>
+      <li><span class="who">Claude Sonnet 5.5 <small>in session</small><span class="score"><span class="sr-only">score </span>99, clears 35</span></span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect width="100.0%" height="100%" rx="3"/><rect width="4" height="100%"/></svg></span><span class="cost"><span class="call">Claude usage</span><span class="tot"><small>$</small>0.296</span></span></li>
       </ol>
-      <figcaption id="gauge-cap">Engine output on an API key; small figure is the call, big is the total. Scores use the cautious end of each estimate. Sol wins and Claude reviews its diff; on a subscription early in a window, Claude keeps the job. Evidence: LMArena agent board, rev f566816, CC BY 4.0.</figcaption>
+      <p class="gauge-note">GPT-6 Luna does it about as well as Claude for a quarter of the total, and under a cent in cash. Above the gate, a higher score alone doesn’t win: the total already counts the chance of a redo.</p>
+      <figcaption id="gauge-cap">Engine output on an API key. Scores use the cautious end of each estimate. On a subscription early in a window, a Haiku subagent gets this job instead. Evidence: LMArena leaderboard dataset, rev f566816, CC BY 4.0.</figcaption>
     </figure>
   </div>
   <details class="scene-wrap"><summary>Show the session</summary>
-  <figure class="scene" data-title="claude ~/billing-api" data-st="idle|" aria-labelledby="t-engine">
-    <figcaption class="sr-only" id="t-engine">Transcript: the engine’s ranking for a feature, and why a cheap model is missing.</figcaption>
+  <figure class="scene" data-title="claude ~/books" data-st="idle|" aria-labelledby="t-engine">
+    <figcaption class="sr-only" id="t-engine">Transcript: the engine’s ranking for pulling tables from a PDF, and what Claude would cost.</figcaption>
     <div class="log">
-      <p class="l in bang">p0ssess engine recommend --use-case code-implement-feature --stakes 3 --top 2</p>
-      <p class="l out" data-d="700">code-implement-feature (#8, agent) · stakes 3 · λ 1.00 (API-key plan: Claude at list price)</p>
-      <p class="l out c">   route   model              total    cash     claude   risk     p_fail</p>
-      <p class="l out c">1  agent   gpt-6.1-sol        $0.5101  $0.2110  $0.1180  $0.1811  0.30    ask: up to $0.633, above the $0.02 per-task limit; edits your code; first use of this model</p>
-      <p class="l out c">2  claude  claude-sonnet-5.5  $0.5395  $0.0000  $0.4000  $0.1395  0.23</p>
-      <p class="l out c">pick: handing this to gpt-6.1-sol: feature or function from a spec; tests must pass</p>
-      <p class="l in">why isn’t deepseek flash on the list?</p>
-      <p class="l ai" data-d="900">It scores 40, under the gate of 60 for important work. The engine says “p_fail up to 0.60 is above the stakes-3 ceiling 0.40”. Scores use the cautious end of each estimate, so Sol’s 0.30 counts as 65.</p>
+      <p class="l in bang">p0ssess engine recommend --use-case pdf-table-extract --top 2</p>
+      <p class="l out" data-d="700">pdf-table-extract (#93, media) · stakes 2 · λ 1.00 (API-key plan: Claude at list price)</p>
+      <p class="l out c">   route            model             total    cash     claude   risk     p_fail</p>
+      <p class="l out c">1  direct           gpt-6-luna        $0.0723  $0.0082  $0.0608  $0.0033  0.01    ask: up to $0.025, above the $0.02 per-task limit; first use of this model</p>
+      <p class="l out c">2  claude-subagent  claude-haiku-5.5  $0.0820  $0.0000  $0.0773  $0.0047  0.02</p>
+      <p class="l out c">pick: handing this to gpt-6-luna: tables from PDF reports or statements to CSV</p>
+      <p class="l out c">      best: gpt-6-luna via direct, $0.008 cash, a mechanical check decides; p_fail 0.01 (LMArena longer query 1448 vs best 1543)</p>
+      <p class="l in">and if you did it yourself?</p>
+      <p class="l tool" data-d="600"><b>p0ssess - recommend</b> (MCP)(use_case: "pdf-table-extract", stakes: 2, top: 10)</p>
+      <p class="l ai" data-d="800">I rank 10th: $0.2959 all in, for a score of 99. That’s about four times Luna’s $0.0723 for 98. A check recomputes the column totals against the printed ones, so a bad CSV gets caught.</p>
     </div>
-    <p class="foot"><span class="me">~/billing-api  Sonnet 5.5</span></p>
+    <p class="foot"><span class="me">~/books  Sonnet 5.5</span></p>
   </figure>
   </details>
 </section>
@@ -100,26 +102,33 @@
     <p>Claude can’t watch video or hear audio, so p0ssess sends the file to a model that can. On real calls, Gemini 3.8 Flash described a ten-second clip for $0.0067 and Whisper transcribed sixteen seconds of speech for $0.0002.</p>
     <figure class="cmp" aria-labelledby="cmp-media">
       <ol class="bars mini">
-      <li class="pass win"><span class="who">GLM-5.3-Flash</span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="67" height="10"/><line class="gate-line" x1="20" x2="20" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">67</span><span class="cost"><span class="call">call $0.0003</span><span class="tot"><small>$</small>0.091</span></span><span class="sr-only">clears the gate; lowest real cost</span></li>
-      <li class="pass"><span class="who">Gemini 3.8 Flash</span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="70" height="10"/><line class="gate-line" x1="20" x2="20" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">70</span><span class="cost"><span class="call">call $0.0051</span><span class="tot"><small>$</small>0.095</span></span><span class="sr-only">clears the gate</span></li>
-      <li class="pass"><span class="who">Gemma 4 26B</span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="55" height="10"/><line class="gate-line" x1="20" x2="20" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">55</span><span class="cost"><span class="call">call $0.0002</span><span class="tot"><small>$</small>0.095</span></span><span class="sr-only">clears the gate</span></li>
-      <li class="none"><span class="who">Claude</span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><line class="gate-line" x1="20" x2="20" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">–</span><span class="cost">can’t watch</span><span class="sr-only">cannot take video</span></li>
+      <li class="win"><span class="who">Whisper large v3 turbo<span class="score"><span class="sr-only">score </span>75, clears 35</span></span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect width="92.7%" height="100%" rx="3"/><rect width="4" height="100%"/></svg></span><span class="cost"><span class="call">call $0.0001</span><span class="tot"><small>$</small>0.070</span></span><span class="sr-only">, lowest total, gets the job</span></li>
+      <li><span class="who">Parakeet TDT 0.6B v3<span class="score"><span class="sr-only">score </span>72, clears 35</span></span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect width="98.9%" height="100%" rx="3"/><rect width="4" height="100%"/></svg></span><span class="cost"><span class="call">call $0.0003</span><span class="tot"><small>$</small>0.075</span></span></li>
+      <li><span class="who">Voxtral Mini Transcribe 3<span class="score"><span class="sr-only">score </span>72, clears 35</span></span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect width="100.0%" height="100%" rx="3"/><rect width="4" height="100%"/></svg></span><span class="cost"><span class="call">call $0.0010</span><span class="tot"><small>$</small>0.076</span></span></li>
+      <li class="none"><span class="who">Claude<span class="score">can’t hear audio</span></span><span class="len" aria-hidden="true"></span><span class="cost"></span></li>
       </ol>
-      <figcaption id="cmp-media">Trivial, gate 20. Engine output on an API key; small figure is the call, big is the total. No video benchmark exists, so scores are catalog priors. GLM wins on price before any history; the scene names Gemini.</figcaption>
+      <figcaption id="cmp-media">Transcribe 16 seconds of speech. Routine, gate 35. Engine output on an API key. No speech benchmark exists, so scores are catalog priors.</figcaption>
     </figure>
   </div>
   <details class="scene-wrap"><summary>Show the session</summary>
   <figure class="scene" data-title="claude ~/shop-web" data-st="idle|" aria-labelledby="t-media">
-    <figcaption class="sr-only" id="t-media">Transcript: a screen recording goes to Gemini 3.8 Flash.</figcaption>
+    <figcaption class="sr-only" id="t-media">Transcript: a support voicemail goes to Whisper for a timed transcript.</figcaption>
     <div class="log">
-      <p class="l in">have gemini flash watch bug-repro.mp4. what happens right before the checkout crash?</p>
-      <p class="l ai ann" data-d="700">handing this to gemini-3.8-flash: describe the screen recording</p>
-      <p class="l tool" data-d="500"><b>p0ssess - direct</b> (MCP)(model: "google/gemini-3.8-flash", prompt: "Describe what happens, with timestamps", files: ["…/bug-repro.mp4"], use_case: "video-bug-repro", stakes: 1, max_cost_usd: 0.02)</p>
-      <p class="l res" data-d="1500">&lt;answer&gt;0:05 “Place order” is clicked twice. 0:07 A toast reads “order_id is undefined” and the page goes blank.&lt;/answer&gt;</p>
-      <p class="l res c dim" data-st="idle|$0.01 today">google/gemini-3.8-flash  Google AI Studio  cost $0.006684  estimate $0.0058</p>
-      <p class="l ai" data-d="800">The second click submits before the first returns an order_id. I’ll disable the button while the order is in flight.</p>
+      <p class="l in">transcribe voicemail-0412.m4a with timestamps. what does the customer want?</p>
+      <p class="l tool" data-d="600"><b>p0ssess - recommend</b> (MCP)(use_case: "audio-transcribe", profile: {audio_seconds: 16.2}, stakes: 2)</p>
+      <p class="l ai" data-d="700">This is about $0.0001 on whisper-large-v3-turbo (first use of this model). Go ahead?</p>
+      <p class="l in">yes</p>
+      <p class="l ai ann" data-d="500">handing this to whisper-large-v3-turbo: meetings, memos, interviews to text; no Claude path</p>
+      <p class="l tool" data-d="500"><b>p0ssess - direct</b> (MCP)(model: "openai/whisper-large-v3-turbo", prompt: "Transcribe", files: ["…/voicemail-0412.m4a"], output: "transcript", timestamps: true, use_case: "audio-transcribe", stakes: 2, max_cost_usd: 0.02)</p>
+      <p class="l res" data-d="1500">&lt;answer&gt;[0:00–0:04] Hi, I tried to check out twice this morning.</p>
+      <p class="l res c">[0:04–0:07] The first time, the page just went blank.</p>
+      <p class="l res c">[0:07–0:11] The second time I was charged, but no confirmation came.</p>
+      <p class="l res c">[0:11–0:14] The order number ends in 4471.</p>
+      <p class="l res c">[0:14–0:16] Could someone call me back?&lt;/answer&gt;</p>
+      <p class="l res c dim" data-st="idle|&lt;$0.01 today">openai/whisper-large-v3-turbo  Groq  cost $0.000180  estimate $0.0002</p>
+      <p class="l ai" data-d="800">Whisper’s transcript is above. They were charged for order …4471 with no confirmation after the first try left a blank page, and want a call back. I’ll check the logs for that order.</p>
     </div>
-    <p class="foot"><span class="me">~/shop-web  Sonnet 5.5</span><span class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  $0.01 today</span></p>
+    <p class="foot"><span class="me">~/shop-web  Sonnet 5.5</span><span class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  &lt;$0.01 today</span></p>
   </figure>
   </details>
 </section>
@@ -130,12 +139,12 @@
     <p>For chores the tests can check, a relay agent runs a cheap coding model in its own sandbox, on a separate git worktree. Claude reads the diff and runs the tests before anything lands. Work that edits your code always asks first.</p>
     <figure class="cmp" aria-labelledby="cmp-chores">
       <ol class="bars mini">
-      <li class="pass win"><span class="who">DeepSeek V4.1 Flash</span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="78" height="10"/><line class="gate-line" x1="35" x2="35" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">78</span><span class="cost"><span class="call">call $0.0041</span><span class="tot"><small>$</small>0.148</span></span><span class="sr-only">clears the gate; lowest real cost</span></li>
-      <li class="pass"><span class="who">Claude Haiku 5.5 <small>subagent</small></span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="73" height="10"/><line class="gate-line" x1="35" x2="35" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">73</span><span class="cost"><span class="call">Claude usage</span><span class="tot"><small>$</small>0.169</span></span><span class="sr-only">clears the gate</span></li>
-      <li class="pass"><span class="who">Claude <small>in session</small></span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="78" height="10"/><line class="gate-line" x1="35" x2="35" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">78</span><span class="cost"><span class="call">Claude usage</span><span class="tot"><small>$</small>0.227</span></span><span class="sr-only">clears the gate</span></li>
-      <li class="pass"><span class="who">GPT-6.1 Sol</span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="83" height="10"/><line class="gate-line" x1="35" x2="35" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">83</span><span class="cost"><span class="call">call $0.11</span><span class="tot"><small>$</small>0.241</span></span><span class="sr-only">clears the gate</span></li>
+      <li class="win"><span class="who">DeepSeek V4.1 Flash<span class="score"><span class="sr-only">score </span>78, clears 35</span></span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect width="61.4%" height="100%" rx="3"/><rect width="4" height="100%"/></svg></span><span class="cost"><span class="call">call $0.0041</span><span class="tot"><small>$</small>0.148</span></span><span class="sr-only">, lowest total, gets the job</span></li>
+      <li><span class="who">Claude Haiku 5.5 <small>subagent</small><span class="score"><span class="sr-only">score </span>73, clears 35</span></span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect width="70.2%" height="100%" rx="3"/><rect width="4" height="100%"/></svg></span><span class="cost"><span class="call">Claude usage</span><span class="tot"><small>$</small>0.169</span></span></li>
+      <li><span class="who">Claude <small>in session</small><span class="score"><span class="sr-only">score </span>78, clears 35</span></span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect width="94.5%" height="100%" rx="3"/><rect width="4" height="100%"/></svg></span><span class="cost"><span class="call">Claude usage</span><span class="tot"><small>$</small>0.227</span></span></li>
+      <li><span class="who">GPT-6.1 Sol<span class="score"><span class="sr-only">score </span>83, clears 35</span></span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect width="100.0%" height="100%" rx="3"/><rect width="4" height="100%"/></svg></span><span class="cost"><span class="call">call $0.11</span><span class="tot"><small>$</small>0.241</span></span></li>
       </ol>
-      <figcaption id="cmp-chores">Routine, gate 35. Engine output on an API key; small figure is the call, big is the total. Evidence: LMArena leaderboard dataset, rev f566816, CC BY 4.0.</figcaption>
+      <figcaption id="cmp-chores">Routine, gate 35. Engine output on an API key. Evidence: LMArena leaderboard dataset, rev f566816, CC BY 4.0.</figcaption>
     </figure>
   </div>
   <details class="scene-wrap"><summary>Show the session</summary>
@@ -165,12 +174,12 @@
     <p>Before a merge, ask for a review from outside Claude’s family. Claude checks each finding against the code and fixes what holds up.</p>
     <figure class="cmp" aria-labelledby="cmp-review">
       <ol class="bars mini">
-      <li class="pass win"><span class="who">GLM-5.3-Flash</span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="84" height="10"/><line class="gate-line" x1="35" x2="35" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">84</span><span class="cost"><span class="call">call $0.0021</span><span class="tot"><small>$</small>0.108</span></span><span class="sr-only">clears the gate; lowest real cost</span></li>
-      <li class="pass"><span class="who">DeepSeek V4.1 Flash</span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="83" height="10"/><line class="gate-line" x1="35" x2="35" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">83</span><span class="cost"><span class="call">call $0.0032</span><span class="tot"><small>$</small>0.110</span></span><span class="sr-only">clears the gate</span></li>
-      <li class="pass"><span class="who">Claude <small>in session</small></span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="82" height="10"/><line class="gate-line" x1="35" x2="35" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">82</span><span class="cost"><span class="call">Claude usage</span><span class="tot"><small>$</small>0.146</span></span><span class="sr-only">clears the gate</span></li>
-      <li class="pass"><span class="who">GPT-6.1 Sol</span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="87" height="10"/><line class="gate-line" x1="35" x2="35" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">87</span><span class="cost"><span class="call">call $0.095</span><span class="tot"><small>$</small>0.195</span></span><span class="sr-only">clears the gate</span></li>
+      <li class="win"><span class="who">GLM-5.3-Flash<span class="score"><span class="sr-only">score </span>84, clears 35</span></span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect width="55.3%" height="100%" rx="3"/><rect width="4" height="100%"/></svg></span><span class="cost"><span class="call">call $0.0021</span><span class="tot"><small>$</small>0.108</span></span><span class="sr-only">, lowest total, gets the job</span></li>
+      <li><span class="who">DeepSeek V4.1 Flash<span class="score"><span class="sr-only">score </span>83, clears 35</span></span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect width="56.4%" height="100%" rx="3"/><rect width="4" height="100%"/></svg></span><span class="cost"><span class="call">call $0.0032</span><span class="tot"><small>$</small>0.110</span></span></li>
+      <li><span class="who">Claude <small>in session</small><span class="score"><span class="sr-only">score </span>82, clears 35</span></span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect width="74.9%" height="100%" rx="3"/><rect width="4" height="100%"/></svg></span><span class="cost"><span class="call">Claude usage</span><span class="tot"><small>$</small>0.146</span></span></li>
+      <li><span class="who">GPT-6.1 Sol<span class="score"><span class="sr-only">score </span>87, clears 35</span></span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect width="100.0%" height="100%" rx="3"/><rect width="4" height="100%"/></svg></span><span class="cost"><span class="call">call $0.095</span><span class="tot"><small>$</small>0.195</span></span></li>
       </ol>
-      <figcaption id="cmp-review">Routine, gate 35. Engine output on an API key; small figure is the call, big is the total. Evidence: LMArena leaderboard dataset, rev f566816, CC BY 4.0.</figcaption>
+      <figcaption id="cmp-review">Routine, gate 35. Engine output on an API key. Evidence: LMArena leaderboard dataset, rev f566816, CC BY 4.0.</figcaption>
     </figure>
   </div>
   <details class="scene-wrap"><summary>Show the session</summary>
@@ -199,15 +208,15 @@
     <figure class="cmp" aria-labelledby="cmp-usage">
       <p class="cmp-label">Early: 5-hour window 5% used, projected 17%</p>
       <ol class="bars mini">
-        <li class="pass win"><span class="who">Claude <small>in session</small></span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="71" height="10"/><line class="gate-line" x1="60" x2="60" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">71</span><span class="cost"><span class="call">in plan</span><span class="tot"><small>$</small>0.346</span></span><span class="sr-only">clears the gate; lowest real cost</span></li>
-        <li class="pass"><span class="who">GPT-6.1 Sol</span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="65" height="10"/><line class="gate-line" x1="60" x2="60" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">65</span><span class="cost"><span class="call">call $0.74</span><span class="tot"><small>$</small>0.893</span></span><span class="sr-only">clears the gate</span></li>
+      <li class="win"><span class="who">Claude <small>in session</small><span class="score"><span class="sr-only">score </span>71, clears 60</span></span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect width="23.7%" height="100%" rx="3"/><rect width="4" height="100%"/></svg></span><span class="cost"><span class="call">in plan</span><span class="tot"><small>$</small>0.346</span></span><span class="sr-only">, lowest total, gets the job</span></li>
+      <li><span class="who">GPT-6.1 Sol<span class="score"><span class="sr-only">score </span>65, clears 60</span></span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect width="61.3%" height="100%" rx="3"/><rect width="4" height="100%"/></svg></span><span class="cost"><span class="call">call $0.74</span><span class="tot"><small>$</small>0.893</span></span></li>
       </ol>
       <p class="cmp-label">Late: 78% used, projected 89%</p>
       <ol class="bars mini">
-        <li class="pass win"><span class="who">GPT-6.1 Sol</span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="65" height="10"/><line class="gate-line" x1="60" x2="60" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">65</span><span class="cost"><span class="call">call $0.74</span><span class="tot"><small>$</small>1.241</span></span><span class="sr-only">clears the gate; lowest real cost</span></li>
-        <li class="pass"><span class="who">Claude <small>in session</small></span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="71" height="10"/><line class="gate-line" x1="60" x2="60" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">71</span><span class="cost"><span class="call">in plan</span><span class="tot"><small>$</small>1.457</span></span><span class="sr-only">clears the gate</span></li>
+      <li class="win"><span class="who">GPT-6.1 Sol<span class="score"><span class="sr-only">score </span>65, clears 60</span></span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect width="85.2%" height="100%" rx="3"/><rect width="4" height="100%"/></svg></span><span class="cost"><span class="call">call $0.74</span><span class="tot"><small>$</small>1.241</span></span><span class="sr-only">, lowest total, gets the job</span></li>
+      <li><span class="who">Claude <small>in session</small><span class="score"><span class="sr-only">score </span>71, clears 60</span></span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect width="100.0%" height="100%" rx="3"/><rect width="4" height="100%"/></svg></span><span class="cost"><span class="call">in plan</span><span class="tot"><small>$</small>1.457</span></span></li>
       </ol>
-      <figcaption id="cmp-usage">Important, gate 60. Engine output for example readings; small figure is the call, big is the total. Claude’s time counts at 0.17 of list price early, 0.82 late. Evidence: LMArena agent board, rev f566816, CC BY 4.0.</figcaption>
+      <figcaption id="cmp-usage">Important, gate 60. Engine output for example readings. Claude’s time counts at 0.17 of list price early, 0.82 late. Evidence: LMArena agent board, rev f566816, CC BY 4.0.</figcaption>
     </figure>
   </div>
   <details class="scene-wrap"><summary>Show the session</summary>
@@ -233,15 +242,7 @@
 <section class="sec" id="stakes" aria-labelledby="stakes-h">
   <div class="copy">
     <h2 id="stakes-h">Some work stays with Claude</h2>
-    <p>For critical work the gate decides before price does, and the tools enforce it. Small work stays without a word. If a rating looks wrong, say so.</p>
-    <figure class="cmp" aria-labelledby="cmp-stakes">
-      <ol class="bars mini">
-      <li class="pass win"><span class="who">Claude <small>in session</small></span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="82" height="10"/><line class="gate-line" x1="80" x2="80" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">82</span><span class="cost"><span class="call">Claude usage</span><span class="tot"><small>$</small>0.354</span></span><span class="sr-only">clears the gate; keeps the work</span></li>
-      <li class="fail"><span class="who">Claude Haiku 5.5 <small>subagent</small></span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="77" height="10"/><line class="gate-line" x1="80" x2="80" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">77</span><span class="cost">below gate</span><span class="sr-only">below the gate</span></li>
-      <li class="none"><span class="who">GPT-6.1 Sol</span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><line class="gate-line" x1="80" x2="80" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">–</span><span class="cost">needs a rule</span><span class="sr-only">not considered: critical work needs a rule naming the model</span></li>
-      </ol>
-      <figcaption id="cmp-stakes">Critical, gate 80. Engine output on an API key; small figure is the call, big is the total. Evidence: LMArena leaderboard dataset, rev f566816, CC BY 4.0. A rename stays too: a hand-off would cost Claude $0.118 to save $0.037.</figcaption>
-    </figure>
+    <p>For critical work the gate decides before price does, and the tools enforce it. The firewall change stays with Claude; the rename costs more to hand off than it saves. If a rating looks wrong, say so.</p>
   </div>
   <details class="scene-wrap"><summary>Show the session</summary>
   <figure class="scene" data-title="claude ~/edge" data-st="idle|" aria-labelledby="t-stakes">
@@ -425,7 +426,7 @@
 <div class="stage">
 <div class="pin">
   <nav class="island" aria-label="Sections">
-    <ol><li><a href="#top" aria-label="Top" title="Top"></a></li><li><a href="#engine" aria-label="The Predictive Model Engine" title="The Predictive Model Engine"></a></li><li><a href="#media" aria-label="Media" title="Media"></a></li><li><a href="#chores" aria-label="Coding chores" title="Coding chores"></a></li><li><a href="#review" aria-label="Second opinion" title="Second opinion"></a></li><li><a href="#usage" aria-label="Usage" title="Usage"></a></li><li><a href="#stakes" aria-label="Stays with Claude" title="Stays with Claude"></a></li><li><a href="#rules" aria-label="Rules" title="Rules"></a></li><li><a href="#ghost" aria-label="Status line" title="Status line"></a></li><li><a href="#sandbox" aria-label="Sandbox" title="Sandbox"></a></li><li><a href="#wont" aria-label="What it won’t do" title="What it won’t do"></a></li><li><a href="#data" aria-label="Use cases" title="Use cases"></a></li><li><a href="#try" aria-label="Try it" title="Try it"></a></li></ol>
+    <ol><li><a href="#top" aria-label="Top" title="Top"></a></li><li><a href="#engine" aria-label="Predictive Model Engine" title="Predictive Model Engine"></a></li><li><a href="#media" aria-label="Media" title="Media"></a></li><li><a href="#chores" aria-label="Coding chores" title="Coding chores"></a></li><li><a href="#review" aria-label="Second opinion" title="Second opinion"></a></li><li><a href="#usage" aria-label="Usage" title="Usage"></a></li><li><a href="#stakes" aria-label="Stays with Claude" title="Stays with Claude"></a></li><li><a href="#rules" aria-label="Rules" title="Rules"></a></li><li><a href="#ghost" aria-label="Status line" title="Status line"></a></li><li><a href="#sandbox" aria-label="Sandbox" title="Sandbox"></a></li><li><a href="#wont" aria-label="What it won’t do" title="What it won’t do"></a></li><li><a href="#data" aria-label="Use cases" title="Use cases"></a></li><li><a href="#try" aria-label="Try it" title="Try it"></a></li></ol>
     <span class="live" aria-hidden="true"><span class="mark">ᗣ</span><span class="live-text"></span></span>
   </nav>
   <div class="term">
