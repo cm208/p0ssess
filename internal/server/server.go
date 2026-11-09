@@ -83,6 +83,18 @@ func New(opt Options) (s *mcp.Server, closeFn func(), err error) {
 		})
 	}
 
+	// A relay run can cost up to max_run_cost_usd before the relay interrupts it; refuse to start one
+	// that could pass the monthly cap.
+	s.Wrap("run", func(next mcp.Handler) mcp.Handler {
+		return func(ctx context.Context, args json.RawMessage, p mcp.Progress) mcp.CallResult {
+			if st, err := eng.Status(engine.Scope{}); err == nil && st.Spend.Month+cfg.MaxRunCostUSD > st.Budget.MonthlyUSD {
+				return mcp.Error(fmt.Sprintf("refused: $%.2f spent this month plus up to $%.2f for this run would pass the $%.2f monthly cap; "+
+					"raise monthly_usd first, or lower max_run_cost_usd in config.json", st.Spend.Month, cfg.MaxRunCostUSD, st.Budget.MonthlyUSD))
+			}
+			return next(ctx, args, p)
+		}
+	})
+
 	d := &directTool{cfg: cfg, eng: eng}
 	s.AddTool(mcp.Tool{Name: direct.ToolName, Description: direct.ToolDescription + " Pass offer_id and use_case from recommend when you have them. " +
 		"The result ends with a run id for history_record_outcome.", InputSchema: d.schema()}, d.call)

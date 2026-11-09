@@ -108,9 +108,13 @@ func TestServerAgentUnavailableAndDirectCap(t *testing.T) {
 	os.WriteFile(filepath.Join(home, "key"), []byte("placeholder\n"), 0o600)
 	os.WriteFile(filepath.Join(home, "budget.toml"), []byte("monthly_usd = 0.01\n"), 0o600)
 	p := start(t, Options{Version: "test", Log: io.Discard, Agent: func() error { return errors.New("it needs Linux with rootless podman (this is darwin)") }})
-	text, isErr := p.call(t, 1, "run", map[string]any{"task": "x", "model": "a/b"})
+	text, isErr := p.call(t, 1, "wait", map[string]any{"session": "ses_x"})
 	if !isErr || !strings.Contains(text, "unavailable here") || !strings.Contains(text, "direct tool") {
-		t.Errorf("run: %v %s", isErr, text)
+		t.Errorf("wait: %v %s", isErr, text)
+	}
+	text, isErr = p.call(t, 5, "run", map[string]any{"task": "x", "model": "a/b"})
+	if !isErr || !strings.Contains(text, "monthly cap") {
+		t.Errorf("run over the cap: %v %s", isErr, text)
 	}
 	if text, _ := p.call(t, 2, "models", map[string]any{"query": "deepseek", "limit": 2}); !strings.Contains(text, "deepseek/") {
 		t.Errorf("models should work without the agent path: %s", text)
