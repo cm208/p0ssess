@@ -247,7 +247,8 @@ func (u *UseCase) Kind() string {
 			return KindReview
 		}
 	}
-	if u.Family == "coding" {
+	switch u.Family {
+	case "coding", "agentic_coding", "webdev":
 		return KindCode
 	}
 	return KindText

@@ -52,6 +52,7 @@ func TestKindsAndEdits(t *testing.T) {
 		{"sql-query-write", KindCode, false},
 		{"summarize-long-doc", KindText, false},
 		{"devops-config", KindCode, true},
+		{"security-critical-code", KindCode, true},
 	}
 	for _, tc := range cases {
 		u := c.Get(tc.id)
