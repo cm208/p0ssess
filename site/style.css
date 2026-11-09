@@ -163,13 +163,16 @@ td { color: var(--ink-body); }
 .bars .cost { color: var(--ink-body); font-size: 0.95rem; }
 .bars .cost small, .bars .n small { font-size: 0.72em; font-weight: 400; color: var(--ink-2); margin-right: 0.08em; }
 .bars .win .cost { color: var(--ink); }
+.bars .cost .call { font: 400 0.72rem/1.2 var(--mono); letter-spacing: 0; color: var(--ink-2); margin-right: 0.7ch; }
+.bars.mini .cost .call { display: block; margin: 0 0 1px; }
+.gauge-def { font-size: 0.86rem; color: var(--ink-2) !important; margin-top: 0.4rem !important; }
 .bars .fail .who, .bars .fail .n, .bars .fail .cost,
 .bars .none .who, .bars .none .n, .bars .none .cost { color: var(--ink-2); font-weight: 400; }
 .bars .fail .cost, .bars .none .cost { font-family: var(--sans); font-size: 0.86rem; letter-spacing: 0; }
 .gauge figcaption, .cmp figcaption { margin-top: 0.7rem; font-size: 0.8rem; line-height: 1.5; color: var(--ink-2); }
 
 /* Compact comparisons: one line per model. */
-.bars.mini li { grid-template-columns: 9.2rem minmax(0, 1fr) 2rem 5.6rem; column-gap: 0.7rem; padding: 0.3rem 0; row-gap: 0; font-size: 0.88rem; }
+.bars.mini li { grid-template-columns: 9.2rem minmax(0, 1fr) 2rem 5.8rem; column-gap: 0.7rem; padding: 0.3rem 0; row-gap: 0; font-size: 0.88rem; }
 .bars.mini .who, .bars.mini .track, .bars.mini .n, .bars.mini .cost { grid-row: 1; grid-column: auto; justify-self: stretch; }
 .bars.mini .who small { display: block; margin: 0; font-size: 0.76rem; line-height: 1.2; }
 .bars.mini .track { height: 8px; }
