@@ -24,7 +24,7 @@ import (
 	"p0ssess/internal/server"
 )
 
-var version = "0.2.0"
+var version = "0.3.0"
 
 const usage = `p0ssess %s: Claude Code hands work to other models through OpenRouter
 
