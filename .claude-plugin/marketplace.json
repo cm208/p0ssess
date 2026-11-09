@@ -1,0 +1,12 @@
+{
+  "name": "p0ssess",
+  "description": "p0ssess: Claude Code hands work to other models through OpenRouter and stays in charge.",
+  "owner": { "name": "Christian Moore" },
+  "plugins": [
+    {
+      "name": "p0ssess",
+      "source": "./",
+      "description": "Route video, audio, image and bulk work to other models through OpenRouter, with a budget, rules and Claude's review."
+    }
+  ]
+}

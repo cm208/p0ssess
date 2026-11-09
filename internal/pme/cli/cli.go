@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"runtime"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -429,7 +430,11 @@ func serveMe(e *engine.Engine, args []string, s IO) error {
 	}
 	fmt.Fprintln(s.Out, srv.URL())
 	if *open {
-		exec.Command("xdg-open", srv.URL()).Start()
+		opener := "xdg-open"
+		if runtime.GOOS == "darwin" {
+			opener = "open"
+		}
+		exec.Command(opener, srv.URL()).Start()
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()

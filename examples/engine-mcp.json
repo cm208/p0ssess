@@ -1,9 +1,0 @@
-{
-  "mcpServers": {
-    "p0ssess-engine": {
-      "type": "stdio",
-      "command": "${HOME}/.config/p0ssess/bin/p0ssess-engine",
-      "args": ["mcp"]
-    }
-  }
-}

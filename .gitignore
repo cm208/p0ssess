@@ -1,4 +1,6 @@
 .DS_Store
 /.p0ssess-local/
 *.log
-/bin/
+/build/
+/dist/p0ssess-*
+/dist/*.tmp*

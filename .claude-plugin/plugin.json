@@ -1,0 +1,15 @@
+{
+  "name": "p0ssess",
+  "version": "0.2.0",
+  "description": "Claude Code hands work to other models through OpenRouter and stays in charge: video, audio and image jobs, bulk one-shot work and sandboxed agent sessions, routed by expected cost per accepted result, with a budget, rules and a quiet status line.",
+  "author": { "name": "Christian Moore" },
+  "license": "MIT",
+  "keywords": ["openrouter", "delegation", "routing", "multimodal", "budget", "subagents"],
+  "mcpServers": {
+    "p0ssess": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/bin/p0ssess",
+      "args": ["mcp"],
+      "env": { "P0SSESS_REGISTRY": "${CLAUDE_PLUGIN_ROOT}/registry/models.json" }
+    }
+  }
+}
