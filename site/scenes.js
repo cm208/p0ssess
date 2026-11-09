@@ -2,9 +2,9 @@
 // The scenes themselves are static markup in each section; they double as transcripts.
 (() => {
   const doc = document;
-  doc.documentElement.classList.add("js");
   // Sessions sit in closed disclosures on narrow screens; wide screens keep them open (visually hidden) as transcripts.
-  const wideNow = matchMedia("(min-width: 1024px)");
+  // The same query style.css uses for the two-column layout with the pinned terminal.
+  const wideNow = matchMedia("(min-width: 1024px) and (scripting: enabled)");
   const openWrappers = () => { if (wideNow.matches) doc.querySelectorAll("details.scene-wrap").forEach((d) => { d.open = true; }); };
   openWrappers();
   wideNow.addEventListener("change", openWrappers);
@@ -17,7 +17,7 @@
   const seg = $(".foot .seg"), segText = $(".seg-text"), replay = $(".replay");
   const scenes = [...doc.querySelectorAll("figure.scene")];
   const reduce = matchMedia("(prefers-reduced-motion: reduce)");
-  const wide = matchMedia("(min-width: 1024px)");
+  const wide = wideNow;
 
   const island = doc.querySelector(".island");
   const liveText = island?.querySelector(".live-text");
