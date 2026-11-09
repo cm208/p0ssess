@@ -127,6 +127,14 @@ near the budget (80%+)      ghost  p0ssess  $8.10 of $10 this month      (amber 
 
 Muted when idle, slightly brighter while running, amber near the budget. Never red, never animated.
 
+## Background agent status summaries
+
+Claude Code asks for a one-line status summary of each running background agent about every 30 seconds. Relay agents are long-running background agents, so these requests can eat into what routing saves.
+
+- p0ssess measures how many summary requests its relay jobs cause and what they cost, next to the delegation itself.
+- If the cost is significant, `/p0ssess-me` offers Claude Code's own switch, `CLAUDE_CODE_DISABLE_AGENT_PROGRESS_SUMMARIES=1` (Claude Code 2.1.318 and later, currently undocumented), written to the `env` block of the user's settings only with their consent, labeled as undocumented, and reversible with one command. The trade-off is stated: it turns status lines off for all background agents, and after a context compaction Claude no longer sees progress lines for running agents.
+- p0ssess never patches, preloads into, or otherwise modifies Claude Code at runtime.
+
 ## Privacy
 
 - Only providers that do not train on prompts are used by default; the user can loosen this.
