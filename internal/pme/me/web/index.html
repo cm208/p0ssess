@@ -11,88 +11,117 @@
 <script src="app.js" defer></script>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 <header class="top">
-  <img class="ghost" id="ghost" src="ghost.svg" width="40" height="40" alt="">
-  <div>
+  <img class="ghost" id="ghost" src="ghost.svg" width="60" height="60" alt="">
+  <div class="brand">
     <h1 class="wordmark">p0ssess</h1>
-    <p class="kicker">local only &middot; <span id="where"></span></p>
+    <p class="tagline">Spend, Claude usage, and rules for delegated work</p>
   </div>
-  <p class="meta" id="updated"></p>
+  <p class="updated" id="updated" role="status"></p>
 </header>
 
-<main>
-  <section class="grid">
-    <article class="card" data-reveal>
-      <h2 class="title">Spend</h2>
-      <p class="say" id="spend-line">&nbsp;</p>
-      <div class="meter" id="month-meter"><span></span></div>
+<main id="main">
+  <div class="overview">
+    <section class="panel" aria-labelledby="h-spend">
+      <h2 id="h-spend">Spend</h2>
+      <p class="lede" id="spend-line">&nbsp;</p>
+      <div class="meter" id="month-meter" role="img" aria-label="Monthly spend"><span></span></div>
+      <p class="flag" id="spend-flag" hidden></p>
       <dl class="facts" id="spend-facts"></dl>
-    </article>
+    </section>
 
-    <article class="card" data-reveal>
-      <h2 class="title">Claude usage</h2>
-      <p class="say" id="lambda-line">&nbsp;</p>
-      <div id="windows"></div>
+    <section class="panel" aria-labelledby="h-usage">
+      <h2 id="h-usage">Claude usage</h2>
+      <p class="lede" id="lambda-line">&nbsp;</p>
+      <div class="windows" id="windows"></div>
       <p class="note" id="lambda-note"></p>
-    </article>
+    </section>
+  </div>
+
+  <section class="block" aria-labelledby="h-running" id="running-card" hidden>
+    <h2 id="h-running">Running now</h2>
+    <ul class="rows" id="running"></ul>
   </section>
 
-  <article class="card" data-reveal id="running-card" hidden>
-    <h2 class="title">Running</h2>
-    <ul class="list" id="running"></ul>
-  </article>
-
-  <article class="card" data-reveal>
-    <h2 class="title">Tendencies</h2>
-    <ul class="list" id="tendencies"></ul>
+  <section class="block" aria-labelledby="h-tendencies">
+    <h2 id="h-tendencies">Tendencies</h2>
+    <p class="note">What your choices say so far. A pattern shows after a few delegations of one kind.</p>
+    <ul class="rows" id="tendencies"></ul>
     <div id="suggestions"></div>
-  </article>
+  </section>
 
-  <article class="card" data-reveal>
-    <h2 class="title">Recent delegations</h2>
-    <div class="table-wrap"><table id="recent"><thead><tr><th>When</th><th>Task</th><th>Model</th><th>Outcome</th><th class="num">Cash</th></tr></thead><tbody></tbody></table></div>
-  </article>
+  <section class="block" aria-labelledby="h-recent">
+    <h2 id="h-recent">Recent delegations</h2>
+    <table class="ledger" id="recent">
+      <thead><tr><th scope="col">When</th><th scope="col">Task</th><th scope="col">Model</th><th scope="col">Outcome</th><th scope="col" class="num">Cost</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <button class="btn quiet more" type="button" id="recent-more" aria-controls="recent" hidden></button>
+  </section>
 
-  <article class="card" data-reveal>
-    <h2 class="title">Rules</h2>
-    <p class="note">Narrowest scope wins; a rule that forbids always beats one that allows. Ask Claude in plain language to add one.</p>
-    <ul class="list rules" id="rules"></ul>
-  </article>
+  <section class="block" aria-labelledby="h-runs" id="runs-card" hidden>
+    <h2 id="h-runs">Measured runs</h2>
+    <p class="note">Each finished call with what it cost. Spend is the sum of these.</p>
+    <table class="ledger" id="runs">
+      <thead><tr><th scope="col">When</th><th scope="col">Task</th><th scope="col">Model</th><th scope="col">Route</th><th scope="col" class="num">Cost</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <button class="btn quiet more" type="button" id="runs-more" aria-controls="runs" hidden></button>
+  </section>
 
-  <article class="card" data-reveal>
-    <h2 class="title">Settings</h2>
-    <form id="settings" class="settings" autocomplete="off">
+  <section class="block" aria-labelledby="h-rules">
+    <h2 id="h-rules">Rules</h2>
+    <p class="note">The narrowest scope wins, and a rule that forbids beats one that allows. To add a rule, ask Claude in plain words.</p>
+    <div id="rules"></div>
+  </section>
+
+  <section class="block" aria-labelledby="h-settings">
+    <h2 id="h-settings">Settings</h2>
+    <form id="settings" class="settings" autocomplete="off" novalidate>
       <fieldset>
-        <legend class="kicker">Budget</legend>
-        <label>Monthly cap (US$) <input name="monthly_usd" inputmode="decimal"></label>
-        <label>Auto-approve per task (US$) <input name="per_task_usd" inputmode="decimal"></label>
-        <label>Daily soft limit (US$) <input name="daily_usd" inputmode="decimal"><small>0 paces the cap over the days left; &minus;1 turns it off</small></label>
+        <legend>Budget</legend>
+        <label for="f-monthly">Monthly cap, US$</label>
+        <input id="f-monthly" name="monthly_usd" inputmode="decimal">
+        <label for="f-pertask">Approve without asking, per task, US$</label>
+        <input id="f-pertask" name="per_task_usd" inputmode="decimal">
+        <label for="f-daily">Daily soft limit, US$</label>
+        <input id="f-daily" name="daily_usd" inputmode="decimal" aria-describedby="f-daily-hint">
+        <p class="hint" id="f-daily-hint">0 spreads the cap over the days left. &minus;1 turns the limit off.</p>
       </fieldset>
       <fieldset>
-        <legend class="kicker">Claude</legend>
-        <label>Plan <select name="plan"><option value="auto">auto</option><option value="subscription">subscription</option><option value="api">API key</option></select></label>
-        <label>Pressure curve <select name="lambda.preset" id="preset"></select></label>
-        <label class="check"><input type="checkbox" name="save_claude"> Save Claude: route earlier as limits near</label>
-        <label class="check"><input type="checkbox" name="usage_credits"> Usage credits are on</label>
+        <legend>Claude</legend>
+        <label for="f-plan">Plan</label>
+        <select id="f-plan" name="plan"><option value="auto">Detect automatically</option><option value="subscription">Subscription</option><option value="api">API key</option></select>
+        <label for="preset">Pressure curve</label>
+        <select id="preset" name="lambda.preset" aria-describedby="preset-hint"></select>
+        <p class="hint" id="preset-hint">How fast Claude counts as more expensive while its usage limits fill up.</p>
+        <label class="check"><input type="checkbox" name="save_claude"> <span>Save Claude: hand work off sooner as limits near</span></label>
+        <label class="check"><input type="checkbox" name="usage_credits"> <span>Usage credits are on</span></label>
       </fieldset>
       <fieldset>
-        <legend class="kicker">Privacy</legend>
-        <label>Mode <select name="privacy.mode"><option value="no-training">no training (data_collection deny)</option><option value="zdr">zero retention only</option></select></label>
-        <label class="check"><input type="checkbox" name="privacy.allow_safety_retention"> In zero-retention mode, allow abuse-check retention</label>
+        <legend>Privacy</legend>
+        <label for="f-privacy">Mode</label>
+        <select id="f-privacy" name="privacy.mode"><option value="no-training">No training on my data</option><option value="zdr">Zero data retention only</option></select>
+        <label class="check"><input type="checkbox" name="privacy.allow_safety_retention"> <span>With zero retention, still allow providers that keep data for abuse checks</span></label>
       </fieldset>
       <fieldset>
-        <legend class="kicker">Models</legend>
-        <label>Never use <input name="models.deny" placeholder="author/model, author"></label>
-        <label>Providers to avoid <input name="providers.deny" placeholder="Provider name"></label>
+        <legend>Models</legend>
+        <label for="f-models">Never use these models</label>
+        <input id="f-models" name="models.deny" placeholder="author/model, author" spellcheck="false">
+        <label for="f-providers">Avoid these providers</label>
+        <input id="f-providers" name="providers.deny" placeholder="Provider name" spellcheck="false">
       </fieldset>
       <fieldset>
-        <legend class="kicker">Status line</legend>
-        <label>Your own command <input name="statusline.command" placeholder="the command p0ssess wraps"></label>
+        <legend>Status line</legend>
+        <label for="f-statusline">Your own status line command</label>
+        <input id="f-statusline" name="statusline.command" placeholder="The command you used before p0ssess" spellcheck="false" aria-describedby="f-statusline-hint">
+        <p class="hint" id="f-statusline-hint">p0ssess runs it, then adds a short segment after its output.</p>
       </fieldset>
-      <div class="actions"><button class="btn" type="submit">Save</button><span class="meta" id="saved" role="status"></span></div>
+      <div class="actions"><button class="btn" type="submit">Save changes</button><span class="saved" id="saved" role="status"></span></div>
     </form>
-  </article>
+  </section>
 </main>
-<footer class="foot meta">Everything on this page lives on this machine. Nothing is sent anywhere.</footer>
+<footer class="foot">This page is served from <span id="where">this machine</span> and makes no outside requests. Everything on it stays here.</footer>
 </body>
 </html>

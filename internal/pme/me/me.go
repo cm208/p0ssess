@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"p0ssess"
+	"p0ssess/internal/history"
 	"p0ssess/internal/pme/engine"
 	"p0ssess/internal/pme/statusline"
 	"p0ssess/internal/rules"
@@ -147,6 +148,7 @@ type state struct {
 	Windows    []window            `json:"windows"`
 	ReadingAge int64               `json:"reading_age_seconds"`
 	Learned    engine.Learned      `json:"learned"`
+	Runs       []history.Entry     `json:"runs"`
 	Rules      []engine.RuleView   `json:"rules"`
 	Preset     string              `json:"lambda_preset"`
 	Presets    []string            `json:"presets"`
@@ -166,6 +168,10 @@ func (s *Server) state(w http.ResponseWriter, r *http.Request) {
 		Presets: []string{"list", "gentle", "balanced", "eager"}, Statusline: statusline.LoadSettings(s.E.Dirs.EngineFile()),
 		Token: s.Token, Now: s.E.Now()}
 	out.Rules, _ = s.E.RulesList(s.Scope, "")
+	out.Runs = s.E.Ledger().Runs(20)
+	if out.Runs == nil {
+		out.Runs = []history.Entry{}
+	}
 	us := s.E.Usage()
 	p := st.Lambda.Usage
 	out.ReadingAge = p.AgeSec

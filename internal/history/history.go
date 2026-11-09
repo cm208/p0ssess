@@ -481,7 +481,8 @@ func (l *Ledger) Suggest(active []rules.Rule, perTask float64) []Suggestion {
 		if t.Kind != "" {
 			r.Kinds = []string{t.Kind}
 		}
-		out = append(out, Suggestion{Rule: r, Text: fmt.Sprintf("you %s; stop offering it for %s?", t.Text, kindWord(t.Kind))})
+		out = append(out, Suggestion{Rule: r, Text: fmt.Sprintf("you turned down %s for %s %d of %d times; stop offering it for %s?",
+			Short(t.Model), kindWord(t.Kind), t.Counts.Declined+t.Counts.Overridden, t.Counts.Offers(), kindWord(t.Kind))})
 	}
 	return out
 }
