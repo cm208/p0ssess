@@ -4,3 +4,4 @@
 /build/
 /dist/p0ssess-*
 /dist/*.tmp*
+/release/

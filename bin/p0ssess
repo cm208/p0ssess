@@ -1,10 +1,11 @@
 #!/bin/sh
 # p0ssess launcher. Claude Code runs this from the plugin; it starts the p0ssess binary for this
-# platform, which it finds, fetches or builds on first use:
-#   1. $P0SSESS_BIN, if set (development)
-#   2. dist/p0ssess-<os>-<arch> in the plugin (release archives ship these)
-#   3. the cached copy under ~/.cache/p0ssess/bin/<version>/
-#   4. a release download, checked against dist/SHA256SUMS (only when dist/release-url exists)
+# platform. It runs only a binary it built from the plugin's own source or one whose SHA-256 matches
+# dist/SHA256SUMS for this version, found in this order:
+#   1. $P0SSESS_BIN, if set (your own binary; not checked)
+#   2. the cached copy under ~/.cache/p0ssess/bin/<version>/ (written only after a check or a build)
+#   3. dist/p0ssess-<os>-<arch> in the plugin (release archives ship these), checked
+#   4. a release download from dist/release-url or $P0SSESS_RELEASE_URL, checked
 #   5. a local build with Go (the source is the plugin; dependencies are vendored, so no network)
 set -eu
 
@@ -21,10 +22,97 @@ case $(uname -m) in
 esac
 name=p0ssess-$os-$arch
 
-if [ -x "$root/dist/$name" ]; then exec "$root/dist/$name" "$@"; fi
-
 if [ -n "${P0SSESS_HOME:-}" ]; then cache=$P0SSESS_HOME/cache; else cache=${XDG_CACHE_HOME:-$HOME/.cache}/p0ssess; fi
 bin=$cache/bin/$version/$name
+
+tried=""
+note() { tried="$tried
+  - $1"; }
+
+sha256() {
+  if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | awk '{print $1}'
+  elif command -v shasum >/dev/null 2>&1; then shasum -a 256 "$1" | awk '{print $1}'
+  else return 1; fi
+}
+
+# want prints the checksum dist/SHA256SUMS lists for this binary, when the file is for this version.
+want() {
+  [ -f "$root/dist/SHA256SUMS" ] && [ -f "$root/dist/VERSION" ] || return 1
+  [ "$(head -n 1 "$root/dist/VERSION")" = "$version" ] || return 1
+  awk -v n="$name" '$2 == n || $2 == "*" n { print $1; exit }' "$root/dist/SHA256SUMS" | grep -E '^[0-9a-f]{64}$'
+}
+
+# install_checked copies $1 into the cache if its checksum matches; it never runs an unchecked file.
+install_checked() {
+  sum=$(want) || { note "$2: no checksum for $name $version in dist/SHA256SUMS"; return 1; }
+  got=$(sha256 "$1") || { note "$2: no sha256sum or shasum to check it with"; return 1; }
+  if [ "$got" != "$sum" ]; then
+    echo "p0ssess: $2 does not match dist/SHA256SUMS; refusing to run it" >&2
+    note "$2: checksum mismatch (refused)"
+    return 1
+  fi
+  cp "$1" "$bin.tmp.$$" && chmod 755 "$bin.tmp.$$" && mv "$bin.tmp.$$" "$bin"
+}
+
+download() {
+  if command -v curl >/dev/null 2>&1; then curl -fsSL -o "$2" "$1" 2>/dev/null
+  else wget -q -O "$2" "$1"; fi
+}
+
+find_go() {
+  for g in "$(command -v go 2>/dev/null || true)" /usr/local/go/bin/go "$HOME/.local/go/bin/go"; do
+    if [ -n "$g" ] && [ -x "$g" ]; then echo "$g"; return 0; fi
+  done
+  return 1
+}
+
+fetch_or_build() {
+  [ -x "$bin" ] && return 0
+  if [ -f "$root/dist/$name" ]; then
+    install_checked "$root/dist/$name" "dist/$name" && return 0
+  else
+    note "dist/$name: not in this plugin (a release archive ships it)"
+  fi
+  url=${P0SSESS_RELEASE_URL:-}
+  if [ -z "$url" ] && [ -f "$root/dist/release-url" ]; then url=$(head -n 1 "$root/dist/release-url"); fi
+  if [ -z "$url" ]; then
+    note "release download: no dist/release-url in this plugin"
+  elif ! want >/dev/null; then
+    note "release download: no checksum for $name $version in dist/SHA256SUMS to check it against"
+  else
+    tmp=$bin.dl.$$
+    if ! command -v curl >/dev/null 2>&1 && ! command -v wget >/dev/null 2>&1; then
+      note "release download: neither curl nor wget is installed"
+    elif download "$url/v$version/$name" "$tmp"; then
+      install_checked "$tmp" "the download from $url/v$version/$name" && { rm -f "$tmp"; return 0; }
+    else
+      note "release download: $url/v$version/$name could not be fetched"
+    fi
+    rm -f "$tmp"
+  fi
+  if go=$(find_go); then
+    echo "p0ssess: building $name $version with $("$go" version | awk '{print $3}') (first run only)" >&2
+    tmp=$bin.tmp.$$
+    if (cd "$root" && CGO_ENABLED=0 "$go" build -trimpath -buildvcs=false -mod=vendor \
+      -ldflags "-s -w -buildid= -X main.version=$version" -o "$tmp" ./cmd/p0ssess) >&2; then
+      mv "$tmp" "$bin" && return 0
+    fi
+    rm -f "$tmp"
+    note "local build: $go failed (p0ssess needs Go 1.27 or later)"
+  else
+    note "local build: Go is not installed (looked on PATH, in /usr/local/go and ~/.local/go)"
+  fi
+  cat >&2 <<EOF
+p0ssess: cannot start: no verified p0ssess $version binary for $os/$arch, and none could be built.
+Tried:$tried
+Fix one of these, then start a new Claude Code session:
+  - install Go 1.27 or later (https://go.dev/dl/); the plugin builds itself offline in a few seconds
+  - install a p0ssess release archive, which ships checked binaries in dist/
+  - point P0SSESS_BIN at a p0ssess $version binary you built or checked yourself
+See docs/INSTALL.md.
+EOF
+  return 1
+}
 
 ensure() {
   mkdir -p "$cache/bin/$version"
@@ -37,35 +125,11 @@ ensure() {
     if [ -x "$bin" ]; then return 0; fi
   done
   trap 'rm -rf "$lock"' EXIT INT TERM
-  fetch_or_build
-  status=$?
+  status=0
+  fetch_or_build || status=1
   rm -rf "$lock"
   trap - EXIT INT TERM
   [ "$status" -eq 0 ] || exit 1
-}
-
-fetch_or_build() {
-  [ -x "$bin" ] && return 0
-  tmp=$bin.tmp.$$
-  if [ -f "$root/dist/release-url" ] && [ -f "$root/dist/SHA256SUMS" ] && command -v curl >/dev/null 2>&1; then
-    url=$(head -n 1 "$root/dist/release-url")
-    want=$(awk -v n="$name" '$2 == n { print $1 }' "$root/dist/SHA256SUMS")
-    if [ -n "$want" ] && curl -fsSL "$url/v$version/$name" -o "$tmp"; then
-      if command -v sha256sum >/dev/null 2>&1; then got=$(sha256sum "$tmp" | awk '{print $1}'); else got=$(shasum -a 256 "$tmp" | awk '{print $1}'); fi
-      if [ "$got" = "$want" ]; then chmod 755 "$tmp" && mv "$tmp" "$bin" && return 0; fi
-      echo "p0ssess: downloaded $name does not match dist/SHA256SUMS; not using it" >&2
-      rm -f "$tmp"
-    fi
-  fi
-  if command -v go >/dev/null 2>&1; then
-    echo "p0ssess: building $name $version with $(go version | awk '{print $3}') (first run only)" >&2
-    (cd "$root" && CGO_ENABLED=0 go build -trimpath -buildvcs=false \
-      -ldflags "-s -w -buildid= -X main.version=$version" -o "$tmp" ./cmd/p0ssess) >&2 &&
-      mv "$tmp" "$bin" && return 0
-    rm -f "$tmp"
-  fi
-  echo "p0ssess: no binary for $os/$arch. Install Go 1.27 or later and start a new session, or see docs/INSTALL.md." >&2
-  return 1
 }
 
 if [ ! -x "$bin" ]; then ensure || exit 1; fi
