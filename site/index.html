@@ -5,8 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
-<title>p0ssess</title>
-<meta name="description" content="A Claude Code plugin. Claude stays in charge and hands video, audio and bulk work to other models through OpenRouter, within your budget and rules.">
+<title>p0ssess: Claude stays in charge</title>
+<meta name="description" content="p0ssess is a Claude Code plugin. Claude stays in charge and hands video, audio and bulk work to other models through OpenRouter, within your budget and rules.">
+<meta property="og:title" content="p0ssess: Claude stays in charge">
+<meta property="og:description" content="A Claude Code plugin. Its Predictive Model Engine scores every model for each job, Claude included, and Claude hands off the work another model can do for less.">
+<meta property="og:type" content="website">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#0b0b0b">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -27,7 +30,7 @@
       <svg class="wordmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 9" shape-rendering="crispEdges" role="img" aria-label="p0ssess"><path class="wm-ink" d="M0 2h3v1h-3zM0 3h1v1h-1zM3 3h1v1h-1zM0 4h1v1h-1zM3 4h1v1h-1zM0 5h3v1h-3zM0 6h1v1h-1zM0 7h1v1h-1zM0 8h1v1h-1zM11 2h3v1h-3zM10 3h1v1h-1zM11 4h2v1h-2zM13 5h1v1h-1zM10 6h3v1h-3zM16 2h3v1h-3zM15 3h1v1h-1zM16 4h2v1h-2zM18 5h1v1h-1zM15 6h3v1h-3zM21 2h2v1h-2zM20 3h1v1h-1zM23 3h1v1h-1zM20 4h4v1h-4zM20 5h1v1h-1zM21 6h3v1h-3zM26 2h3v1h-3zM25 3h1v1h-1zM26 4h2v1h-2zM28 5h1v1h-1zM25 6h3v1h-3zM31 2h3v1h-3zM30 3h1v1h-1zM31 4h2v1h-2zM33 5h1v1h-1zM30 6h3v1h-3z"/><path class="wm-zero" d="M6 0h2v1h-2zM5 1h1v1h-1zM8 1h1v1h-1zM5 2h1v1h-1zM8 2h1v1h-1zM5 3h1v1h-1zM8 3h1v1h-1zM5 4h1v1h-1zM8 4h1v1h-1zM5 5h1v1h-1zM8 5h1v1h-1zM6 6h2v1h-2z"/></svg>
     </div>
     <h1>Claude stays in charge.</h1>
-    <p class="lede">p0ssess is a Claude Code plugin. Its Predictive Model Engine scores every model for each job, Claude included. When another model is good enough and cheaper, or can do what Claude can’t, Claude hands the work over through OpenRouter and checks it. You see one line.</p>
+    <p class="lede">p0ssess is a Claude Code plugin. Its Predictive Model Engine scores every model for each job, Claude included. When another model is good enough and costs less, or can do what Claude can’t, Claude hands the work over through OpenRouter, tells you in one line, and checks what comes back.</p>
     <div class="install">
       <div class="cmd"><pre><code>claude --plugin-dir /path/to/p0ssess</code></pre><button class="copy-btn" type="button" aria-label="Copy the command" hidden>Copy</button></div>
       <p class="small">Private for now; public releases are coming. <a href="#try">What you need</a></p>
@@ -54,7 +57,7 @@
   <div class="copy">
     <h2 id="engine-h">Predictive Model Engine</h2>
     <p>Every model that could do a job, Claude included, gets a score out of 100: a cautious estimate that its result will be accepted, from licensed benchmarks, the use-case research and your own history.</p>
-    <p>Each severity has a gate. Below it, a model isn’t considered. The violet line marks the scores that clear. Critical work stays with Claude unless your rule names a model.</p>
+    <p>Each severity has a gate, and a model that scores below it isn’t considered. The violet line marks the scores that clear. Critical work stays with Claude unless your rule names a model.</p>
     <table class="gates" role="table">
       <caption class="sr-only">The gate for each severity</caption>
       <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Severity</th><th scope="col" role="columnheader" class="sr-only">For example</th><th scope="col" role="columnheader">Gate</th><th scope="col" role="columnheader">A mistake costs</th></tr></thead>
@@ -94,7 +97,7 @@
       <p class="l out c">      best: gpt-6-luna via direct, $0.008 cash, a mechanical check decides; p_fail 0.01 (LMArena longer query 1448 vs best 1543)</p>
       <p class="l in">and if you did it yourself?</p>
       <p class="l tool" data-d="600"><b>p0ssess - recommend</b> (MCP)(use_case: "pdf-table-extract", stakes: 2, top: 10)</p>
-      <p class="l ai" data-d="800">I rank 10th: $0.2959 all in, for a score of 99. That’s about four times Luna’s $0.0723 for 98. A check recomputes the column totals against the printed ones, so a bad CSV gets caught.</p>
+      <p class="l ai" data-d="800">Doing it myself in this session comes to $0.2959 all in, for a score of 99. That puts me tenth on the list, at about four times Luna’s $0.0723 for 98. A check recomputes the column totals against the printed ones, so a bad CSV gets caught.</p>
     </div>
     <p class="foot"><span class="me">~/books  Sonnet 5.5</span></p>
   </figure>
@@ -103,7 +106,7 @@
 
 <section class="sec" id="media" aria-labelledby="media-h">
   <div class="copy">
-    <h2 id="media-h">Media Claude can’t watch</h2>
+    <h2 id="media-h">Media Claude can’t hear or watch</h2>
     <p>Claude can’t watch video or hear audio, so p0ssess sends the file to a model that can. On real calls, Gemini 3.8 Flash described a ten-second clip for $0.0067 and Whisper transcribed sixteen seconds of speech for $0.0002.</p>
     <figure class="chart" aria-labelledby="cmp-media">
       <ol class="bars">
@@ -114,7 +117,7 @@
       </ol>
       <svg class="axis" width="100%" height="24" aria-hidden="true" focusable="false"><rect class="ax" width="100%" height="1"/><rect class="tk" x="0.00%" width="1" height="5"/><rect class="tk" x="20.00%" width="1" height="5"/><rect class="tk" x="40.00%" width="1" height="5"/><rect class="tk" x="60.00%" width="1" height="5"/><rect class="tk" x="80.00%" width="1" height="5"/><rect class="tk" x="100.00%" width="1" height="5"/><text class="o" x="0.00%" y="19" text-anchor="start">$0.055</text><text x="60.00%" y="19" text-anchor="middle">$0.07</text><text x="100.00%" y="19" text-anchor="end">$0.08</text></svg>
       <p class="origin">The scale starts at $0.055, not zero: every option pays that much Claude time for the hand-off and the check.</p>
-      <figcaption id="cmp-media">Transcribe 16 seconds of speech. Routine, so the gate is 35. These are the top 3 of the engine’s 14 ranked options, on an API key. No speech benchmark exists, so scores are catalog priors.</figcaption>
+      <figcaption id="cmp-media">Transcribe 16 seconds of speech. Routine, so the gate is 35. These are the top 3 of the engine’s 14 ranked options, on an API key. No speech benchmark has a license the engine can use, so these scores are the catalog’s own estimates.</figcaption>
     </figure>
   </div>
   <details class="scene-wrap"><summary>Show the session</summary>
@@ -249,7 +252,7 @@
 <section class="sec" id="stakes" aria-labelledby="stakes-h">
   <div class="copy">
     <h2 id="stakes-h">Some work stays with Claude</h2>
-    <p>For critical work the gate decides before price does, and the tools enforce it. The firewall change stays with Claude; the rename costs more to hand off than it saves. If a rating looks wrong, say so.</p>
+    <p>For critical work the gate decides before price does, and the tools enforce it: a firewall change stays with Claude. So does a small rename, because handing it off would cost more than it saves. If a rating looks wrong, say so.</p>
   </div>
   <details class="scene-wrap"><summary>Show the session</summary>
   <figure class="scene" data-title="claude ~/edge" data-st="idle|" aria-labelledby="t-stakes">
@@ -303,7 +306,7 @@
       <li><span class="say">Working</span><code class="seg run"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  2 running  $0.14</code></li>
       <li><span class="say">Near the budget</span><code class="seg amber"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  $8.10 of $10 this month</code></li>
     </ul>
-    <p>Never red, never animated. <code>/p0ssess:p0ssess-me</code> sets your budget, plan and privacy, then opens a local page with spend, hand-offs, rules and settings.</p>
+    <p>It is never red and never animated. <code>/p0ssess:p0ssess-me</code> sets your budget, plan and privacy, then opens a local page with spend, hand-offs, rules and settings.</p>
   </div>
   <details class="scene-wrap"><summary>Show the session</summary>
   <figure class="scene" data-title="claude ~/talks" data-st="amber|$8.10 of $10 this month" aria-labelledby="t-ghost">
@@ -378,7 +381,7 @@
     <table class="cases" role="table">
       <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Use case</th><th scope="col" role="columnheader">Catalog pick</th><th scope="col" role="columnheader">Estimate</th></tr></thead>
       <tbody role="rowgroup">
-        <tr role="row"><td role="cell">Summarize a talk, meeting or lecture video</td><td role="cell">Gemini 3.8 Flash</td><td role="cell">$0.05–0.15 per 10 min</td></tr>
+        <tr role="row"><td role="cell">Summarize a talk, meeting or lecture video</td><td role="cell">Gemini 3.8 Flash</td><td role="cell">$0.05 to $0.15 per 10 min</td></tr>
         <tr role="row"><td role="cell">Meetings, memos, interviews to text</td><td role="cell">Whisper large v3 turbo</td><td role="cell">about $0.006 per 30 min</td></tr>
         <tr role="row"><td role="cell">Bulk migration gated by tests</td><td role="cell">DeepSeek V4.1 Flash</td><td role="cell">about $0.002 per attempt</td></tr>
         <tr role="row"><td role="cell">Label many issues, logs or files</td><td role="cell">GLM-5.3-Flash</td><td role="cell">about $0.04 per 1,000</td></tr>
@@ -459,7 +462,7 @@
 <footer class="site-foot">
   <svg class="ghost small" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 15 15" shape-rendering="crispEdges" aria-hidden="true"><path class="g-body" d="M5 0h5v1h-5zM3 1h9v1h-9zM2 2h11v1h-11zM1 3h13v1h-13zM1 4h3v1h-3zM11 4h3v1h-3zM0 5h2v1h-2zM13 5h2v1h-2zM0 6h1v1h-1zM14 6h1v1h-1zM0 7h1v1h-1zM14 7h1v1h-1zM0 8h1v1h-1zM14 8h1v1h-1zM0 9h1v1h-1zM14 9h1v1h-1zM0 10h2v1h-2zM13 10h2v1h-2zM0 11h3v1h-3zM12 11h3v1h-3zM0 12h15v1h-15zM0 13h15v1h-15zM0 14h1v1h-1zM2 14h3v1h-3zM6 14h3v1h-3zM10 14h3v1h-3zM14 14h1v1h-1z"/><path class="g-mask" d="M4 4h7v1h-7zM2 5h11v1h-11zM1 6h3v1h-3zM5 6h5v1h-5zM11 6h3v1h-3zM1 7h3v1h-3zM5 7h5v1h-5zM11 7h3v1h-3zM1 8h13v1h-13zM1 9h6v1h-6zM8 9h6v1h-6zM2 10h4v1h-4zM7 10h1v1h-1zM9 10h4v1h-4zM3 11h4v1h-4zM8 11h4v1h-4z"/><path class="g-eye" d="M4 6h1v1h-1zM10 6h1v1h-1zM4 7h1v1h-1zM10 7h1v1h-1zM7 9h1v1h-1zM6 10h1v1h-1zM8 10h1v1h-1zM7 11h1v1h-1z"/></svg>
   <div>
-    <p>p0ssess is MIT licensed. Made by Christian Moore.</p>
+    <p>p0ssess 0.4.0 is MIT licensed. Made by Christian Moore.</p>
     <p class="small">The terminal sessions are reconstructed from how the plugin behaves. Costs are from measured runs or the engine’s own output. Set in Obel Mono and IBM Plex Sans, with one glyph from Noto Sans Canadian Aboriginal, all under the <a href="fonts/OFL-obel-mono.txt">SIL Open Font License</a>.</p>
   </div>
 </footer>
