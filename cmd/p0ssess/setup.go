@@ -13,13 +13,16 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"p0ssess/internal/config"
+	"p0ssess/internal/jail"
 	"p0ssess/internal/pme/engine"
 	"p0ssess/internal/pme/paths"
+	"p0ssess/internal/server"
 )
 
 const toolPrefix = "mcp__plugin_p0ssess_p0ssess__"
@@ -148,6 +151,22 @@ func setupShow(st setupState) error {
 	env, _ := o.object("env")
 	if v, ok := env.get(summariesEnv); ok {
 		fmt.Printf("progress summaries: %s=%s\n", summariesEnv, v)
+	}
+	if err := server.AgentAvailable(); err != nil {
+		fmt.Println("agent path: unavailable,", err, "(the direct tool and the engine still work)")
+	} else if exec.Command("podman", "image", "exists", jail.DefaultImage).Run() != nil {
+		fmt.Println("agent path: the sandbox image is not built; `p0ssess jail build` downloads OpenCode and builds it (about 1.1 GB)")
+	} else {
+		fmt.Println("agent path: ready")
+	}
+	if cfg, err := config.Load(); err == nil {
+		if cfg.OpenRouterKeyFile != "" {
+			if _, err := os.Stat(cfg.OpenRouterKeyFile); err != nil {
+				fmt.Println("OpenRouter key: missing; put it in", cfg.OpenRouterKeyFile, "(mode 0600)")
+			} else {
+				fmt.Println("OpenRouter key: found")
+			}
+		}
 	}
 	if len(st.AddedAllow) > 0 || st.StatusLine != nil || st.Summaries != nil {
 		fmt.Println("`p0ssess setup undo` reverts what p0ssess changed")

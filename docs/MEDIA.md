@@ -2,20 +2,20 @@
 
 The direct path sends a one-shot job to one OpenRouter model in a single call: a prompt plus local files (images, PDFs, audio, video, text), and back come text, a transcript, or generated images saved to disk. It is how p0ssess handles media that OpenCode 2.2.5 drops (audio and video attachments never reach the model there), and anything else that does not need an agent loop.
 
-Code: [`internal/direct`](../internal/direct). Shell entry point: `cmd/p0ssess-direct`. MCP tool: `direct` (schema in `internal/direct/tool.go`).
+Code: [`internal/direct`](../internal/direct). Shell entry point: `p0ssess direct`. MCP tool: `direct` (schema in `internal/direct/tool.go`).
 
 Status: built and verified with real calls on 2026-11-09. All numbers below come from those calls.
 
 ## Calling it
 
 ```sh
-p0ssess-direct estimate --model google/gemini-3.8-flash --prompt "Describe this video" --file clip.mp4
-p0ssess-direct run --model google/gemini-3.8-flash --prompt "Describe this video" --file clip.mp4 --max-cost 0.03
-p0ssess-direct run --model openai/whisper-large-v3-turbo --output transcript --timestamps --file talk.mp3 --max-cost 0.01
-p0ssess-direct run --model recraft/recraft-v4.1-flash --output image --prompt "a ghost icon" --max-cost 0.02
+p0ssess direct estimate --model google/gemini-3.8-flash --prompt "Describe this video" --file clip.mp4
+p0ssess direct run --model google/gemini-3.8-flash --prompt "Describe this video" --file clip.mp4 --max-cost 0.03
+p0ssess direct run --model openai/whisper-large-v3-turbo --output transcript --timestamps --file talk.mp3 --max-cost 0.01
+p0ssess direct run --model recraft/recraft-v4.1-flash --output image --prompt "a ghost icon" --max-cost 0.02
 ```
 
-The key is read from `$P0SSESS_OPENROUTER_KEY_FILE` or `~/.config/p0ssess/secrets/openrouter_key` and is never printed. The answer comes first, inside `<answer>`, then output files, then one line with model, provider, actual cost and the estimate.
+The key is read from `$P0SSESS_OPENROUTER_KEY_FILE` or `~/.config/p0ssess/secrets/openrouter_key` and is never printed. The answer comes first, inside `<answer>`, then output files, then one line with model, provider, actual cost and the estimate, then `run: d-…`, the id of the measured run in the engine's ledger (see [ENGINE.md](ENGINE.md#the-ledger)).
 
 | Output | Route | Notes |
 |---|---|---|
@@ -118,13 +118,13 @@ Some jobs need no model at all, or a much smaller one. These run ffmpeg locally 
 
 | Helper | Command | Use |
 |---|---|---|
-| `Probe` | `p0ssess-direct probe FILE` | duration, size and streams before deciding anything |
-| `FrameAt` | `p0ssess-direct frame FILE --at S --out f.jpg` | read an on-screen timestamp or error with Claude's own vision (catalog `video-timestamp-ocr`) |
-| `SceneFrames` | `p0ssess-direct frames FILE --scenes --out DIR` | structure of a screen recording without a model (catalog `video-structure-scan`) |
-| `FramesEvery` | `p0ssess-direct frames FILE --every 5 --out DIR` | evenly spaced frames |
-| `Downscale` | `p0ssess-direct downscale FILE --out small.mp4` | shrink before upload |
-| `SplitVideo` | `p0ssess-direct split FILE --out DIR --seconds 300` | segment long recordings |
-| `ExtractAudio` | `p0ssess-direct audio FILE --out a.mp3` | send only the soundtrack to a transcription model |
+| `Probe` | `p0ssess direct probe FILE` | duration, size and streams before deciding anything |
+| `FrameAt` | `p0ssess direct frame FILE --at S --out f.jpg` | read an on-screen timestamp or error with Claude's own vision (catalog `video-timestamp-ocr`) |
+| `SceneFrames` | `p0ssess direct frames FILE --scenes --out DIR` | structure of a screen recording without a model (catalog `video-structure-scan`) |
+| `FramesEvery` | `p0ssess direct frames FILE --every 5 --out DIR` | evenly spaced frames |
+| `Downscale` | `p0ssess direct downscale FILE --out small.mp4` | shrink before upload |
+| `SplitVideo` | `p0ssess direct split FILE --out DIR --seconds 300` | segment long recordings |
+| `ExtractAudio` | `p0ssess direct audio FILE --out a.mp3` | send only the soundtrack to a transcription model |
 
 ## Not covered yet
 

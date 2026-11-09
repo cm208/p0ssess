@@ -8,28 +8,37 @@ Status: built and tested. The weights it uses (harm, ceilings, the pressure curv
 
 ## Try it
 
-```sh
-go build -o bin/p0ssess-engine ./cmd/p0ssess-engine
+The plugin runs all of this for Claude. From a shell, with the plugin's launcher (or any `p0ssess` binary):
 
-bin/p0ssess-engine recommend --use-case video-understand
-bin/p0ssess-engine recommend --text "transcribe the call recording" --in audio --audio-seconds 1800
-bin/p0ssess-engine recommend --use-case code-implement-feature --stakes 3
-bin/p0ssess-engine status
-bin/p0ssess-engine usecases          # the 104 catalog ids
-bin/p0ssess-engine refresh           # live OpenRouter prices, cached for a day
-bin/p0ssess-engine me --open         # the local page
+```sh
+bin/p0ssess engine recommend --use-case video-understand
+bin/p0ssess engine recommend --text "transcribe the call recording" --in audio --audio-seconds 1800
+bin/p0ssess engine recommend --use-case code-implement-feature --stakes 3
+bin/p0ssess engine status
+bin/p0ssess engine usecases          # the 104 catalog ids
+bin/p0ssess engine refresh           # live OpenRouter prices, cached for a day
+bin/p0ssess me --open                # the local page
 ```
 
 Set `P0SSESS_HOME` to a scratch directory to try it without touching your real config: it becomes the config directory, with `cache/` and `state/` inside.
 
-### Wire it into Claude Code
+### How it reaches Claude Code
 
-Copy the binary to `~/.config/p0ssess/bin/p0ssess-engine`, then:
+The plugin wires it in (see [INSTALL.md](INSTALL.md)):
 
-- **MCP tools:** add the `p0ssess-engine` server from [`examples/engine-mcp.json`](../examples/engine-mcp.json) to `.mcp.json` (or `claude mcp add`). Read-only tools can be pre-allowed with the permissions in [`examples/engine-settings.json`](../examples/engine-settings.json).
-- **Status line:** move your current `statusLine.command` into the engine with `p0ssess-engine set statusline.command '<your command>'`, then point `statusLine.command` at `p0ssess-engine statusline`. Your line still prints first.
-- **Prompt hint:** add the `UserPromptSubmit` hook from the same example file.
-- **Setup walk-through:** [`commands/p0ssess-me.md`](../commands/p0ssess-me.md) is the `/p0ssess-me` command. It asks for each setting in the terminal, changes Claude Code's settings only with your consent, and opens the local page.
+- **MCP tools:** the plugin's one MCP server, `p0ssess mcp`, carries the engine tools next to the relay and direct tools. Inside the plugin they are named `mcp__plugin_p0ssess_p0ssess__<tool>`.
+- **Prompt hint:** the plugin's `UserPromptSubmit` hook runs `p0ssess hook prompt`.
+- **Routing behavior:** the plugin's `routing` skill teaches Claude when to call `recommend`, how to announce, rate stakes, ask for approval, record outcomes and turn plain language into rules.
+- **Status line and allow rules:** a plugin cannot install either, so `/p0ssess:p0ssess-me` offers `p0ssess setup statusline` and `p0ssess setup allow`, each only after you say yes. `p0ssess setup undo` reverts them.
+
+## Defaults decided for the first release
+
+These were decided without measurements and are the owner's to change:
+
+- **Harm and ceilings** keep the values in section 7.
+- **Plan `auto`** prices Claude at the API list price until the status line sees a subscription's rate-limit reading, then switches to the subscription curve. Set `plan` to stop guessing.
+- **Claude subagents may take stakes-4 work.** They are Claude; only the ceiling for the level applies to them. Other models still need an `allow` rule at stakes 4.
+- **Cross-family second opinion.** For stakes 3-4 work that edits code, `recommend` may add `second_opinion`: two models from different families (the catalog's `dual-review-high-risk` entry, Claude excluded), with their cost for reviewing the diff. It is offered only when it fits the monthly cap and the daily limit, it asks first when a review costs more than the per-task limit (unless a standing approval covers it), and it is additive: Claude still reviews the diff and decides with the user.
 
 ## How a recommendation is made
 
@@ -199,6 +208,9 @@ The daily soft limit defaults to pacing: `(monthly cap - spent before today) / d
 | `~/.cache/p0ssess/usage.json` | Claude usage readings and recent sessions |
 | `~/.cache/p0ssess/openrouter-models.json` | the live model list (refreshed after a day) |
 | `~/.cache/p0ssess/running/` | one file per running delegation, for the status line |
+| `~/.cache/p0ssess/bin/<version>/` | the binary the plugin's launcher built or fetched |
+| `~/.config/p0ssess/bin/p0ssess` | the copy the wrapped status line runs (`p0ssess setup statusline`) |
+| `~/.config/p0ssess/setup.json`, `backups/` | what `p0ssess setup` changed in Claude Code's settings, and the file as it was before each change |
 
 XDG variables are honored. With `P0SSESS_HOME` set, config lives there and cache and state go in its `cache/` and `state/`.
 
@@ -225,7 +237,7 @@ mode = "no-training"      # or "zdr"
 allow_safety_retention = false
 ```
 
-Change any of it with `p0ssess-engine set KEY VALUE`, the `settings_set` tool, the local page, or by asking Claude in plain language.
+Change any of it with `p0ssess engine set KEY VALUE`, the `settings_set` tool, the local page, or by asking Claude in plain language.
 
 ### engine.toml
 
@@ -327,11 +339,15 @@ Precedence: a forbid at any scope beats any allow. For rules that pick one value
 
 From it the engine reads spend (today, this month), first uses, standing-approval use, per-model outcomes for p_fail, and **tendencies** once a model and kind have three or more outcomes: "accepts gemini-3.8-flash for media 9/9", "declines deepseek-v4.1-flash for agent work 4/5", "redoes glm-5.3-flash's code 2/3". **Suggestions** are rules it proposes and never saves: a standing approval after five approved runs of a use case above the per-task limit (at the 90th percentile cost plus 25%), and a forbid rule after repeated declines.
 
-The relay keeps its own run log at `~/.config/p0ssess/history.jsonl` (status, tokens and cost of each OpenCode run). The engine's ledger is the acceptance record; the spend it counts comes from the outcomes Claude records.
+- **run**: written by the relay and the direct path when a delegated call ends: run id (a relay `session_id/turn`, or `d-…` for a direct call), route, model, the measured cost and, for bring-your-own-key calls, the part billed upstream. **Spend is the sum of these runs.** The relay's cost is OpenCode's session cost; the direct path's is OpenRouter's `usage.cost` plus `upstream_inference_cost`. In testing both matched the OpenRouter key's own usage to within $0.000001.
+
+An outcome takes its cash from the run it names (`run_id`), or from the newest unclaimed run of the same model in the last three hours. An outcome that reports cash for a run p0ssess did not measure becomes a `reported` run, so nothing counts twice.
+
+The relay also keeps its own run log at `~/.config/p0ssess/history.jsonl` (status, tokens and cost of each OpenCode run).
 
 ## Claude usage signal and the status line
 
-`p0ssess-engine statusline` reads Claude Code's status line JSON on stdin, saves `rate_limits` (both windows, with the time of the reading), the session id, directory and model to `usage.json`, runs your own status line command with the same input, and appends the segment:
+`p0ssess statusline` reads Claude Code's status line JSON on stdin, saves `rate_limits` (both windows, with the time of the reading), the session id, directory and model to `usage.json`, runs your own status line command with the same input, and appends the segment:
 
 ```
 idle, nothing spent today   (nothing)
@@ -341,40 +357,49 @@ working, wide terminal      ᗣ p0ssess  2 running  $0.14 today  mimo-v2.6-flash
 near the budget (80%+)      ᗣ p0ssess  $8.10 of $10 this month      (amber ghost)
 ```
 
-It picks the longest form that fits the width (Claude Code's `COLUMNS`, else the setting) after your own line. Muted grey when idle, a little brighter while running, an amber mark near the budget; never red, never animated. `NO_COLOR` turns color off. A broken p0ssess setup still prints your line. Running jobs are files in `~/.cache/p0ssess/running/` (see `usage.StartJob` and `usage.FinishJob`); entries whose process is gone are cleared.
+It picks the longest form that fits the width (Claude Code's `COLUMNS`, else the setting) after your own line. Muted grey when idle, a little brighter while running, an amber mark near the budget; never red, never animated. `NO_COLOR` turns color off. A broken p0ssess setup still prints your line. Running jobs are files in `~/.cache/p0ssess/running/` (see `usage.StartJob` and `usage.FinishJob`); entries whose process is gone are cleared. The relay and the direct path create and remove these files, so the running count is real.
+
+`p0ssess setup statusline` installs the wrapper: it copies the binary to `~/.config/p0ssess/bin/p0ssess` (the plugin's own path changes with each update; the MCP server refreshes this copy after an update), saves your current status line command in `statusline.command`, and points Claude Code's `statusLine` at the copy.
 
 A reading older than two hours, or none (before the first response in a session, or on an API plan), counts as unknown.
 
 ## The prompt hint
 
-`p0ssess-engine hook` is a `UserPromptSubmit` hook. It prints one line of context only for: a video or audio file or video link in the prompt; a request to generate an image, audio or video; a Claude window at 80% used or projected past 90%; bulk one-shot work (summarize, translate, classify, caption or extract over many items, or a pasted prompt over 40,000 characters); or, for media and reviews, a route the user reliably accepts. Otherwise it prints nothing. It reads only local files, about 4 ms a call, and stays silent in `.p0ssess-private` repositories.
+`p0ssess hook prompt` is a `UserPromptSubmit` hook. It prints one line of context only for: a video or audio file or video link in the prompt; a request to generate an image, audio or video; a Claude window at 80% used or projected past 90%; bulk one-shot work (summarize, translate, classify, caption or extract over many items, or a pasted prompt over 40,000 characters); or, for media and reviews, a route the user reliably accepts. Otherwise it prints nothing. It reads only local files, about 4 ms a call, and stays silent in `.p0ssess-private` repositories.
 
 ## MCP tools
 
-`p0ssess-engine mcp` is a stdio MCP server named `p0ssess-engine`:
+`p0ssess mcp` is the plugin's stdio MCP server, named `p0ssess`. Next to the relay tools ([RELAY.md](RELAY.md)) and the `direct` tool ([MEDIA.md](MEDIA.md)) it carries:
 
 | Tool | What it does |
 |---|---|
-| `recommend` | the ranked list for a use case or profile; records the offer |
+| `recommend` | the ranked list for a use case or profile; records the offer. Each paid option has `max_cost_usd`, the ceiling already authorized (the standing approval's per-run limit, or the per-task limit); it is 0 when the user must approve first |
 | `budget_status` | spend against limits, plan, λ and pressure, running jobs, file locations |
 | `settings_set` | change one setting (`monthly_usd`, `per_task_usd`, `daily_usd`, `save_claude`, `plan`, `usage_credits`, `privacy.mode`, `privacy.allow_safety_retention`, `models.allow`, `models.deny`, `providers.allow`, `providers.deny`, `lambda.preset`, `statusline.command`, `statusline.mark`, `statusline.width`) |
 | `rules_list`, `rules_add`, `rules_remove` | rules with scope; `dry_run` renders without saving |
 | `approvals_add`, `approvals_list` | standing approvals and their use |
-| `history_record_outcome` | accepted, redo, overridden or declined, with cash |
+| `history_record_outcome` | accepted, redo, overridden or declined, with the `run_id` whose measured cost it takes |
 | `tendencies` | learned patterns, suggestions and recent delegations |
+| `shortcuts_suggest`, `shortcuts_create`, `shortcuts_remove` | named shortcut agents (below) |
+
+The `direct` tool refuses a call when this month's spend plus its `max_cost_usd` would pass the monthly cap.
+
+### Shortcut agents
+
+A shortcut is a named relay agent with a fixed model, such as `p0ssess-gemini-3-8-flash-media`, written to your Claude Code agent directory (`~/.claude/agents/`, or `$CLAUDE_CONFIG_DIR/agents/`). `shortcuts_suggest` proposes one for a model and kind of work you have accepted in at least 80% of three or more outcomes; nothing is written until Claude calls `shortcuts_create`, which Claude Code asks you to approve. A `direct` shortcut calls the direct tool; an `agent` shortcut calls the relay. There are at most 12, and `shortcuts_remove` deletes only files p0ssess made.
 
 The server finds the session for session-scoped rules from the latest status line or hook reading for its project directory; tools also take `session_id` and `cwd`.
 
 ## The local page
 
-`p0ssess-engine me` serves a page on 127.0.0.1 at a random port, behind a random token in the path. It shows spend against the cap and daily limit, Claude's two windows with the projected mark and λ, running jobs, tendencies and suggestions (with a button to save one as a rule), recent delegations, every rule with its scope, and the settings form. It loads nothing from the network, sends a strict content security policy, refuses other Host headers, and requires the token in a header for every change. It stops after two hours (`--for`).
+`p0ssess me` serves a page on 127.0.0.1 at a random port, behind a random token in the path. It shows spend against the cap and daily limit, Claude's two windows with the projected mark and λ, running jobs, tendencies and suggestions (with a button to save one as a rule), recent delegations, every rule with its scope, and the settings form. It loads nothing from the network, sends a strict content security policy, refuses other Host headers, and requires the token in a header for every change. It stops after two hours (`--for`).
 
 ## Worked examples
 
 API-key plan, no history:
 
 ```
-$ p0ssess-engine recommend --use-case video-understand --top 3
+$ p0ssess engine recommend --use-case video-understand --top 3
 video-understand (#75, media) · stakes 1 · λ 1.00 (API-key plan: Claude at list price)
    route   model               total    cash     claude   risk     p_fail
 1  direct  glm-5.3-flash       $0.0734  $0.0064  $0.0550  $0.0120  0.18    ask: first use of this model
@@ -404,5 +429,5 @@ Sol's row at λ = 1: $0.211 cash, $0.118 of Claude hand-off and full review, and
 - The presets are stances, not measurements. The ledger records λ, the preset and every outcome so they can be calibrated; the opt-in evaluation set in DESIGN.md does not exist yet.
 - Audio, video, speech, embeddings and reranking have no clean benchmark. Their p_fail is the catalog's ordering until outcomes accumulate. Speech-to-text and text-to-speech prices are read as per second and per character, which OpenRouter does not confirm; image and music prices are scaled from the catalog's estimates.
 - Rerank models show 0/0 prices and are never offered until a price appears.
-- Spend counts only the outcomes Claude records; a forgotten `history_record_outcome` under-counts it.
+- Spend is measured per run, but learning still needs outcomes: a forgotten `history_record_outcome` leaves p_fail and tendencies where they were.
 - The classifier is word overlap; an explicit use-case id is always better.

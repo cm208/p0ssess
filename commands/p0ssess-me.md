@@ -17,7 +17,8 @@ Walk the user through p0ssess's settings in the terminal, then open its local pa
    - **Allow the plugin's tools** (`p0ssess setup allow`). Background relay agents cannot ask for permission, so without this the agent path and shortcut agents fail. It adds allow rules for the relay tools, the direct tool and the engine's read-only tools to the user's Claude Code settings; rule changes and shortcut files still ask.
    - **Status line segment** (`p0ssess setup statusline`). Plugins cannot install a status line, so p0ssess wraps the user's: their current command keeps running first and the p0ssess segment follows. It also lets the engine see Claude's usage windows.
    - **Background progress summaries**, only if the user asks about overhead (`p0ssess setup summaries`): it sets `CLAUDE_CODE_DISABLE_AGENT_PROGRESS_SUMMARIES=1`, an undocumented Claude Code switch that turns off one-line status summaries for all background agents.
-   Each change is backed up first and `p0ssess setup undo` reverts all of them. Never change settings files any other way.
+   - **Sandbox image** (`p0ssess jail build`), only when `setup show` says it is not built and the user wants the agent path: it downloads OpenCode (checked against pinned SHA-256 digests) and builds a local podman image of about 1.1 GB. Run it in the background; it takes a few minutes.
+   Each settings change is backed up first and `p0ssess setup undo` reverts all of them. Never change settings files any other way.
 5. Call `rules_list`, `tendencies` and `shortcuts_suggest`. List active rules with their scope, one line each. Read out any suggestions and say the user can accept one by asking.
 6. Start the page with `p0ssess me --open` in the background (it keeps running) and give the user the URL it prints. It listens on 127.0.0.1 only, makes no outside requests, and stops after two hours.
 

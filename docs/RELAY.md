@@ -4,7 +4,7 @@ This is the part of p0ssess that hands multi-step work on files to another model
 
 ```
 Claude Code (main model)
- └─ Agent(subagent_type="p0ssess")            background by default; SendMessage continues it
+ └─ Agent(subagent_type="p0ssess:p0ssess")   background by default; SendMessage continues it
      └─ relay subagent on Haiku               tools: the five p0ssess MCP tools, nothing else
          └─ p0ssess mcp (stdio)               run / wait / abort / answer_permission / models
              └─ pod p0ssess-<hash>            one per repository, rootless podman
@@ -12,7 +12,7 @@ Claude Code (main model)
                  └─ <pod>-proxy               holds the OpenRouter key, forwards to openrouter.ai
 ```
 
-Status: milestones R1 (OpenCode client and jail) and R2 (relay MCP server and agent) are built and tested. The plugin, the generated per-model agents and the routing engine come later.
+Status: built and tested (milestones R1 and R2), and shipped in the plugin since R3. The relay tools live on the plugin's one MCP server next to the direct and engine tools; inside the plugin their names are `mcp__plugin_p0ssess_p0ssess__<tool>` and the agent is `p0ssess:p0ssess`. Each run's start and end are reported to the engine: the status line counts it as running, and its measured cost becomes spend.
 
 ## Pinned versions
 
@@ -101,7 +101,9 @@ The OpenRouter key is read from `openrouter_key_file` (default `~/.config/p0sses
 
 `agents/p0ssess.md` runs on Haiku with only the five MCP tools, `background: true` and `omitClaudeMd: true`. It copies the task, calls `run`, and replies with exactly one `<answer>` block per run followed by one metadata line (session, status, model, cost, transcript; for edit mode the worktree and the diff). In testing the answers came back exact, including a follow-up sent while the first run was still going (both answers, oldest first).
 
-To try it in a project, copy `agents/p0ssess.md` to `.claude/agents/`, add `examples/mcp.json` as `.mcp.json`, and allow the tools (`examples/settings.json`). Background subagents cannot ask for permission, and Claude Code ignores a project's `permissions.allow` in a folder you have not trusted, so allow the tools at user level, trust the folder, or pass `--allowedTools`.
+The plugin installs it. Background subagents cannot ask for permission, and Claude Code ignores a project's `permissions.allow` in a folder you have not trusted, so the relay's tools must be allowed at user level: `p0ssess setup allow` adds those rules (with your consent, through `/p0ssess:p0ssess-me`). Named shortcut agents with a fixed model can be generated as well (see [ENGINE.md](ENGINE.md#shortcut-agents)).
+
+On macOS, and on Linux without podman, the agent path reports itself unavailable; the direct tool and the engine still work.
 
 ## Tests
 

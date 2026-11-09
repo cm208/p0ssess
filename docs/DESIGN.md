@@ -3,7 +3,7 @@
 p0ssess lets Claude Code hand work to other models through OpenRouter while Claude stays in charge: it plans, routes, reviews, and answers.
 Its core is the **Predictive Model Engine (PME)**, which decides when another model is the better choice.
 
-Status: design agreed and researched ([RESEARCH.md](RESEARCH.md)). Nothing here is built yet.
+Status: design agreed and researched ([RESEARCH.md](RESEARCH.md)); built as a Claude Code plugin. Where the build departs from this page, [ENGINE.md](ENGINE.md), [RELAY.md](RELAY.md) and [MEDIA.md](MEDIA.md) describe what shipped.
 
 ## Principles
 
