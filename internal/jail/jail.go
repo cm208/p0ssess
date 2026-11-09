@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -499,14 +498,4 @@ func (j *Jail) Status(ctx context.Context) Status {
 		cancel()
 	}
 	return s
-}
-
-// Healthy reports whether the server answers over HTTP.
-func (j *Jail) Healthy() bool {
-	r, err := (&http.Client{Timeout: 2 * time.Second}).Get(j.URL() + "/api/info")
-	if err != nil {
-		return false
-	}
-	r.Body.Close()
-	return r.StatusCode == 401 || r.StatusCode == 200
 }

@@ -195,9 +195,6 @@ type Estimate struct {
 	Strength float64 `json:"strength"`
 }
 
-// Upper is the p_fail bound the stakes gate checks: mean plus one sigma.
-func (e Estimate) Upper() float64 { return math.Min(1, e.PFail+e.Sigma) }
-
 // For returns the estimate for model on family. catalogRank is 0 when the
 // catalog recommends the model for the use case, 1 when it lists it as an
 // alternative and -1 otherwise; it only matters for families with no boards.

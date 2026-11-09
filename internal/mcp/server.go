@@ -249,12 +249,3 @@ func (s *Server) Wrap(name string, wrap func(Handler) Handler) bool {
 	s.handlers[name] = wrap(h)
 	return true
 }
-
-// ToolNames lists the registered tools in order.
-func (s *Server) ToolNames() []string {
-	out := make([]string, 0, len(s.tools))
-	for _, t := range s.tools {
-		out = append(out, t.Name)
-	}
-	return out
-}

@@ -226,15 +226,6 @@ func (c *Client) AllMessages(ctx context.Context, id string) ([]Message, error) 
 	return all, nil
 }
 
-// LastAssistant returns the newest assistant message, or nil.
-func (c *Client) LastAssistant(ctx context.Context, id string) (*Message, error) {
-	page, _, err := c.Messages(ctx, id, MessageQuery{Limit: 1, Order: "desc", Type: "assistant"})
-	if err != nil || len(page) == 0 {
-		return nil, err
-	}
-	return &page[0], nil
-}
-
 func (c *Client) Diff(ctx context.Context, id string) ([]FileDiff, error) {
 	var v envelope[[]FileDiff]
 	err := c.do(ctx, "GET", "/api/session/"+url.PathEscape(id)+"/diff", nil, nil, &v)
