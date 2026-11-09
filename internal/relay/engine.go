@@ -27,6 +27,7 @@ type Engine struct {
 
 	mu      sync.Mutex
 	watches map[string]*watch
+	obs     Observer
 }
 
 func NewEngine(cfg config.Config, version string, log io.Writer) *Engine {
@@ -246,6 +247,9 @@ func (e *Engine) prompt(ctx context.Context, c *opencode.Client, rec *SessionRec
 		return nil, err
 	}
 	rec.PromptID = item.ID
+	if e.obs != nil {
+		e.obs.RunStarted(e.runInfo(rec))
+	}
 	return w, rec.save()
 }
 

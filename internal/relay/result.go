@@ -137,6 +137,9 @@ func (e *Engine) result(w *watch, status string) (*Result, error) {
 		appendHistory(HistoryEntry{Time: time.Now().UTC(), Kind: rec.Kind, Model: rec.Model, Mode: rec.Mode,
 			Outcome: status, CostUSD: r.CostUSD, Tokens: r.Tokens, DurationS: r.DurationS, Session: rec.SessionID,
 			Turn: rec.Turns, TaskHash: rec.PromptHash, Rejected: len(rejected), Escalated: escalated})
+		if e.obs != nil {
+			e.obs.RunFinished(e.runInfo(rec), r)
+		}
 	}
 	return r, nil
 }
