@@ -55,7 +55,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 html {
   -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
-  scrollbar-color: #454545 var(--ground);
+  scrollbar-color: var(--dot) var(--ground);
   accent-color: var(--violet);
 }
 ::selection { background: var(--violet-deep); color: var(--ink); }
@@ -128,14 +128,15 @@ h2 { font-size: clamp(1.5rem, 1.2vw + 1.2rem, 2rem); line-height: 1.12; letter-s
   mask-image: linear-gradient(to left, transparent 0, #000 14px);
 }
 .copy-btn {
-  flex: none; min-width: 4.2rem; margin-right: 7px; padding: 0.42rem 0.8rem;
+  position: relative; flex: none; min-width: 4.2rem; margin-right: 7px; padding: 0.42rem 0.8rem;
   background: var(--violet); color: var(--ink);
   border: 0; border-radius: 999px;
   font: 400 0.8rem/1.2 var(--mono); cursor: pointer;
   transition: transform 0.35s var(--spring), background 0.2s var(--out);
 }
-.copy-btn:hover { background: #8268ea; }
+.copy-btn:hover { background: #6346d4; }
 .copy-btn:active { transform: scale(0.965); }
+.copy-btn::after { content: ""; position: absolute; inset: -9px -7px; }  /* a 44 px touch target */
 .copy-btn[hidden] { display: none; }
 .install { margin-top: var(--flow-lg); }
 .install .small { margin-top: 0.55rem; }
@@ -345,7 +346,7 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
 .scene-wrap { margin-top: 1.1rem; }
 .scene-wrap > summary {
   display: inline-flex; align-items: center; gap: 0.6ch;
-  padding: 0.35rem 0.95rem;
+  min-height: 44px; padding: 0 1.1rem;
   background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
   font: 400 0.84rem/1.2 var(--mono); color: var(--ink);
   cursor: pointer; list-style: none;
@@ -483,6 +484,16 @@ html.anim .hero .g-blink { animation: ghost-blink 6.2s steps(1) 2.4s infinite; }
   .caret { animation: none; }
   .island, .island .dots, .island .live, .island a::before, .island a::after, .focus circle, .term::after, .copy-btn { transition: opacity 0.2s linear; }
   .island.is-live .live { transition-delay: 0s; }
+}
+
+/* Forced colors drop backgrounds; keep the marks that carry data. */
+@media (forced-colors: active) {
+  .gates tbody tr::before, .gates tbody tr::after, .term::after { background: Highlight; }
+  .bars rect { fill: CanvasText; }
+  .bars .win rect, .focus circle { fill: Highlight; }
+  .bars .brk { stroke: Canvas; }
+  .island a::before { background: CanvasText; }
+  .tag, .copy-btn { border: 1px solid ButtonText; }
 }
 
 @media print {

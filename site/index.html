@@ -29,7 +29,7 @@
     <h1>Claude stays in charge.</h1>
     <p class="lede">p0ssess is a Claude Code plugin. Its Predictive Model Engine scores every model for each job, Claude included. When another model is good enough and cheaper, or can do what Claude can’t, Claude hands the work over through OpenRouter and checks it. You see one line.</p>
     <div class="install">
-      <div class="cmd"><pre><code>claude --plugin-dir /path/to/p0ssess</code></pre><button class="copy-btn" type="button" hidden>Copy</button></div>
+      <div class="cmd"><pre><code>claude --plugin-dir /path/to/p0ssess</code></pre><button class="copy-btn" type="button" aria-label="Copy the command" hidden>Copy</button></div>
       <p class="small">Private for now; public releases are coming. <a href="#try">What you need</a></p>
     </div>
     <ul class="facts">
@@ -55,14 +55,14 @@
     <h2 id="engine-h">Predictive Model Engine</h2>
     <p>Every model that could do a job, Claude included, gets a score out of 100: a cautious estimate that its result will be accepted, from licensed benchmarks, the use-case research and your own history.</p>
     <p>Each severity has a gate. Below it, a model isn’t considered. The violet line marks the scores that clear. Critical work stays with Claude unless your rule names a model.</p>
-    <table class="gates">
+    <table class="gates" role="table">
       <caption class="sr-only">The gate for each severity</caption>
-      <thead><tr><th scope="col">Severity</th><th scope="col" class="sr-only">For example</th><th scope="col">Gate</th><th scope="col">A mistake costs</th></tr></thead>
-      <tbody>
-        <tr class="g20"><th scope="row">Trivial</th><td class="eg">Renames, log summaries, captions</td><td class="gate">20</td><td class="harm"><small>$</small>0.01</td></tr>
-        <tr class="g35"><th scope="row">Routine</th><td class="eg">Test drafts, transcripts, bulk edits</td><td class="gate">35</td><td class="harm"><small>$</small>0.10</td></tr>
-        <tr class="g60"><th scope="row">Important</th><td class="eg">Features that ship, migration plans</td><td class="gate">60</td><td class="harm"><small>$</small>1</td></tr>
-        <tr class="g80"><th scope="row">Critical</th><td class="eg">Auth, firewalls, production, money</td><td class="gate">80</td><td class="harm"><small>$</small>10</td></tr>
+      <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Severity</th><th scope="col" role="columnheader" class="sr-only">For example</th><th scope="col" role="columnheader">Gate</th><th scope="col" role="columnheader">A mistake costs</th></tr></thead>
+      <tbody role="rowgroup">
+        <tr role="row" class="g20"><th scope="row" role="rowheader">Trivial</th><td role="cell" class="eg">Renames, log summaries, captions</td><td role="cell" class="gate">20</td><td role="cell" class="harm"><small>$</small>0.01</td></tr>
+        <tr role="row" class="g35"><th scope="row" role="rowheader">Routine</th><td role="cell" class="eg">Test drafts, transcripts, bulk edits</td><td role="cell" class="gate">35</td><td role="cell" class="harm"><small>$</small>0.10</td></tr>
+        <tr role="row" class="g60"><th scope="row" role="rowheader">Important</th><td role="cell" class="eg">Features that ship, migration plans</td><td role="cell" class="gate">60</td><td role="cell" class="harm"><small>$</small>1</td></tr>
+        <tr role="row" class="g80"><th scope="row" role="rowheader">Critical</th><td role="cell" class="eg">Auth, firewalls, production, money</td><td role="cell" class="gate">80</td><td role="cell" class="harm"><small>$</small>10</td></tr>
       </tbody>
     </table>
     <p class="scale" aria-hidden="true"><span>0</span><span>score</span><span>100</span></p>
@@ -375,14 +375,14 @@
   <div class="copy">
     <h2 id="data-h">Built from 104 use cases</h2>
     <p>The engine starts from 104 researched use cases: half from OpenRouter usage data, half from what Claude Code can’t do or does expensively. A few, with the catalog’s pick:</p>
-    <table class="cases">
-      <thead><tr><th scope="col">Use case</th><th scope="col">Catalog pick</th><th scope="col">Estimate</th></tr></thead>
-      <tbody>
-        <tr><td>Summarize a talk, meeting or lecture video</td><td>Gemini 3.8 Flash</td><td>$0.05–0.15 per 10 min</td></tr>
-        <tr><td>Meetings, memos, interviews to text</td><td>Whisper large v3 turbo</td><td>about $0.006 per 30 min</td></tr>
-        <tr><td>Bulk migration gated by tests</td><td>DeepSeek V4.1 Flash</td><td>about $0.002 per attempt</td></tr>
-        <tr><td>Label many issues, logs or files</td><td>GLM-5.3-Flash</td><td>about $0.04 per 1,000</td></tr>
-        <tr><td>Firewall rules, Terraform, IAM</td><td>Stays with Claude</td><td>critical</td></tr>
+    <table class="cases" role="table">
+      <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Use case</th><th scope="col" role="columnheader">Catalog pick</th><th scope="col" role="columnheader">Estimate</th></tr></thead>
+      <tbody role="rowgroup">
+        <tr role="row"><td role="cell">Summarize a talk, meeting or lecture video</td><td role="cell">Gemini 3.8 Flash</td><td role="cell">$0.05–0.15 per 10 min</td></tr>
+        <tr role="row"><td role="cell">Meetings, memos, interviews to text</td><td role="cell">Whisper large v3 turbo</td><td role="cell">about $0.006 per 30 min</td></tr>
+        <tr role="row"><td role="cell">Bulk migration gated by tests</td><td role="cell">DeepSeek V4.1 Flash</td><td role="cell">about $0.002 per attempt</td></tr>
+        <tr role="row"><td role="cell">Label many issues, logs or files</td><td role="cell">GLM-5.3-Flash</td><td role="cell">about $0.04 per 1,000</td></tr>
+        <tr role="row"><td role="cell">Firewall rules, Terraform, IAM</td><td role="cell">Stays with Claude</td><td role="cell">critical</td></tr>
       </tbody>
     </table>
     <p class="cite">Data: OpenRouter, LMArena and Epoch AI (CC BY 4.0), models.dev (MIT); every value carries its source and date.</p>
@@ -410,7 +410,7 @@
     <h2 id="try-h">Try it</h2>
     <p>Private for now; releases are coming. You need Claude Code 2.1.319 or later and an OpenRouter key. Release archives carry the binary; a checkout builds it with Go 1.27. The agent sandbox needs Linux with rootless podman.</p>
     <ol class="steps">
-      <li><p>Start Claude Code with the plugin.</p><div class="cmd"><pre><code>claude --plugin-dir /path/to/p0ssess</code></pre><button class="copy-btn" type="button" hidden>Copy</button></div></li>
+      <li><p>Start Claude Code with the plugin.</p><div class="cmd"><pre><code>claude --plugin-dir /path/to/p0ssess</code></pre><button class="copy-btn" type="button" aria-label="Copy the command" hidden>Copy</button></div></li>
       <li><p>Put your OpenRouter key in <code>~/.config/<wbr>p0ssess/<wbr>secrets/<wbr>openrouter_key</code> (mode 0600).</p></li>
       <li><p>Run <code>/p0ssess:p0ssess-me</code>. Settings changes wait for your yes; <code>p0ssess setup undo</code> reverts them.</p></li>
     </ol>
