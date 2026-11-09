@@ -77,7 +77,7 @@
       <li class="fail"><span class="who">Claude Haiku 5.5</span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="36" height="10"/><line class="gate-line" x1="60" x2="60" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">36</span><span class="cost">below the gate</span><span class="sr-only">below the gate</span></li>
       <li class="fail"><span class="who">GLM-5.3-Flash</span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="35" height="10"/><line class="gate-line" x1="60" x2="60" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">35</span><span class="cost">below the gate</span><span class="sr-only">below the gate</span></li>
       </ol>
-      <figcaption id="gauge-cap">Confidence scores and real costs from the engine for this request on a pay-per-token plan, before any history, rounded. Three models clear the gate, and GPT-6.1 Sol costs least once Claude’s hand-off and review are counted, so it gets the job and Claude reviews the diff. On a subscription early in a usage window, Claude’s own time counts for less, and it keeps the work. Agent evidence: LMArena leaderboard dataset, rev f566816, agent subsets as of 2026-11-04. Licensed under CC BY 4.0.</figcaption>
+      <figcaption id="gauge-cap">Confidence scores and real costs from the engine for this request on a pay-per-token plan, before any history, rounded. Each score uses the cautious end of the model’s estimate, so it sits a little below 100 minus the p_fail the engine prints. Three models clear the gate, and GPT-6.1 Sol costs least once Claude’s hand-off and review are counted, so it gets the job and Claude reviews the diff. On a subscription early in a usage window, Claude’s own time counts for less, and it keeps the work. Agent evidence: LMArena leaderboard dataset, rev f566816, agent subsets as of 2026-11-04. Licensed under CC BY 4.0.</figcaption>
     </figure>
   </div>
   <figure class="scene" data-title="claude ~/billing-api" data-st="idle|" aria-labelledby="t-engine">
@@ -90,7 +90,7 @@
       <p class="l out c">2  claude  claude-sonnet-5.5  $0.5395  $0.0000  $0.4000  $0.1395  0.23</p>
       <p class="l out c">pick: handing this to gpt-6.1-sol: feature or function from a spec; tests must pass</p>
       <p class="l in">why isn’t deepseek flash on the list?</p>
-      <p class="l ai" data-d="900">The engine left it out: “p_fail up to 0.60 is above the stakes-3 ceiling 0.40.” As a score, that’s 40 out of 100 against a gate of 60 for important work. GPT-6.1 Sol scores 65 and I score 71; Sol wins on cost, and I’d review its diff.</p>
+      <p class="l ai" data-d="900">The engine left it out: “p_fail up to 0.60 is above the stakes-3 ceiling 0.40.” As a score, that’s 40 out of 100 against a gate of 60 for important work. Scores use the cautious end of each estimate, while the p_fail column prints the middle, so Sol’s 0.30 counts as 65 and my 0.23 as 71. Sol wins on cost, and I’d review its diff.</p>
     </div>
     <p class="foot"><span class="me">~/billing-api  Sonnet 5.5</span></p>
   </figure>

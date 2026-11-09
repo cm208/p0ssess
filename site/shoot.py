@@ -13,6 +13,7 @@ root = Path(__file__).resolve().parent
 ap = argparse.ArgumentParser()
 ap.add_argument("--browser", default="/opt/brave.com/brave/brave")
 ap.add_argument("--out", default=str(root / "shots"))
+ap.add_argument("--only", default="", help="comma-separated shot names to take")
 ap.add_argument("--full", action="store_true", help="also save full-page phone captures")
 args = ap.parse_args()
 out = Path(args.out)
@@ -51,6 +52,8 @@ with sync_playwright() as p:
             if sw > vp["width"]:
                 log.append(f"{scheme}-{name}: horizontal overflow, scrollWidth {sw}")
             for i, sid in enumerate(ids):
+                if args.only and sid not in args.only.split(","):
+                    continue
                 if sid == "top":
                     pg.evaluate("scrollTo(0, 0)")
                 elif sid == "end":
