@@ -421,9 +421,8 @@ func (c *ctx) subagentOption(m *registry.Model) (Option, string) {
 	f := c.pFail(m)
 	eff, runs := c.withRetries(f.mean)
 	up, _ := c.withRetries(f.upper)
-	if c.stakes >= 4 {
-		return Option{}, "stakes 4 stays with the lead model"
-	}
+	// A Claude subagent is Claude, so stakes 4 does not bar it; the ceiling
+	// for the level still applies.
 	if why := c.gate(m, up, true); why != "" {
 		return Option{}, why
 	}

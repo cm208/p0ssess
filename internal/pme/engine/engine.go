@@ -180,6 +180,7 @@ type Recommendation struct {
 	Rules          []string             `json:"rules_applied,omitempty"`
 	Suggestions    []history.Suggestion `json:"suggestions,omitempty"`
 	Privacy        string               `json:"privacy"`
+	SecondOpinion  *SecondOpinion       `json:"second_opinion,omitempty"`
 	Notes          []string             `json:"notes,omitempty"`
 }
 
@@ -326,6 +327,11 @@ func (e *Engine) Recommend(req Request) (*Recommendation, error) {
 	rec.Privacy = "no-training: every call sends provider.data_collection=deny"
 	if bud.Privacy.Mode == "zdr" {
 		rec.Privacy = "zero-retention endpoints only (zdr=true)"
+	}
+	if so, note := e.secondOpinion(uc, stakes, req.Profile, bud, rs, ledger, spend, daily, now); so != nil {
+		rec.SecondOpinion = so
+	} else if note != "" {
+		rec.Notes = append(rec.Notes, note)
 	}
 	rec.Rules = append(rec.Rules, overrides...)
 	for _, r := range applied(d) {

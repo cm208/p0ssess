@@ -225,6 +225,13 @@ func TestStakesGate(t *testing.T) {
 	if o == nil || o.Review != "full" {
 		t.Fatalf("allow rule should lift stakes 4 with full review: %+v", o)
 	}
+	// A Claude subagent is Claude: stakes 4 alone does not exclude it.
+	sub := model("anthropic/test-sub", 0.1, 0.5, []string{"text"}, []string{"text"})
+	in = baseInput(t, useCase("spot", m.ID), m)
+	in.Stakes, in.Subagent = 4, sub
+	if why := excluded(Score(in), sub.ID); strings.Contains(why, "stakes 4") {
+		t.Errorf("subagent barred at stakes 4: %s", why)
+	}
 	// Ceiling: an unnamed model has p 0.40 + 0.20 = 0.60 upper.
 	other := model("y/other", 1, 2, []string{"text"}, []string{"text"})
 	in = baseInput(t, useCase("spot", m.ID), other)
