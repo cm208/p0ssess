@@ -37,6 +37,8 @@ type OfferOption struct {
 	Cash    float64 `json:"cash_usd"`
 	PFail   float64 `json:"p_fail"`
 	Approve bool    `json:"needs_approval,omitempty"`
+	// ApprovalID is the standing approval that covered this option.
+	ApprovalID string `json:"approval_id,omitempty"`
 }
 
 type Entry struct {
@@ -319,7 +321,7 @@ func (l *Ledger) Tendencies() []Tendency {
 			t.Disfavored = true
 			t.Text = fmt.Sprintf("declines %s for %s %d/%d", name, kind, c.Declined+c.Overridden, n)
 		case c.Runs() >= MinTendency && float64(c.Redo)/float64(c.Runs()) >= 0.3:
-			t.Text = fmt.Sprintf("redoes %s's %s work %d/%d", name, kind, c.Redo, c.Runs())
+			t.Text = fmt.Sprintf("redoes %s's %s %d/%d", name, kind, c.Redo, c.Runs())
 		default:
 			t.Text = fmt.Sprintf("mixed on %s for %s (%d accepted, %d redone, %d declined)", name, kind, c.Accepted, c.Redo, c.Declined+c.Overridden)
 		}

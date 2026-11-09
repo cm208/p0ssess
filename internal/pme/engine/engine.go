@@ -341,7 +341,7 @@ func (e *Engine) Recommend(req Request) (*Recommendation, error) {
 		rec.OfferID = history.NewOfferID()
 		var opts []history.OfferOption
 		for _, o := range rec.Options {
-			opts = append(opts, history.OfferOption{Model: o.Model, Route: o.Route, Total: round(o.Total), Cash: round(o.Breakdown.Cash), PFail: round(o.PFail), Approve: o.NeedsApproval})
+			opts = append(opts, history.OfferOption{Model: o.Model, Route: o.Route, Total: round(o.Total), Cash: round(o.Breakdown.Cash), PFail: round(o.PFail), Approve: o.NeedsApproval, ApprovalID: o.ApprovalID})
 		}
 		err := history.Append(e.Dirs.HistoryFile(), history.Entry{
 			TS: now.UTC(), Type: history.TypeOffer, OfferID: rec.OfferID, UseCase: uc.ID, Kind: uc.Kind(), Family: uc.Family,

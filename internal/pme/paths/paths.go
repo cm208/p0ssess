@@ -1,8 +1,8 @@
 // Package paths resolves where p0ssess keeps its config, cache and state.
 //
-// P0SSESS_HOME, when set, puts all three under one directory (config/, cache/,
-// state/), which is what tests and scratch setups use. Otherwise the XDG
-// variables apply, falling back to ~/.config, ~/.cache and ~/.local/state.
+// P0SSESS_HOME, when set, is the config directory (as for the relay), with
+// cache/ and state/ inside it; tests and scratch setups use it. Otherwise the
+// XDG variables apply, falling back to ~/.config, ~/.cache and ~/.local/state.
 package paths
 
 import (
@@ -19,7 +19,7 @@ type Dirs struct {
 func Default() Dirs {
 	if root := os.Getenv("P0SSESS_HOME"); root != "" {
 		return Dirs{
-			Config: filepath.Join(root, "config"),
+			Config: root,
 			Cache:  filepath.Join(root, "cache"),
 			State:  filepath.Join(root, "state"),
 		}

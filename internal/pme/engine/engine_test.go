@@ -21,8 +21,8 @@ func setup(t *testing.T, budgetTOML string) (*Engine, string) {
 	t.Setenv("P0SSESS_HOME", home)
 	t.Setenv("CLAUDE_PROJECT_DIR", "")
 	if budgetTOML != "" {
-		os.MkdirAll(filepath.Join(home, "config"), 0o700)
-		os.WriteFile(filepath.Join(home, "config", "budget.toml"), []byte(budgetTOML), 0o600)
+		os.MkdirAll(home, 0o700)
+		os.WriteFile(filepath.Join(home, "budget.toml"), []byte(budgetTOML), 0o600)
 	}
 	proj := filepath.Join(home, "proj")
 	os.MkdirAll(filepath.Join(proj, ".git"), 0o755)

@@ -16,8 +16,8 @@ func TestSurvey(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("P0SSESS_HOME", home)
 	if plan := os.Getenv("PME_PLAN"); plan != "" {
-		os.MkdirAll(home+"/config", 0o700)
-		os.WriteFile(home+"/config/budget.toml", []byte("plan = \""+plan+"\"\n"), 0o600)
+		os.MkdirAll(home, 0o700)
+		os.WriteFile(home+"/budget.toml", []byte("plan = \""+plan+"\"\n"), 0o600)
 	}
 	e, err := Load(paths.Default())
 	if err != nil {

@@ -761,7 +761,7 @@ func (c *ctx) reason(o Option, top bool, all []Option) string {
 	if len(ev) > 80 {
 		ev = ev[:77] + "..."
 	}
-	s := fmt.Sprintf("%s: %s via %s, %s, %s review; %s (%s)", lead, short(o.Model), o.Route, what, o.Review, fp, ev)
+	s := fmt.Sprintf("%s: %s via %s, %s, %s; %s (%s)", lead, short(o.Model), o.Route, what, reviewWords[o.Review], fp, ev)
 	if !c.feasible && top {
 		s = "Claude cannot do this (" + c.infeasible + "); " + s
 	}
@@ -782,6 +782,13 @@ func (c *ctx) trimExcluded(ex []Exclusion) []Exclusion {
 		ex = ex[:12]
 	}
 	return ex
+}
+
+var reviewWords = map[string]string{
+	"none":       "passed through with its label",
+	"spot":       "Claude spot-checks it",
+	"mechanical": "a mechanical check decides",
+	"full":       "Claude reviews all of it",
 }
 
 func nowOf(in Input) (t timeT) { return timeNow() }

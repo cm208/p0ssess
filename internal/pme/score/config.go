@@ -170,16 +170,25 @@ func (l LambdaConfig) Shape(saveClaude bool) (floor, exponent float64, name stri
 }
 
 func LoadConfig(path string) (Config, error) {
-	c := Default()
 	b, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
-		return c, nil
+		return Default(), nil
 	}
 	if err != nil {
-		return c, err
+		return Default(), err
 	}
-	if _, err := toml.Decode(string(b), &c); err != nil {
+	c, err := LoadConfigFrom(b)
+	if err != nil {
 		return Default(), fmt.Errorf("%s: %w", path, err)
+	}
+	return c, nil
+}
+
+// LoadConfigFrom decodes engine.toml content over the defaults.
+func LoadConfigFrom(b []byte) (Config, error) {
+	c := Default()
+	if _, err := toml.Decode(string(b), &c); err != nil {
+		return Default(), err
 	}
 	return c, c.Validate()
 }

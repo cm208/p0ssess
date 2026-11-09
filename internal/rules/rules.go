@@ -492,8 +492,8 @@ func (d Decision) MaxStakesFor(model string) int {
 
 // Use is how much of a standing approval has been spent.
 type Use struct {
-	Count int
-	Total float64
+	Count int     `json:"count"`
+	Total float64 `json:"total_usd"`
 }
 
 // Approval finds the narrowest standing approval covering a run of cash
