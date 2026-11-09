@@ -168,6 +168,14 @@ func (c *Client) Plan(ctx context.Context, req Request) (*plan, error) {
 			p.est = p.keyframeEstimate(lim)
 		}
 	}
+	if gap := m.priceGap(p.route, req.Output); gap != "" {
+		p.est.CostUnknown = true
+		p.est.Notes = append(p.est.Notes, gap+": the estimate is not a bound, and OpenRouter is sent no price cap")
+		if !req.DryRun && !(req.MaxCostUSD > 0) {
+			return p, fmt.Errorf("%w: %s, so the cost cannot be estimated; pass an explicit max_cost_usd above 0, "+
+				"which is reserved and counted against every limit", ErrPriceUnknown, gap)
+		}
+	}
 	if !req.DryRun && p.est.CostUSD > req.MaxCostUSD {
 		return p, fmt.Errorf("%w: about $%.4f for %s, limit $%.4f", ErrOverBudget, p.est.CostUSD, m.ID, req.MaxCostUSD)
 	}
@@ -295,6 +303,10 @@ func (c *Client) Run(ctx context.Context, req Request) (*Result, error) {
 	if p.req.DryRun {
 		res.Text = fmt.Sprintf("dry run: about $%.4f (%d input tokens, up to %d output tokens, %d call(s))",
 			p.est.CostUSD, p.est.InputTokens, p.est.OutputTokens, p.est.Calls)
+		if p.est.CostUnknown {
+			res.Text = fmt.Sprintf("dry run: cost unknown (%d input tokens, up to %d output tokens, %d call(s)); %s",
+				p.est.InputTokens, p.est.OutputTokens, p.est.Calls, strings.Join(p.est.Notes, "; "))
+		}
 		return res, nil
 	}
 	if c.Key == "" {
@@ -324,7 +336,7 @@ func (c *Client) Run(ctx context.Context, req Request) (*Result, error) {
 	if lim := p.req.MaxTokens * max(p.est.Calls, 1); p.route == "chat" && res.Usage.CompletionTokens > lim {
 		res.Warnings = append(res.Warnings, fmt.Sprintf("the provider billed %d completion tokens against a max_tokens of %d", res.Usage.CompletionTokens, lim))
 	}
-	if res.Usage.CostUSD > p.est.CostUSD*1.0001 {
+	if res.Usage.CostUSD > p.est.CostUSD*1.0001 && !p.est.CostUnknown {
 		res.Warnings = append(res.Warnings, fmt.Sprintf("actual cost $%.6f was above the estimate $%.6f", res.Usage.CostUSD, p.est.CostUSD))
 	}
 	return res, nil

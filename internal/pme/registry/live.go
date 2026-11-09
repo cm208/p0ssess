@@ -142,8 +142,12 @@ func (r *Registry) MergeLive(cachePath string) error {
 			m.MaxOutput = lm.TopProvider.MaxCompletion
 		}
 		if in, ok := perM(lm.Pricing.Prompt); ok {
-			if out, ok2 := perM(lm.Pricing.Completion); ok2 && (in > 0 || out > 0 || m.Kind == "text") {
-				m.Pricing.InputPerM, m.Pricing.OutputPerM = &in, &out
+			out, ok2 := perM(lm.Pricing.Completion)
+			// A zero live price never replaces a snapshot price: zero there means "not listed" as often as free.
+			zero := in == 0 && out == 0
+			had := m.Pricing.InputPerM != nil && m.Pricing.OutputPerM != nil
+			if ok2 && (!zero || (!had && m.Kind == "text")) {
+				m.Pricing.InputPerM, m.Pricing.OutputPerM, m.Pricing.FromLive = &in, &out, true
 				if cr, ok := perM(lm.Pricing.CacheRead); ok {
 					m.Pricing.CacheReadPerM = &cr
 				}

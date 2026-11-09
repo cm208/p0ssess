@@ -23,7 +23,7 @@ var runSchema = json.RawMessage(`{
     "wait_s": {"type": "integer", "description": "Return still_running after this many seconds (default 1500); then call wait."},
     "use_case": {"type": "string", "description": "Catalog use case id, when known; rules limited to use cases apply by it."},
     "stakes": {"type": "integer", "minimum": 1, "maximum": 4, "description": "Stakes 1-4 as the caller rated them; without it the use case's catalog stakes apply, or 3."},
-    "max_cost_usd": {"type": "number", "description": "Cost cap for this run; the relay interrupts it past this. Defaults to and cannot exceed max_run_cost_usd in config.json. Every limit is checked against it before the run starts."}
+    "max_cost_usd": {"type": "number", "description": "Cost cap for this run; the relay interrupts it past this. Defaults to and cannot exceed max_run_cost_usd in config.json. Every limit is checked against it before the run starts. Required, above 0, for a model with no known price."}
   },
   "required": ["task"]
 }`)

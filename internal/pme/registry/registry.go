@@ -47,6 +47,8 @@ type Pricing struct {
 	VideoSKUs       map[string]float64 `json:"video_pricing_skus_raw"`
 	UnitNote        string             `json:"unit_note"`
 	LongContext     []Override         `json:"long_context_overrides"`
+	// FromLive marks token prices that came from the live list rather than the snapshot.
+	FromLive bool `json:"-"`
 }
 
 type Endpoint struct {
@@ -164,6 +166,40 @@ func has(list []string, v string) bool {
 
 func (m *Model) IsClaude() bool { return strings.HasPrefix(m.ID, "anthropic/") }
 
+// Free reports a model that costs nothing: a ":free" variant, or a text model whose shipped snapshot
+// lists zero token prices. A zero from anywhere else (the live list, an endpoint, or a media model
+// billed by the image, second or character) means the price is unknown, not free.
+func (m *Model) Free() bool {
+	if strings.HasSuffix(m.ID, ":free") {
+		return true
+	}
+	p := m.Pricing
+	return m.Kind == "text" && !m.Live && !p.FromLive && p.InputPerM != nil && p.OutputPerM != nil &&
+		*p.InputPerM == 0 && *p.OutputPerM == 0
+}
+
+// PriceKnown reports whether any price is known for the model: a token price, a media price, or free.
+func (m *Model) PriceKnown() bool {
+	if m == nil {
+		return false
+	}
+	if m.Free() {
+		return true
+	}
+	p := m.Pricing
+	for _, v := range []*float64{p.InputPerM, p.OutputPerM, p.ImageOutRaw, p.PromptRaw, p.CompletionRaw, p.USDPerSecondMin, p.USDPerSecondMax} {
+		if v != nil && *v > 0 {
+			return true
+		}
+	}
+	for _, v := range p.VideoSKUs {
+		if v > 0 {
+			return true
+		}
+	}
+	return false
+}
+
 // Batch reports a :batch variant (half price, never zero-retention).
 func (m *Model) Batch() bool { return strings.HasSuffix(m.ID, ":batch") }
 
@@ -210,11 +246,11 @@ func (m *Model) Prices(zdr, cheapest bool) (TokenPrices, bool) {
 		if m.Endpoints == nil || m.Endpoints.CheapestZDR == nil {
 			return TokenPrices{}, false
 		}
-		return endpointPrices(m.Endpoints.CheapestZDR, "cheapest zero-retention endpoint ("+m.Endpoints.CheapestZDR.Provider+")")
+		return m.endpointPrices(m.Endpoints.CheapestZDR, "cheapest zero-retention endpoint ("+m.Endpoints.CheapestZDR.Provider+")")
 	}
 	list, okList := m.listPrices()
 	if cheapest && m.Endpoints != nil && m.Endpoints.Cheapest != nil {
-		if ep, ok := endpointPrices(m.Endpoints.Cheapest, "cheapest endpoint ("+m.Endpoints.Cheapest.Provider+")"); ok {
+		if ep, ok := m.endpointPrices(m.Endpoints.Cheapest, "cheapest endpoint ("+m.Endpoints.Cheapest.Provider+")"); ok {
 			if !okList || blend(ep) < blend(list) {
 				return ep, true
 			}
@@ -230,7 +266,7 @@ func (m *Model) listPrices() (TokenPrices, bool) {
 	if p.InputPerM == nil || p.OutputPerM == nil {
 		return TokenPrices{}, false
 	}
-	if *p.InputPerM == 0 && *p.OutputPerM == 0 && m.Kind != "text" {
+	if *p.InputPerM == 0 && *p.OutputPerM == 0 && !m.Free() {
 		return TokenPrices{}, false
 	}
 	tp := TokenPrices{In: *p.InputPerM, Out: *p.OutputPerM, CacheRead: *p.InputPerM, Source: "list price"}
@@ -240,8 +276,8 @@ func (m *Model) listPrices() (TokenPrices, bool) {
 	return tp, true
 }
 
-func endpointPrices(e *Endpoint, src string) (TokenPrices, bool) {
-	if e.InputPerM == nil || e.OutputPerM == nil {
+func (m *Model) endpointPrices(e *Endpoint, src string) (TokenPrices, bool) {
+	if e.InputPerM == nil || e.OutputPerM == nil || (*e.InputPerM == 0 && *e.OutputPerM == 0 && !m.Free()) {
 		return TokenPrices{}, false
 	}
 	tp := TokenPrices{In: *e.InputPerM, Out: *e.OutputPerM, CacheRead: *e.InputPerM, Source: src}

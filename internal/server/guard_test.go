@@ -16,6 +16,7 @@ import (
 	"p0ssess/internal/config"
 	"p0ssess/internal/direct"
 	"p0ssess/internal/history"
+	"p0ssess/internal/opencode"
 	"p0ssess/internal/pme/engine"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/relay"
@@ -214,5 +215,29 @@ func TestRelayRunEnforcesLimits(t *testing.T) {
 	os.WriteFile(filepath.Join(proj, ".p0ssess-private"), nil, 0o600)
 	if _, err := re.Run(context.Background(), req, nil); err == nil || !strings.Contains(err.Error(), "p0ssess-private") {
 		t.Errorf("private repo: %v", err)
+	}
+}
+
+// TestRelayUnknownPriceCountsAtCap covers M6 on the agent path: a model with no known price needs an
+// explicit max_cost_usd, and a run OpenCode reports at $0 despite billed tokens is counted at its cap.
+func TestRelayUnknownPriceCountsAtCap(t *testing.T) {
+	_, eng, proj := directEnv(t, "monthly_usd = 1\nper_task_usd = 0.05\ndaily_usd = -1\n")
+	obs := NewObserver(eng)
+	auth := relay.RunAuth{Model: "newco/unpriced", MaxCostUSD: 0.05, MaxRuntime: time.Minute, Cwd: proj}
+	if _, err := obs.Authorize(auth); err == nil || !strings.Contains(err.Error(), "no price is known") {
+		t.Fatalf("default cap on an unpriced model: %v", err)
+	}
+	auth.ExplicitMax, auth.MaxCostUSD = true, 0.03
+	g, err := obs.Authorize(auth)
+	if err != nil || !g.PriceUnknown {
+		t.Fatalf("explicit cap: %+v %v", g, err)
+	}
+	res := &relay.Result{Status: "done", Tokens: &opencode.Tokens{Input: 1200, Output: 300}}
+	if err := obs.RunFinished(relay.RunInfo{SessionID: "ses-1", Turn: 1, Model: auth.Model, Grant: g}, res); err != nil {
+		t.Fatal(err)
+	}
+	l, sp := ledger(t, eng)
+	if !res.CostEstimated || sp.Estimated != 0.03 || sp.Reserved != 0 || len(l.Open()) != 0 {
+		t.Errorf("a $0 report for billed tokens must count at the cap: estimated %v, %+v", res.CostEstimated, sp)
 	}
 }

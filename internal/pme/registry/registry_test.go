@@ -112,3 +112,59 @@ func TestRefreshAndMerge(t *testing.T) {
 		t.Error("missing cache should be a no-op")
 	}
 }
+
+// TestZeroPriceIsUnknownUnlessFree covers M6: a zero price is free only for a ":free" variant or a text
+// model the snapshot lists at zero; a zero from the live list or an endpoint is unknown.
+func TestZeroPriceIsUnknownUnlessFree(t *testing.T) {
+	z := func() *float64 { v := 0.0; return &v }
+	p := func(v float64) *float64 { return &v }
+	snapshotZero := &Model{ID: "a/zero", Kind: "text", Pricing: Pricing{InputPerM: z(), OutputPerM: z()}}
+	liveZero := &Model{ID: "a/live-zero", Kind: "text", Live: true, Pricing: Pricing{InputPerM: z(), OutputPerM: z()}}
+	liveFree := &Model{ID: "a/live-zero:free", Kind: "text", Live: true, Pricing: Pricing{InputPerM: z(), OutputPerM: z()}}
+	music := &Model{ID: "a/music", Kind: "audio", Pricing: Pricing{InputPerM: z(), OutputPerM: z()}}
+	noPrice := &Model{ID: "a/none", Kind: "text"}
+	for _, c := range []struct {
+		m           *Model
+		free, known bool
+	}{{snapshotZero, true, true}, {liveZero, false, false}, {liveFree, true, true}, {music, false, false}, {noPrice, false, false}} {
+		_, ok := c.m.Prices(false, false)
+		if c.m.Free() != c.free || c.m.PriceKnown() != c.known || ok != c.known {
+			t.Errorf("%s: free %v known %v prices ok %v, want free %v known %v", c.m.ID, c.m.Free(), c.m.PriceKnown(), ok, c.free, c.known)
+		}
+	}
+	if (*Model)(nil).PriceKnown() {
+		t.Error("a model missing from the registry has a known price")
+	}
+
+	// A zero-priced endpoint must not undercut the list price of a paid model.
+	paid := &Model{ID: "a/paid", Kind: "text", Pricing: Pricing{InputPerM: p(1), OutputPerM: p(4)},
+		Endpoints: &Endpoints{Cheapest: &Endpoint{Provider: "X", InputPerM: z(), OutputPerM: z()},
+			CheapestZDR: &Endpoint{Provider: "Y", InputPerM: z(), OutputPerM: z()}}}
+	if tp, ok := paid.Prices(false, true); !ok || tp.In != 1 {
+		t.Errorf("cheapest price of a paid model = %+v %v, want the list price", tp, ok)
+	}
+	if _, ok := paid.Prices(true, true); ok {
+		t.Error("a zero-priced zero-retention endpoint counted as a known price")
+	}
+}
+
+func TestLiveZeroKeepsSnapshotPrice(t *testing.T) {
+	cache := filepath.Join(t.TempDir(), "live.json")
+	os.WriteFile(cache, []byte(`{"fetched_at":"2026-11-09T00:00:00Z","models":[
+ {"id":"anthropic/claude-haiku-5.5","pricing":{"prompt":"0","completion":"0"}},
+ {"id":"newco/zero","architecture":{"output_modalities":["text"]},"pricing":{"prompt":"0","completion":"0"}},
+ {"id":"newco/zero:free","architecture":{"output_modalities":["text"]},"pricing":{"prompt":"0","completion":"0"}}]}`), 0o600)
+	r := load(t)
+	if err := r.MergeLive(cache); err != nil {
+		t.Fatal(err)
+	}
+	if h := r.Get("anthropic/claude-haiku-5.5"); *h.Pricing.InputPerM != 0.1 || h.Free() {
+		t.Errorf("a live zero replaced haiku's snapshot price: %v", *h.Pricing.InputPerM)
+	}
+	if r.Get("newco/zero").PriceKnown() {
+		t.Error("a live-only model listed at zero has a known price")
+	}
+	if !r.Get("newco/zero:free").Free() {
+		t.Error("a live :free model is not free")
+	}
+}

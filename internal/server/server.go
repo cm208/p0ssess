@@ -171,12 +171,12 @@ type observer struct {
 // Authorize applies every limit to one relay prompt and reserves its cost cap.
 func (o *observer) Authorize(a relay.RunAuth) (relay.Grant, error) {
 	g, err := o.eng.Authorize(engine.Charge{Route: "agent", Model: a.Model, UseCase: a.UseCase, Stakes: a.Stakes,
-		MaxUSD: a.MaxCostUSD, Hold: a.MaxRuntime + 15*time.Minute, Scope: engine.Scope{Cwd: a.Cwd}})
+		MaxUSD: a.MaxCostUSD, ExplicitMax: a.ExplicitMax, Hold: a.MaxRuntime + 15*time.Minute, Scope: engine.Scope{Cwd: a.Cwd}})
 	if err != nil {
 		return relay.Grant{}, err
 	}
 	return relay.Grant{ReserveID: g.ReserveID, CapUSD: g.MaxUSD, ApprovalID: g.ApprovalID, ZDR: g.ZDR, Session: g.Session,
-		Note: strings.Join(g.Notes, "; ")}, nil
+		PriceUnknown: g.PriceUnknown, Note: strings.Join(g.Notes, "; ")}, nil
 }
 
 func (o *observer) Release(g relay.Grant) {
@@ -208,6 +208,10 @@ func (o *observer) RunFinished(r relay.RunInfo, res *relay.Result) error {
 	if res.CostEstimated {
 		// The session's cost could not be read: count the run at its cap until a measured figure exists.
 		run.CashUSD, run.Estimated = max(res.CostUSD, r.Grant.CapUSD), true
+	} else if r.Grant.PriceUnknown && res.CostUSD <= 0 && (res.Tokens == nil || res.Tokens.Input+res.Tokens.Output+res.Tokens.Reasoning > 0) {
+		// OpenCode prices runs from its own model list; with no price known it reports $0 for tokens that were billed.
+		run.CashUSD, run.Estimated = r.Grant.CapUSD, true
+		res.CostEstimated = true
 	}
 	return o.eng.Settle(&engine.Grant{ReserveID: r.Grant.ReserveID, ApprovalID: r.Grant.ApprovalID, Session: r.Grant.Session}, run)
 }
@@ -247,7 +251,7 @@ func RunDirect(ctx context.Context, cfg config.Config, eng *engine.Engine, req d
 	var grant *engine.Grant
 	if !req.DryRun {
 		g, err := eng.Authorize(engine.Charge{Route: "direct", Model: req.Model, UseCase: job.UseCase, Stakes: job.Stakes,
-			MaxUSD: req.MaxCostUSD, Hold: DirectHold, Scope: engine.Scope{Cwd: cwd}})
+			MaxUSD: req.MaxCostUSD, ExplicitMax: true, Hold: DirectHold, Scope: engine.Scope{Cwd: cwd}})
 		if err != nil {
 			return nil, "", err
 		}

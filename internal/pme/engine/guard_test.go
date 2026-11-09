@@ -382,3 +382,32 @@ func TestRecommendGatesEngineRouteAndPrivateRepos(t *testing.T) {
 		t.Error("second opinion offered in a private repository")
 	}
 }
+
+// TestUnknownPriceNeedsExplicitMax covers M6 at the guard: with no price known, a default or zero
+// maximum is refused, an explicit one is reserved in full, and a free model runs at $0.
+func TestUnknownPriceNeedsExplicitMax(t *testing.T) {
+	e, proj := setup(t, "monthly_usd = 10\nper_task_usd = 1\ndaily_usd = -1\n")
+	c := charge(proj, 0.1)
+	c.Model = "newco/unpriced"
+	_, err := e.Authorize(c)
+	refused(t, err, false, "no price is known for newco/unpriced")
+	c.ExplicitMax, c.MaxUSD = true, 0
+	_, err = e.Authorize(c)
+	refused(t, err, false, "explicit max_cost_usd above 0")
+	c.MaxUSD = 0.1
+	g, err := e.Authorize(c)
+	if err != nil || !g.PriceUnknown || g.MaxUSD != 0.1 {
+		t.Fatalf("explicit maximum on an unpriced model: %+v %v", g, err)
+	}
+	if sp := e.Ledger().Spend(e.Now()); sp.Reserved < 0.1-1e-9 {
+		t.Errorf("reserved $%.4f, want the full $0.10", sp.Reserved)
+	}
+	free := charge(proj, 0)
+	free.Model = "newco/unpriced:free"
+	if g, err := e.Authorize(free); err != nil || g.PriceUnknown {
+		t.Errorf("free model refused or marked unpriced: %+v %v", g, err)
+	}
+	if _, err := e.Authorize(charge(proj, 0.01)); err != nil {
+		t.Errorf("a priced model with a default maximum was refused: %v", err)
+	}
+}

@@ -644,3 +644,56 @@ func TestRegistrySnapshotLoads(t *testing.T) {
 		t.Errorf("haiku long context = %+v", h.LongContext)
 	}
 }
+
+// TestUnknownPriceIsNotZero covers M6 on the direct path: a model with no known price does not estimate
+// as $0. It needs an explicit max_cost_usd above 0, its estimate says "unknown", and no max_price is sent.
+func TestUnknownPriceIsNotZero(t *testing.T) {
+	f, c := newFake(t)
+	c.Catalog.Add(ModelInfo{ID: "newco/unpriced", Input: []string{"text"}, Output: []string{"text"}, Routes: chatRoutes})
+	c.Catalog.Add(ModelInfo{ID: "newco/gratis:free", Input: []string{"text"}, Output: []string{"text"}, Routes: chatRoutes})
+	f.answer["/chat/completions"] = chatOK("ok", "")
+	_, err := c.Run(context.Background(), Request{Model: "newco/unpriced", Prompt: "x", MaxCostUSD: 0})
+	if !errors.Is(err, ErrPriceUnknown) || f.count() != 0 {
+		t.Fatalf("zero limit on an unpriced model: err %v, requests %d", err, f.count())
+	}
+	dry, err := c.Run(context.Background(), Request{Model: "newco/unpriced", Prompt: "x", DryRun: true})
+	if err != nil || !dry.Estimate.CostUnknown || !strings.Contains(dry.Text, "cost unknown") {
+		t.Fatalf("dry run: %+v %v", dry, err)
+	}
+	res, err := c.Run(context.Background(), Request{Model: "newco/unpriced", Prompt: "x", MaxCostUSD: 0.05})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Estimate.CostUnknown || !strings.Contains(Format(res), "estimate was unknown") {
+		t.Errorf("estimate not marked unknown: %+v\n%s", res.Estimate, Format(res))
+	}
+	if pr, _ := f.last("/chat/completions")["provider"].(map[string]any); pr["max_price"] != nil {
+		t.Errorf("max_price sent for an unknown price: %v", pr["max_price"])
+	}
+	if _, err := c.Run(context.Background(), Request{Model: "newco/gratis:free", Prompt: "x", MaxCostUSD: 0}); err != nil {
+		t.Errorf("free model with a zero limit: %v", err)
+	}
+}
+
+// TestLiveImageListingKeepsRegistryPrice: an image listing with no output_image price must not wipe the
+// snapshot's image price to $0.
+func TestLiveImageListingKeepsRegistryPrice(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/models/acme/painter/endpoints", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(404)
+	})
+	mux.HandleFunc("/images/models/acme/painter/endpoints", func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, `{"endpoints":[{"pricing":[{"billable":"input_image","unit":"image","cost_usd":0.001}]}]}`)
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+	cat := NewCatalog(srv.URL, srv.Client())
+	cat.Add(ModelInfo{ID: "acme/painter", Input: []string{"text"}, Output: []string{"image"}, Routes: []string{"/api/v1/images"}, ImageUnit: "image", ImageCost: 0.02})
+	m, err := cat.Lookup(context.Background(), "acme/painter")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.ImageUnit != "image" || m.ImageCost != 0.02 {
+		t.Errorf("image price after a live listing with none = %s %v, want image 0.02", m.ImageUnit, m.ImageCost)
+	}
+}

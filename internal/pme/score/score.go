@@ -500,7 +500,7 @@ func (c *ctx) delegatedOption(m *registry.Model) (Option, string) {
 	}
 	cash, cashMax, src, notes, ok := c.cash(m)
 	if !ok {
-		return Option{}, "no usable price"
+		return Option{}, "price unknown, so it is not ranked; to use it anyway, pass an explicit max_cost_usd"
 	}
 	f := c.pFail(m)
 	eff, runs := c.withRetries(f.mean)
@@ -641,7 +641,7 @@ func (c *ctx) cash(m *registry.Model) (exp, max float64, src string, notes []str
 		}
 		tp = tpl
 	}
-	if e <= 0 && m.Kind != "text" {
+	if e <= 0 && !m.Free() {
 		return 0, 0, "", nil, false
 	}
 	return e * fee, l * fee * c.cfg.CashHeadroom, tp.Source, notes, true

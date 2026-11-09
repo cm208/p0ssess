@@ -24,9 +24,11 @@ type RunAuth struct {
 	UseCase    string
 	Stakes     int
 	MaxCostUSD float64
-	MaxRuntime time.Duration
-	Repo       string
-	Cwd        string
+	// ExplicitMax is true when the caller passed max_cost_usd instead of taking max_run_cost_usd.
+	ExplicitMax bool
+	MaxRuntime  time.Duration
+	Repo        string
+	Cwd         string
 }
 
 // Grant is an authorized prompt: its reservation and the cost cap the relay enforces.
@@ -36,7 +38,9 @@ type Grant struct {
 	ApprovalID string  `json:"approval_id,omitempty"`
 	ZDR        bool    `json:"zdr,omitempty"`
 	Session    string  `json:"claude_session,omitempty"`
-	Note       string  `json:"-"`
+	// PriceUnknown means no price is known for the model: OpenCode may report $0 for a billed run.
+	PriceUnknown bool   `json:"price_unknown,omitempty"`
+	Note         string `json:"-"`
 }
 
 // RunInfo identifies one prompt on one session.

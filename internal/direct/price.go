@@ -33,6 +33,9 @@ type ModelInfo struct {
 	ImageCost float64 `json:"image_cost,omitempty"`
 	// Speech-to-text price in USD per second of audio, the highest across endpoints when known live.
 	STTRaw float64 `json:"stt_usd_per_second,omitempty"`
+	// Free is a ":free" variant, or a text model the registry snapshot lists at zero token prices.
+	// Any other zero price is unknown.
+	Free bool `json:"free,omitempty"`
 }
 
 type LongContextPrice struct {
@@ -44,6 +47,32 @@ type LongContextPrice struct {
 func (m ModelInfo) Takes(modality string) bool { return has(m.Input, modality) }
 func (m ModelInfo) Makes(modality string) bool { return has(m.Output, modality) }
 func (m ModelInfo) ImagesRoute() bool          { return has(m.Routes, "/api/v1/images") }
+
+// priceGap says which price a call on route would need but is not known, or "" when the estimate rests
+// on real prices (or the model is free).
+func (m ModelInfo) priceGap(route string, out Output) string {
+	if m.Free || strings.HasSuffix(m.ID, ":free") {
+		return ""
+	}
+	switch route {
+	case "stt":
+		if m.STTRaw <= 0 {
+			return "no speech-to-text price is known for " + m.ID
+		}
+	case "images":
+		if m.ImageCost <= 0 {
+			return "no image price is known for " + m.ID
+		}
+	default:
+		if m.InPerM <= 0 && m.OutPerM <= 0 && m.ReasonPerM <= 0 {
+			return "no token price is known for " + m.ID
+		}
+		if out == OutImage && m.ImageCost <= 0 {
+			return "no image output price is known for " + m.ID
+		}
+	}
+	return ""
+}
 
 func has(xs []string, x string) bool {
 	for _, v := range xs {
@@ -79,6 +108,7 @@ func (c *Catalog) LoadRegistry(path string) error {
 	var doc struct {
 		Models []struct {
 			ID        string                     `json:"id"`
+			Kind      string                     `json:"kind"`
 			Input     []string                   `json:"input_modalities"`
 			Output    []string                   `json:"output_modalities"`
 			Routes    []string                   `json:"api_routes"`
@@ -109,6 +139,10 @@ func (c *Catalog) LoadRegistry(path string) error {
 		if f := num("image_out_raw"); f > 0 {
 			mi.ImageUnit, mi.ImageCost = "token", f
 		}
+		_, hasIn := m.Pricing["input_per_m"]
+		_, hasOut := m.Pricing["output_per_m"]
+		mi.Free = strings.HasSuffix(m.ID, ":free") ||
+			(m.Kind == "text" && hasIn && hasOut && mi.InPerM == 0 && mi.OutPerM == 0)
 		c.reg[m.ID] = mi
 	}
 	return nil
@@ -217,17 +251,22 @@ func (c *Catalog) fetch(ctx context.Context, id string, base ModelInfo) (ModelIn
 		if chatErr != nil && !has(mi.Input, "text") {
 			mi.Input = append(mi.Input, "text")
 		}
-		mi.ImageUnit, mi.ImageCost = "", 0
+		// The live listing replaces the snapshot's image price only when it has one: a listing with no
+		// output_image price must not turn a known price into $0.
+		unit, cost := "", 0.0
 		rank := map[string]int{"image": 3, "megapixel": 2, "token": 1}
 		for _, e := range img.Endpoints {
 			for _, p := range e.Pricing {
-				if p.Billable != "output_image" {
+				if p.Billable != "output_image" || !(p.Cost > 0) {
 					continue
 				}
-				if rank[p.Unit] > rank[mi.ImageUnit] || (p.Unit == mi.ImageUnit && p.Cost > mi.ImageCost) {
-					mi.ImageUnit, mi.ImageCost = p.Unit, p.Cost
+				if rank[p.Unit] > rank[unit] || (p.Unit == unit && p.Cost > cost) {
+					unit, cost = p.Unit, p.Cost
 				}
 			}
+		}
+		if cost > 0 {
+			mi.ImageUnit, mi.ImageCost = unit, cost
 		}
 		return mi, nil
 	} else if chatErr != nil {
@@ -250,16 +289,22 @@ func perToken(v any) float64 {
 // Estimate is the pre-send cost bound. It is deliberately on the high side: duration is measured with
 // ffprobe, token rates are upper ends of the published ranges, and the full completion cap is priced.
 type Estimate struct {
-	InputTokens  int      `json:"input_tokens"`
-	OutputTokens int      `json:"output_tokens"`
-	FeeUSD       float64  `json:"fee_usd,omitempty"` // OCR and per-image charges
-	CostUSD      float64  `json:"cost_usd"`
-	Calls        int      `json:"calls"`
-	Notes        []string `json:"notes,omitempty"`
+	InputTokens  int     `json:"input_tokens"`
+	OutputTokens int     `json:"output_tokens"`
+	FeeUSD       float64 `json:"fee_usd,omitempty"` // OCR and per-image charges
+	CostUSD      float64 `json:"cost_usd"`
+	Calls        int     `json:"calls"`
+	// CostUnknown means a price the call needs is not known, so CostUSD is not a bound; only an explicit
+	// max_cost_usd limits the call.
+	CostUnknown bool     `json:"cost_unknown,omitempty"`
+	Notes       []string `json:"notes,omitempty"`
 }
 
 // ErrOverBudget is returned when the estimate is above Request.MaxCostUSD.
 var ErrOverBudget = errors.New("estimated cost is above the limit")
+
+// ErrPriceUnknown is returned when a price the call needs is unknown and no max_cost_usd above 0 was given.
+var ErrPriceUnknown = errors.New("price unknown")
 
 // Token rates used by the estimate. Gemini rates are Google's published figures (audio 32 tokens per
 // second; video about 100–300 per second, upper end used). Other families publish nothing comparable,

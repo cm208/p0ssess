@@ -458,3 +458,23 @@ func TestConfigRejectsHeadroomBelowOne(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+// TestUnknownPriceIsNotCheap covers M6: a model listed at zero that is not known to be free is left
+// out with "price unknown" instead of being ranked as the cheapest option.
+func TestUnknownPriceIsNotCheap(t *testing.T) {
+	unknown := model("newco/zero", 0, 0, []string{"text"}, []string{"text"})
+	unknown.Live = true
+	free := model("newco/zero:free", 0, 0, []string{"text"}, []string{"text"})
+	free.Live = true
+	paid := model("vendor/paid", 1, 2, []string{"text"}, []string{"text"})
+	r := Score(baseInput(t, useCase("spot", "vendor/paid"), unknown, free, paid))
+	if find(r, "newco/zero") != nil || !strings.Contains(excluded(r, "newco/zero"), "price unknown") {
+		t.Errorf("unknown-priced model ranked (excluded: %q)", excluded(r, "newco/zero"))
+	}
+	if o := find(r, "newco/zero:free"); o == nil || o.Breakdown.Cash != 0 {
+		t.Errorf("free model should be ranked at $0: %+v (excluded: %q)", o, excluded(r, "newco/zero:free"))
+	}
+	if find(r, "vendor/paid") == nil {
+		t.Errorf("paid model not ranked: %q", excluded(r, "vendor/paid"))
+	}
+}

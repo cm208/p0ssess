@@ -28,7 +28,7 @@ var ToolSchema = json.RawMessage(`{
     "system": {"type": "string"},
     "files": {"type": "array", "items": {"type": "string"}, "description": "absolute local paths: images, PDFs, audio, video or text"},
     "output": {"type": "string", "enum": ["text", "json", "image", "transcript"], "default": "text"},
-    "max_cost_usd": {"type": "number", "description": "the most this call may spend: refused when the estimate is above it, reserved against your limits"},
+    "max_cost_usd": {"type": "number", "description": "the most this call may spend: refused when the estimate is above it, reserved against your limits; must be above 0 when the model has no known price"},
     "max_tokens": {"type": "integer"},
     "strict_zdr": {"type": "boolean", "description": "zero-data-retention endpoints only"},
     "reasoning": {"type": "string", "enum": ["none", "low", "medium", "high"]},
@@ -107,11 +107,15 @@ func Format(r *Result) string {
 	if r.Provider != "" {
 		fmt.Fprintf(&b, " via %s", r.Provider)
 	}
+	est := fmt.Sprintf("$%.4f", r.Estimate.CostUSD)
+	if r.Estimate.CostUnknown {
+		est = "unknown"
+	}
 	if r.Usage.CostSource == "" {
-		fmt.Fprintf(&b, "; estimate $%.4f\n", r.Estimate.CostUSD)
+		fmt.Fprintf(&b, "; estimate %s\n", est)
 	} else {
-		fmt.Fprintf(&b, "; cost $%.6f (%s; estimate was $%.4f); tokens in %d, out %d",
-			r.Usage.CostUSD, r.Usage.CostSource, r.Estimate.CostUSD, r.Usage.PromptTokens, r.Usage.CompletionTokens)
+		fmt.Fprintf(&b, "; cost $%.6f (%s; estimate was %s); tokens in %d, out %d",
+			r.Usage.CostUSD, r.Usage.CostSource, est, r.Usage.PromptTokens, r.Usage.CompletionTokens)
 		if r.Usage.ReasoningTokens > 0 {
 			fmt.Fprintf(&b, " (%d reasoning)", r.Usage.ReasoningTokens)
 		}

@@ -21,6 +21,9 @@ type Charge struct {
 	Stakes int
 	// MaxUSD is the most the call may spend: what is reserved and what the limits are checked against.
 	MaxUSD float64
+	// ExplicitMax is true when the caller chose MaxUSD rather than taking a default. A model with no
+	// known price runs only with an explicit maximum above 0.
+	ExplicitMax bool
 	// Hold is how long the reservation holds before it counts as spent: the call's maximum runtime.
 	Hold time.Duration
 	Scope
@@ -28,14 +31,16 @@ type Charge struct {
 
 // Grant is an authorized call. ReserveID names its reservation; settle or release it when the call ends.
 type Grant struct {
-	ReserveID  string   `json:"reserve_id"`
-	MaxUSD     float64  `json:"max_usd"`
-	ApprovalID string   `json:"approval_id,omitempty"`
-	ZDR        bool     `json:"zdr,omitempty"`
-	Stakes     int      `json:"stakes"`
-	Notes      []string `json:"notes,omitempty"`
-	Session    string   `json:"-"`
-	Cwd        string   `json:"-"`
+	ReserveID  string  `json:"reserve_id"`
+	MaxUSD     float64 `json:"max_usd"`
+	ApprovalID string  `json:"approval_id,omitempty"`
+	ZDR        bool    `json:"zdr,omitempty"`
+	Stakes     int     `json:"stakes"`
+	// PriceUnknown means no price is known for the model, so a measured cost of $0 cannot be trusted.
+	PriceUnknown bool     `json:"price_unknown,omitempty"`
+	Notes        []string `json:"notes,omitempty"`
+	Session      string   `json:"-"`
+	Cwd          string   `json:"-"`
 }
 
 // Refusal is a call the user's limits do not allow. NeedsApproval means the user can allow it.
@@ -118,6 +123,14 @@ func (e *Engine) Authorize(c Charge) (*Grant, error) {
 	claude := strings.HasPrefix(c.Model, "anthropic/") || (m != nil && m.IsClaude())
 	if stakes >= 4 && !claude && d.MaxStakesFor(c.Model) < 4 {
 		return nil, refuse("stakes 4 stays on Claude unless an allow rule with max_stakes = 4 names %s", c.Model)
+	}
+	if !m.PriceKnown() && !strings.HasSuffix(c.Model, ":free") {
+		if !c.ExplicitMax || !(c.MaxUSD > 0) {
+			return nil, refuse("no price is known for %s, so its cost cannot be estimated; pass an explicit max_cost_usd above 0 "+
+				"(it is reserved and counted against every limit)", c.Model)
+		}
+		g.PriceUnknown = true
+		g.Notes = append(g.Notes, fmt.Sprintf("no price is known for %s; the call is counted at its $%.4f maximum unless a cost is measured", c.Model, c.MaxUSD))
 	}
 	if bud.Privacy.Mode == "zdr" {
 		if why := zdrBlock(m, bud.Privacy.AllowSafetyRetention); why != "" {

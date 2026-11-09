@@ -180,6 +180,7 @@ func (e *Engine) authorize(rec *SessionRecord, req RunRequest) (Grant, error) {
 	if capUSD < 0 || capUSD != capUSD {
 		return Grant{}, errors.New("max_cost_usd must be a number, 0 or more")
 	}
+	explicit := capUSD > 0
 	if capUSD == 0 || (ceiling > 0 && capUSD > ceiling) {
 		capUSD = ceiling
 	}
@@ -201,7 +202,7 @@ func (e *Engine) authorize(rec *SessionRecord, req RunRequest) (Grant, error) {
 		model = model[:i]
 	}
 	return e.obs.Authorize(RunAuth{Model: model, Mode: rec.Mode, Kind: rec.Kind, UseCase: rec.UseCase, Stakes: req.Stakes,
-		MaxCostUSD: capUSD, MaxRuntime: time.Duration(e.cfg.MaxRuntimeSec) * time.Second, Repo: rec.Repo, Cwd: rec.Cwd})
+		MaxCostUSD: capUSD, ExplicitMax: explicit, MaxRuntime: time.Duration(e.cfg.MaxRuntimeSec) * time.Second, Repo: rec.Repo, Cwd: rec.Cwd})
 }
 
 func waitDuration(s int) time.Duration {

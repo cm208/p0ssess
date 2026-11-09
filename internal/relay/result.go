@@ -162,7 +162,7 @@ func (e *Engine) result(w *watch, status string) (*Result, error) {
 		}
 	}
 	if r.CostEstimated {
-		r.Note = strings.TrimSpace(r.Note + " the session cost could not be read; the run is counted at its cap")
+		r.Note = strings.TrimSpace(r.Note + " the run's cost was not measured (the session cost could not be read, or no price is known for the model); it is counted at its cap")
 	}
 	return r, nil
 }
