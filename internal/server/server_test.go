@@ -148,4 +148,3 @@ func TestObserverRecordsRuns(t *testing.T) {
 		t.Errorf("session run cost = %v", c)
 	}
 }
-
