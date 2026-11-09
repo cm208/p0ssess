@@ -8,7 +8,7 @@ p0ssess is a Claude Code plugin with one Go binary behind it. This page covers i
 |---|---|
 | Claude Code 2.1.319 or later | everything |
 | An OpenRouter API key | any delegated call |
-| Go 1.27 or later | building the binary on first use (see [The binary](#the-binary)) |
+| Go 1.27 or later | only when no checked binary is available (see [The binary](#the-binary)) |
 | Linux with rootless podman 5 (pasta), `nft` and git | the sandboxed agent path only |
 | ffmpeg and ffprobe | optional: video size checks, keyframes, downscaling, splitting |
 
@@ -54,23 +54,36 @@ Start Claude Code and run `/p0ssess:p0ssess-me`. It:
    - `p0ssess setup allow`: allow rules for the relay tools, the direct tool, the engine's read-only tools and `history_record_outcome` (it only appends to the local ledger). `rules_add`, `approvals_add`, `settings_set` and the shortcut tools keep asking: their permission prompt is how you approve spending above your limits, so do not allow them. Background relay agents cannot ask for permission, so the agent path needs these. Plugins cannot ship allow rules.
    - `p0ssess setup statusline`: wraps your status line. Your command keeps running first and the p0ssess segment follows. Plugins cannot install a status line.
    - `p0ssess jail build`: builds the sandbox image for the agent path (about 1.1 GB), on Linux with podman.
+   - shell internet for a project, only if you want sandboxed shell commands to download packages (off by default; [RELAY.md](RELAY.md#shell-internet)).
 4. lists your rules and suggestions, and opens the local page.
 
 The same commands work from a shell. Inside Claude Code the plugin puts `p0ssess` on the Bash tool's PATH; from your own shell run the launcher by its path, `<plugin directory>/bin/p0ssess` (`claude plugin list` shows where the plugin is read from). `p0ssess setup show` reports what is set up, and `p0ssess setup undo` reverts every settings change p0ssess made.
 
 ## The binary
 
-`bin/p0ssess` in the plugin is a small launcher script. On first use it finds or makes the binary for your platform, in this order:
+`bin/p0ssess` in the plugin is a small launcher script. It runs only a binary it built from the plugin's own source, or one whose SHA-256 matches `dist/SHA256SUMS` for this exact version (`dist/VERSION`). It looks in this order:
 
-1. `$P0SSESS_BIN`, if set (development);
-2. `dist/p0ssess-<os>-<arch>` inside the plugin, for release archives that ship binaries;
-3. the cached build in `~/.cache/p0ssess/bin/<version>/`;
-4. a release download, used only when the plugin has `dist/release-url` and `dist/SHA256SUMS`, and only when the file matches its checksum;
-5. a local build with Go: `CGO_ENABLED=0 go build -trimpath` from the plugin's own source. Dependencies are vendored, so this needs no network and takes a few seconds.
+1. `$P0SSESS_BIN`, if set: your own binary, not checked (development);
+2. the cached copy in `~/.cache/p0ssess/bin/<version>/`, which the launcher writes only after a check or a build;
+3. `dist/p0ssess-<os>-<arch>` inside the plugin (release archives ship these), checked against `dist/SHA256SUMS` and copied to the cache;
+4. a release download from the URL in `dist/release-url` (or `$P0SSESS_RELEASE_URL`), `<url>/v<version>/p0ssess-<os>-<arch>`, checked the same way;
+5. a local build with Go: `CGO_ENABLED=0 go build -trimpath -mod=vendor` from the plugin's own source, with `go` on `PATH`, in `/usr/local/go` or in `~/.local/go`. Dependencies are vendored, so this needs no network and takes a few seconds.
 
-The build is reproducible: the same source and Go version produce byte-identical binaries. `scripts/build-release.sh` builds linux/amd64, linux/arm64 and darwin/arm64 with their SHA-256 sums, and `scripts/build-release.sh --check` builds twice and compares.
+A file that does not match its checksum is refused and never run. When nothing works the launcher says what it tried and how to fix it:
 
-Why build locally by default: Claude Code installs a plugin by cloning its repository, and plugin conventions keep binaries out of git (they bloat every clone and cannot be reviewed). A local build from reviewed source needs nothing but Go and no network. The tradeoff is the Go requirement; users without Go need a release that ships `dist/` binaries, or a downloaded binary checked against `SHA256SUMS`.
+```
+p0ssess: cannot start: no verified p0ssess 0.4.0 binary for linux/amd64, and none could be built.
+Tried:
+  - dist/p0ssess-linux-amd64: not in this plugin (a release archive ships it)
+  - release download: no dist/release-url in this plugin
+  - local build: Go is not installed (looked on PATH, in /usr/local/go and ~/.local/go)
+Fix one of these, then start a new Claude Code session:
+  ...
+```
+
+The checksums come with the plugin's source (they are committed in `dist/`), and the build is reproducible: the same commit and Go version produce byte-identical binaries, so anyone can rebuild a release and compare. [RELEASE.md](RELEASE.md) describes how releases are built and published.
+
+Which way you get the binary depends on how you installed the plugin. A release archive (unpacked into a directory and added with `claude plugin marketplace add /path/to/p0ssess-<version>`) carries checked binaries and needs no Go. A clone of the repository carries the checksums but not the binaries, so it downloads them when the repository names its release URL and otherwise builds with Go. Claude Code installs marketplace plugins by cloning, and plugin conventions keep binaries out of git (they bloat every clone and cannot be reviewed), which is why the binaries live in release archives rather than in the repository.
 
 ## Updating
 
@@ -79,7 +92,7 @@ claude plugin marketplace update p0ssess
 claude plugin update p0ssess@p0ssess
 ```
 
-A new version builds its binary on first use. The status line's copy in `~/.config/p0ssess/bin/` is refreshed the next time the MCP server starts.
+A new version gets its binary on first use, the same way as the first install. The status line's copy in `~/.config/p0ssess/bin/` is refreshed the next time the MCP server starts. From 0.3, see [INSTALL-NOTES.md](INSTALL-NOTES.md#upgrading-from-03) for what moves.
 
 ## Checking it end to end
 

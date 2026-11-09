@@ -10,9 +10,9 @@ What a p0ssess install puts on a machine, and how to remove each piece. Everythi
 |---|---|---|
 | the plugin (a clone of the repository) | `$CLAUDE_CONFIG_DIR/plugins/cache/p0ssess/p0ssess/<version>/`, plus the marketplace clone in `$CLAUDE_CONFIG_DIR/plugins/marketplaces/` | `claude plugin install` |
 | marketplace and enabled-plugin entries | `extraKnownMarketplaces` and `enabledPlugins` in `$CLAUDE_CONFIG_DIR/settings.json` | `claude plugin marketplace add`, `claude plugin install` |
-| the p0ssess binary | `~/.cache/p0ssess/bin/<version>/p0ssess-<os>-<arch>` | the launcher, on first use |
+| the p0ssess binary | `~/.cache/p0ssess/bin/<version>/p0ssess-<os>-<arch>` | the launcher, on first use (checked against `dist/SHA256SUMS`, or built from source) |
 | the OpenRouter key | `~/.config/p0ssess/secrets/openrouter_key` | you |
-| settings | `~/.config/p0ssess/budget.toml`, `engine.toml`, `rules.toml`, optional `config.json` | `/p0ssess:p0ssess-me`, `settings_set`, the local page, rules you confirm |
+| settings | `~/.config/p0ssess/budget.toml` (including the shell internet projects), `engine.toml`, `rules.toml`, optional `config.json` | `/p0ssess:p0ssess-me`, `settings_set`, the local page, rules you confirm |
 | project rules | `<repo>/.p0ssess/rules.toml` | project-scoped rules you confirm |
 | the ledger | `~/.local/state/p0ssess/history.jsonl` (offers, outcomes, measured runs; never prompt content), session rules in `~/.local/state/p0ssess/sessions/` | the engine, the relay, the direct path |
 | caches | `~/.cache/p0ssess/usage.json` (Claude usage readings), `openrouter-models.json` (public model list), `running/` (running jobs), `registry-*.json` (when the binary runs outside the plugin) | the status line, the engine, the relay and direct path |
@@ -23,9 +23,8 @@ What a p0ssess install puts on a machine, and how to remove each piece. Everythi
 | shortcut agents | `$CLAUDE_CONFIG_DIR/agents/p0ssess-<name>.md` (at most 12, each marked as made by p0ssess) | `shortcuts_create`, after you agree |
 | the agent path (Linux): | | |
 | jail image | `localhost/p0ssess-opencode:2.2.5-1` (about 1.1 GB: Fedora 44 base, git, Python, ripgrep, OpenCode) and the pinned `registry.fedoraproject.org/fedora:44` base | `p0ssess jail build` |
-| pods and volumes | `p0ssess-<hash>` pods (`-infra`, `-proxy`, `-server`) and `p0ssess-<hash>-state` volumes, one per repository; `-proxy` and `-server` mount the `p0ssess` binary read-only at `/opt/p0ssess` (the proxy, and the jailed shell wrapper configured as OpenCode's shell) | the first relay run in a repository |
-| relay state | `~/.config/p0ssess/jails/` (records and passwords), `sessions/`, `runs/` (transcripts and diffs), `history.jsonl` (the relay's run log) | the relay |
-| optional systemd unit | `~/.config/systemd/user/p0ssess-jail@.service` | you (`p0ssess jail unit`) |
+| pods | one `p0ssess-<random>` pod per relay session (`-infra`, `-proxy`, `-server`, and `-egress` with shell internet), removed when the session ends or idles out, or by the next start after a crash; the containers mount the `p0ssess` binary read-only at `/opt/p0ssess`. No volumes. | each relay session |
+| relay state | `~/.local/state/p0ssess/relay/`: `sessions/`, `runs/` (transcripts and diffs), `jails/` (each running jail's record, password and sockets), `relay-runs.jsonl` (the relay's run log) | the relay |
 | in each repository used | `.p0ssess/wt/` (edit-mode worktrees), `.git/worktrees/<name>`, a `/.p0ssess/` line in `.git/info/exclude`; with SELinux relabeling on, the shared `container_file_t` label on the repository's files | the relay |
 
 ## Remove
@@ -50,16 +49,11 @@ Check first that you have no agents of your own named `p0ssess-*`; the ones p0ss
 
 ### 3. The agent path (Linux)
 
-Stop one repository's jail, keeping its sessions: `p0ssess jail down --repo /path/to/repo`. Remove it with its sessions and password: `p0ssess jail purge --repo /path/to/repo`. Remove all of it:
+`p0ssess jail status` lists running jails, `p0ssess jail down --name <pod>` removes one, and `p0ssess jail sweep` removes every jail whose owning process is gone. Remove all of it (end your Claude Code sessions first, so no run is active):
 
 ```sh
-for u in $(systemctl --user list-units --all --plain --no-legend 'p0ssess-jail@*' | awk '{print $1}'); do
-  systemctl --user disable --now "$u"
-done
-rm -f ~/.config/systemd/user/p0ssess-jail@.service && systemctl --user daemon-reload
-
 podman pod rm -f $(podman pod ls -q --filter label=p0ssess=1)
-podman volume rm $(podman volume ls -q --filter label=p0ssess=1)
+podman volume rm $(podman volume ls -q --filter label=p0ssess=1)   # only 0.3 left volumes
 podman rmi localhost/p0ssess-opencode:2.2.5-1
 podman image prune -f            # build layers left by jail build
 ```
@@ -90,3 +84,17 @@ rm -rf ~/.config/p0ssess ~/.cache/p0ssess ~/.local/state/p0ssess
 ```
 
 This deletes your key file, settings, rules and history. Project rules live in each repository's `.p0ssess/`.
+
+## Upgrading from 0.3
+
+- **Relay state moves** from `~/.config/p0ssess/` to `~/.local/state/p0ssess/relay/` on the first start of 0.4 (`sessions/`, `runs/`, `history.jsonl` → `relay-runs.jsonl`, `jails/` → `legacy-jails/`), under a lock and only where the new path does not exist yet. If a move fails, the old files stay and are still read through 0.4.x.
+- **One jail per session** replaces 0.3's one jail per repository. Sessions started by 0.3 cannot be continued. Once no 0.3 process runs (end Claude Code sessions started before the upgrade), remove 0.3's shared pods and their volumes with `p0ssess jail sweep --legacy`, and `rm -rf ~/.local/state/p0ssess/relay/legacy-jails`.
+- **The systemd unit is gone** (0.4 has no long-lived jails). If you installed it:
+
+  ```sh
+  for u in $(systemctl --user list-units --all --plain --no-legend 'p0ssess-jail@*' | awk '{print $1}'); do
+    systemctl --user disable --now "$u"
+  done
+  rm -f ~/.config/systemd/user/p0ssess-jail@.service && systemctl --user daemon-reload
+  ```
+- **The allow-list tool names did not change**, so `p0ssess setup allow` needs no rerun.

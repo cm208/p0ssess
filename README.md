@@ -23,7 +23,7 @@ Everything else stays with Claude.
 
 ## Install
 
-You need Claude Code, an [OpenRouter](https://openrouter.ai) API key, and Go 1.27 or later (the plugin builds its binary on first use, offline, in a few seconds). For the sandboxed agent path you also need Linux with rootless podman; without it, media and one-shot jobs still work.
+You need Claude Code and an [OpenRouter](https://openrouter.ai) API key. The plugin runs one Go binary: a release archive ships it for Linux (amd64, arm64) and macOS (Apple silicon), checked against SHA-256 sums before it runs; from a plain clone the plugin builds it on first use with Go 1.27 or later, offline, in a few seconds. For the sandboxed agent path you also need Linux with rootless podman; without it, media and one-shot jobs still work.
 
 ```sh
 claude plugin marketplace add <repository URL>
@@ -56,9 +56,9 @@ Ask for things the way you normally would:
 
 - Every call tells OpenRouter not to route to providers that train on prompts. A zero-retention mode is one setting away.
 - Files that look like secrets (`.env`, keys, credentials) are never sent. A `.p0ssess-private` file in a repository blocks all delegation from it.
-- The sandbox for the agent path has no access to your home directory, SSH keys or credentials and cannot reach your local network. Your OpenRouter key stays in a separate proxy container the model cannot reach.
+- The sandbox for the agent path has no access to your home directory, SSH keys or credentials and cannot reach your local network. Each delegated session gets its own sandbox, removed when the session ends. Your OpenRouter key stays in a separate proxy container the model cannot reach. The model's shell commands have no network unless you turn on internet for a project yourself, and even then only public addresses.
 - No telemetry. The history the engine learns from lives in local files and never stores prompt content.
-- Agent-path transcripts and diffs are written to `~/.config/p0ssess/runs/` (mode 0600) and kept until you delete them.
+- Agent-path transcripts and diffs are written to `~/.local/state/p0ssess/relay/runs/` (mode 0600) and kept until you delete them.
 - p0ssess never reads, stores or relays your Claude credentials.
 
 ## How it works
@@ -67,6 +67,7 @@ Ask for things the way you normally would:
 - [docs/ENGINE.md](docs/ENGINE.md): how routes are scored, the defaults and why, the config files and the tools
 - [docs/RELAY.md](docs/RELAY.md): the sandboxed agent path
 - [docs/MEDIA.md](docs/MEDIA.md): video, audio, images and PDFs on the direct path, with measured costs
+- [docs/RELEASE.md](docs/RELEASE.md): how releases are built, checked and published
 - [docs/RESEARCH.md](docs/RESEARCH.md), [catalog/](catalog/) and [registry/](registry/): the research, the 104 use cases and the model data behind the engine, each value with its source and date
 
 ## The ghost

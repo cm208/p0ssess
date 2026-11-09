@@ -205,6 +205,7 @@ The daily soft limit defaults to pacing: `(monthly cap - spent before today) / d
 | `<repo>/.p0ssess/rules.toml` | project rules |
 | `~/.local/state/p0ssess/sessions/<id>/rules.toml` | session rules (expire after 12 hours unless set) |
 | `~/.local/state/p0ssess/history.jsonl` | the ledger |
+| `~/.local/state/p0ssess/relay/` | the relay's sessions, transcripts, jail records and run log ([RELAY.md](RELAY.md#history-and-files)) |
 | `~/.cache/p0ssess/usage.json` | Claude usage readings and recent sessions |
 | `~/.cache/p0ssess/openrouter-models.json` | the live model list (refreshed after a day) |
 | `~/.cache/p0ssess/running/` | one file per running delegation, for the status line |
@@ -235,7 +236,12 @@ deny = []
 [privacy]
 mode = "no-training"      # or "zdr"
 allow_safety_retention = false
+
+[sandbox]
+shell_internet = []       # project directories whose sandboxed shell commands may reach the internet
 ```
+
+`sandbox.shell_internet` is off for every project not listed. It lives only here, in your own file: a repository's `.p0ssess/rules.toml` cannot turn it on. Set it with `settings_set` keys `sandbox.shell_internet.add` and `sandbox.shell_internet.remove` (one project directory each; symlinks are resolved), or `sandbox.shell_internet` to replace the list. A listed directory covers the repositories inside it. [RELAY.md](RELAY.md#shell-internet) describes what it allows.
 
 Change any of it with `p0ssess engine set KEY VALUE`, the `settings_set` tool, the local page, or by asking Claude in plain language.
 
@@ -365,7 +371,7 @@ An outcome takes its cash from the run it names (`run_id`), or from the newest u
 
 Then it reserves the maximum (`max_cost_usd` for `direct`; for `run`, its `max_cost_usd`, default and ceiling `max_run_cost_usd` from `config.json`, which is also the cost at which the relay interrupts the run).
 
-The relay also keeps its own run log at `~/.config/p0ssess/history.jsonl` (status, tokens and cost of each OpenCode run).
+The relay also keeps its own run log at `~/.local/state/p0ssess/relay/relay-runs.jsonl` (status, tokens and cost of each OpenCode run).
 
 ## Claude usage signal and the status line
 
@@ -397,7 +403,7 @@ A reading older than two hours, or none (before the first response in a session,
 |---|---|
 | `recommend` | the ranked list for a use case or profile; records the offer. Each paid option has `max_cost_usd`, the ceiling already authorized (the standing approval's per-run limit, or the per-task limit); it is 0 when the user must approve first |
 | `budget_status` | spend against limits, plan, λ and pressure, running jobs, file locations |
-| `settings_set` | change one setting (`monthly_usd`, `per_task_usd`, `daily_usd`, `save_claude`, `plan`, `usage_credits`, `privacy.mode`, `privacy.allow_safety_retention`, `models.allow`, `models.deny`, `providers.allow`, `providers.deny`, `lambda.preset`, `statusline.command`, `statusline.mark`, `statusline.width`) |
+| `settings_set` | change one setting (`monthly_usd`, `per_task_usd`, `daily_usd`, `save_claude`, `plan`, `usage_credits`, `privacy.mode`, `privacy.allow_safety_retention`, `models.allow`, `models.deny`, `providers.allow`, `providers.deny`, `sandbox.shell_internet`, `sandbox.shell_internet.add`, `sandbox.shell_internet.remove`, `lambda.preset`, `statusline.command`, `statusline.mark`, `statusline.width`) |
 | `rules_list`, `rules_add`, `rules_remove` | rules with scope; `dry_run` renders without saving |
 | `approvals_add`, `approvals_list` | standing approvals and their use |
 | `history_record_outcome` | accepted, redo, overridden or declined, with the `run_id` whose measured cost it takes |
