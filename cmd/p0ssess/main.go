@@ -1,3 +1,5 @@
+// Command p0ssess is the whole plugin in one binary: the MCP server Claude Code starts, the routing
+// engine, the direct path, the jail, the status line and the prompt hook.
 package main
 
 import (
@@ -14,28 +16,32 @@ import (
 
 	"p0ssess/internal/config"
 	"p0ssess/internal/jail"
+	"p0ssess/internal/pme/cli"
 	"p0ssess/internal/proxy"
 	"p0ssess/internal/relay"
+	"p0ssess/internal/server"
 )
 
-var version = "0.1.0"
+var version = "0.3.0"
 
-const usage = `p0ssess ` + "%s" + `
+const usage = `p0ssess %s: Claude Code hands work to other models through OpenRouter
 
 usage:
-  p0ssess mcp                         run the relay MCP server on stdio
-  p0ssess jail build [--tarball F]    verify the pinned OpenCode release and build the jail image
-  p0ssess jail up --repo DIR          start (or verify) the jail for a repository
-  p0ssess jail down --repo DIR        stop it (sessions are kept)
-  p0ssess jail purge --repo DIR       stop it and delete its sessions and password
-  p0ssess jail status [--repo DIR]    show jails
-  p0ssess jail probe --repo DIR T...  connect to targets (host:port or https://URL) from inside the jail
-  p0ssess jail unit                   print the systemd --user template unit
+  p0ssess mcp                         the plugin's MCP server on stdio (relay, direct and engine tools)
+  p0ssess me [--open]                 the local page: spend, Claude usage, rules, settings
+  p0ssess engine COMMAND ...          the routing engine (recommend, status, set, rules, outcome, ...)
+  p0ssess direct COMMAND ...          one-shot OpenRouter calls with local files, and ffmpeg helpers
+  p0ssess setup COMMAND ...           show, allow, statusline, summaries, undo (changes Claude Code settings)
+  p0ssess statusline                  status line wrapper (reads Claude Code's JSON on stdin)
+  p0ssess hook prompt                 UserPromptSubmit hook (reads the hook JSON on stdin)
+  p0ssess jail build|up|down|purge|status|probe|unit ...   the sandbox for the agent path (Linux)
   p0ssess run --model M [--mode read|edit] [--cwd D] [--session S] [--attach F] TASK
   p0ssess wait|abort --session S      the relay tools, from the command line (JSON out)
   p0ssess answer --session S --request R --decision once|reject
   p0ssess proxy --listen ADDR         (inside the jail) OpenRouter forwarder; key from OPENROUTER_API_KEY
   p0ssess version
+
+The OpenRouter key is read from ~/.config/p0ssess/secrets/openrouter_key, or $P0SSESS_OPENROUTER_KEY_FILE.
 `
 
 func main() {
@@ -43,20 +49,47 @@ func main() {
 		fmt.Fprintf(os.Stderr, usage, version)
 		os.Exit(2)
 	}
+	cmd, args := os.Args[1], os.Args[2:]
+	// The status line and the hook run on every refresh and prompt: nothing else loads for them.
+	switch cmd {
+	case "statusline":
+		os.Exit(cli.Run([]string{"statusline"}, stdio()))
+	case "hook":
+		if len(args) > 0 && args[0] != "prompt" {
+			fmt.Fprintln(os.Stderr, "p0ssess: unknown hook", args[0])
+			os.Exit(2)
+		}
+		os.Exit(cli.Run([]string{"hook"}, stdio()))
+	case "engine":
+		os.Exit(cli.Run(args, stdio()))
+	case "me":
+		os.Exit(cli.Run(append([]string{"me"}, args...), stdio()))
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	var err error
-	switch os.Args[1] {
+	switch cmd {
 	case "mcp":
-		err = relay.Serve(ctx, os.Stdin, os.Stdout, version)
+		refreshStableCopy()
+		err = server.Serve(ctx, os.Stdin, os.Stdout, version)
+	case "direct":
+		err = directCmd(ctx, args)
+	case "setup":
+		err = setupCmd(args)
 	case "jail":
-		err = jailCmd(ctx, os.Args[2:])
+		err = jailCmd(ctx, args)
 	case "proxy":
-		err = proxyCmd(os.Args[2:])
+		err = proxyCmd(args)
 	case "run", "wait", "abort", "answer":
-		err = runCmd(ctx, os.Args[1], os.Args[2:])
-	case "version", "--version":
+		if aerr := server.AgentAvailable(); aerr != nil {
+			err = fmt.Errorf("the agent path is unavailable here: %w", aerr)
+			break
+		}
+		err = runCmd(ctx, cmd, args)
+	case "version", "--version", "-v":
 		fmt.Println("p0ssess", version, "opencode", jail.OpenCodeVersion)
+	case "help", "-h", "--help":
+		fmt.Printf(usage, version)
 	default:
 		fmt.Fprintf(os.Stderr, usage, version)
 		os.Exit(2)
@@ -66,6 +99,8 @@ func main() {
 		os.Exit(1)
 	}
 }
+
+func stdio() cli.IO { return cli.IO{In: os.Stdin, Out: os.Stdout, Err: os.Stderr} }
 
 func proxyCmd(args []string) error {
 	fs := flag.NewFlagSet("proxy", flag.ExitOnError)

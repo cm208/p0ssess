@@ -1,12 +1,18 @@
-// Package config resolves p0ssess's files under ~/.config/p0ssess.
+// Package config resolves p0ssess's files under ~/.config/p0ssess, the OpenRouter key and the registry
+// snapshot. Every command and the MCP server use it, so they agree on where things are.
 package config
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"p0ssess"
+	"p0ssess/internal/pme/paths"
 )
 
 type Config struct {
@@ -24,17 +30,8 @@ type Config struct {
 	RegistryFile string `json:"registry_file,omitempty"`
 }
 
-// Dir is ~/.config/p0ssess, or $P0SSESS_HOME when set.
-func Dir() string {
-	if d := os.Getenv("P0SSESS_HOME"); d != "" {
-		return d
-	}
-	base, err := os.UserConfigDir()
-	if err != nil {
-		base = filepath.Join(os.Getenv("HOME"), ".config")
-	}
-	return filepath.Join(base, "p0ssess")
-}
+// Dir is ~/.config/p0ssess ($XDG_CONFIG_HOME honored, on macOS too), or $P0SSESS_HOME when set.
+func Dir() string { return paths.Default().Config }
 
 func Path(parts ...string) string { return filepath.Join(append([]string{Dir()}, parts...)...) }
 
@@ -71,7 +68,8 @@ func Load() (Config, error) {
 func (c Config) OpenRouterKey() (string, error) {
 	b, err := os.ReadFile(c.OpenRouterKeyFile)
 	if err != nil {
-		return "", errors.New("cannot read the OpenRouter key file (set openrouter_key_file in config.json)")
+		return "", errors.New("cannot read the OpenRouter key file " + c.OpenRouterKeyFile +
+			" (put your key there with mode 0600, or set P0SSESS_OPENROUTER_KEY_FILE or openrouter_key_file in config.json)")
 	}
 	k := strings.TrimSpace(string(b))
 	if k == "" {
@@ -79,3 +77,43 @@ func (c Config) OpenRouterKey() (string, error) {
 	}
 	return k, nil
 }
+
+// RegistryPath finds the models.json snapshot: $P0SSESS_REGISTRY, registry_file in config.json,
+// registry/models.json next to the binary's parent directory, or the snapshot built into the binary,
+// written once to the cache directory.
+func (c Config) RegistryPath() (string, error) {
+	if p := os.Getenv("P0SSESS_REGISTRY"); p != "" {
+		return p, nil
+	}
+	if c.RegistryFile != "" {
+		return c.RegistryFile, nil
+	}
+	if exe, err := os.Executable(); err == nil {
+		if real, err := filepath.EvalSymlinks(exe); err == nil {
+			p := filepath.Join(filepath.Dir(real), "..", "registry", "models.json")
+			if _, err := os.Stat(p); err == nil {
+				return p, nil
+			}
+		}
+	}
+	b, err := p0ssess.Data.ReadFile("registry/models.json")
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(b)
+	p := filepath.Join(CacheDir(), "registry-"+hex.EncodeToString(sum[:6])+".json")
+	if _, err := os.Stat(p); err == nil {
+		return p, nil
+	}
+	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
+		return "", err
+	}
+	tmp := p + ".tmp"
+	if err := os.WriteFile(tmp, b, 0o600); err != nil {
+		return "", err
+	}
+	return p, os.Rename(tmp, p)
+}
+
+// CacheDir is ~/.cache/p0ssess ($XDG_CACHE_HOME honored), or $P0SSESS_HOME/cache.
+func CacheDir() string { return paths.Default().Cache }

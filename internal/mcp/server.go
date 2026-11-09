@@ -239,3 +239,22 @@ func mustJSON(v any) json.RawMessage {
 	b, _ := json.Marshal(v)
 	return b
 }
+
+// Wrap replaces the handler of a registered tool with wrap(old). It reports false when the tool is missing.
+func (s *Server) Wrap(name string, wrap func(Handler) Handler) bool {
+	h, ok := s.handlers[name]
+	if !ok {
+		return false
+	}
+	s.handlers[name] = wrap(h)
+	return true
+}
+
+// ToolNames lists the registered tools in order.
+func (s *Server) ToolNames() []string {
+	out := make([]string, 0, len(s.tools))
+	for _, t := range s.tools {
+		out = append(out, t.Name)
+	}
+	return out
+}

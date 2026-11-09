@@ -25,11 +25,12 @@ const Version = "0.1.0"
 
 var protocols = []string{"2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"}
 
-const instructions = `p0ssess routes work to other models through OpenRouter; Claude stays in charge.
-- Call recommend before doing work Claude cannot do (audio, video, image/audio/video generation, embeddings, over 1M tokens), bulk one-shot text jobs, or long agent work. Pass use_case when you know the catalog id, else a profile. Rate stakes 1-4 yourself; never delegate the stakes rating.
+// Instructions tell Claude how to use the engine tools.
+const Instructions = `p0ssess routes work to other models through OpenRouter; Claude stays in charge and reviews what comes back.
+- Call recommend before work Claude cannot do (audio, video, image/audio/video generation, embeddings, over 1M tokens), bulk one-shot text jobs, or long agent work. Pass use_case when you know the catalog id, else a profile. Rate stakes 1-4 yourself.
 - Follow the pick unless you have a stated reason. Announce routing in one line (the announce field). Ask the user first when the option says needs_approval.
-- After delegated work, call history_record_outcome with the offer_id: accepted, redo (you had to redo it), overridden (you chose another route) or declined (the user said no), with the cash spent. Never include prompt content.
-- To turn a plain-language rule into a structured one, call rules_add or approvals_add with dry_run true, show the user the one-line text, and save only after they confirm. Never create rules on your own; suggestions from tendencies are for the user to accept.`
+- Spend is measured: the relay and the direct tool record each run's real cost. After delegated work, call history_record_outcome with the offer_id and the run_id from the result (a relay session id or a direct run id): accepted, redo (you had to redo it), overridden or declined. Never include prompt content.
+- To turn a plain-language rule into a structured one, call rules_add or approvals_add with dry_run true, show the user the one-line text, and save only after they confirm. Never create rules on your own.`
 
 type Server struct {
 	E   *engine.Engine
@@ -108,7 +109,7 @@ func (s *Server) handle(req request) (any, *rpcError) {
 			"protocolVersion": v,
 			"capabilities":    map[string]any{"tools": map[string]any{}},
 			"serverInfo":      map[string]any{"name": "p0ssess-engine", "version": Version},
-			"instructions":    instructions,
+			"instructions":    Instructions,
 		}, nil
 	case "ping":
 		return map[string]any{}, nil
@@ -136,6 +137,12 @@ func (s *Server) handle(req request) (any, *rpcError) {
 }
 
 var errUnknownTool = errors.New("unknown tool")
+
+// Tools are the engine tool definitions (name, description, inputSchema).
+func Tools() []map[string]any { return tools() }
+
+// Call runs one engine tool and returns its JSON-ready result.
+func (s *Server) Call(name string, args json.RawMessage) (any, error) { return s.call(name, args) }
 
 type scopeArgs struct {
 	Cwd     string `json:"cwd"`
@@ -323,11 +330,12 @@ func tools() []map[string]any {
 		{"name": "rules_remove", "description": "Remove a rule by id.", "inputSchema": obj(withScope(map[string]any{"id": str}), "id")},
 		{"name": "approvals_add", "description": "Add a standing approval: auto-approve a kind of task up to a per-run price, with optional count or total limits.", "inputSchema": obj(ruleProps(), "max_per_run_usd")},
 		{"name": "approvals_list", "description": "Standing approvals and how much of each is used.", "inputSchema": obj(withScope(map[string]any{}))},
-		{"name": "history_record_outcome", "description": "Record what happened to an offer: accepted, redo, overridden or declined, and the cash spent. No prompt content.",
+		{"name": "history_record_outcome", "description": "Record what happened to an offer: accepted, redo, overridden or declined. Pass run_id so the measured cost is used. No prompt content.",
 			"inputSchema": obj(withScope(map[string]any{
 				"offer_id": str, "model": str,
+				"run_id":   map[string]any{"type": "string", "description": "The run the outcome is about: a relay session_id or a direct run id. Its measured cost becomes the outcome's cash"},
 				"outcome":  map[string]any{"type": "string", "enum": []string{"accepted", "redo", "overridden", "declined"}},
-				"cash_usd": num, "use_case": str, "chosen": map[string]any{"type": "string", "description": "What ran instead, for overridden"},
+				"cash_usd": map[string]any{"type": "number", "description": "Only for a run p0ssess did not measure"}, "use_case": str, "chosen": map[string]any{"type": "string", "description": "What ran instead, for overridden"},
 				"approval_id": str, "stakes": integ,
 				"reason": map[string]any{"type": "string", "description": "A few words, never prompt content"},
 			}), "model", "outcome")},

@@ -212,12 +212,13 @@ func (l *Ledger) Runs(n int) []Entry {
 	return out
 }
 
-// RunCost sums the runs with this id (a relay session has one per turn).
+// RunCost sums the runs with this id. A relay run id is "<session>/<turn>",
+// so a bare session id sums every turn of that session.
 func (l *Ledger) RunCost(id string) (float64, bool) {
 	var sum float64
 	found := false
 	for _, e := range l.Entries {
-		if e.Type == TypeRun && e.RunID == id {
+		if e.Type == TypeRun && (e.RunID == id || strings.HasPrefix(e.RunID, id+"/")) {
 			sum += e.CashUSD
 			found = true
 		}
@@ -241,7 +242,8 @@ func (l *Ledger) MatchRun(offerID, model string, since time.Time) (Entry, bool) 
 	} {
 		for i := len(l.Entries) - 1; i >= 0; i-- {
 			e := l.Entries[i]
-			if e.Type == TypeRun && e.RunID != "" && !claimed[e.RunID] && match(e) {
+			session, _, _ := strings.Cut(e.RunID, "/")
+			if e.Type == TypeRun && e.RunID != "" && !claimed[e.RunID] && !claimed[session] && match(e) {
 				return e, true
 			}
 		}
