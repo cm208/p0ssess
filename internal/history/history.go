@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"os"
 	"path/filepath"
@@ -113,11 +114,19 @@ func Append(path string, e Entry) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
 	}
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0o600)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
+	// If a previous write was torn (a crash left a line with no trailing newline), start a fresh line
+	// first, so this entry is not merged onto the partial one and lost as a single malformed line.
+	if st, err := f.Stat(); err == nil && st.Size() > 0 {
+		last := make([]byte, 1)
+		if _, err := f.ReadAt(last, st.Size()-1); err == nil && last[0] != '\n' {
+			b = append([]byte{'\n'}, b...)
+		}
+	}
 	_, err = f.Write(append(b, '\n'))
 	return err
 }
@@ -133,15 +142,25 @@ func Read(path string) ([]Entry, error) {
 	}
 	defer f.Close()
 	var out []Entry
-	sc := bufio.NewScanner(f)
-	sc.Buffer(make([]byte, 64*1024), 1<<20)
-	for sc.Scan() {
-		var e Entry
-		if json.Unmarshal(sc.Bytes(), &e) == nil && e.Type != "" {
-			out = append(out, e)
+	br := bufio.NewReader(f)
+	for {
+		line, err := br.ReadBytes('\n')
+		if len(line) > 0 {
+			var e Entry
+			// A line longer than bufio's default is returned across several ReadBytes calls with no '\n';
+			// each chunk fails to parse and is skipped, so one corrupt run never aborts the whole scan
+			// (which would make spend read low and the cap fail open).
+			if json.Unmarshal(line, &e) == nil && e.Type != "" {
+				out = append(out, e)
+			}
+		}
+		if err != nil {
+			if err == io.EOF {
+				return out, nil
+			}
+			return out, err
 		}
 	}
-	return out, sc.Err()
 }
 
 // Ledger is a loaded history with lookups.

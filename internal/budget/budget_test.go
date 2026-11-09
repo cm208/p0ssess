@@ -76,3 +76,15 @@ func TestModelAllowed(t *testing.T) {
 		t.Error("only provider denied")
 	}
 }
+
+func TestValidateRejectsNonFinite(t *testing.T) {
+	for _, b := range []Budget{
+		{MonthlyUSD: math.Inf(1), Plan: "auto", Privacy: Privacy{Mode: "no-training"}},
+		{MonthlyUSD: 10, PerTaskUSD: math.NaN(), Plan: "auto", Privacy: Privacy{Mode: "no-training"}},
+		{MonthlyUSD: 10, DailyUSD: math.Inf(-1), Plan: "auto", Privacy: Privacy{Mode: "no-training"}},
+	} {
+		if err := b.Validate(); err == nil {
+			t.Errorf("non-finite budget accepted: %+v", b)
+		}
+	}
+}

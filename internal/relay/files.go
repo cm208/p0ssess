@@ -19,9 +19,19 @@ import (
 	"p0ssess/internal/opencode"
 )
 
-func git(dir string, args ...string) (string, error) {
-	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
-	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0", "LC_ALL=C")
+// hardenedGitConfig disables every git feature that runs a program named by repository config
+// (filesystem monitor, hooks, pager, external diff). A delegated edit task can write inside its own
+// worktree, so the worktree's git metadata is untrusted; without this, the host relay running
+// `git add`/`git diff` on it would execute an attacker-set core.fsmonitor or diff.external.
+var hardenedGitConfig = []string{"-c", "core.fsmonitor=false", "-c", "core.hooksPath=/dev/null", "-c", "core.pager=cat"}
+
+func git(dir string, args ...string) (string, error) { return gitEnv(dir, nil, args...) }
+
+func gitEnv(dir string, extra []string, args ...string) (string, error) {
+	full := append(append([]string{"-C", dir}, hardenedGitConfig...), args...)
+	cmd := exec.Command("git", full...)
+	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0", "LC_ALL=C", "GIT_CONFIG_NOSYSTEM=1", "GIT_CONFIG_GLOBAL=/dev/null")
+	cmd.Env = append(cmd.Env, extra...)
 	var so, se bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &so, &se
 	if err := cmd.Run(); err != nil {
@@ -55,15 +65,22 @@ func removeWorktree(repo, wt string) {
 
 // worktreeDiff returns the stat and full patch of everything the task changed, untracked files included.
 // Nothing is committed or merged; the worktree's own index is updated so new files show up.
-func worktreeDiff(wt, base string) (string, string, error) {
-	if _, err := git(wt, "add", "-A"); err != nil {
+//
+// The worktree is model-writable, so its .git pointer file, its admin dir's commondir, and any
+// config.worktree there are untrusted. Git is pinned to the real admin and common directories (set
+// up by `git worktree add`, under the read-only real .git) with GIT_DIR/GIT_COMMON_DIR/GIT_WORK_TREE,
+// so a tampered pointer cannot redirect git to attacker-controlled config.
+func worktreeDiff(repo, wt, base string) (string, string, error) {
+	gd := filepath.Join(repo, ".git", "worktrees", filepath.Base(wt))
+	env := []string{"GIT_DIR=" + gd, "GIT_COMMON_DIR=" + filepath.Join(repo, ".git"), "GIT_WORK_TREE=" + wt}
+	if _, err := gitEnv(wt, env, "add", "-A"); err != nil {
 		return "", "", err
 	}
-	stat, err := git(wt, "diff", "--cached", "--stat", base)
+	stat, err := gitEnv(wt, env, "diff", "--cached", "--stat", base)
 	if err != nil {
 		return "", "", err
 	}
-	patch, err := git(wt, "diff", "--cached", "--no-color", "--no-ext-diff", base)
+	patch, err := gitEnv(wt, env, "diff", "--cached", "--no-color", "--no-ext-diff", base)
 	return strings.TrimSpace(stat), patch, err
 }
 

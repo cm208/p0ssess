@@ -87,7 +87,12 @@ func New(opt Options) (s *mcp.Server, closeFn func(), err error) {
 	// that could pass the monthly cap.
 	s.Wrap("run", func(next mcp.Handler) mcp.Handler {
 		return func(ctx context.Context, args json.RawMessage, p mcp.Progress) mcp.CallResult {
-			if st, err := eng.Status(engine.Scope{}); err == nil && st.Spend.Month+cfg.MaxRunCostUSD > st.Budget.MonthlyUSD {
+			st, err := eng.Status(engine.Scope{})
+			if err != nil {
+				// Fail closed: without a readable budget the monthly cap cannot be enforced, so do not spend.
+				return mcp.Error("refused: cannot read the budget to enforce the monthly cap: " + err.Error())
+			}
+			if st.Spend.Month+cfg.MaxRunCostUSD > st.Budget.MonthlyUSD {
 				return mcp.Error(fmt.Sprintf("refused: $%.2f spent this month plus up to $%.2f for this run would pass the $%.2f monthly cap; "+
 					"raise monthly_usd first, or lower max_run_cost_usd in config.json", st.Spend.Month, cfg.MaxRunCostUSD, st.Budget.MonthlyUSD))
 			}
@@ -209,7 +214,11 @@ func RunDirect(ctx context.Context, cfg config.Config, eng *engine.Engine, req d
 			return nil, "", err
 		}
 		st, err := eng.Status(engine.Scope{})
-		if err == nil && st.Spend.Month+req.MaxCostUSD > st.Budget.MonthlyUSD {
+		if err != nil {
+			// Fail closed: without a readable budget the monthly cap cannot be enforced, so do not spend.
+			return nil, "", fmt.Errorf("refused: cannot read the budget to enforce the monthly cap: %w", err)
+		}
+		if st.Spend.Month+req.MaxCostUSD > st.Budget.MonthlyUSD {
 			return nil, "", fmt.Errorf("refused: $%.2f spent this month plus up to $%.2f would pass the $%.2f monthly cap; "+
 				"raise monthly_usd first", st.Spend.Month, req.MaxCostUSD, st.Budget.MonthlyUSD)
 		}

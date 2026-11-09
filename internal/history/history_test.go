@@ -132,3 +132,43 @@ func TestApprovalUse(t *testing.T) {
 		t.Errorf("daily approval use = %+v", u)
 	}
 }
+
+// TestReadSkipsTornAndOverlongLines checks that a torn final line (no newline, as a crash would
+// leave) does not swallow the next appended run, and an overlong corrupt line does not abort the
+// scan and make spend read low (which would fail the cap open).
+func TestReadSkipsTornAndOverlongLines(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "history.jsonl")
+	// A torn partial line with no trailing newline.
+	if err := os.WriteFile(path, []byte(`{"type":"run","run_id":"r1","cash_usd":1`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := Append(path, Entry{Type: TypeRun, RunID: "r2", CashUSD: 2, TS: now}); err != nil {
+		t.Fatal(err)
+	}
+	// A very long garbage line between two good runs.
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.WriteString(strings.Repeat("x", 4<<20) + "\n")
+	f.Close()
+	if err := Append(path, Entry{Type: TypeRun, RunID: "r3", CashUSD: 4, TS: now}); err != nil {
+		t.Fatal(err)
+	}
+	es, err := Read(path)
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+	var sum float64
+	seen := map[string]bool{}
+	for _, e := range es {
+		seen[e.RunID] = true
+		sum += e.CashUSD
+	}
+	if !seen["r2"] || !seen["r3"] {
+		t.Fatalf("lost a run after a corrupt line: got %v", seen)
+	}
+	if sum != 6 {
+		t.Fatalf("spend read as %v, want 6 (corruption must not lower it)", sum)
+	}
+}

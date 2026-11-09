@@ -3,6 +3,7 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"sort"
 	"strconv"
@@ -112,6 +113,9 @@ func (e *Engine) RulesList(s Scope, kind string) ([]RuleView, error) {
 func (e *Engine) RuleAdd(s Scope, r rules.Rule, dryRun bool, expiresIn int) (RuleView, error) {
 	s = e.Resolve(s)
 	now := e.Now()
+	// The id and created time are assigned here, never taken from the caller: a future created time
+	// would keep an approval's per-day count and total from ever being used up.
+	r.ID, r.Created = "", time.Time{}
 	if r.Scope == "" {
 		r.Scope = rules.ScopeGlobal
 	}
@@ -292,7 +296,13 @@ func (e *Engine) SetSetting(key, value string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	num := func() (float64, error) { return strconv.ParseFloat(strings.TrimPrefix(value, "$"), 64) }
+	num := func() (float64, error) {
+		n, err := strconv.ParseFloat(strings.TrimPrefix(value, "$"), 64)
+		if err == nil && (math.IsNaN(n) || math.IsInf(n, 0)) {
+			return 0, errors.New("must be a finite number")
+		}
+		return n, err
+	}
 	flag := func() (bool, error) { return strconv.ParseBool(value) }
 	list := func() []string {
 		var out []string

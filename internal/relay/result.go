@@ -127,7 +127,7 @@ func (e *Engine) result(w *watch, status string) (*Result, error) {
 	}
 	if rec.Worktree != "" {
 		r.Worktree = rec.Worktree
-		if stat, patch, err := worktreeDiff(rec.Worktree, rec.BaseRev); err == nil {
+		if stat, patch, err := worktreeDiff(rec.Repo, rec.Worktree, rec.BaseRev); err == nil {
 			r.DiffStat = stat
 			if patch != "" {
 				p := filepath.Join(RunDir(rec.SessionID), "diff.patch")

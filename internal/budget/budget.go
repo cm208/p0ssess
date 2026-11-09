@@ -66,6 +66,11 @@ func Load(path string) (Budget, error) {
 }
 
 func (b Budget) Validate() error {
+	for name, v := range map[string]float64{"monthly_usd": b.MonthlyUSD, "per_task_usd": b.PerTaskUSD, "daily_usd": b.DailyUSD} {
+		if math.IsNaN(v) || math.IsInf(v, 0) {
+			return fmt.Errorf("%s must be a finite number", name)
+		}
+	}
 	switch {
 	case b.MonthlyUSD < 0:
 		return errors.New("monthly_usd must be 0 or more")

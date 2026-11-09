@@ -81,6 +81,11 @@ var budgetFields = map[string]bool{"per_task_usd": true, "daily_usd": true, "mon
 
 // Validate checks a rule's shape.
 func (r Rule) Validate() error {
+	for _, v := range append([]float64{r.MaxPerRunUSD, r.MaxTotalUSD, r.Value}, r.Weights...) {
+		if math.IsNaN(v) || math.IsInf(v, 0) {
+			return errors.New("numeric fields must be finite")
+		}
+	}
 	switch r.Kind {
 	case KindForbid, KindAllow:
 		switch r.Target {
