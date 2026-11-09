@@ -58,6 +58,7 @@ Ask for things the way you normally would:
 - Files that look like secrets (`.env`, keys, credentials) are never sent. A `.p0ssess-private` file in a repository blocks all delegation from it.
 - The sandbox for the agent path has no access to your home directory, SSH keys or credentials and cannot reach your local network. Your OpenRouter key stays in a separate proxy container the model cannot reach.
 - No telemetry. The history the engine learns from lives in local files and never stores prompt content.
+- Agent-path transcripts and diffs are written to `~/.config/p0ssess/runs/` (mode 0600) and kept until you delete them.
 - p0ssess never reads, stores or relays your Claude credentials.
 
 ## How it works
