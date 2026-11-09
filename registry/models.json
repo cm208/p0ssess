@@ -1,0 +1,6102 @@
+{
+ "meta": {
+  "generated_at": "2026-11-09T05:01:48Z",
+  "as_of": "2026-11-09",
+  "count": 63,
+  "scope": "Only models referenced by catalog/usecases.yaml. Rebuild the full registry locally with the scripts in registry/scripts.",
+  "sources": {
+   "or_models": {
+    "url": "https://openrouter.ai/api/v1/models?output_modalities=all",
+    "license_note": "OpenRouter public API (no key). Factual price/capability data; the API docs state no open license for /models or /endpoints, so values are used as attributed facts per p0ssess DESIGN.md. Do not mirror wholesale.",
+    "as_of": "2026-11-09T03:59:17Z"
+   },
+   "or_endpoints": {
+    "url": "https://openrouter.ai/api/v1/models/{canonical_slug}/endpoints (per model, the API's own links.details path)",
+    "license_note": "OpenRouter public API (no key). Factual price/capability data; the API docs state no open license for /models or /endpoints, so values are used as attributed facts per p0ssess DESIGN.md. Do not mirror wholesale.",
+    "as_of": "2026-11-09T04:00:04Z .. 2026-11-09T04:09:50Z"
+   },
+   "or_endpoints_zdr": {
+    "url": "https://openrouter.ai/api/v1/endpoints/zdr",
+    "license_note": "OpenRouter public API (no key). Factual price/capability data; the API docs state no open license for /models or /endpoints, so values are used as attributed facts per p0ssess DESIGN.md. Do not mirror wholesale.",
+    "as_of": "2026-11-09T03:59:17Z"
+   },
+   "or_images_models": {
+    "url": "https://openrouter.ai/api/v1/images/models",
+    "license_note": "OpenRouter public API (no key). Factual price/capability data; the API docs state no open license for /models or /endpoints, so values are used as attributed facts per p0ssess DESIGN.md. Do not mirror wholesale.",
+    "as_of": "2026-11-09T03:59:17Z"
+   },
+   "or_videos_models": {
+    "url": "https://openrouter.ai/api/v1/videos/models",
+    "license_note": "OpenRouter public API (no key). Factual price/capability data; the API docs state no open license for /models or /endpoints, so values are used as attributed facts per p0ssess DESIGN.md. Do not mirror wholesale.",
+    "as_of": "2026-11-09T03:59:17Z"
+   }
+  },
+  "third_party_scores_removed": "OpenRouter's third-party evaluation-score object was dropped from every response before processing (see README)."
+ },
+ "models": [
+  {
+   "id": "alibaba/wan-3.0",
+   "name": "Alibaba: Wan 3.0",
+   "author": "alibaba",
+   "kind": "video",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text",
+    "image",
+    "video",
+    "audio"
+   ],
+   "output_modalities": [
+    "video"
+   ],
+   "api_routes": [
+    "/api/v1/videos"
+   ],
+   "context_length": null,
+   "max_output_tokens": 0,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": true,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "unit_note": "Video generation SKUs from /videos/models, raw strings as floats. Units are encoded in the SKU name: duration_seconds* = USD per output second; cents_* = US cents; video_tokens* = USD per video token. usd_per_second_min/max use only the per-second SKUs.",
+    "video_pricing_skus_raw": {
+     "duration_seconds_480p": 0.05,
+     "duration_seconds_720p": 0.1,
+     "duration_seconds_1080p": 0.2
+    },
+    "usd_per_second_min": 0.05,
+    "usd_per_second_max": 0.2
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 1,
+    "providers": [
+     "Alibaba"
+    ],
+    "uptime_1d_best": 88.57142857142857,
+    "uptime_1d_worst": 88.57142857142857,
+    "data_policy_counts": {
+     "not_in_zdr_list": 1
+    },
+    "best_data_policy": "not_in_zdr_list",
+    "has_zdr_endpoint": false,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Alibaba",
+     "tag": "alibaba",
+     "service_tier": null,
+     "input_per_m": 0.0,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 0,
+     "max_completion_tokens": 0,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 88.57142857142857
+    },
+    "cheapest_zdr": null,
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:07:52Z"
+   },
+   "referenced_by": [
+    "image-to-video"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "anthropic/claude-haiku-5.5",
+   "name": "Anthropic: Claude Haiku 5.5",
+   "author": "anthropic",
+   "kind": "text",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text",
+    "image",
+    "file"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 1000000,
+   "max_output_tokens": 128000,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": false,
+    "reasoning_efforts": [
+     "max",
+     "xhigh",
+     "high",
+     "medium",
+     "low",
+     "none"
+    ],
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.1,
+    "output_per_m": 0.5,
+    "cache_read_per_m": 0.01,
+    "cache_write_per_m": 0.125,
+    "cache_write_1h_per_m": 0.2,
+    "web_search_usd": 0.01,
+    "long_context_overrides": [
+     {
+      "min_prompt_tokens": 100000,
+      "prompt_per_m": 0.5,
+      "completion_per_m": 2.5,
+      "input_cache_read_per_m": 0.05,
+      "input_cache_write_per_m": 0.625
+     }
+    ]
+   },
+   "endpoints": {
+    "provider_count": 5,
+    "endpoint_count": 10,
+    "providers": [
+     "Amazon Bedrock",
+     "Anthropic",
+     "Azure",
+     "Claude Platform on AWS",
+     "Google"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 84.30555555555556,
+    "data_policy_counts": {
+     "zdr": 6,
+     "not_in_zdr_list": 4
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Google",
+     "tag": "google-vertex/global",
+     "service_tier": null,
+     "input_per_m": 0.1,
+     "output_per_m": 0.5,
+     "cache_read_per_m": 0.01,
+     "context_length": 1000000,
+     "max_completion_tokens": 128000,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "Google",
+     "tag": "google-vertex/global",
+     "service_tier": null,
+     "input_per_m": 0.1,
+     "output_per_m": 0.5,
+     "cache_read_per_m": 0.01,
+     "context_length": 1000000,
+     "max_completion_tokens": 128000,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:00:34Z"
+   },
+   "referenced_by": [
+    "quick-code-question",
+    "sql-query-write",
+    "shell-command-exec",
+    "library-docs-lookup",
+    "error-triage",
+    "code-file-edits",
+    "small-scoped-task",
+    "repo-scan-explore",
+    "test-generation",
+    "docgen",
+    "bulk-refactor",
+    "call-trace",
+    "repo-offload-summary",
+    "session-memory-compaction",
+    "precommit-check",
+    "brainstorm",
+    "plan-decompose",
+    "math-reasoning",
+    "qa-factual",
+    "web-search-answer",
+    "tool-dispatch-router",
+    "yes-no-gate",
+    "scheduled-check",
+    "bulk-classify-tag",
+    "data-extract-structured",
+    "summarize-long-doc",
+    "support-reply-draft",
+    "huge-pdf",
+    "incident-postmortem",
+    "commit-pr-text",
+    "record-dedup",
+    "rerank-retrieval",
+    "untrusted-content-screen",
+    "test-generate-filter"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "anthropic/claude-haiku-5.5:batch",
+   "name": "Anthropic: Claude Haiku 5.5 (batch)",
+   "author": "anthropic",
+   "kind": "text",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text",
+    "image",
+    "file"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/batches"
+   ],
+   "context_length": 1000000,
+   "max_output_tokens": 128000,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": false,
+    "reasoning_efforts": [
+     "max",
+     "xhigh",
+     "high",
+     "medium",
+     "low",
+     "none"
+    ],
+    "web_search_options": false,
+    "batch_api": true
+   },
+   "pricing": {
+    "input_per_m": 0.05,
+    "output_per_m": 0.25,
+    "cache_read_per_m": 0.005,
+    "cache_write_per_m": 0.0625,
+    "cache_write_1h_per_m": 0.1,
+    "web_search_usd": 0.01,
+    "long_context_overrides": [
+     {
+      "min_prompt_tokens": 100000,
+      "prompt_per_m": 0.25,
+      "completion_per_m": 1.25,
+      "input_cache_read_per_m": 0.025,
+      "input_cache_write_per_m": 0.3125
+     }
+    ]
+   },
+   "endpoints": {
+    "provider_count": 5,
+    "endpoint_count": 10,
+    "providers": [
+     "Amazon Bedrock",
+     "Anthropic",
+     "Azure",
+     "Claude Platform on AWS",
+     "Google"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 84.30555555555556,
+    "data_policy_counts": {
+     "not_in_zdr_list": 10
+    },
+    "best_data_policy": "not_in_zdr_list",
+    "has_zdr_endpoint": false,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Google",
+     "tag": "google-vertex/global",
+     "service_tier": null,
+     "input_per_m": 0.1,
+     "output_per_m": 0.5,
+     "cache_read_per_m": 0.01,
+     "context_length": 1000000,
+     "max_completion_tokens": 128000,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": null,
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:00:35Z"
+   },
+   "referenced_by": [
+    "batch-offline-map"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "anthropic/claude-opus-5.5",
+   "name": "Anthropic: Claude Opus 5.5",
+   "author": "anthropic",
+   "kind": "text",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text",
+    "image",
+    "file"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 1000000,
+   "max_output_tokens": 128000,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": true,
+    "reasoning_efforts": [
+     "max",
+     "xhigh",
+     "high",
+     "medium",
+     "low"
+    ],
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 4.0,
+    "output_per_m": 20.0,
+    "cache_read_per_m": 0.2,
+    "cache_write_per_m": 5.0,
+    "cache_write_1h_per_m": 8.0,
+    "web_search_usd": 0.01
+   },
+   "endpoints": {
+    "provider_count": 5,
+    "endpoint_count": 11,
+    "providers": [
+     "Amazon Bedrock",
+     "Anthropic",
+     "Azure",
+     "Claude Platform on AWS",
+     "Google"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "zdr": 6,
+     "not_in_zdr_list": 5
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": [
+     "priority"
+    ],
+    "cheapest": {
+     "provider": "Amazon Bedrock",
+     "tag": "amazon-bedrock",
+     "service_tier": null,
+     "input_per_m": 4.0,
+     "output_per_m": 20.0,
+     "cache_read_per_m": 0.2,
+     "context_length": 1000000,
+     "max_completion_tokens": 128000,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "Amazon Bedrock",
+     "tag": "amazon-bedrock",
+     "service_tier": null,
+     "input_per_m": 4.0,
+     "output_per_m": 20.0,
+     "cache_read_per_m": 0.2,
+     "context_length": 1000000,
+     "max_completion_tokens": 128000,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:00:56Z"
+   },
+   "referenced_by": [
+    "rescue-debug",
+    "frontend-ui-build",
+    "code-review-diff",
+    "security-audit",
+    "dual-review-high-risk",
+    "adversarial-design-review",
+    "plan-redteam",
+    "consensus-decision",
+    "thinkdeep-edge-cases",
+    "debug-second-hypothesis",
+    "deep-web-research",
+    "translate-text",
+    "finance-data-analysis",
+    "legal-text-review",
+    "academic-writing",
+    "creative-fiction",
+    "ocr-degraded-image",
+    "i18n-catalog-sync",
+    "invoice-receipt-extract",
+    "security-critical-code",
+    "prod-db-migration",
+    "iac-firewall-change"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "anthropic/claude-sonnet-5.5",
+   "name": "Anthropic: Claude Sonnet 5.5",
+   "author": "anthropic",
+   "kind": "text",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text",
+    "image",
+    "file"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 1000000,
+   "max_output_tokens": 128000,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": true,
+    "reasoning_efforts": [
+     "max",
+     "xhigh",
+     "high",
+     "medium",
+     "low"
+    ],
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 2.0,
+    "output_per_m": 10.0,
+    "cache_read_per_m": 0.1,
+    "cache_write_per_m": 2.5,
+    "cache_write_1h_per_m": 4.0,
+    "web_search_usd": 0.01
+   },
+   "endpoints": {
+    "provider_count": 5,
+    "endpoint_count": 10,
+    "providers": [
+     "Amazon Bedrock",
+     "Anthropic",
+     "Azure",
+     "Claude Platform on AWS",
+     "Google"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "zdr": 6,
+     "not_in_zdr_list": 4
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Google",
+     "tag": "google-vertex/global",
+     "service_tier": null,
+     "input_per_m": 2.0,
+     "output_per_m": 10.0,
+     "cache_read_per_m": 0.1,
+     "context_length": 1000000,
+     "max_completion_tokens": 128000,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "Google",
+     "tag": "google-vertex/global",
+     "service_tier": null,
+     "input_per_m": 2.0,
+     "output_per_m": 10.0,
+     "cache_read_per_m": 0.1,
+     "context_length": 1000000,
+     "max_completion_tokens": 128000,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:00:41Z"
+   },
+   "referenced_by": [
+    "quick-code-question",
+    "devops-config",
+    "tech-explainer",
+    "code-implement-feature",
+    "code-debug-fix",
+    "small-scoped-task",
+    "agentic-multifile-change",
+    "long-agent-session",
+    "limit-fallback-coding",
+    "background-long-task",
+    "frontend-ui-build",
+    "app-scaffold",
+    "code-analysis",
+    "over-1m-context",
+    "agent-workflow-exec",
+    "log-digest",
+    "content-writing",
+    "support-reply-draft",
+    "legal-text-review",
+    "science-paper-explain",
+    "marketing-seo-copy",
+    "ui-grounding",
+    "huge-pdf",
+    "video-timestamp-ocr",
+    "incident-postmortem",
+    "commit-pr-text",
+    "release-notes",
+    "pdf-table-extract",
+    "pii-redaction",
+    "security-critical-code",
+    "prod-db-migration",
+    "iac-firewall-change",
+    "migration-test-gated",
+    "fuzz-harness-gen",
+    "image-alt-text"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "bytedance-seed/seedream-5-0-flash",
+   "name": "ByteDance Seed: Seedream 5.0 Flash",
+   "author": "bytedance-seed",
+   "kind": "image",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text",
+    "image"
+   ],
+   "output_modalities": [
+    "image"
+   ],
+   "api_routes": [
+    "/api/v1/images"
+   ],
+   "context_length": null,
+   "max_output_tokens": 0,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": false,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.0,
+    "output_per_m": 0.0,
+    "image_in_usd_each": 0.0,
+    "image_token_per_m": 4.311377,
+    "image_out_raw": 4.31137724550898e-06
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 1,
+    "providers": [
+     "Seed"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "zdr": 1
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Seed",
+     "tag": "seed",
+     "service_tier": null,
+     "input_per_m": 0.0,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 0,
+     "max_completion_tokens": 0,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "Seed",
+     "tag": "seed",
+     "service_tier": null,
+     "input_per_m": 0.0,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 0,
+     "max_completion_tokens": 0,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:07:19Z"
+   },
+   "referenced_by": [
+    "image-generate"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "cohere/rerank-5-fast",
+   "name": "Cohere: Rerank 5 Fast",
+   "author": "cohere",
+   "kind": "rerank",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text"
+   ],
+   "output_modalities": [
+    "rerank"
+   ],
+   "api_routes": [
+    "/api/v1/rerank"
+   ],
+   "context_length": 32768,
+   "max_output_tokens": 29491,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": false,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.0,
+    "output_per_m": 0.0
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 1,
+    "providers": [
+     "Cohere"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "not_in_zdr_list": 1
+    },
+    "best_data_policy": "not_in_zdr_list",
+    "has_zdr_endpoint": false,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Cohere",
+     "tag": "cohere",
+     "service_tier": null,
+     "input_per_m": 0.0,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 32768,
+     "max_completion_tokens": 29491,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": null,
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:06:28Z"
+   },
+   "referenced_by": [
+    "rerank-retrieval"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "deepgram/aura-2",
+   "name": "Deepgram: Aura-2",
+   "author": "deepgram",
+   "kind": "speech",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text"
+   ],
+   "output_modalities": [
+    "speech"
+   ],
+   "api_routes": [
+    "/api/v1/audio/speech"
+   ],
+   "context_length": null,
+   "max_output_tokens": 0,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": false,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "unit_note": "TTS: OpenRouter docs say most TTS models are priced per character of input text (prompt field); some per second of generated audio (completion field).",
+    "prompt_usd_raw": 3e-05,
+    "completion_usd_raw": 0.0
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 1,
+    "providers": [
+     "Deepgram"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "zdr": 1
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Deepgram",
+     "tag": "deepgram",
+     "service_tier": null,
+     "input_per_m": 30.0,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 0,
+     "max_completion_tokens": 0,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "Deepgram",
+     "tag": "deepgram",
+     "service_tier": null,
+     "input_per_m": 30.0,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 0,
+     "max_completion_tokens": 0,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:08:30Z"
+   },
+   "referenced_by": [
+    "tts-narration"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "deepgram/nova-3",
+   "name": "Deepgram: Nova-3",
+   "author": "deepgram",
+   "kind": "transcription",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "audio"
+   ],
+   "output_modalities": [
+    "transcription"
+   ],
+   "api_routes": [
+    "/api/v1/audio/transcriptions"
+   ],
+   "context_length": null,
+   "max_output_tokens": 0,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": false,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "unit_note": "STT: docs say duration-based models are priced per second of audio, newer ones per token; the API does not say which applies per model, so raw values are kept.",
+    "prompt_usd_raw": 7.16666666667e-05,
+    "completion_usd_raw": 0.0
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 1,
+    "providers": [
+     "Deepgram"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "zdr": 1
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Deepgram",
+     "tag": "deepgram",
+     "service_tier": null,
+     "input_per_m": 71.666667,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 0,
+     "max_completion_tokens": 0,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "Deepgram",
+     "tag": "deepgram",
+     "service_tier": null,
+     "input_per_m": 71.666667,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 0,
+     "max_completion_tokens": 0,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:08:34Z"
+   },
+   "referenced_by": [
+    "voice-prompt"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "deepseek/deepseek-v4-flash",
+   "name": "DeepSeek: DeepSeek V4 Flash 0423",
+   "author": "deepseek",
+   "kind": "text",
+   "hugging_face_id": "deepseek-ai/DeepSeek-V4-Flash",
+   "input_modalities": [
+    "text"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 1048576,
+   "max_output_tokens": 943717,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": false,
+    "reasoning_efforts": [
+     "xhigh",
+     "high",
+     "none"
+    ],
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.091,
+    "output_per_m": 0.182,
+    "cache_read_per_m": 0.0182
+   },
+   "endpoints": {
+    "provider_count": 14,
+    "endpoint_count": 14,
+    "providers": [
+     "AtlasCloud",
+     "Azure",
+     "Baidu",
+     "DeepInfra",
+     "DigitalOcean",
+     "Fireworks",
+     "GMICloud",
+     "Mancer 2",
+     "Parasail",
+     "Relace",
+     "SiliconFlow",
+     "StreamLake",
+     "Venice",
+     "Wafer"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 83.85761589403974,
+    "data_policy_counts": {
+     "zdr": 10,
+     "not_in_zdr_list": 4
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "StreamLake",
+     "tag": "streamlake/fp8",
+     "service_tier": null,
+     "input_per_m": 0.0826,
+     "output_per_m": 0.1652,
+     "cache_read_per_m": 0.01652,
+     "context_length": 1024000,
+     "max_completion_tokens": 384000,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "DeepInfra",
+     "tag": "deepinfra/fp8",
+     "service_tier": null,
+     "input_per_m": 0.09,
+     "output_per_m": 0.18,
+     "cache_read_per_m": 0.018,
+     "context_length": 1048576,
+     "max_completion_tokens": 393216,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:03:04Z"
+   },
+   "referenced_by": [
+    "translate-text"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "deepseek/deepseek-v4-pro",
+   "name": "DeepSeek: DeepSeek V4 Pro 0423",
+   "author": "deepseek",
+   "kind": "text",
+   "hugging_face_id": "deepseek-ai/DeepSeek-V4-Pro",
+   "input_modalities": [
+    "text"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 1048576,
+   "max_output_tokens": 384000,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": false,
+    "reasoning_efforts": [
+     "xhigh",
+     "high",
+     "none"
+    ],
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.95526,
+    "output_per_m": 1.91052,
+    "cache_read_per_m": 0.079605
+   },
+   "endpoints": {
+    "provider_count": 13,
+    "endpoint_count": 14,
+    "providers": [
+     "Alibaba",
+     "AtlasCloud",
+     "Azure",
+     "Baidu",
+     "DeepInfra",
+     "DigitalOcean",
+     "GMICloud",
+     "Nebius",
+     "Novita",
+     "Relace",
+     "SiliconFlow",
+     "StreamLake",
+     "Venice"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 98.88579387186628,
+    "data_policy_counts": {
+     "zdr": 8,
+     "not_in_zdr_list": 6
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Relace",
+     "tag": "relace/fp4",
+     "service_tier": null,
+     "input_per_m": 0.9,
+     "output_per_m": 1.5,
+     "cache_read_per_m": 0.25,
+     "context_length": 1048576,
+     "max_completion_tokens": 393216,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "Relace",
+     "tag": "relace/fp4",
+     "service_tier": null,
+     "input_per_m": 0.9,
+     "output_per_m": 1.5,
+     "cache_read_per_m": 0.25,
+     "context_length": 1048576,
+     "max_completion_tokens": 393216,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:03:04Z"
+   },
+   "referenced_by": [
+    "debug-second-hypothesis"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "deepseek/deepseek-v4.1-flash",
+   "name": "DeepSeek: DeepSeek V4.1 Flash",
+   "author": "deepseek",
+   "kind": "text",
+   "hugging_face_id": "deepseek-ai/DeepSeek-V4.1-Flash",
+   "input_modalities": [
+    "text",
+    "image"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 1048576,
+   "max_output_tokens": 943718,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": true,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": false,
+    "reasoning_efforts": [
+     "max",
+     "high",
+     "low",
+     "none"
+    ],
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.051,
+    "output_per_m": 0.567,
+    "cache_read_per_m": 0.018
+   },
+   "endpoints": {
+    "provider_count": 30,
+    "endpoint_count": 39,
+    "providers": [
+     "Alibaba",
+     "AtlasCloud",
+     "Baidu",
+     "BaseTen",
+     "Cohere",
+     "CoreWeave",
+     "Crusoe",
+     "DeepInfra",
+     "DigitalOcean",
+     "Fireworks",
+     "GMICloud",
+     "Google",
+     "InferenceNet",
+     "Makora",
+     "Mancer 2",
+     "Modal",
+     "Morph",
+     "Nebius",
+     "Novita",
+     "OpenInference",
+     "Parasail",
+     "Phala",
+     "PrimeIntellect",
+     "Reka",
+     "Relace",
+     "SiliconFlow",
+     "StreamLake",
+     "Together",
+     "Venice",
+     "Wafer"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 74.61322081575246,
+    "data_policy_counts": {
+     "zdr": 33,
+     "not_in_zdr_list": 5,
+     "safety_retention": 1
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": [
+     "flex",
+     "priority"
+    ],
+    "cheapest": {
+     "provider": "Morph",
+     "tag": "morph/fp8",
+     "service_tier": null,
+     "input_per_m": 0.022,
+     "output_per_m": 0.4,
+     "cache_read_per_m": 0.004,
+     "context_length": 1048576,
+     "max_completion_tokens": 943718,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "Morph",
+     "tag": "morph/fp8",
+     "service_tier": null,
+     "input_per_m": 0.022,
+     "output_per_m": 0.4,
+     "cache_read_per_m": 0.004,
+     "context_length": 1048576,
+     "max_completion_tokens": 943718,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:01:13Z"
+   },
+   "referenced_by": [
+    "quick-code-question",
+    "sql-query-write",
+    "devops-config",
+    "shell-command-exec",
+    "library-docs-lookup",
+    "error-triage",
+    "tech-explainer",
+    "code-implement-feature",
+    "code-debug-fix",
+    "code-file-edits",
+    "small-scoped-task",
+    "agentic-multifile-change",
+    "long-agent-session",
+    "limit-fallback-coding",
+    "background-long-task",
+    "app-scaffold",
+    "repo-scan-explore",
+    "test-generation",
+    "docgen",
+    "bulk-refactor",
+    "call-trace",
+    "code-analysis",
+    "over-1m-context",
+    "session-memory-compaction",
+    "code-review-diff",
+    "stop-hook-review-gate",
+    "precommit-check",
+    "security-audit",
+    "anti-sycophancy-check",
+    "brainstorm",
+    "plan-decompose",
+    "deep-web-research",
+    "tool-dispatch-router",
+    "agent-workflow-exec",
+    "scheduled-check",
+    "data-extract-structured",
+    "data-transform-format",
+    "content-writing",
+    "support-reply-draft",
+    "finance-data-analysis",
+    "legal-text-review",
+    "academic-writing",
+    "npc-dialogue-roleplay",
+    "creative-fiction",
+    "huge-pdf",
+    "video-url-digest"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "deepseek/deepseek-v4.1-flash-1017",
+   "name": "DeepSeek: DeepSeek V4.1 Flash 1017",
+   "author": "deepseek",
+   "kind": "text",
+   "hugging_face_id": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+   "input_modalities": [
+    "text",
+    "image"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 1048576,
+   "max_output_tokens": 943718,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": true,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": false,
+    "reasoning_efforts": [
+     "max",
+     "high",
+     "low",
+     "none"
+    ],
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.006,
+    "output_per_m": 0.5,
+    "cache_read_per_m": 0.005
+   },
+   "endpoints": {
+    "provider_count": 40,
+    "endpoint_count": 50,
+    "providers": [
+     "Alibaba",
+     "AtlasCloud",
+     "Baidu",
+     "BaseTen",
+     "Cloudflare",
+     "Cohere",
+     "CoreWeave",
+     "Crusoe",
+     "Decart",
+     "DeepInfra",
+     "DeepSeek",
+     "DekaLLM",
+     "DigitalOcean",
+     "Fireworks",
+     "GMICloud",
+     "InferenceNet",
+     "Ionstream",
+     "Makora",
+     "Mistral",
+     "Modal",
+     "ModelRun",
+     "Morph",
+     "Near AI",
+     "Nebius",
+     "Novita",
+     "OpenInference",
+     "Parasail",
+     "Particle AI",
+     "Phala",
+     "PrimaLabs",
+     "PrimeIntellect",
+     "Reka",
+     "Relace",
+     "Sail Research",
+     "SiliconFlow",
+     "StepFun",
+     "StreamLake",
+     "Together",
+     "Venice",
+     "Wafer"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 0,
+    "data_policy_counts": {
+     "zdr": 43,
+     "not_in_zdr_list": 7
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": [
+     "flex",
+     "priority"
+    ],
+    "cheapest": {
+     "provider": "Particle AI",
+     "tag": "particle-ai/us/flex",
+     "service_tier": "flex",
+     "input_per_m": 0.025,
+     "output_per_m": 0.25,
+     "cache_read_per_m": 0.0015,
+     "context_length": 1048576,
+     "max_completion_tokens": 131072,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "Particle AI",
+     "tag": "particle-ai/us/flex",
+     "service_tier": "flex",
+     "input_per_m": 0.025,
+     "output_per_m": 0.25,
+     "cache_read_per_m": 0.0015,
+     "context_length": 1048576,
+     "max_completion_tokens": 131072,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:00:17Z"
+   },
+   "referenced_by": [
+    "frontend-ui-build",
+    "repo-offload-summary",
+    "math-reasoning",
+    "qa-factual",
+    "summarize-long-doc",
+    "log-digest",
+    "science-paper-explain",
+    "incident-postmortem",
+    "release-notes",
+    "i18n-catalog-sync",
+    "record-dedup",
+    "migration-test-gated",
+    "test-generate-filter",
+    "fuzz-harness-gen"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "deepseek/deepseek-v4.1-flash:batch",
+   "name": "DeepSeek: DeepSeek V4.1 Flash (batch)",
+   "author": "deepseek",
+   "kind": "text",
+   "hugging_face_id": "deepseek-ai/DeepSeek-V4.1-Flash",
+   "input_modalities": [
+    "text",
+    "image"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/batches"
+   ],
+   "context_length": 1048576,
+   "max_output_tokens": 943718,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": false,
+    "reasoning_efforts": [
+     "max",
+     "high",
+     "low",
+     "none"
+    ],
+    "web_search_options": false,
+    "batch_api": true
+   },
+   "pricing": {
+    "input_per_m": 0.011,
+    "output_per_m": 0.2,
+    "cache_read_per_m": 0.002
+   },
+   "endpoints": {
+    "provider_count": 30,
+    "endpoint_count": 39,
+    "providers": [
+     "Alibaba",
+     "AtlasCloud",
+     "Baidu",
+     "BaseTen",
+     "Cohere",
+     "CoreWeave",
+     "Crusoe",
+     "DeepInfra",
+     "DigitalOcean",
+     "Fireworks",
+     "GMICloud",
+     "Google",
+     "InferenceNet",
+     "Makora",
+     "Mancer 2",
+     "Modal",
+     "Morph",
+     "Nebius",
+     "Novita",
+     "OpenInference",
+     "Parasail",
+     "Phala",
+     "PrimeIntellect",
+     "Reka",
+     "Relace",
+     "SiliconFlow",
+     "StreamLake",
+     "Together",
+     "Venice",
+     "Wafer"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 74.61322081575246,
+    "data_policy_counts": {
+     "not_in_zdr_list": 39
+    },
+    "best_data_policy": "not_in_zdr_list",
+    "has_zdr_endpoint": false,
+    "service_tiers": [
+     "flex",
+     "priority"
+    ],
+    "cheapest": {
+     "provider": "Morph",
+     "tag": "morph/fp8",
+     "service_tier": null,
+     "input_per_m": 0.022,
+     "output_per_m": 0.4,
+     "cache_read_per_m": 0.004,
+     "context_length": 1048576,
+     "max_completion_tokens": 943718,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": null,
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:01:14Z"
+   },
+   "referenced_by": [
+    "batch-offline-map"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "elevenlabs/eleven-multilingual-v2",
+   "name": "ElevenLabs: Eleven Multilingual v2",
+   "author": "elevenlabs",
+   "kind": "speech",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text"
+   ],
+   "output_modalities": [
+    "speech"
+   ],
+   "api_routes": [
+    "/api/v1/audio/speech"
+   ],
+   "context_length": null,
+   "max_output_tokens": 0,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": false,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "unit_note": "TTS: OpenRouter docs say most TTS models are priced per character of input text (prompt field); some per second of generated audio (completion field).",
+    "prompt_usd_raw": 8e-05,
+    "completion_usd_raw": 0.0
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 1,
+    "providers": [
+     "ElevenLabs"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "zdr": 1
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "ElevenLabs",
+     "tag": "elevenlabs",
+     "service_tier": null,
+     "input_per_m": 80.0,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 0,
+     "max_completion_tokens": 0,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "ElevenLabs",
+     "tag": "elevenlabs",
+     "service_tier": null,
+     "input_per_m": 80.0,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 0,
+     "max_completion_tokens": 0,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:07:12Z"
+   },
+   "referenced_by": [
+    "video-dub"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "elevenlabs/eleven-v4",
+   "name": "ElevenLabs: Eleven v4",
+   "author": "elevenlabs",
+   "kind": "speech",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text"
+   ],
+   "output_modalities": [
+    "speech"
+   ],
+   "api_routes": [
+    "/api/v1/audio/speech"
+   ],
+   "context_length": null,
+   "max_output_tokens": 0,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": false,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "unit_note": "TTS: OpenRouter docs say most TTS models are priced per character of input text (prompt field); some per second of generated audio (completion field).",
+    "prompt_usd_raw": 8e-05,
+    "completion_usd_raw": 0.0
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 1,
+    "providers": [
+     "ElevenLabs"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "zdr": 1
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "ElevenLabs",
+     "tag": "elevenlabs",
+     "service_tier": null,
+     "input_per_m": 80.0,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 0,
+     "max_completion_tokens": 0,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "ElevenLabs",
+     "tag": "elevenlabs",
+     "service_tier": null,
+     "input_per_m": 80.0,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 0,
+     "max_completion_tokens": 0,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:07:07Z"
+   },
+   "referenced_by": [
+    "tts-narration",
+    "video-dub"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "elevenlabs/scribe-v2",
+   "name": "ElevenLabs: Scribe v2",
+   "author": "elevenlabs",
+   "kind": "transcription",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "audio"
+   ],
+   "output_modalities": [
+    "transcription"
+   ],
+   "api_routes": [
+    "/api/v1/audio/transcriptions"
+   ],
+   "context_length": null,
+   "max_output_tokens": 0,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": false,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "unit_note": "STT: docs say duration-based models are priced per second of audio, newer ones per token; the API does not say which applies per model, so raw values are kept.",
+    "prompt_usd_raw": 6.11111111111e-05,
+    "completion_usd_raw": 0.0
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 1,
+    "providers": [
+     "ElevenLabs"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "zdr": 1
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "ElevenLabs",
+     "tag": "elevenlabs",
+     "service_tier": null,
+     "input_per_m": 61.111111,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 0,
+     "max_completion_tokens": 0,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "ElevenLabs",
+     "tag": "elevenlabs",
+     "service_tier": null,
+     "input_per_m": 61.111111,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 0,
+     "max_completion_tokens": 0,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:07:15Z"
+   },
+   "referenced_by": [
+    "subtitles-srt"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "google/gemini-3-pro-image",
+   "name": "Google: Nano Banana Pro (Gemini 3 Pro Image)",
+   "author": "google",
+   "kind": "text+image",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "image",
+    "text"
+   ],
+   "output_modalities": [
+    "image",
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses",
+    "/api/v1/images"
+   ],
+   "context_length": 131072,
+   "max_output_tokens": 32768,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": true,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 2.0,
+    "output_per_m": 12.0,
+    "cache_read_per_m": 0.2,
+    "cache_write_per_m": 0.375,
+    "reasoning_per_m": 12.0,
+    "audio_in_per_m": 2.0,
+    "audio_in_cached_per_m": 0.2,
+    "image_in_usd_each": 2e-06,
+    "image_out_raw": 0.00012,
+    "web_search_usd": 0.014
+   },
+   "endpoints": {
+    "provider_count": 2,
+    "endpoint_count": 2,
+    "providers": [
+     "Google",
+     "Google AI Studio"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 97.05882352941177,
+    "data_policy_counts": {
+     "not_in_zdr_list": 1,
+     "safety_retention": 1
+    },
+    "best_data_policy": "safety_retention",
+    "has_zdr_endpoint": false,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Google AI Studio",
+     "tag": "google-ai-studio/global",
+     "service_tier": null,
+     "input_per_m": 2.0,
+     "output_per_m": 12.0,
+     "cache_read_per_m": 0.2,
+     "context_length": 131072,
+     "max_completion_tokens": 32768,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 97.05882352941177
+    },
+    "cheapest_zdr": null,
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:02:27Z"
+   },
+   "referenced_by": [
+    "image-edit"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "google/gemini-3.1-flash-image",
+   "name": "Google: Nano Banana 2 (Gemini 3.1 Flash Image)",
+   "author": "google",
+   "kind": "text+image",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "image",
+    "text"
+   ],
+   "output_modalities": [
+    "image",
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses",
+    "/api/v1/images"
+   ],
+   "context_length": 131072,
+   "max_output_tokens": 32768,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": false,
+    "reasoning_efforts": [
+     "high",
+     "minimal",
+     "none"
+    ],
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.5,
+    "output_per_m": 3.0,
+    "image_out_raw": 6e-05,
+    "web_search_usd": 0.014
+   },
+   "endpoints": {
+    "provider_count": 2,
+    "endpoint_count": 3,
+    "providers": [
+     "Google",
+     "Google AI Studio"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "not_in_zdr_list": 1,
+     "safety_retention": 2
+    },
+    "best_data_policy": "safety_retention",
+    "has_zdr_endpoint": false,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Google AI Studio",
+     "tag": "google-ai-studio",
+     "service_tier": null,
+     "input_per_m": 0.5,
+     "output_per_m": 3.0,
+     "cache_read_per_m": null,
+     "context_length": 65536,
+     "max_completion_tokens": 58982,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": null,
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:02:26Z"
+   },
+   "referenced_by": [
+    "image-generate",
+    "image-edit"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "google/gemini-3.1-flash-lite",
+   "name": "Google: Gemini 3.1 Flash Lite",
+   "author": "google",
+   "kind": "text",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text",
+    "image",
+    "video",
+    "file",
+    "audio"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 1048576,
+   "max_output_tokens": 65536,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": false,
+    "reasoning_efforts": [
+     "high",
+     "medium",
+     "low",
+     "minimal",
+     "none"
+    ],
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.25,
+    "output_per_m": 1.5,
+    "cache_read_per_m": 0.025,
+    "cache_write_per_m": 0.083333,
+    "reasoning_per_m": 1.5,
+    "audio_in_per_m": 0.5,
+    "audio_in_cached_per_m": 0.05,
+    "image_in_usd_each": 2.5e-07,
+    "web_search_usd": 0.014
+   },
+   "endpoints": {
+    "provider_count": 2,
+    "endpoint_count": 8,
+    "providers": [
+     "Google",
+     "Google AI Studio"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 69.07449209932281,
+    "data_policy_counts": {
+     "safety_retention": 5,
+     "not_in_zdr_list": 3
+    },
+    "best_data_policy": "safety_retention",
+    "has_zdr_endpoint": false,
+    "service_tiers": [
+     "flex",
+     "priority"
+    ],
+    "cheapest": {
+     "provider": "Google",
+     "tag": "google-vertex/global/flex",
+     "service_tier": "flex",
+     "input_per_m": 0.125,
+     "output_per_m": 0.75,
+     "cache_read_per_m": 0.0125,
+     "context_length": 1048576,
+     "max_completion_tokens": 65536,
+     "data_policy": "safety_retention",
+     "uptime_last_1d": 69.07449209932281
+    },
+    "cheapest_zdr": null,
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:02:46Z"
+   },
+   "referenced_by": [
+    "log-digest"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "google/gemini-3.8-flash",
+   "name": "Google: Gemini 3.8 Flash",
+   "author": "google",
+   "kind": "text",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text",
+    "image",
+    "video",
+    "file",
+    "audio"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 1048576,
+   "max_output_tokens": 65536,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": true,
+    "reasoning_efforts": [
+     "high",
+     "medium",
+     "low"
+    ],
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.825,
+    "output_per_m": 4.125,
+    "cache_read_per_m": 0.0825,
+    "cache_write_per_m": 0.041667,
+    "reasoning_per_m": 4.125,
+    "audio_in_per_m": 0.825,
+    "audio_in_cached_per_m": 0.0825,
+    "image_in_usd_each": 8.25e-07,
+    "web_search_usd": 0.014
+   },
+   "endpoints": {
+    "provider_count": 2,
+    "endpoint_count": 7,
+    "providers": [
+     "Google",
+     "Google AI Studio"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 94.81132075471697,
+    "data_policy_counts": {
+     "not_in_zdr_list": 3,
+     "safety_retention": 4
+    },
+    "best_data_policy": "safety_retention",
+    "has_zdr_endpoint": false,
+    "service_tiers": [
+     "flex",
+     "priority"
+    ],
+    "cheapest": {
+     "provider": "Google AI Studio",
+     "tag": "google-ai-studio/flex",
+     "service_tier": "flex",
+     "input_per_m": 0.375,
+     "output_per_m": 1.875,
+     "cache_read_per_m": 0.0375,
+     "context_length": 1048576,
+     "max_completion_tokens": 65536,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": null,
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:01:22Z"
+   },
+   "referenced_by": [
+    "tech-explainer",
+    "code-analysis",
+    "code-review-diff",
+    "stop-hook-review-gate",
+    "precommit-check",
+    "anti-sycophancy-check",
+    "brainstorm",
+    "cross-family-judge",
+    "qa-factual",
+    "summarize-long-doc",
+    "translate-text",
+    "content-writing",
+    "science-paper-explain",
+    "academic-writing",
+    "npc-dialogue-roleplay",
+    "creative-fiction",
+    "ocr-degraded-image",
+    "ui-grounding",
+    "huge-pdf",
+    "audio-transcribe",
+    "subtitles-srt",
+    "audio-events",
+    "audio-tone",
+    "video-understand",
+    "video-bug-repro",
+    "video-url-digest",
+    "video-timestamp-ocr",
+    "video-structure-scan",
+    "video-transcript-timestamped",
+    "video-dub",
+    "release-notes",
+    "i18n-catalog-sync",
+    "invoice-receipt-extract",
+    "pdf-table-extract",
+    "image-alt-text"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "google/gemini-3.8-flash-tts",
+   "name": "Google: Gemini 3.8 Flash TTS",
+   "author": "google",
+   "kind": "speech",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text"
+   ],
+   "output_modalities": [
+    "speech"
+   ],
+   "api_routes": [
+    "/api/v1/audio/speech"
+   ],
+   "context_length": 32768,
+   "max_output_tokens": 16384,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": false,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "unit_note": "TTS: OpenRouter docs say most TTS models are priced per character of input text (prompt field); some per second of generated audio (completion field).",
+    "prompt_usd_raw": 5e-07,
+    "completion_usd_raw": 9e-06
+   },
+   "endpoints": {
+    "provider_count": 2,
+    "endpoint_count": 2,
+    "providers": [
+     "Google",
+     "Google AI Studio"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "not_in_zdr_list": 1,
+     "safety_retention": 1
+    },
+    "best_data_policy": "safety_retention",
+    "has_zdr_endpoint": false,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Google AI Studio",
+     "tag": "google-ai-studio",
+     "service_tier": null,
+     "input_per_m": 0.5,
+     "output_per_m": 9.0,
+     "cache_read_per_m": null,
+     "context_length": 32768,
+     "max_completion_tokens": 16384,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": null,
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:07:36Z"
+   },
+   "referenced_by": [
+    "tts-narration"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "google/gemini-4-argon",
+   "name": "Google: Gemini 4 Argon",
+   "author": "google",
+   "kind": "text",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "audio",
+    "file",
+    "image",
+    "text",
+    "video"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 1048576,
+   "max_output_tokens": 943718,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": true,
+    "reasoning_efforts": [
+     "high",
+     "medium",
+     "low"
+    ],
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 2.0,
+    "output_per_m": 10.0,
+    "cache_read_per_m": 0.1,
+    "cache_write_per_m": 0.1875,
+    "reasoning_per_m": 10.0,
+    "audio_in_per_m": 2.0,
+    "audio_in_cached_per_m": 0.1,
+    "image_in_usd_each": 2e-06,
+    "web_search_usd": 0.014
+   },
+   "endpoints": {
+    "provider_count": 2,
+    "endpoint_count": 6,
+    "providers": [
+     "Google",
+     "Google AI Studio"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 83.63636363636363,
+    "data_policy_counts": {
+     "not_in_zdr_list": 3,
+     "safety_retention": 3
+    },
+    "best_data_policy": "safety_retention",
+    "has_zdr_endpoint": false,
+    "service_tiers": [
+     "flex",
+     "priority"
+    ],
+    "cheapest": {
+     "provider": "Google AI Studio",
+     "tag": "google-ai-studio/flex",
+     "service_tier": "flex",
+     "input_per_m": 1.0,
+     "output_per_m": 5.0,
+     "cache_read_per_m": 0.05,
+     "context_length": 1048576,
+     "max_completion_tokens": 943718,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": null,
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:00:29Z"
+   },
+   "referenced_by": [
+    "rescue-debug",
+    "security-audit",
+    "dual-review-high-risk",
+    "adversarial-design-review",
+    "plan-redteam",
+    "consensus-decision",
+    "thinkdeep-edge-cases",
+    "debug-second-hypothesis",
+    "cross-family-judge",
+    "creative-fiction",
+    "audio-events",
+    "audio-tone",
+    "video-bug-repro",
+    "security-critical-code"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "google/gemini-nano-banana-2.1",
+   "name": "Google: Nano Banana 2.1",
+   "author": "google",
+   "kind": "text+image",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "image",
+    "text"
+   ],
+   "output_modalities": [
+    "image",
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses",
+    "/api/v1/images"
+   ],
+   "context_length": 65536,
+   "max_output_tokens": 58982,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": false,
+    "reasoning_efforts": [
+     "high",
+     "minimal",
+     "none"
+    ],
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 1.5,
+    "output_per_m": 7.5,
+    "image_out_raw": 3e-05,
+    "web_search_usd": 0.014
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 1,
+    "providers": [
+     "Google AI Studio"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "not_in_zdr_list": 1
+    },
+    "best_data_policy": "not_in_zdr_list",
+    "has_zdr_endpoint": false,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Google AI Studio",
+     "tag": "google-ai-studio",
+     "service_tier": null,
+     "input_per_m": 1.5,
+     "output_per_m": 7.5,
+     "cache_read_per_m": null,
+     "context_length": 65536,
+     "max_completion_tokens": 58982,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": null,
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:00:36Z"
+   },
+   "referenced_by": [
+    "image-generate",
+    "image-edit"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "google/gemini-omni-1.2-flash",
+   "name": "Google: Gemini Omni 1.2 Flash",
+   "author": "google",
+   "kind": "video",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text",
+    "image",
+    "video"
+   ],
+   "output_modalities": [
+    "text",
+    "video"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses",
+    "/api/v1/videos"
+   ],
+   "context_length": 131072,
+   "max_output_tokens": 65536,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": false,
+    "reasoning": true,
+    "reasoning_mandatory": true,
+    "reasoning_efforts": [
+     "high",
+     "low"
+    ],
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "unit_note": "Video generation SKUs from /videos/models, raw strings as floats. Units are encoded in the SKU name: duration_seconds* = USD per output second; cents_* = US cents; video_tokens* = USD per video token. usd_per_second_min/max use only the per-second SKUs.",
+    "video_pricing_skus_raw": {
+     "duration_seconds_with_audio": 0.104256,
+     "duration_seconds_with_audio_4k": 0.208512,
+     "duration_seconds_with_audio_360p": 0.023172,
+     "duration_seconds_with_audio_720p": 0.069504
+    },
+    "usd_per_second_min": 0.023172,
+    "usd_per_second_max": 0.208512,
+    "input_per_m": 1.5,
+    "output_per_m": 9.0,
+    "web_search_usd": 0.014
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 1,
+    "providers": [
+     "Google AI Studio"
+    ],
+    "uptime_1d_best": 82.14285714285714,
+    "uptime_1d_worst": 82.14285714285714,
+    "data_policy_counts": {
+     "not_in_zdr_list": 1
+    },
+    "best_data_policy": "not_in_zdr_list",
+    "has_zdr_endpoint": false,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Google AI Studio",
+     "tag": "google-ai-studio",
+     "service_tier": null,
+     "input_per_m": 1.5,
+     "output_per_m": 9.0,
+     "cache_read_per_m": null,
+     "context_length": 131072,
+     "max_completion_tokens": 65536,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 82.14285714285714
+    },
+    "cheapest_zdr": null,
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:00:06Z"
+   },
+   "referenced_by": [
+    "video-generate",
+    "image-to-video"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "google/gemma-4-26b-a4b-it",
+   "name": "Google: Gemma 4 26B A4B ",
+   "author": "google",
+   "kind": "text",
+   "hugging_face_id": "google/gemma-4-26B-A4B-it",
+   "input_modalities": [
+    "image",
+    "text",
+    "video"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 262144,
+   "max_output_tokens": 235929,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": false,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.0675,
+    "output_per_m": 0.225,
+    "cache_read_per_m": 0.0375
+   },
+   "endpoints": {
+    "provider_count": 15,
+    "endpoint_count": 15,
+    "providers": [
+     "AkashML",
+     "Cloudflare",
+     "CoreWeave",
+     "Darkbloom",
+     "DeepInfra",
+     "DekaLLM",
+     "Google",
+     "Io Net",
+     "Makora",
+     "NextBit",
+     "Novita",
+     "Parasail",
+     "PrimeIntellect",
+     "SiliconFlow",
+     "Venice"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 99.51388888888889,
+    "data_policy_counts": {
+     "zdr": 13,
+     "not_in_zdr_list": 1,
+     "safety_retention": 1
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "PrimeIntellect",
+     "tag": "primeintellect/bf16",
+     "service_tier": null,
+     "input_per_m": 0.031,
+     "output_per_m": 0.093,
+     "cache_read_per_m": 0.015,
+     "context_length": 262144,
+     "max_completion_tokens": 32768,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "PrimeIntellect",
+     "tag": "primeintellect/bf16",
+     "service_tier": null,
+     "input_per_m": 0.031,
+     "output_per_m": 0.093,
+     "cache_read_per_m": 0.015,
+     "context_length": 262144,
+     "max_completion_tokens": 32768,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:03:13Z"
+   },
+   "referenced_by": [
+    "session-memory-compaction",
+    "image-alt-text"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "google/lyria-3-clip-preview",
+   "name": "Google: Lyria 3 Clip Preview",
+   "author": "google",
+   "kind": "audio",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text",
+    "image"
+   ],
+   "output_modalities": [
+    "text",
+    "audio"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 1048576,
+   "max_output_tokens": 65536,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": true,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.0,
+    "output_per_m": 0.0
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 1,
+    "providers": [
+     "Google AI Studio"
+    ],
+    "uptime_1d_best": 92.6829268292683,
+    "uptime_1d_worst": 92.6829268292683,
+    "data_policy_counts": {
+     "not_in_zdr_list": 1
+    },
+    "best_data_policy": "not_in_zdr_list",
+    "has_zdr_endpoint": false,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Google AI Studio",
+     "tag": "google-ai-studio",
+     "service_tier": null,
+     "input_per_m": 0.0,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 1048576,
+     "max_completion_tokens": 65536,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 92.6829268292683
+    },
+    "cheapest_zdr": null,
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:03:20Z"
+   },
+   "referenced_by": [
+    "music-sfx"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "google/lyria-3-pro-preview",
+   "name": "Google: Lyria 3 Pro Preview",
+   "author": "google",
+   "kind": "audio",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text",
+    "image"
+   ],
+   "output_modalities": [
+    "text",
+    "audio"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 1048576,
+   "max_output_tokens": 65536,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": true,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.0,
+    "output_per_m": 0.0
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 1,
+    "providers": [
+     "Google AI Studio"
+    ],
+    "uptime_1d_best": 54.071661237785015,
+    "uptime_1d_worst": 54.071661237785015,
+    "data_policy_counts": {
+     "not_in_zdr_list": 1
+    },
+    "best_data_policy": "not_in_zdr_list",
+    "has_zdr_endpoint": false,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Google AI Studio",
+     "tag": "google-ai-studio",
+     "service_tier": null,
+     "input_per_m": 0.0,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 1048576,
+     "max_completion_tokens": 65536,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 54.071661237785015
+    },
+    "cheapest_zdr": null,
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:03:19Z"
+   },
+   "referenced_by": [
+    "music-sfx"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "google/veo-3.1",
+   "name": "Google: Veo 3.1",
+   "author": "google",
+   "kind": "video",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text",
+    "image"
+   ],
+   "output_modalities": [
+    "video"
+   ],
+   "api_routes": [
+    "/api/v1/videos"
+   ],
+   "context_length": null,
+   "max_output_tokens": 0,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": true,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "unit_note": "Video generation SKUs from /videos/models, raw strings as floats. Units are encoded in the SKU name: duration_seconds* = USD per output second; cents_* = US cents; video_tokens* = USD per video token. usd_per_second_min/max use only the per-second SKUs.",
+    "video_pricing_skus_raw": {
+     "duration_seconds_with_audio": 0.4,
+     "duration_seconds_with_audio_4k": 0.6,
+     "duration_seconds_without_audio": 0.2,
+     "duration_seconds_without_audio_4k": 0.4
+    },
+    "usd_per_second_min": 0.2,
+    "usd_per_second_max": 0.6
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 1,
+    "providers": [
+     "Google"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "not_in_zdr_list": 1
+    },
+    "best_data_policy": "not_in_zdr_list",
+    "has_zdr_endpoint": false,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Google",
+     "tag": "google-vertex",
+     "service_tier": null,
+     "input_per_m": 0.0,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 0,
+     "max_completion_tokens": 0,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": null,
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:09:20Z"
+   },
+   "referenced_by": [
+    "video-generate"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "google/veo-3.1-lite",
+   "name": "Google: Veo 3.1 Lite",
+   "author": "google",
+   "kind": "video",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text",
+    "image"
+   ],
+   "output_modalities": [
+    "video"
+   ],
+   "api_routes": [
+    "/api/v1/videos"
+   ],
+   "context_length": null,
+   "max_output_tokens": 0,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": true,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "unit_note": "Video generation SKUs from /videos/models, raw strings as floats. Units are encoded in the SKU name: duration_seconds* = USD per output second; cents_* = US cents; video_tokens* = USD per video token. usd_per_second_min/max use only the per-second SKUs.",
+    "video_pricing_skus_raw": {
+     "duration_seconds_with_audio": 0.08,
+     "duration_seconds_without_audio": 0.05,
+     "duration_seconds_with_audio_720p": 0.05,
+     "duration_seconds_without_audio_720p": 0.03
+    },
+    "usd_per_second_min": 0.03,
+    "usd_per_second_max": 0.08
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 1,
+    "providers": [
+     "Google"
+    ],
+    "uptime_1d_best": 97.47474747474747,
+    "uptime_1d_worst": 97.47474747474747,
+    "data_policy_counts": {
+     "not_in_zdr_list": 1
+    },
+    "best_data_policy": "not_in_zdr_list",
+    "has_zdr_endpoint": false,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Google",
+     "tag": "google-vertex",
+     "service_tier": null,
+     "input_per_m": 0.0,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 0,
+     "max_completion_tokens": 0,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 97.47474747474747
+    },
+    "cheapest_zdr": null,
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:09:09Z"
+   },
+   "referenced_by": [
+    "video-generate",
+    "image-to-video"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "hexgrad/kokoro-82m",
+   "name": "hexgrad: Kokoro 82M",
+   "author": "hexgrad",
+   "kind": "speech",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text"
+   ],
+   "output_modalities": [
+    "speech"
+   ],
+   "api_routes": [
+    "/api/v1/audio/speech"
+   ],
+   "context_length": 4096,
+   "max_output_tokens": 3686,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": false,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "unit_note": "TTS: OpenRouter docs say most TTS models are priced per character of input text (prompt field); some per second of generated audio (completion field).",
+    "prompt_usd_raw": 6.2e-07,
+    "completion_usd_raw": 0.0
+   },
+   "endpoints": {
+    "provider_count": 2,
+    "endpoint_count": 2,
+    "providers": [
+     "DeepInfra",
+     "Together"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "zdr": 2
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "DeepInfra",
+     "tag": "deepinfra/us",
+     "service_tier": null,
+     "input_per_m": 0.62,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 4096,
+     "max_completion_tokens": 3686,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "DeepInfra",
+     "tag": "deepinfra/us",
+     "service_tier": null,
+     "input_per_m": 0.62,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 4096,
+     "max_completion_tokens": 3686,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:09:08Z"
+   },
+   "referenced_by": [
+    "tts-narration"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "meta-llama/llama-guard-4-12b",
+   "name": "Meta: Llama Guard 4 12B",
+   "author": "meta-llama",
+   "kind": "text",
+   "hugging_face_id": "meta-llama/Llama-Guard-4-12B",
+   "input_modalities": [
+    "image",
+    "text"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 163840,
+   "max_output_tokens": 16384,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": false,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.18,
+    "output_per_m": 0.18
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 3,
+    "providers": [
+     "DeepInfra"
+    ],
+    "uptime_1d_best": 99.23291492329149,
+    "uptime_1d_worst": 98.05149617258176,
+    "data_policy_counts": {
+     "zdr": 3
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": [
+     "flex",
+     "priority"
+    ],
+    "cheapest": {
+     "provider": "DeepInfra",
+     "tag": "deepinfra/bf16/flex",
+     "service_tier": "flex",
+     "input_per_m": 0.144,
+     "output_per_m": 0.144,
+     "cache_read_per_m": null,
+     "context_length": 163840,
+     "max_completion_tokens": 147456,
+     "data_policy": "zdr",
+     "uptime_last_1d": null
+    },
+    "cheapest_zdr": {
+     "provider": "DeepInfra",
+     "tag": "deepinfra/bf16/flex",
+     "service_tier": "flex",
+     "input_per_m": 0.144,
+     "output_per_m": 0.144,
+     "cache_read_per_m": null,
+     "context_length": 163840,
+     "max_completion_tokens": 147456,
+     "data_policy": "zdr",
+     "uptime_last_1d": null
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:05:12Z"
+   },
+   "referenced_by": [
+    "untrusted-content-screen"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "mistralai/codestral-embed-2505",
+   "name": "Mistral: Codestral Embed 2505",
+   "author": "mistralai",
+   "kind": "embeddings",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text"
+   ],
+   "output_modalities": [
+    "embeddings"
+   ],
+   "api_routes": [
+    "/api/v1/embeddings"
+   ],
+   "context_length": 8192,
+   "max_output_tokens": 6553,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": false,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.15,
+    "output_per_m": 0.0
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 2,
+    "providers": [
+     "Mistral"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "zdr": 2
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Mistral",
+     "tag": "mistral/zdr",
+     "service_tier": null,
+     "input_per_m": 0.15,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 8192,
+     "max_completion_tokens": 6553,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "Mistral",
+     "tag": "mistral/zdr",
+     "service_tier": null,
+     "input_per_m": 0.15,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 8192,
+     "max_completion_tokens": 6553,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:09:44Z"
+   },
+   "referenced_by": [
+    "embeddings-semantic-search"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "mistralai/mistral-nemo",
+   "name": "Mistral: Mistral Nemo",
+   "author": "mistralai",
+   "kind": "text",
+   "hugging_face_id": "mistralai/Mistral-Nemo-Instruct-2407",
+   "input_modalities": [
+    "text"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 131072,
+   "max_output_tokens": 16384,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.029,
+    "output_per_m": 0.03
+   },
+   "endpoints": {
+    "provider_count": 5,
+    "endpoint_count": 5,
+    "providers": [
+     "DeepInfra",
+     "DekaLLM",
+     "Io Net",
+     "Mistral",
+     "Parasail"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 99.84276729559748,
+    "data_policy_counts": {
+     "zdr": 5
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Io Net",
+     "tag": "io-net/fp16",
+     "service_tier": null,
+     "input_per_m": 0.01656,
+     "output_per_m": 0.0216,
+     "cache_read_per_m": 0.0108,
+     "context_length": 128000,
+     "max_completion_tokens": 102400,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "Io Net",
+     "tag": "io-net/fp16",
+     "service_tier": null,
+     "input_per_m": 0.01656,
+     "output_per_m": 0.0216,
+     "cache_read_per_m": 0.0108,
+     "context_length": 128000,
+     "max_completion_tokens": 102400,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:05:57Z"
+   },
+   "referenced_by": [
+    "yes-no-gate",
+    "bulk-classify-tag"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "mistralai/voxtral-mini-transcribe-3-0",
+   "name": "Mistral: Voxtral Mini Transcribe 3",
+   "author": "mistralai",
+   "kind": "transcription",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "audio"
+   ],
+   "output_modalities": [
+    "transcription"
+   ],
+   "api_routes": [
+    "/api/v1/audio/transcriptions"
+   ],
+   "context_length": 65536,
+   "max_output_tokens": 52428,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": false,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "unit_note": "STT: docs say duration-based models are priced per second of audio, newer ones per token; the API does not say which applies per model, so raw values are kept.",
+    "prompt_usd_raw": 5.83333e-05,
+    "completion_usd_raw": 0.0
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 3,
+    "providers": [
+     "Mistral"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "zdr": 3
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Mistral",
+     "tag": "mistral/zdr",
+     "service_tier": null,
+     "input_per_m": 58.3333,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 65536,
+     "max_completion_tokens": 52428,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "Mistral",
+     "tag": "mistral/zdr",
+     "service_tier": null,
+     "input_per_m": 58.3333,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 65536,
+     "max_completion_tokens": 52428,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:06:49Z"
+   },
+   "referenced_by": [
+    "audio-transcribe"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "mongodb/voyage-code-4",
+   "name": "VoyageAI by MongoDB: voyage-code-4",
+   "author": "mongodb",
+   "kind": "embeddings",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text"
+   ],
+   "output_modalities": [
+    "embeddings"
+   ],
+   "api_routes": [
+    "/api/v1/embeddings"
+   ],
+   "context_length": 32000,
+   "max_output_tokens": 28800,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": false,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.12,
+    "output_per_m": 0.0
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 1,
+    "providers": [
+     "VoyageAI by MongoDB"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "not_in_zdr_list": 1
+    },
+    "best_data_policy": "not_in_zdr_list",
+    "has_zdr_endpoint": false,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "VoyageAI by MongoDB",
+     "tag": "voyageai",
+     "service_tier": null,
+     "input_per_m": 0.12,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 32000,
+     "max_completion_tokens": 28800,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": null,
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:07:59Z"
+   },
+   "referenced_by": [
+    "embeddings-semantic-search"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "moonshotai/kimi-k3.1-pro",
+   "name": "MoonshotAI: Kimi K3.1 Pro",
+   "author": "moonshotai",
+   "kind": "text",
+   "hugging_face_id": "moonshotai/Kimi-K3.1-Pro",
+   "input_modalities": [
+    "text",
+    "image",
+    "video"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 1048576,
+   "max_output_tokens": 943718,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": false,
+    "reasoning_efforts": [
+     "max",
+     "high",
+     "low",
+     "none"
+    ],
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 2.0,
+    "output_per_m": 10.0,
+    "cache_read_per_m": 0.2
+   },
+   "endpoints": {
+    "provider_count": 17,
+    "endpoint_count": 24,
+    "providers": [
+     "AkashML",
+     "Alibaba",
+     "DeepInfra",
+     "DigitalOcean",
+     "Fireworks",
+     "InferenceNet",
+     "Modal",
+     "Moonshot AI",
+     "Morph",
+     "Nebius",
+     "Parasail",
+     "Phala",
+     "PrimaLabs",
+     "Relace",
+     "Sail Research",
+     "Together",
+     "Wafer"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 97.60087241003271,
+    "data_policy_counts": {
+     "zdr": 23,
+     "not_in_zdr_list": 1
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": [
+     "priority"
+    ],
+    "cheapest": {
+     "provider": "Relace",
+     "tag": "relace/fp4",
+     "service_tier": null,
+     "input_per_m": 0.19,
+     "output_per_m": 8.9276,
+     "cache_read_per_m": 0.19,
+     "context_length": 1048576,
+     "max_completion_tokens": 943718,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "Relace",
+     "tag": "relace/fp4",
+     "service_tier": null,
+     "input_per_m": 0.19,
+     "output_per_m": 8.9276,
+     "cache_read_per_m": 0.19,
+     "context_length": 1048576,
+     "max_completion_tokens": 943718,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:00:15Z"
+   },
+   "referenced_by": [
+    "devops-config",
+    "long-agent-session",
+    "limit-fallback-coding",
+    "background-long-task",
+    "rescue-debug",
+    "dual-review-high-risk",
+    "adversarial-design-review",
+    "plan-redteam",
+    "consensus-decision",
+    "thinkdeep-edge-cases",
+    "cross-family-judge"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "nvidia/nemotron-3.5-asr-streaming-multilingual-0.6b",
+   "name": "NVIDIA: Nemotron 3.5 ASR Streaming Multilingual 0.6B",
+   "author": "nvidia",
+   "kind": "transcription",
+   "hugging_face_id": "nvidia/Nemotron-3.5-ASR-Streaming-Multilingual-0.6b",
+   "input_modalities": [
+    "audio"
+   ],
+   "output_modalities": [
+    "transcription"
+   ],
+   "api_routes": [
+    "/api/v1/audio/transcriptions"
+   ],
+   "context_length": null,
+   "max_output_tokens": 0,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": false,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "unit_note": "STT: docs say duration-based models are priced per second of audio, newer ones per token; the API does not say which applies per model, so raw values are kept.",
+    "prompt_usd_raw": 3.33e-06,
+    "completion_usd_raw": 0.0
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 1,
+    "providers": [
+     "DeepInfra"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "zdr": 1
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "DeepInfra",
+     "tag": "deepinfra/us",
+     "service_tier": null,
+     "input_per_m": 3.33,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 0,
+     "max_completion_tokens": 0,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "DeepInfra",
+     "tag": "deepinfra/us",
+     "service_tier": null,
+     "input_per_m": 3.33,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 0,
+     "max_completion_tokens": 0,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:07:55Z"
+   },
+   "referenced_by": [
+    "voice-prompt"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "nvidia/parakeet-tdt-0.6b-v3",
+   "name": "NVIDIA: Parakeet TDT 0.6B v3",
+   "author": "nvidia",
+   "kind": "transcription",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "audio"
+   ],
+   "output_modalities": [
+    "transcription"
+   ],
+   "api_routes": [
+    "/api/v1/audio/transcriptions"
+   ],
+   "context_length": null,
+   "max_output_tokens": 0,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": false,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "unit_note": "STT: docs say duration-based models are priced per second of audio, newer ones per token; the API does not say which applies per model, so raw values are kept.",
+    "prompt_usd_raw": 1.66667e-05,
+    "completion_usd_raw": 0.0
+   },
+   "endpoints": {
+    "provider_count": 2,
+    "endpoint_count": 2,
+    "providers": [
+     "PrimeIntellect",
+     "Together"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "zdr": 2
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "PrimeIntellect",
+     "tag": "primeintellect/bf16",
+     "service_tier": null,
+     "input_per_m": 16.6667,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 0,
+     "max_completion_tokens": 0,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "PrimeIntellect",
+     "tag": "primeintellect/bf16",
+     "service_tier": null,
+     "input_per_m": 16.6667,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 0,
+     "max_completion_tokens": 0,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:08:44Z"
+   },
+   "referenced_by": [
+    "audio-transcribe"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "openai/gpt-6-luna",
+   "name": "OpenAI: GPT-6 Luna",
+   "author": "openai",
+   "kind": "text",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "file",
+    "image",
+    "text"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 1050000,
+   "max_output_tokens": 128000,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": false,
+    "reasoning_efforts": [
+     "max",
+     "xhigh",
+     "high",
+     "medium",
+     "low",
+     "none"
+    ],
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.1,
+    "output_per_m": 0.5,
+    "cache_read_per_m": 0.01,
+    "cache_write_per_m": 0.125,
+    "web_search_usd": 0.01,
+    "long_context_overrides": [
+     {
+      "min_prompt_tokens": 272000,
+      "prompt_per_m": 0.2,
+      "completion_per_m": 0.75,
+      "input_cache_read_per_m": 0.02,
+      "input_cache_write_per_m": 0.25
+     }
+    ]
+   },
+   "endpoints": {
+    "provider_count": 3,
+    "endpoint_count": 8,
+    "providers": [
+     "Amazon Bedrock",
+     "Azure",
+     "OpenAI"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 99.51388888888889,
+    "data_policy_counts": {
+     "not_in_zdr_list": 5,
+     "zdr": 3
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": [
+     "flex",
+     "priority"
+    ],
+    "cheapest": {
+     "provider": "OpenAI",
+     "tag": "openai/flex",
+     "service_tier": "flex",
+     "input_per_m": 0.05,
+     "output_per_m": 0.25,
+     "cache_read_per_m": 0.005,
+     "context_length": 1050000,
+     "max_completion_tokens": 128000,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 99.51388888888889
+    },
+    "cheapest_zdr": {
+     "provider": "Azure",
+     "tag": "azure",
+     "service_tier": null,
+     "input_per_m": 0.1,
+     "output_per_m": 0.5,
+     "cache_read_per_m": 0.01,
+     "context_length": 1050000,
+     "max_completion_tokens": 128000,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:00:51Z"
+   },
+   "referenced_by": [
+    "sql-query-write",
+    "library-docs-lookup",
+    "small-scoped-task",
+    "repo-scan-explore",
+    "test-generation",
+    "docgen",
+    "repo-offload-summary",
+    "stop-hook-review-gate",
+    "plan-decompose",
+    "math-reasoning",
+    "qa-factual",
+    "web-search-answer",
+    "tool-dispatch-router",
+    "yes-no-gate",
+    "scheduled-check",
+    "bulk-classify-tag",
+    "data-extract-structured",
+    "data-transform-format",
+    "support-reply-draft",
+    "finance-data-analysis",
+    "legal-text-review",
+    "academic-writing",
+    "marketing-seo-copy",
+    "commit-pr-text",
+    "invoice-receipt-extract",
+    "record-dedup",
+    "test-generate-filter"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "openai/gpt-6-luna:batch",
+   "name": "OpenAI: GPT-6 Luna (batch)",
+   "author": "openai",
+   "kind": "text",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "file",
+    "image",
+    "text"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/batches"
+   ],
+   "context_length": 1050000,
+   "max_output_tokens": 128000,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": false,
+    "reasoning_efforts": [
+     "max",
+     "xhigh",
+     "high",
+     "medium",
+     "low",
+     "none"
+    ],
+    "web_search_options": false,
+    "batch_api": true
+   },
+   "pricing": {
+    "input_per_m": 0.05,
+    "output_per_m": 0.25,
+    "cache_read_per_m": 0.005,
+    "cache_write_per_m": 0.0625,
+    "web_search_usd": 0.01,
+    "long_context_overrides": [
+     {
+      "min_prompt_tokens": 272000,
+      "prompt_per_m": 0.1,
+      "completion_per_m": 0.375,
+      "input_cache_read_per_m": 0.01,
+      "input_cache_write_per_m": 0.125
+     }
+    ]
+   },
+   "endpoints": {
+    "provider_count": 3,
+    "endpoint_count": 8,
+    "providers": [
+     "Amazon Bedrock",
+     "Azure",
+     "OpenAI"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 99.51388888888889,
+    "data_policy_counts": {
+     "not_in_zdr_list": 8
+    },
+    "best_data_policy": "not_in_zdr_list",
+    "has_zdr_endpoint": false,
+    "service_tiers": [
+     "flex",
+     "priority"
+    ],
+    "cheapest": {
+     "provider": "OpenAI",
+     "tag": "openai/flex",
+     "service_tier": "flex",
+     "input_per_m": 0.05,
+     "output_per_m": 0.25,
+     "cache_read_per_m": 0.005,
+     "context_length": 1050000,
+     "max_completion_tokens": 128000,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 99.51388888888889
+    },
+    "cheapest_zdr": null,
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:00:52Z"
+   },
+   "referenced_by": [
+    "batch-offline-map"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "openai/gpt-6.1-sol",
+   "name": "OpenAI: GPT-6.1 Sol",
+   "author": "openai",
+   "kind": "text",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "file",
+    "image",
+    "text"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 1050000,
+   "max_output_tokens": 128000,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": true,
+    "reasoning_efforts": [
+     "max",
+     "xhigh",
+     "high",
+     "medium",
+     "low"
+    ],
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 2.0,
+    "output_per_m": 10.0,
+    "cache_read_per_m": 0.1,
+    "cache_write_per_m": 2.5,
+    "web_search_usd": 0.01,
+    "long_context_overrides": [
+     {
+      "min_prompt_tokens": 272000,
+      "prompt_per_m": 4.0,
+      "completion_per_m": 15.0,
+      "input_cache_read_per_m": 0.2,
+      "input_cache_write_per_m": 5.0
+     }
+    ]
+   },
+   "endpoints": {
+    "provider_count": 3,
+    "endpoint_count": 9,
+    "providers": [
+     "Amazon Bedrock",
+     "Azure",
+     "OpenAI"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 93.3240611961057,
+    "data_policy_counts": {
+     "not_in_zdr_list": 6,
+     "zdr": 3
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": [
+     "flex",
+     "priority",
+     "ultrafast"
+    ],
+    "cheapest": {
+     "provider": "OpenAI",
+     "tag": "openai/flex",
+     "service_tier": "flex",
+     "input_per_m": 1.0,
+     "output_per_m": 5.0,
+     "cache_read_per_m": 0.05,
+     "context_length": 1050000,
+     "max_completion_tokens": 128000,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 93.3240611961057
+    },
+    "cheapest_zdr": {
+     "provider": "Azure",
+     "tag": "azure",
+     "service_tier": null,
+     "input_per_m": 2.0,
+     "output_per_m": 10.0,
+     "cache_read_per_m": 0.1,
+     "context_length": 1050000,
+     "max_completion_tokens": 128000,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:00:40Z"
+   },
+   "referenced_by": [
+    "shell-command-exec",
+    "error-triage",
+    "code-implement-feature",
+    "code-debug-fix",
+    "agentic-multifile-change",
+    "long-agent-session",
+    "background-long-task",
+    "rescue-debug",
+    "frontend-ui-build",
+    "code-review-diff",
+    "precommit-check",
+    "security-audit",
+    "dual-review-high-risk",
+    "adversarial-design-review",
+    "plan-redteam",
+    "consensus-decision",
+    "anti-sycophancy-check",
+    "thinkdeep-edge-cases",
+    "debug-second-hypothesis",
+    "cross-family-judge",
+    "math-reasoning",
+    "web-search-answer",
+    "deep-web-research",
+    "marketing-seo-copy",
+    "ocr-degraded-image",
+    "security-critical-code",
+    "prod-db-migration",
+    "iac-firewall-change",
+    "migration-test-gated",
+    "fuzz-harness-gen"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "openai/gpt-audio-mini",
+   "name": "OpenAI: GPT Audio Mini",
+   "author": "openai",
+   "kind": "audio",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text",
+    "audio"
+   ],
+   "output_modalities": [
+    "text",
+    "audio"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 128000,
+   "max_output_tokens": 16384,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.6,
+    "output_per_m": 2.4,
+    "audio_in_per_m": 0.6,
+    "audio_out_per_m": 2.4
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 1,
+    "providers": [
+     "OpenAI"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "not_in_zdr_list": 1
+    },
+    "best_data_policy": "not_in_zdr_list",
+    "has_zdr_endpoint": false,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "OpenAI",
+     "tag": "openai",
+     "service_tier": null,
+     "input_per_m": 0.6,
+     "output_per_m": 2.4,
+     "cache_read_per_m": null,
+     "context_length": 128000,
+     "max_completion_tokens": 16384,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": null,
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:03:53Z"
+   },
+   "referenced_by": [
+    "audio-tone",
+    "video-dub"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "openai/gpt-image-2.5-sunburst",
+   "name": "OpenAI: GPT Image 2.5 Sunburst",
+   "author": "openai",
+   "kind": "image",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text",
+    "image"
+   ],
+   "output_modalities": [
+    "image"
+   ],
+   "api_routes": [
+    "/api/v1/images"
+   ],
+   "context_length": 400000,
+   "max_output_tokens": 360000,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 8.0,
+    "output_per_m": 8.0,
+    "cache_read_per_m": 2.0,
+    "image_out_raw": 3e-05,
+    "web_search_usd": 0.01
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 1,
+    "providers": [
+     "OpenAI"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "not_in_zdr_list": 1
+    },
+    "best_data_policy": "not_in_zdr_list",
+    "has_zdr_endpoint": false,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "OpenAI",
+     "tag": "openai",
+     "service_tier": null,
+     "input_per_m": 8.0,
+     "output_per_m": 8.0,
+     "cache_read_per_m": 2.0,
+     "context_length": 400000,
+     "max_completion_tokens": 360000,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": null,
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:07:42Z"
+   },
+   "referenced_by": [
+    "image-generate",
+    "image-edit"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "openai/gpt-oss-safeguard-20b",
+   "name": "OpenAI: gpt-oss-safeguard-20b",
+   "author": "openai",
+   "kind": "text",
+   "hugging_face_id": "openai/gpt-oss-safeguard-20b",
+   "input_modalities": [
+    "text"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 131072,
+   "max_output_tokens": 65536,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": true,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.075,
+    "output_per_m": 0.3,
+    "cache_read_per_m": 0.0375
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 1,
+    "providers": [
+     "Groq"
+    ],
+    "uptime_1d_best": 99.93055555555556,
+    "uptime_1d_worst": 99.93055555555556,
+    "data_policy_counts": {
+     "zdr": 1
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Groq",
+     "tag": "groq",
+     "service_tier": null,
+     "input_per_m": 0.075,
+     "output_per_m": 0.3,
+     "cache_read_per_m": 0.0375,
+     "context_length": 131072,
+     "max_completion_tokens": 65536,
+     "data_policy": "zdr",
+     "uptime_last_1d": 99.93055555555556
+    },
+    "cheapest_zdr": {
+     "provider": "Groq",
+     "tag": "groq",
+     "service_tier": null,
+     "input_per_m": 0.075,
+     "output_per_m": 0.3,
+     "cache_read_per_m": 0.0375,
+     "context_length": 131072,
+     "max_completion_tokens": 65536,
+     "data_policy": "zdr",
+     "uptime_last_1d": 99.93055555555556
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:04:21Z"
+   },
+   "referenced_by": [
+    "untrusted-content-screen"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "openai/text-embedding-3-small",
+   "name": "OpenAI: Text Embedding 3 Small",
+   "author": "openai",
+   "kind": "embeddings",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text"
+   ],
+   "output_modalities": [
+    "embeddings"
+   ],
+   "api_routes": [
+    "/api/v1/embeddings"
+   ],
+   "context_length": 8192,
+   "max_output_tokens": 7372,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": false,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.02,
+    "output_per_m": 0.0
+   },
+   "endpoints": {
+    "provider_count": 2,
+    "endpoint_count": 2,
+    "providers": [
+     "Azure",
+     "OpenAI"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "zdr": 1,
+     "not_in_zdr_list": 1
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Azure",
+     "tag": "azure",
+     "service_tier": null,
+     "input_per_m": 0.02,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 8192,
+     "max_completion_tokens": 7372,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "Azure",
+     "tag": "azure",
+     "service_tier": null,
+     "input_per_m": 0.02,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 8192,
+     "max_completion_tokens": 7372,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:09:47Z"
+   },
+   "referenced_by": [
+    "embeddings-semantic-search"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "openai/whisper-large-v3",
+   "name": "OpenAI: Whisper Large V3",
+   "author": "openai",
+   "kind": "transcription",
+   "hugging_face_id": "openai/whisper-large-v3",
+   "input_modalities": [
+    "audio"
+   ],
+   "output_modalities": [
+    "transcription"
+   ],
+   "api_routes": [
+    "/api/v1/audio/transcriptions"
+   ],
+   "context_length": null,
+   "max_output_tokens": 0,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": false,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "unit_note": "STT: docs say duration-based models are priced per second of audio, newer ones per token; the API does not say which applies per model, so raw values are kept.",
+    "prompt_usd_raw": 7.5e-06,
+    "completion_usd_raw": 0.0
+   },
+   "endpoints": {
+    "provider_count": 3,
+    "endpoint_count": 3,
+    "providers": [
+     "DeepInfra",
+     "Groq",
+     "Together"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "zdr": 3
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "DeepInfra",
+     "tag": "deepinfra/us",
+     "service_tier": null,
+     "input_per_m": 7.5,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 0,
+     "max_completion_tokens": 0,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "DeepInfra",
+     "tag": "deepinfra/us",
+     "service_tier": null,
+     "input_per_m": 7.5,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 0,
+     "max_completion_tokens": 0,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:09:00Z"
+   },
+   "referenced_by": [
+    "subtitles-srt",
+    "video-transcript-timestamped",
+    "video-dub"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "openai/whisper-large-v3-turbo",
+   "name": "OpenAI: Whisper Large V3 Turbo",
+   "author": "openai",
+   "kind": "transcription",
+   "hugging_face_id": "openai/whisper-large-v3-turbo",
+   "input_modalities": [
+    "audio"
+   ],
+   "output_modalities": [
+    "transcription"
+   ],
+   "api_routes": [
+    "/api/v1/audio/transcriptions"
+   ],
+   "context_length": null,
+   "max_output_tokens": 0,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": false,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "unit_note": "STT: docs say duration-based models are priced per second of audio, newer ones per token; the API does not say which applies per model, so raw values are kept.",
+    "prompt_usd_raw": 3.33e-06,
+    "completion_usd_raw": 0.0
+   },
+   "endpoints": {
+    "provider_count": 2,
+    "endpoint_count": 2,
+    "providers": [
+     "DeepInfra",
+     "Groq"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "zdr": 2
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "DeepInfra",
+     "tag": "deepinfra/us",
+     "service_tier": null,
+     "input_per_m": 3.33,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 0,
+     "max_completion_tokens": 0,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "DeepInfra",
+     "tag": "deepinfra/us",
+     "service_tier": null,
+     "input_per_m": 3.33,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 0,
+     "max_completion_tokens": 0,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:09:01Z"
+   },
+   "referenced_by": [
+    "audio-transcribe",
+    "voice-prompt"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "perplexity/sonar",
+   "name": "Perplexity: Sonar",
+   "author": "perplexity",
+   "kind": "text",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text",
+    "image"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 127072,
+   "max_output_tokens": 114364,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": false,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": true,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 1.0,
+    "output_per_m": 1.0,
+    "web_search_usd": 0.005
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 1,
+    "providers": [
+     "Perplexity"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "zdr": 1
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Perplexity",
+     "tag": "perplexity",
+     "service_tier": null,
+     "input_per_m": 1.0,
+     "output_per_m": 1.0,
+     "cache_read_per_m": null,
+     "context_length": 127072,
+     "max_completion_tokens": 114364,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "Perplexity",
+     "tag": "perplexity",
+     "service_tier": null,
+     "input_per_m": 1.0,
+     "output_per_m": 1.0,
+     "cache_read_per_m": null,
+     "context_length": 127072,
+     "max_completion_tokens": 114364,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:05:37Z"
+   },
+   "referenced_by": [
+    "library-docs-lookup",
+    "web-search-answer"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "perplexity/sonar-deep-research",
+   "name": "Perplexity: Sonar Deep Research",
+   "author": "perplexity",
+   "kind": "text",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 128000,
+   "max_output_tokens": 115200,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": false,
+    "reasoning": true,
+    "reasoning_mandatory": true,
+    "reasoning_efforts": null,
+    "web_search_options": true,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 2.0,
+    "output_per_m": 8.0,
+    "reasoning_per_m": 3.0,
+    "web_search_usd": 0.005
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 1,
+    "providers": [
+     "Perplexity"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "zdr": 1
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Perplexity",
+     "tag": "perplexity",
+     "service_tier": null,
+     "input_per_m": 2.0,
+     "output_per_m": 8.0,
+     "cache_read_per_m": null,
+     "context_length": 128000,
+     "max_completion_tokens": 115200,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "Perplexity",
+     "tag": "perplexity",
+     "service_tier": null,
+     "input_per_m": 2.0,
+     "output_per_m": 8.0,
+     "cache_read_per_m": null,
+     "context_length": 128000,
+     "max_completion_tokens": 115200,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:05:32Z"
+   },
+   "referenced_by": [
+    "deep-web-research"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "qwen/qwen3-asr-0.6b",
+   "name": "Qwen: Qwen3 ASR 0.6B",
+   "author": "qwen",
+   "kind": "transcription",
+   "hugging_face_id": "Qwen/Qwen3-ASR-0.6B",
+   "input_modalities": [
+    "audio"
+   ],
+   "output_modalities": [
+    "transcription"
+   ],
+   "api_routes": [
+    "/api/v1/audio/transcriptions"
+   ],
+   "context_length": null,
+   "max_output_tokens": 0,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": false,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "unit_note": "STT: docs say duration-based models are priced per second of audio, newer ones per token; the API does not say which applies per model, so raw values are kept.",
+    "prompt_usd_raw": 3.33e-06,
+    "completion_usd_raw": 0.0
+   },
+   "endpoints": {
+    "provider_count": 2,
+    "endpoint_count": 2,
+    "providers": [
+     "DeepInfra",
+     "PrimeIntellect"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "zdr": 2
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "PrimeIntellect",
+     "tag": "primeintellect/bf16",
+     "service_tier": null,
+     "input_per_m": 3.33,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 0,
+     "max_completion_tokens": 0,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "PrimeIntellect",
+     "tag": "primeintellect/bf16",
+     "service_tier": null,
+     "input_per_m": 3.33,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 0,
+     "max_completion_tokens": 0,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:08:02Z"
+   },
+   "referenced_by": [
+    "voice-prompt"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "qwen/qwen3-embedding-8b",
+   "name": "Qwen: Qwen3 Embedding 8B",
+   "author": "qwen",
+   "kind": "embeddings",
+   "hugging_face_id": "Qwen/Qwen3-Embedding-8B",
+   "input_modalities": [
+    "text"
+   ],
+   "output_modalities": [
+    "embeddings"
+   ],
+   "api_routes": [
+    "/api/v1/embeddings"
+   ],
+   "context_length": 40960,
+   "max_output_tokens": 29491,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": false,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.01,
+    "output_per_m": 0.0
+   },
+   "endpoints": {
+    "provider_count": 3,
+    "endpoint_count": 3,
+    "providers": [
+     "DeepInfra",
+     "Nebius",
+     "SiliconFlow"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 99.72222222222223,
+    "data_policy_counts": {
+     "zdr": 3
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Nebius",
+     "tag": "nebius/bf16",
+     "service_tier": null,
+     "input_per_m": 0.01,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 40960,
+     "max_completion_tokens": 32000,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "Nebius",
+     "tag": "nebius/bf16",
+     "service_tier": null,
+     "input_per_m": 0.01,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 40960,
+     "max_completion_tokens": 32000,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:09:49Z"
+   },
+   "referenced_by": [
+    "embeddings-semantic-search",
+    "record-dedup"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "qwen/qwen3-reranker-8b",
+   "name": "Qwen3 Reranker 8B",
+   "author": "qwen",
+   "kind": "rerank",
+   "hugging_face_id": "Qwen/Qwen3-Reranker-8B",
+   "input_modalities": [
+    "text"
+   ],
+   "output_modalities": [
+    "rerank"
+   ],
+   "api_routes": [
+    "/api/v1/rerank"
+   ],
+   "context_length": 40960,
+   "max_output_tokens": 36864,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": false,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.0,
+    "output_per_m": 0.0
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 1,
+    "providers": [
+     "Fireworks"
+    ],
+    "uptime_1d_best": 97.36654804270462,
+    "uptime_1d_worst": 97.36654804270462,
+    "data_policy_counts": {
+     "zdr": 1
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Fireworks",
+     "tag": "fireworks",
+     "service_tier": null,
+     "input_per_m": 0.0,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 40960,
+     "max_completion_tokens": 36864,
+     "data_policy": "zdr",
+     "uptime_last_1d": 97.36654804270462
+    },
+    "cheapest_zdr": {
+     "provider": "Fireworks",
+     "tag": "fireworks",
+     "service_tier": null,
+     "input_per_m": 0.0,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 40960,
+     "max_completion_tokens": 36864,
+     "data_policy": "zdr",
+     "uptime_last_1d": 97.36654804270462
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:08:00Z"
+   },
+   "referenced_by": [
+    "rerank-retrieval"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "qwen/qwen3.8-flash",
+   "name": "Qwen: Qwen3.8 Flash",
+   "author": "qwen",
+   "kind": "text",
+   "hugging_face_id": "Qwen/Qwen3.8-Flash-Next",
+   "input_modalities": [
+    "text",
+    "image",
+    "video"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 1000000,
+   "max_output_tokens": 131072,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": false,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.15,
+    "output_per_m": 0.47,
+    "cache_read_per_m": 0.016
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 2,
+    "providers": [
+     "Alibaba"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "not_in_zdr_list": 2
+    },
+    "best_data_policy": "not_in_zdr_list",
+    "has_zdr_endpoint": false,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Alibaba",
+     "tag": "alibaba/us-east-1",
+     "service_tier": null,
+     "input_per_m": 0.15,
+     "output_per_m": 0.47,
+     "cache_read_per_m": 0.016,
+     "context_length": 1000000,
+     "max_completion_tokens": 131072,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": null,
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:01:28Z"
+   },
+   "referenced_by": [
+    "ui-grounding",
+    "video-understand"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "qwen/qwen3.8-omni-flash",
+   "name": "Qwen: Qwen3.8 Omni Flash",
+   "author": "qwen",
+   "kind": "text",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text",
+    "image",
+    "audio",
+    "video"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 1000000,
+   "max_output_tokens": 131072,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": false,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.15,
+    "output_per_m": 0.47,
+    "cache_read_per_m": 0.016
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 1,
+    "providers": [
+     "Alibaba"
+    ],
+    "uptime_1d_best": 99.23611111111111,
+    "uptime_1d_worst": 99.23611111111111,
+    "data_policy_counts": {
+     "not_in_zdr_list": 1
+    },
+    "best_data_policy": "not_in_zdr_list",
+    "has_zdr_endpoint": false,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "Alibaba",
+     "tag": "alibaba",
+     "service_tier": null,
+     "input_per_m": 0.15,
+     "output_per_m": 0.47,
+     "cache_read_per_m": 0.016,
+     "context_length": 1000000,
+     "max_completion_tokens": 131072,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 99.23611111111111
+    },
+    "cheapest_zdr": null,
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:01:02Z"
+   },
+   "referenced_by": [
+    "audio-events"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "stepfun/step-5-preview",
+   "name": "StepFun: Step 5 Preview",
+   "author": "stepfun",
+   "kind": "text",
+   "hugging_face_id": "stepfun-ai/Step-5-Preview",
+   "input_modalities": [
+    "text",
+    "image",
+    "video"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 1048576,
+   "max_output_tokens": 64000,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": true,
+    "reasoning_efforts": [
+     "high",
+     "medium",
+     "low"
+    ],
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 1.0,
+    "output_per_m": 2.7,
+    "cache_read_per_m": 0.1
+   },
+   "endpoints": {
+    "provider_count": 3,
+    "endpoint_count": 3,
+    "providers": [
+     "Featherless",
+     "GMICloud",
+     "StepFun"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 0,
+    "data_policy_counts": {
+     "not_in_zdr_list": 2,
+     "zdr": 1
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "GMICloud",
+     "tag": "gmicloud/fp8",
+     "service_tier": null,
+     "input_per_m": 1.0,
+     "output_per_m": 2.7,
+     "cache_read_per_m": 0.1,
+     "context_length": 1048576,
+     "max_completion_tokens": 943718,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 0
+    },
+    "cheapest_zdr": {
+     "provider": "Featherless",
+     "tag": "featherless/fp4",
+     "service_tier": null,
+     "input_per_m": 1.0,
+     "output_per_m": 2.7,
+     "cache_read_per_m": 0.1,
+     "context_length": 262144,
+     "max_completion_tokens": 32768,
+     "data_policy": "zdr",
+     "uptime_last_1d": 99.3975903614458
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:00:33Z"
+   },
+   "referenced_by": [
+    "summarize-long-doc"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "tencent/hy4-preview",
+   "name": "Tencent: Hy4 preview",
+   "author": "tencent",
+   "kind": "text",
+   "hugging_face_id": "tencent/Hy4-preview",
+   "input_modalities": [
+    "text"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 1048576,
+   "max_output_tokens": 64000,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": true,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": false,
+    "reasoning_efforts": [
+     "high",
+     "low",
+     "none"
+    ],
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.834,
+    "output_per_m": 2.501,
+    "cache_read_per_m": 0.042,
+    "long_context_overrides": [
+     {
+      "min_prompt_tokens": null,
+      "prompt_per_m": 0.834,
+      "completion_per_m": 2.501,
+      "input_cache_read_per_m": 0.042,
+      "other_conditions": [
+       "utc_end",
+       "utc_start"
+      ]
+     },
+     {
+      "min_prompt_tokens": null,
+      "prompt_per_m": 0.7506,
+      "completion_per_m": 2.2509,
+      "input_cache_read_per_m": 0.0378,
+      "other_conditions": [
+       "utc_end",
+       "utc_start"
+      ]
+     }
+    ]
+   },
+   "endpoints": {
+    "provider_count": 7,
+    "endpoint_count": 7,
+    "providers": [
+     "AtlasCloud",
+     "Cohere",
+     "DeepInfra",
+     "GMICloud",
+     "Novita",
+     "SiliconFlow",
+     "Tencent"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 97.95258620689656,
+    "data_policy_counts": {
+     "not_in_zdr_list": 2,
+     "zdr": 5
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "GMICloud",
+     "tag": "gmicloud/bf16",
+     "service_tier": null,
+     "input_per_m": 0.834,
+     "output_per_m": 2.501,
+     "cache_read_per_m": 0.042,
+     "context_length": 262144,
+     "max_completion_tokens": 235929,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 99.13793103448276
+    },
+    "cheapest_zdr": {
+     "provider": "Cohere",
+     "tag": "cohere/mxfp4",
+     "service_tier": null,
+     "input_per_m": 0.834,
+     "output_per_m": 2.501,
+     "cache_read_per_m": 0.042,
+     "context_length": 262144,
+     "max_completion_tokens": 131072,
+     "data_policy": "zdr",
+     "uptime_last_1d": 97.95258620689656
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:01:26Z"
+   },
+   "referenced_by": [
+    "devops-config",
+    "code-file-edits",
+    "npc-dialogue-roleplay"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "x-ai/grok-4.20",
+   "name": "SpaceXAI: Grok 4.20",
+   "author": "x-ai",
+   "kind": "text",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text",
+    "image",
+    "file"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 2000000,
+   "max_output_tokens": 1800000,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": false,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 1.25,
+    "output_per_m": 2.5,
+    "cache_read_per_m": 0.2,
+    "web_search_usd": 0.005,
+    "long_context_overrides": [
+     {
+      "min_prompt_tokens": 200000,
+      "prompt_per_m": 2.5,
+      "completion_per_m": 5.0,
+      "input_cache_read_per_m": 0.4
+     }
+    ]
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 4,
+    "providers": [
+     "xAI"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 99.86263736263736,
+    "data_policy_counts": {
+     "zdr": 2,
+     "not_in_zdr_list": 2
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": [
+     "priority"
+    ],
+    "cheapest": {
+     "provider": "xAI",
+     "tag": "xai/zdr",
+     "service_tier": null,
+     "input_per_m": 1.25,
+     "output_per_m": 2.5,
+     "cache_read_per_m": 0.2,
+     "context_length": 2000000,
+     "max_completion_tokens": 1800000,
+     "data_policy": "zdr",
+     "uptime_last_1d": 99.86263736263736
+    },
+    "cheapest_zdr": {
+     "provider": "xAI",
+     "tag": "xai/zdr",
+     "service_tier": null,
+     "input_per_m": 1.25,
+     "output_per_m": 2.5,
+     "cache_read_per_m": 0.2,
+     "context_length": 2000000,
+     "max_completion_tokens": 1800000,
+     "data_policy": "zdr",
+     "uptime_last_1d": 99.86263736263736
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:03:18Z"
+   },
+   "referenced_by": [
+    "over-1m-context"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "x-ai/grok-imagine-video-1.5-lite",
+   "name": "SpaceXAI: Grok Imagine Video 1.5 Lite",
+   "author": "x-ai",
+   "kind": "video",
+   "hugging_face_id": null,
+   "input_modalities": [
+    "text",
+    "image"
+   ],
+   "output_modalities": [
+    "video"
+   ],
+   "api_routes": [
+    "/api/v1/videos"
+   ],
+   "context_length": null,
+   "max_output_tokens": 0,
+   "caps": {
+    "tools": false,
+    "tool_choice": false,
+    "parallel_tool_calls": false,
+    "structured_outputs": false,
+    "json_mode": true,
+    "reasoning": false,
+    "reasoning_mandatory": null,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "unit_note": "Video generation SKUs from /videos/models, raw strings as floats. Units are encoded in the SKU name: duration_seconds* = USD per output second; cents_* = US cents; video_tokens* = USD per video token. usd_per_second_min/max use only the per-second SKUs.",
+    "video_pricing_skus_raw": {
+     "cents_per_image_input": 1.0,
+     "cents_per_video_output_second_480p": 2.0,
+     "cents_per_video_output_second_720p": 3.0,
+     "cents_per_video_output_second_1080p": 14.0
+    },
+    "usd_per_second_min": 0.02,
+    "usd_per_second_max": 0.14
+   },
+   "endpoints": {
+    "provider_count": 1,
+    "endpoint_count": 1,
+    "providers": [
+     "xAI"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 100,
+    "data_policy_counts": {
+     "not_in_zdr_list": 1
+    },
+    "best_data_policy": "not_in_zdr_list",
+    "has_zdr_endpoint": false,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "xAI",
+     "tag": "xai",
+     "service_tier": null,
+     "input_per_m": 0.0,
+     "output_per_m": 0.0,
+     "cache_read_per_m": null,
+     "context_length": 0,
+     "max_completion_tokens": 0,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": null,
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:07:17Z"
+   },
+   "referenced_by": [
+    "video-generate",
+    "image-to-video"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "xiaomi/mimo-v2.6-flash",
+   "name": "Xiaomi: MiMo-V2.6-Flash",
+   "author": "xiaomi",
+   "kind": "text",
+   "hugging_face_id": "XiaomiMiMo/MiMo-V2.6-Flash-RL",
+   "input_modalities": [
+    "text",
+    "image",
+    "video",
+    "audio"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 1050000,
+   "max_output_tokens": 131072,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": true,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": false,
+    "reasoning_efforts": null,
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.14,
+    "output_per_m": 0.28,
+    "cache_read_per_m": 0.0028
+   },
+   "endpoints": {
+    "provider_count": 7,
+    "endpoint_count": 7,
+    "providers": [
+     "Cohere",
+     "Darkbloom",
+     "DeepInfra",
+     "GMICloud",
+     "Makora",
+     "Venice",
+     "Xiaomi"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 98.97304236200257,
+    "data_policy_counts": {
+     "not_in_zdr_list": 3,
+     "zdr": 4
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": null,
+    "cheapest": {
+     "provider": "GMICloud",
+     "tag": "gmicloud/bf16",
+     "service_tier": null,
+     "input_per_m": 0.112,
+     "output_per_m": 0.224,
+     "cache_read_per_m": 0.0024,
+     "context_length": 1050000,
+     "max_completion_tokens": 945000,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 99.93045897079277
+    },
+    "cheapest_zdr": {
+     "provider": "Cohere",
+     "tag": "cohere/fp8",
+     "service_tier": null,
+     "input_per_m": 0.14,
+     "output_per_m": 0.28,
+     "cache_read_per_m": 0.003,
+     "context_length": 1048576,
+     "max_completion_tokens": 131072,
+     "data_policy": "zdr",
+     "uptime_last_1d": 99.93055555555556
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:00:59Z"
+   },
+   "referenced_by": [
+    "app-scaffold",
+    "agent-workflow-exec",
+    "audio-events",
+    "audio-tone",
+    "video-understand",
+    "video-transcript-timestamped"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "z-ai/glm-5.3",
+   "name": "Z.ai: GLM 5.3",
+   "author": "z-ai",
+   "kind": "text",
+   "hugging_face_id": "zai-org/GLM-5.3",
+   "input_modalities": [
+    "text"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 1048576,
+   "max_output_tokens": 943718,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": true,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": true,
+    "reasoning_efforts": [
+     "max",
+     "high",
+     "low"
+    ],
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.0699,
+    "output_per_m": 1.4,
+    "cache_read_per_m": 0.0689
+   },
+   "endpoints": {
+    "provider_count": 34,
+    "endpoint_count": 45,
+    "providers": [
+     "AkashML",
+     "Alibaba",
+     "Amazon Bedrock",
+     "AtlasCloud",
+     "Baidu",
+     "BaseTen",
+     "Cloudflare",
+     "CoreWeave",
+     "Crusoe",
+     "Decart",
+     "DeepInfra",
+     "DekaLLM",
+     "DigitalOcean",
+     "Fireworks",
+     "Friendli",
+     "GMICloud",
+     "Inceptron",
+     "InferenceNet",
+     "Makora",
+     "Mistral",
+     "Modal",
+     "Morph",
+     "Novita",
+     "Parasail",
+     "Phala",
+     "PrimeIntellect",
+     "Reka",
+     "Relace",
+     "Sail Research",
+     "SiliconFlow",
+     "Together",
+     "Venice",
+     "Wafer",
+     "Z.AI"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 97.04391891891892,
+    "data_policy_counts": {
+     "zdr": 39,
+     "not_in_zdr_list": 6
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": [
+     "priority"
+    ],
+    "cheapest": {
+     "provider": "Wafer",
+     "tag": "wafer/us",
+     "service_tier": null,
+     "input_per_m": 0.0699,
+     "output_per_m": 1.4,
+     "cache_read_per_m": 0.0689,
+     "context_length": 1048576,
+     "max_completion_tokens": 943718,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "Wafer",
+     "tag": "wafer/us",
+     "service_tier": null,
+     "input_per_m": 0.0699,
+     "output_per_m": 1.4,
+     "cache_read_per_m": 0.0689,
+     "context_length": 1048576,
+     "max_completion_tokens": 943718,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:01:35Z"
+   },
+   "referenced_by": [
+    "code-analysis",
+    "anti-sycophancy-check",
+    "content-writing"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "z-ai/glm-5.3-flash",
+   "name": "Z.ai: GLM 5.3 Flash",
+   "author": "z-ai",
+   "kind": "text",
+   "hugging_face_id": "zai-org/GLM-5.3-Flash",
+   "input_modalities": [
+    "text",
+    "image",
+    "video"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/chat/completions",
+    "/api/v1/completions",
+    "/api/v1/messages",
+    "/api/v1/responses"
+   ],
+   "context_length": 1048576,
+   "max_output_tokens": 131072,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": true,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": true,
+    "reasoning_efforts": [
+     "max",
+     "high",
+     "low"
+    ],
+    "web_search_options": false,
+    "batch_api": false
+   },
+   "pricing": {
+    "input_per_m": 0.0335,
+    "output_per_m": 0.083,
+    "cache_read_per_m": 0.03
+   },
+   "endpoints": {
+    "provider_count": 36,
+    "endpoint_count": 41,
+    "providers": [
+     "AtlasCloud",
+     "BaseTen",
+     "Cohere",
+     "CoreWeave",
+     "Crusoe",
+     "Darkbloom",
+     "DeepInfra",
+     "DigitalOcean",
+     "Fireworks",
+     "Friendli",
+     "GMICloud",
+     "Inceptron",
+     "InferenceNet",
+     "Makora",
+     "Mistral",
+     "Modal",
+     "Morph",
+     "Near AI",
+     "Nebius",
+     "NextBit",
+     "Novita",
+     "OpenInference",
+     "Parasail",
+     "Particle AI",
+     "Phala",
+     "PrimeIntellect",
+     "Reka",
+     "Relace",
+     "Sail Research",
+     "SiliconFlow",
+     "StreamLake",
+     "Tenstorrent",
+     "Together",
+     "Venice",
+     "Wafer",
+     "Z.AI"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 98.95615866388309,
+    "data_policy_counts": {
+     "zdr": 36,
+     "not_in_zdr_list": 5
+    },
+    "best_data_policy": "zdr",
+    "has_zdr_endpoint": true,
+    "service_tiers": [
+     "priority"
+    ],
+    "cheapest": {
+     "provider": "Relace",
+     "tag": "relace/fp4",
+     "service_tier": null,
+     "input_per_m": 0.0335,
+     "output_per_m": 0.083,
+     "cache_read_per_m": 0.03,
+     "context_length": 1048576,
+     "max_completion_tokens": 131072,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": {
+     "provider": "Relace",
+     "tag": "relace/fp4",
+     "service_tier": null,
+     "input_per_m": 0.0335,
+     "output_per_m": 0.083,
+     "cache_read_per_m": 0.03,
+     "context_length": 1048576,
+     "max_completion_tokens": 131072,
+     "data_policy": "zdr",
+     "uptime_last_1d": 100
+    },
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:01:29Z"
+   },
+   "referenced_by": [
+    "quick-code-question",
+    "sql-query-write",
+    "shell-command-exec",
+    "error-triage",
+    "tech-explainer",
+    "code-implement-feature",
+    "code-debug-fix",
+    "code-file-edits",
+    "agentic-multifile-change",
+    "limit-fallback-coding",
+    "app-scaffold",
+    "repo-scan-explore",
+    "test-generation",
+    "docgen",
+    "bulk-refactor",
+    "call-trace",
+    "repo-offload-summary",
+    "session-memory-compaction",
+    "stop-hook-review-gate",
+    "brainstorm",
+    "plan-decompose",
+    "tool-dispatch-router",
+    "yes-no-gate",
+    "agent-workflow-exec",
+    "scheduled-check",
+    "bulk-classify-tag",
+    "data-extract-structured",
+    "data-transform-format",
+    "log-digest",
+    "translate-text",
+    "finance-data-analysis",
+    "science-paper-explain",
+    "marketing-seo-copy",
+    "npc-dialogue-roleplay",
+    "ocr-degraded-image",
+    "ui-grounding",
+    "video-understand",
+    "video-bug-repro",
+    "video-url-digest",
+    "video-timestamp-ocr",
+    "video-structure-scan",
+    "incident-postmortem",
+    "commit-pr-text",
+    "release-notes",
+    "i18n-catalog-sync",
+    "invoice-receipt-extract",
+    "record-dedup",
+    "rerank-retrieval",
+    "untrusted-content-screen",
+    "migration-test-gated",
+    "test-generate-filter",
+    "fuzz-harness-gen",
+    "image-alt-text"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  },
+  {
+   "id": "z-ai/glm-5.3-flash:batch",
+   "name": "Z.ai: GLM 5.3 Flash (batch)",
+   "author": "z-ai",
+   "kind": "text",
+   "hugging_face_id": "zai-org/GLM-5.3-Flash",
+   "input_modalities": [
+    "text",
+    "image",
+    "video"
+   ],
+   "output_modalities": [
+    "text"
+   ],
+   "api_routes": [
+    "/api/v1/batches"
+   ],
+   "context_length": 1048576,
+   "max_output_tokens": 131072,
+   "caps": {
+    "tools": true,
+    "tool_choice": true,
+    "parallel_tool_calls": false,
+    "structured_outputs": true,
+    "json_mode": true,
+    "reasoning": true,
+    "reasoning_mandatory": true,
+    "reasoning_efforts": [
+     "max",
+     "high",
+     "low"
+    ],
+    "web_search_options": false,
+    "batch_api": true
+   },
+   "pricing": {
+    "input_per_m": 0.05,
+    "output_per_m": 0.18,
+    "cache_read_per_m": 0.01
+   },
+   "endpoints": {
+    "provider_count": 36,
+    "endpoint_count": 41,
+    "providers": [
+     "AtlasCloud",
+     "BaseTen",
+     "Cohere",
+     "CoreWeave",
+     "Crusoe",
+     "Darkbloom",
+     "DeepInfra",
+     "DigitalOcean",
+     "Fireworks",
+     "Friendli",
+     "GMICloud",
+     "Inceptron",
+     "InferenceNet",
+     "Makora",
+     "Mistral",
+     "Modal",
+     "Morph",
+     "Near AI",
+     "Nebius",
+     "NextBit",
+     "Novita",
+     "OpenInference",
+     "Parasail",
+     "Particle AI",
+     "Phala",
+     "PrimeIntellect",
+     "Reka",
+     "Relace",
+     "Sail Research",
+     "SiliconFlow",
+     "StreamLake",
+     "Tenstorrent",
+     "Together",
+     "Venice",
+     "Wafer",
+     "Z.AI"
+    ],
+    "uptime_1d_best": 100,
+    "uptime_1d_worst": 98.95615866388309,
+    "data_policy_counts": {
+     "not_in_zdr_list": 41
+    },
+    "best_data_policy": "not_in_zdr_list",
+    "has_zdr_endpoint": false,
+    "service_tiers": [
+     "priority"
+    ],
+    "cheapest": {
+     "provider": "Relace",
+     "tag": "relace/fp4",
+     "service_tier": null,
+     "input_per_m": 0.0335,
+     "output_per_m": 0.083,
+     "cache_read_per_m": 0.03,
+     "context_length": 1048576,
+     "max_completion_tokens": 131072,
+     "data_policy": "not_in_zdr_list",
+     "uptime_last_1d": 100
+    },
+    "cheapest_zdr": null,
+    "cheapest_rule": "lowest (3 x input + output) / 4 per 1M tokens among endpoints with token prices",
+    "src": "or_endpoints+or_endpoints_zdr",
+    "as_of": "2026-11-09T04:01:29Z"
+   },
+   "referenced_by": [
+    "batch-offline-map"
+   ],
+   "src": "or_models",
+   "as_of": "2026-11-09T03:59:17Z"
+  }
+ ]
+}

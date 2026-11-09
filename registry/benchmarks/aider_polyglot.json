@@ -1,0 +1,14 @@
+{
+ "source": "Aider polyglot leaderboard",
+ "license": "Apache-2.0",
+ "license_url": "https://github.com/Aider-AI/aider/blob/main/LICENSE.txt",
+ "citation": "Aider LLM Leaderboards, polyglot benchmark, github.com/Aider-AI/aider aider/website/_data/polyglot_leaderboard.yml (Apache-2.0), https://aider.chat/docs/leaderboards/",
+ "retrieved": "2026-11-08",
+ "latest_entry_date": "2025-10-03",
+ "notes": "STALE: newest entry 2025-10-03; the file has not changed since 2025-10-04. Use only as a historical prior. binomial_se_pct is computed by p0ssess research (not published by Aider).",
+ "scope": "Records for models referenced by catalog/usecases.yaml only.",
+ "count": 0,
+ "records": [
+
+ ]
+}
