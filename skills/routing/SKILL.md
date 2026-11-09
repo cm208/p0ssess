@@ -38,12 +38,12 @@ Before delegating, say one line and nothing more, using the `announce` field: "h
 ## Approval
 
 - An option with `needs_approval: true` needs a yes from the user first. Ask in one line with the cost: "This is about $0.06 on gemini-3.8-flash (first use of this model). Go ahead?"
-- An option covered by a standing approval (`approval_id` set) runs without asking. Still announce it.
-- Never pass a `max_cost_usd` above what the user approved, or above the option's `cash_max` when no approval was needed.
+- An option covered by a standing approval (`standing_approval` set) runs without asking. Still announce it.
+- Pass the option's `max_cost_usd` as the direct tool's `max_cost_usd`: it is the ceiling already authorized (the standing approval's per-run limit, or the per-task limit). When the user approved a stated cost instead, pass that amount. Never more.
 
 ## Running it
 
-- **Media and one-shot jobs:** call `direct` with the model, a prompt, absolute file paths, `max_cost_usd`, and the `offer_id` and `use_case` from `recommend`. Videos over the size or length limit come back with an error naming `video_prep` options (`downscale`, `keyframes`, `segment`); pick one and say which.
+- **Media and one-shot jobs:** call `direct` with the model, a prompt, absolute file paths, `max_cost_usd` (see Approval), and the `offer_id` and `use_case` from `recommend`. The direct tool estimates conservatively (full output allowance at the highest endpoint price) and refuses a call whose estimate is above the ceiling; if that happens, ask the user before raising it. Videos over the size or length limit come back with an error naming `video_prep` options (`downscale`, `keyframes`, `segment`); pick one and say which.
 - **Multi-step work on files:** start the relay subagent with the Agent tool, `subagent_type: "p0ssess:p0ssess"`, prompt `"<model>: <task>"`, adding "edit mode" when it should change files. It runs in the background; continue the same session with SendMessage. Edits come back as a diff from a separate git worktree; nothing is merged.
 - The agent path needs Linux with rootless podman. If a tool says it is unavailable, use `direct` for one-shot work or keep the work.
 

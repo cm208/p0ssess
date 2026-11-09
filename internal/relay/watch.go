@@ -34,10 +34,15 @@ type watch struct {
 	note      string
 	pending   *opencode.PermissionRequest
 	seen      map[string]bool
+	issued    map[string]bool
 	rejected  []string
 	escalated int
 	cost      float64
 	closed    bool
+
+	tampered       bool
+	tamperReason   string
+	relayInterrupt bool
 }
 
 func (e *Engine) startWatch(c *opencode.Client, rec *SessionRecord) *watch {
@@ -48,7 +53,7 @@ func (e *Engine) startWatch(c *opencode.Client, rec *SessionRecord) *watch {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	w := &watch{e: e, c: c, rec: rec, ctx: ctx, cancel: cancel, done: make(chan struct{}), poke: make(chan struct{}, 1), ready: make(chan struct{}),
-		seq: rec.PromptSeq, toolNames: map[string]string{}, seen: map[string]bool{}}
+		seq: rec.PromptSeq, toolNames: map[string]string{}, seen: map[string]bool{}, issued: map[string]bool{}}
 	e.watches[rec.SessionID] = w
 	go w.follow()
 	go w.poll()
@@ -102,9 +107,45 @@ func (w *watch) answered(requestID, decision string) {
 	w.mu.Unlock()
 }
 
+// markIssued records a permission reply the relay sent, so the matching permission.replied event is not
+// mistaken for tampering. It is called before the reply so the event cannot race ahead of it.
+func (w *watch) markIssued(requestID string) {
+	w.mu.Lock()
+	w.issued[requestID] = true
+	w.mu.Unlock()
+}
+
+// markRelayInterrupt records that the relay is the one interrupting the session, so the resulting
+// interruption event is not treated as a foreign abort.
+func (w *watch) markRelayInterrupt() {
+	w.mu.Lock()
+	w.relayInterrupt = true
+	w.mu.Unlock()
+}
+
+// tamper records that something the relay did not issue acted on the session, then interrupts it. The run
+// is reported with status "tampered". Only the first reason is kept.
+func (w *watch) tamper(reason string) {
+	w.mu.Lock()
+	if w.tampered {
+		w.mu.Unlock()
+		return
+	}
+	w.tampered = true
+	w.tamperReason = reason
+	w.relayInterrupt = true
+	w.mu.Unlock()
+	fmt.Fprintf(w.e.log, "p0ssess: tamper on %s: %s\n", w.rec.SessionID, reason)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	w.c.Interrupt(ctx, w.rec.SessionID)
+	w.signal()
+}
+
 var watchedEvents = []string{
 	opencode.EvExecutionSucceeded, opencode.EvExecutionFailed, opencode.EvExecutionInterrupted,
 	opencode.EvStepEnded, opencode.EvToolInputStarted, opencode.EvPermissionAsked,
+	opencode.EvPermissionReplied,
 }
 
 // follow reads the live event feed for this session. After a reconnect anything missed is recovered by
@@ -171,6 +212,15 @@ func (w *watch) handle(ev opencode.Event) {
 			w.toolNames[d.ID] = d.Name
 			w.tools = append(w.tools, d.Name)
 		}
+	case opencode.EvPermissionReplied:
+		// Only the relay answers permission requests. A reply the relay did not issue means something
+		// else (a model that found the API password, say) answered one, so the run is tampered.
+		var d opencode.PermissionReplied
+		if ev.Decode(&d) == nil && d.RequestID != "" && !w.issued[d.RequestID] {
+			w.mu.Unlock()
+			w.tamper("a permission reply the relay did not issue (request " + d.RequestID + ")")
+			return
+		}
 	}
 	w.mu.Unlock()
 	switch ev.Type {
@@ -187,6 +237,12 @@ func (w *watch) handle(ev opencode.Event) {
 	case opencode.EvExecutionInterrupted:
 		var d opencode.ExecutionInterrupted
 		_ = ev.Decode(&d)
+		w.mu.Lock()
+		foreign := !w.relayInterrupt && !w.tampered
+		w.mu.Unlock()
+		if foreign {
+			w.tamper("the session was interrupted by something other than the relay")
+		}
 		w.finish("interrupted", "interrupted ("+d.Reason+")")
 	}
 }
@@ -217,6 +273,7 @@ func (w *watch) poll() {
 
 func (w *watch) interrupt(note string) {
 	w.setNote(note)
+	w.markRelayInterrupt()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	w.c.Interrupt(ctx, w.rec.SessionID)
@@ -237,6 +294,7 @@ func (w *watch) checkPermissions(ctx context.Context) {
 		}
 		desc := r.Action + " " + strings.Join(r.Resources, ", ")
 		if w.rec.Mode != "edit" {
+			w.markIssued(r.ID)
 			if err := w.c.ReplyPermission(ctx, w.rec.SessionID, r.ID, "reject", rejectFeedback); err == nil {
 				w.mu.Lock()
 				w.rejected = append(w.rejected, desc)

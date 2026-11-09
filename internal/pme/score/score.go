@@ -69,6 +69,10 @@ type Option struct {
 	NeedsApproval   bool      `json:"needs_approval"`
 	ApprovalReasons []string  `json:"approval_reasons,omitempty"`
 	ApprovalID      string    `json:"standing_approval,omitempty"`
+	// MaxCostUSD is the spend ceiling already authorized for this option: the standing approval's
+	// per-run limit, or the per-task limit when no approval is needed. Pass it as the direct tool's
+	// max_cost_usd. Zero when the user must approve first; then pass the amount they approve.
+	MaxCostUSD float64 `json:"max_cost_usd,omitempty"`
 	Review          string    `json:"review"`
 	Reason          string    `json:"reason"`
 	Notes           []string  `json:"notes,omitempty"`

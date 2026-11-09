@@ -230,3 +230,19 @@ func TestRunsAreSpend(t *testing.T) {
 		t.Errorf("spend = %+v", st.Spend)
 	}
 }
+
+func TestMaxCostIsAuthorizedCeiling(t *testing.T) {
+	e, proj := setup(t, "plan = \"api\"\n")
+	p := &catalog.Profile{VideoSec: 10}
+	r, _ := e.Recommend(Request{UseCase: "video-understand", Stakes: 1, Profile: p, Scope: Scope{Cwd: proj}})
+	if !r.Pick.NeedsApproval || r.Pick.MaxCostUSD != 0 {
+		t.Fatalf("first use asks, with no ceiling yet: %+v", r.Pick)
+	}
+	if _, err := e.RuleAdd(Scope{Cwd: proj}, rules.Rule{Kind: rules.KindApprove, Kinds: []string{"media"}, MaxPerRunUSD: 0.05, Scope: "global"}, false, 0); err != nil {
+		t.Fatal(err)
+	}
+	r, _ = e.Recommend(Request{UseCase: "video-understand", Stakes: 1, Profile: p, Scope: Scope{Cwd: proj}})
+	if r.Pick.NeedsApproval || r.Pick.ApprovalID == "" || r.Pick.MaxCostUSD != 0.05 {
+		t.Errorf("standing approval should cover it with its per-run ceiling: %+v", r.Pick)
+	}
+}

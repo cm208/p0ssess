@@ -49,6 +49,15 @@ func main() {
 		fmt.Fprintf(os.Stderr, usage, version)
 		os.Exit(2)
 	}
+	// Inside the jail, OpenCode invokes this binary as its shell: `p0ssess -c <command>`. Dispatch that
+	// before flag parsing, because "-c" is not a subcommand. On success RunJailedShell never returns.
+	if jail.IsJailedShellInvocation(os.Args[1:]) {
+		if err := jail.RunJailedShell(os.Args[1:]); err != nil {
+			fmt.Fprintln(os.Stderr, "p0ssess:", err)
+			os.Exit(127)
+		}
+		return
+	}
 	cmd, args := os.Args[1], os.Args[2:]
 	// The status line and the hook run on every refresh and prompt: nothing else loads for them.
 	switch cmd {

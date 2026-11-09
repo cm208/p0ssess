@@ -305,6 +305,18 @@ func (e *Engine) Recommend(req Request) (*Recommendation, error) {
 	rec.Stakes, rec.Work, rec.Lead, rec.Lambda = stakes, work, lead, lam
 	rec.ClaudeFeasible, rec.Ceiling = res.ClaudeFeasible, res.Ceiling
 	rec.Excluded = res.Excluded
+	for i := range res.Options {
+		o := &res.Options[i]
+		if o.Breakdown.Cash <= 0 || o.NeedsApproval {
+			continue
+		}
+		o.MaxCostUSD = bud.PerTaskUSD
+		for _, a := range d.Approvals {
+			if a.ID == o.ApprovalID && a.MaxPerRunUSD > 0 {
+				o.MaxCostUSD = a.MaxPerRunUSD
+			}
+		}
+	}
 	rec.Options = res.Options
 	if len(rec.Options) > top {
 		rec.Options = rec.Options[:top]
