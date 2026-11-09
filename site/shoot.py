@@ -29,8 +29,10 @@ origin = f"http://127.0.0.1:{srv.server_port}"
 url = origin + "/index.html"
 log = []
 
-desk = ["top", "media", "bulk", "stakes", "rules", "ghost", "sandbox", "wont", "data", "try", "end"]
-phone = ["top", "media", "ghost"]
+desk = ["top", "engine", "gauge", "media", "chores", "review", "stakes", "rules", "ghost", "sandbox", "wont", "data", "try", "end"]
+phone = ["top", "engine", "gates", "gauge", "chores", "review", "data"]
+# Shots that start at a part of a section rather than the section itself.
+parts = {"gauge": "#engine .gauge", "gates": "#engine .gates"}
 
 with sync_playwright() as p:
     b = p.chromium.launch(executable_path=args.browser, headless=True,
@@ -53,10 +55,10 @@ with sync_playwright() as p:
                     pg.evaluate("scrollTo(0, 0)")
                 elif sid == "end":
                     pg.evaluate("scrollTo(0, document.documentElement.scrollHeight)")
-                elif name == "desk":
-                    pg.evaluate(f"document.getElementById('{sid}').scrollIntoView({{block: 'center'}})")
                 else:
-                    pg.evaluate(f"document.getElementById('{sid}').scrollIntoView({{block: 'start'}})")
+                    sel = parts.get(sid, "#" + sid)
+                    block = "center" if name == "desk" and sid not in ("engine", "data") else "start"
+                    pg.evaluate(f"document.querySelector('{sel}').scrollIntoView({{block: '{block}'}})")
                 pg.wait_for_timeout(450)
                 pg.screenshot(path=str(out / f"{name}-{scheme}-{i:02d}-{sid}.png"))
             if args.full and name == "phone":

@@ -28,7 +28,7 @@
       <svg class="wordmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 9" shape-rendering="crispEdges" role="img" aria-label="p0ssess"><path class="wm-ink" d="M0 2h3v1h-3zM0 3h1v1h-1zM3 3h1v1h-1zM0 4h1v1h-1zM3 4h1v1h-1zM0 5h3v1h-3zM0 6h1v1h-1zM0 7h1v1h-1zM0 8h1v1h-1zM11 2h3v1h-3zM10 3h1v1h-1zM11 4h2v1h-2zM13 5h1v1h-1zM10 6h3v1h-3zM16 2h3v1h-3zM15 3h1v1h-1zM16 4h2v1h-2zM18 5h1v1h-1zM15 6h3v1h-3zM21 2h2v1h-2zM20 3h1v1h-1zM23 3h1v1h-1zM20 4h4v1h-4zM20 5h1v1h-1zM21 6h3v1h-3zM26 2h3v1h-3zM25 3h1v1h-1zM26 4h2v1h-2zM28 5h1v1h-1zM25 6h3v1h-3zM31 2h3v1h-3zM30 3h1v1h-1zM31 4h2v1h-2zM33 5h1v1h-1zM30 6h3v1h-3z"/><path class="wm-zero" d="M6 0h2v1h-2zM5 1h1v1h-1zM8 1h1v1h-1zM5 2h1v1h-1zM8 2h1v1h-1zM5 3h1v1h-1zM8 3h1v1h-1zM5 4h1v1h-1zM8 4h1v1h-1zM5 5h1v1h-1zM8 5h1v1h-1zM6 6h2v1h-2z"/></svg>
     </div>
     <h1>Claude stays in charge.</h1>
-    <p class="lede">p0ssess is a Claude Code plugin. When a job needs something Claude can’t do, like watching a video, or is bulk work another model can do for far less, Claude hands it over through OpenRouter, checks the result, and carries on. You see one line.</p>
+    <p class="lede">p0ssess is a Claude Code plugin. Its Predictive Model Engine scores every model that could do a job, Claude included. When another one is good enough and cheaper, or can do what Claude can’t, Claude hands the work over through OpenRouter, checks the result, and carries on. You see one line.</p>
     <div class="install">
       <pre><code>claude --plugin-dir /path/to/p0ssess</code></pre>
       <p class="small">The repository is private for now, and public releases are coming. Until then, load a checkout in place. <a href="#try">What you need</a></p>
@@ -45,18 +45,69 @@
   </figure>
 </header>
 
+<section class="sec engine" id="engine" aria-labelledby="engine-h">
+  <div class="copy">
+    <h2 id="engine-h">The Predictive Model Engine</h2>
+    <p class="lead">Every request that could leave Claude goes through it, and every model that could do the job is scored the same way, Claude included. It comes down to a score, a gate and a price.</p>
+    <h3>A score out of 100</h3>
+    <p>Each candidate gets a confidence score out of 100: a cautious estimate of how likely its result is to be accepted. It starts from licensed benchmarks and public usage data, and moves with your own history of what you kept and what Claude had to redo.</p>
+    <h3>A gate for every severity</h3>
+    <p>Claude rates each request from trivial to critical. Every level has a gate, and a model has to score at least that much to be considered at all.</p>
+    <table class="gates">
+      <thead><tr><th scope="col">Severity</th><th scope="col">For example</th><th scope="col">Gate</th><th scope="col">A mistake costs</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Trivial</th><td data-label="For example">Renames, log summaries, captions</td><td data-label="Gate">20</td><td data-label="A mistake costs">$0.01</td></tr>
+        <tr><th scope="row">Routine</th><td data-label="For example">Test drafts, transcripts, bulk edits Claude reviews</td><td data-label="Gate">35</td><td data-label="A mistake costs">$0.10</td></tr>
+        <tr><th scope="row">Important</th><td data-label="For example">Features that ship, security write-ups, migration plans</td><td data-label="Gate">60</td><td data-label="A mistake costs">$1</td></tr>
+        <tr><th scope="row">Critical</th><td data-label="For example">Auth, firewalls, infrastructure, production, money, anything sent to people</td><td data-label="Gate">80</td><td data-label="A mistake costs">$10</td></tr>
+      </tbody>
+    </table>
+    <p>Critical work also stays with Claude unless you write a rule that names a model for it.</p>
+    <h3>Then the lowest real cost wins</h3>
+    <p>Among the models that clear the gate, the engine picks the one that costs least overall: the price of the call, the Claude usage it spends or saves (worth more as you near your plan’s limit), the cost of handing the work off and checking it, and what a mistake would cost at that severity. Claude makes the final call, and your rules and budget have the last word.</p>
+    <p>That is also why small jobs stay put. A hand-off costs Claude $0.04 to $0.12 of its own usage, so anything cheaper than that to do in place never leaves.</p>
+    <figure class="gauge" aria-labelledby="gauge-cap">
+      <p class="gauge-task">One request: build a feature from a spec, and the tests decide. That’s important work, so the gate is 60.</p>
+      <div class="axis" aria-hidden="true"><span class="t20">20</span><span class="t35">35</span><span class="t60">60</span><span class="t80">80</span></div>
+      <ol class="bars">
+      <li class="pass"><span class="who">Claude Opus 5.5 <small>as an agent</small></span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="82" height="10"/><line class="gate-line" x1="60" x2="60" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">82</span><span class="cost">$1.03</span><span class="sr-only">clears the gate</span></li>
+      <li class="pass"><span class="who">Claude Sonnet 5.5 <small>in your session</small></span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="71" height="10"/><line class="gate-line" x1="60" x2="60" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">71</span><span class="cost">$0.54</span><span class="sr-only">clears the gate; Claude doing it itself</span></li>
+      <li class="pass win"><span class="who">GPT-6.1 Sol</span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="65" height="10"/><line class="gate-line" x1="60" x2="60" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">65</span><span class="cost">$0.51</span><span class="sr-only">clears the gate; lowest real cost, gets the job</span></li>
+      <li class="fail"><span class="who">DeepSeek V4.1 Flash</span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="40" height="10"/><line class="gate-line" x1="60" x2="60" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">40</span><span class="cost">below the gate</span><span class="sr-only">below the gate</span></li>
+      <li class="fail"><span class="who">Claude Haiku 5.5</span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="36" height="10"/><line class="gate-line" x1="60" x2="60" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">36</span><span class="cost">below the gate</span><span class="sr-only">below the gate</span></li>
+      <li class="fail"><span class="who">GLM-5.3-Flash</span><span class="track" aria-hidden="true"><svg viewBox="0 0 100 10" preserveAspectRatio="none"><rect class="fill" width="35" height="10"/><line class="gate-line" x1="60" x2="60" y1="0" y2="10" vector-effect="non-scaling-stroke"/></svg></span><span class="n">35</span><span class="cost">below the gate</span><span class="sr-only">below the gate</span></li>
+      </ol>
+      <figcaption id="gauge-cap">Confidence scores and real costs from the engine for this request on a pay-per-token plan, before any history, rounded. Three models clear the gate, and GPT-6.1 Sol costs least once Claude’s hand-off and review are counted, so it gets the job and Claude reviews the diff. On a subscription early in a usage window, Claude’s own time counts for less, and it keeps the work. Agent evidence: LMArena leaderboard dataset, rev f566816, agent subsets as of 2026-11-04. Licensed under CC BY 4.0.</figcaption>
+    </figure>
+  </div>
+  <figure class="scene" data-title="claude ~/billing-api" data-st="idle|" aria-labelledby="t-engine">
+    <figcaption class="sr-only" id="t-engine">Transcript: the engine’s ranking for a feature, and why a cheap model is missing.</figcaption>
+    <div class="log">
+      <p class="l in bang">p0ssess engine recommend --use-case code-implement-feature --stakes 3 --top 2</p>
+      <p class="l out" data-d="700">code-implement-feature (#8, agent) · stakes 3 · λ 1.00 (API-key plan: Claude at list price)</p>
+      <p class="l out c">   route   model              total    cash     claude   risk     p_fail</p>
+      <p class="l out c">1  agent   gpt-6.1-sol        $0.5101  $0.2110  $0.1180  $0.1811  0.30    ask: up to $0.633, above the $0.02 per-task limit; edits your code; first use of this model</p>
+      <p class="l out c">2  claude  claude-sonnet-5.5  $0.5395  $0.0000  $0.4000  $0.1395  0.23</p>
+      <p class="l out c">pick: handing this to gpt-6.1-sol: feature or function from a spec; tests must pass</p>
+      <p class="l in">why isn’t deepseek flash on the list?</p>
+      <p class="l ai" data-d="900">The engine left it out: “p_fail up to 0.60 is above the stakes-3 ceiling 0.40.” As a score, that’s 40 out of 100 against a gate of 60 for important work. GPT-6.1 Sol scores 65 and I score 71; Sol wins on cost, and I’d review its diff.</p>
+    </div>
+    <p class="foot"><span class="me">~/billing-api  Sonnet 5.5</span></p>
+  </figure>
+</section>
+
 <section class="sec" id="media" aria-labelledby="media-h">
   <div class="copy">
     <h2 id="media-h">Media Claude can’t watch</h2>
     <p>Claude reads code, text and images. It can’t watch a screen recording or listen to a voice memo. When a prompt mentions one, p0ssess adds a single line of context, and Claude sends the file to a model that can, with a prompt and a price ceiling. Then it works from the answer.</p>
-    <p>On real calls, Gemini 3.8 Flash described a ten-second clip for $0.0067, and Whisper transcribed sixteen seconds of speech for $0.0002. Nothing large goes out quietly: a video over the size or length limit stops and offers local ffmpeg steps (downscale, keyframes or segments), and Claude says which one it picked.</p>
+    <p>On real calls, Gemini 3.8 Flash described a ten-second clip for $0.0067 and was the only model tested that got every detail right, sound included. Whisper transcribed sixteen seconds of speech for $0.0002. Nothing large goes out quietly: a video over the size or length limit stops and offers local ffmpeg steps (downscale, keyframes or segments), and Claude says which one it picked.</p>
   </div>
   <figure class="scene" data-title="claude ~/shop-web" data-st="idle|" aria-labelledby="t-media">
     <figcaption class="sr-only" id="t-media">Transcript: a screen recording goes to Gemini 3.8 Flash.</figcaption>
     <div class="log">
-      <p class="l in">bug-repro.mp4 is the checkout crash. what happens right before it?</p>
+      <p class="l in">have gemini flash watch bug-repro.mp4. what happens right before the checkout crash?</p>
       <p class="l ai" data-d="700">handing this to gemini-3.8-flash: describe the screen recording</p>
-      <p class="l tool" data-d="500"><b>p0ssess - direct</b> (MCP)(model: "google/gemini-3.8-flash", prompt: "Describe what happens in this screen recording, with timestamps", files: ["…/bug-repro.mp4"], stakes: 1, max_cost_usd: 0.02)</p>
+      <p class="l tool" data-d="500"><b>p0ssess - direct</b> (MCP)(model: "google/gemini-3.8-flash", prompt: "Describe what happens in this screen recording, with timestamps", files: ["…/bug-repro.mp4"], use_case: "video-bug-repro", stakes: 1, max_cost_usd: 0.02)</p>
       <p class="l res" data-d="1500">&lt;answer&gt;</p>
       <p class="l res c">0:02  The cart shows two items and a coupon field.</p>
       <p class="l res c">0:05  “Place order” is clicked twice in quick succession.</p>
@@ -71,45 +122,70 @@
   </figure>
 </section>
 
-<section class="sec tall" id="bulk" aria-labelledby="bulk-h">
+<section class="sec tall" id="chores" aria-labelledby="chores-h">
   <div class="copy">
-    <h2 id="bulk-h">Bulk work at bulk prices</h2>
-    <p>Name a model and the work goes to it. For multi-step jobs on files, a small relay agent runs an OpenCode session on that model in a sandbox, in the background, and returns a diff from a separate git worktree. Nothing is merged. Claude reads the whole diff, runs the tests, and applies it only if it’s right.</p>
-    <p>In testing, DeepSeek V4.1 Flash finished small coding tasks for $0.001 to $0.005 each. The hand-off is the expensive part: every one took $0.04 to $0.12 of Claude’s own usage before the other model spent a cent. So p0ssess sends out work that is big enough to clear that line, and leaves the rest where it is.</p>
+    <h2 id="chores-h">Tedious code, handed to a coding agent</h2>
+    <p>Ask for a chore, like moving every handler to a new router API, and the engine looks for a cheap coding model whose work the tests can check. A small relay agent runs that model in OpenCode, in the background, in a sandbox pod of its own, on a separate git worktree. What comes back is a diff. Nothing lands until Claude has read it and run the tests.</p>
+    <p>Work that edits your code always asks first. In testing, DeepSeek V4.1 Flash finished small coding tasks for $0.001 to $0.005 each. The hand-off itself took $0.04 to $0.12 of Claude’s usage, which is why only jobs bigger than that go out.</p>
   </div>
-  <figure class="scene" data-title="claude ~/stats-lib" data-st="idle|$0.01 today" aria-labelledby="t-bulk">
-    <figcaption class="sr-only" id="t-bulk">Transcript: test drafting goes to DeepSeek V4.1 Flash in the sandbox.</figcaption>
+  <figure class="scene" data-title="claude ~/billing-api" data-st="idle|" aria-labelledby="t-chores">
+    <figcaption class="sr-only" id="t-chores">Transcript: a router migration goes to DeepSeek V4.1 Flash through the relay agent, and Claude reviews the diff.</figcaption>
     <div class="log">
-      <p class="l in">use deepseek flash to draft tests for stats.py</p>
-      <p class="l ai" data-d="600">handing this to deepseek-v4.1-flash: draft tests for stats.py</p>
-      <p class="l tool" data-d="500"><b>p0ssess:p0ssess</b>(Draft tests for stats.py)</p>
-      <p class="l res dim">deepseek/deepseek-v4.1-flash: draft tests for stats.py, edit mode, stakes 2, max $0.02</p>
+      <p class="l in">move the handlers in api/ to the v2 router. the tests should still pass</p>
+      <p class="l tool" data-d="600"><b>p0ssess - recommend</b> (MCP)(use_case: "migration-test-gated", stakes: 2)</p>
+      <p class="l res dim">{"use_case": {"id": "migration-test-gated", "n": 101, "task": "Bulk non-mechanical migration gated per file by…</p>
+      <p class="l ai" data-d="700">About $0.004 on deepseek-v4.1-flash-1017, up to $0.012 with retries. It edits your code in a separate worktree, and it’s the first use of this model. Go ahead?</p>
+      <p class="l in">go ahead</p>
+      <p class="l ai" data-d="500">handing this to deepseek-v4.1-flash-1017: bulk non-mechanical migration gated per file by tests, lint and type checks, with error-fed retries</p>
+      <p class="l tool" data-d="500"><b>p0ssess:p0ssess</b>(Move api/ handlers to the v2 router)</p>
+      <p class="l res dim">deepseek/deepseek-v4.1-flash-1017: move the handlers in api/ to the v2 router, run go test ./api/... after each file, edit mode, stakes 2, max $0.012</p>
       <p class="l res c" data-st="run|1 running  $0.01">Running in the background</p>
-      <p class="l sys" data-d="2200">Agent “draft tests for stats.py” finished</p>
-      <p class="l res">&lt;answer&gt;Added tests/test_stats.py: cases for mean, median, percentile and empty input. All pass.&lt;/answer&gt;</p>
-      <p class="l res c dim" data-st="idle|$0.01 today">done  deepseek/deepseek-v4.1-flash  $0.003  diff +88 −0</p>
-      <p class="l tool" data-d="700"><b>Bash</b>(python3 -m pytest tests/test_stats.py -q)</p>
-      <p class="l res" data-d="900">11 passed</p>
-      <p class="l ai" data-d="800">The tests look right. Two compare floats with ==, so I’ll apply the diff and switch those to pytest.approx.</p>
-      <p class="l tool"><b>Bash</b>(git apply ~/.config/p0ssess/runs/ses_4f1c/diff.patch)</p>
+      <p class="l sys" data-d="2200">Agent “Move api/ handlers to the v2 router” finished</p>
+      <p class="l res">&lt;answer&gt;Moved 9 handlers in api/ to router v2: new route registration, context-first signatures, typed path params. go test ./api/... passes.&lt;/answer&gt;</p>
+      <p class="l res c dim" data-st="idle|&lt;$0.01 today">done  deepseek/deepseek-v4.1-flash-1017  $0.004  diff +212 −187</p>
+      <p class="l ai" data-d="800">Reading the diff. It’s mechanical except in orders.go, where the rewrite dropped the idempotency-key check. Applying it with that line restored.</p>
+      <p class="l tool"><b>Bash</b>(git apply ~/.local/state/p0ssess/relay/runs/ses_4f1c/diff.patch)</p>
+      <p class="l tool" data-d="600"><b>Update</b>(api/orders.go)</p>
+      <p class="l res">Updated api/orders.go with 3 additions</p>
     </div>
-    <p class="foot"><span class="me">~/stats-lib  Sonnet 5.5</span><span class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  $0.01 today</span></p>
+    <p class="foot"><span class="me">~/billing-api  Sonnet 5.5</span><span class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  &lt;$0.01 today</span></p>
+  </figure>
+</section>
+
+<section class="sec" id="review" aria-labelledby="review-h">
+  <div class="copy">
+    <h2 id="review-h">A second opinion from another family</h2>
+    <p>Before a merge, ask for a review from outside Claude’s own family. The engine looks for a model that is good enough at code review and costs least; for a typical diff that was GLM-5.3-Flash, at an estimated $0.002. Claude checks each finding against the code, fixes what holds up and says what it skipped. The review adds to Claude’s own and never replaces it.</p>
+    <p>For important changes, Claude can also offer reviews from two other families at once, with their cost, before you decide.</p>
+  </div>
+  <figure class="scene" data-title="claude ~/retry" data-st="idle|" aria-labelledby="t-review">
+    <figcaption class="sr-only" id="t-review">Transcript: a diff goes to GLM-5.3-Flash for review, and Claude weighs the findings.</figcaption>
+    <div class="log">
+      <p class="l in">before I merge this branch, get a review from another model family</p>
+      <p class="l tool" data-d="600"><b>Bash</b>(git diff main...HEAD &gt; /tmp/retry.diff)</p>
+      <p class="l tool" data-d="500"><b>p0ssess - recommend</b> (MCP)(use_case: "code-review-diff", stakes: 2)</p>
+      <p class="l res dim">{"use_case": {"id": "code-review-diff", "n": 28, "task": "Review a diff or branch with a different family", …</p>
+      <p class="l ai" data-d="600">handing this to glm-5.3-flash: review a diff or branch with a different family</p>
+      <p class="l tool" data-d="500" data-st="run|1 running  $0.02"><b>p0ssess - direct</b> (MCP)(model: "z-ai/glm-5.3-flash", prompt: "Review this diff for bugs and missing tests. Give file and line for each finding.", files: ["/tmp/retry.diff"], use_case: "code-review-diff", stakes: 2, max_cost_usd: 0.02)</p>
+      <p class="l res" data-d="1600">&lt;answer&gt;</p>
+      <p class="l res c">1. retry.go:41  The delay doubles before the first sleep, so the first retry waits 2s, not the documented 1s.</p>
+      <p class="l res c">2. retry.go:58  Do ignores ctx while sleeping; a cancel waits out the whole backoff.</p>
+      <p class="l res c">3. retry_test.go  No test for a permanent error.</p>
+      <p class="l res c">&lt;/answer&gt;</p>
+      <p class="l res c dim" data-st="idle|&lt;$0.01 today">… +2 lines (ctrl+o to expand)</p>
+      <p class="l ai" data-d="800">The first two hold up. The third is already covered by TestDoStopsOnPermanent, so I’m skipping it. Fixing the backoff and making the sleep watch ctx.Done().</p>
+      <p class="l tool"><b>Update</b>(retry.go)</p>
+      <p class="l res">Updated retry.go with 6 additions and 3 removals</p>
+    </div>
+    <p class="foot"><span class="me">~/retry  Sonnet 5.5</span><span class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  &lt;$0.01 today</span></p>
   </figure>
 </section>
 
 <section class="sec" id="stakes" aria-labelledby="stakes-h">
   <div class="copy">
     <h2 id="stakes-h">Some work stays with Claude</h2>
-    <p>Every route is scored the same way, Claude included: the cash, the Claude usage it spends or saves, the chance the result isn’t accepted, and what a bad result would cost. The lowest expected cost per accepted result wins, and Claude makes the call.</p>
-    <p>What a bad result costs depends on the stakes. Claude rates each task from 1 to 4 and only mentions the rating when it changes where the work goes.</p>
-    <dl class="stakes">
-      <div><dt>1 Trivial</dt><dd>Renames, log summaries, captions. Easy to undo, and mistakes are obvious.</dd></div>
-      <div><dt>2 Routine</dt><dd>Test drafts, transcripts, bulk edits Claude reviews.</dd></div>
-      <div><dt>3 Important</dt><dd>Features that ship, security write-ups, migration plans.</dd></div>
-      <div><dt>4 Critical</dt><dd>Auth, firewalls, infrastructure, production, money, anything sent to other people.</dd></div>
-    </dl>
-    <p>Critical work stays on Claude unless you write a rule that names a model for it, and the tools enforce that whatever Claude decides. Small work stays too: a rename costs Claude less to do than to hand off, so it is never offered. If a rating is wrong, say so.</p>
-    <p>For important code changes, Claude can also offer a second opinion from two other model families, with its cost. It adds to Claude’s own review and never replaces it.</p>
+    <p>When a request is critical, the gate decides before price does. Ask for a firewall change on a cheap model and Claude says so in one line, then does the work itself. The tools that spend enforce the same gate, whatever Claude decides.</p>
+    <p>Small work stays too, without a word: a rename costs Claude less to do than to hand off. If a rating looks wrong, say so in plain words and Claude uses yours.</p>
   </div>
   <figure class="scene" data-title="claude ~/edge" data-st="idle|" aria-labelledby="t-stakes">
     <figcaption class="sr-only" id="t-stakes">Transcript: a firewall change stays on Claude; a rename stays without comment.</figcaption>
@@ -138,18 +214,20 @@
     <p>A rules file that arrives inside a cloned repository can only tighten your limits. Anything that would loosen them is ignored, and you’re told once.</p>
   </div>
   <figure class="scene" data-title="claude ~/talks" data-st="idle|" aria-labelledby="t-rules">
-    <figcaption class="sr-only" id="t-rules">Transcript: a standing approval in plain language, then a video job that runs without asking.</figcaption>
+    <figcaption class="sr-only" id="t-rules">Transcript: a rule and a standing approval in plain language, then a video job that runs without asking.</figcaption>
     <div class="log">
-      <p class="l in">auto-approve video descriptions up to 15 cents each</p>
-      <p class="l tool" data-d="600"><b>p0ssess - approvals_add</b> (MCP)(use_cases: ["video-understand"], max_per_run_usd: 0.15, scope: "global", dry_run: true)</p>
+      <p class="l in">only use gemini-3.8-flash for video, and auto-approve video descriptions up to 15 cents each</p>
+      <p class="l tool" data-d="600"><b>p0ssess - rules_add</b> (MCP)(kind: "only", models: ["google/gemini-3.8-flash"], kinds: ["media"], scope: "global", dry_run: true)</p>
+      <p class="l res">only use gemini-3.8-flash for media work (global)</p>
+      <p class="l tool" data-d="500"><b>p0ssess - approvals_add</b> (MCP)(use_cases: ["video-understand"], max_per_run_usd: 0.15, scope: "global", dry_run: true)</p>
       <p class="l res">auto-approve for video-understand up to $0.15 each (global)</p>
-      <p class="l ai" data-d="600">auto-approve for video-understand up to $0.15 each (global). Save it?</p>
+      <p class="l ai" data-d="600">Two rules: only use gemini-3.8-flash for media work (global), and auto-approve for video-understand up to $0.15 each (global). Save both?</p>
       <p class="l in">yes</p>
-      <p class="l tool" data-d="500"><b>p0ssess - approvals_add</b> (MCP)(use_cases: ["video-understand"], max_per_run_usd: 0.15, scope: "global")</p>
-      <p class="l res">saved</p>
+      <p class="l tool" data-d="500"><b>p0ssess - rules_add</b> (MCP)(kind: "only", models: ["google/gemini-3.8-flash"], kinds: ["media"], scope: "global")</p>
+      <p class="l tool" data-d="300"><b>p0ssess - approvals_add</b> (MCP)(use_cases: ["video-understand"], max_per_run_usd: 0.15, scope: "global")</p>
       <p class="l in">what changes between take-1.mp4 and take-2.mp4?</p>
       <p class="l ai" data-d="600">handing this to gemini-3.8-flash: compare the two takes</p>
-      <p class="l tool" data-d="500"><b>p0ssess - direct</b> (MCP)(model: "google/gemini-3.8-flash", prompt: "Compare the two takes", files: ["…/take-1.mp4", "…/take-2.mp4"], stakes: 1, max_cost_usd: 0.15)</p>
+      <p class="l tool" data-d="500"><b>p0ssess - direct</b> (MCP)(model: "google/gemini-3.8-flash", prompt: "Compare the two takes", files: ["…/take-1.mp4", "…/take-2.mp4"], use_case: "video-understand", stakes: 1, max_cost_usd: 0.15)</p>
       <p class="l res" data-d="1500" data-st="idle|$0.01 today">&lt;answer&gt;Take 2 drops the intro slide and starts on the demo; the closing line is the same.&lt;/answer&gt;</p>
     </div>
     <p class="foot"><span class="me">~/talks  Sonnet 5.5</span><span class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  $0.01 today</span></p>
@@ -236,11 +314,26 @@
   </figure>
 </section>
 
-<section class="sec" id="data" aria-labelledby="data-h">
+<section class="sec tall" id="data" aria-labelledby="data-h">
   <div class="copy">
-    <h2 id="data-h">Numbers with a source</h2>
-    <p>The engine starts from data whose license allows reuse, and every value carries its source and date: OpenRouter’s public model list and Data API (CC BY 4.0), LMArena’s leaderboard dataset (CC BY 4.0), the benchmarks Epoch AI runs itself (CC BY 4.0), and models.dev (MIT) as a cross-check. Where no clean benchmark exists, as for audio and video, it says so and learns from your own outcomes.</p>
-    <p>The catalog holds 104 use cases, each backed by public evidence, with a recommended model, alternatives that include Claude on equal footing, stakes, expected cost, and how Claude checks the result.</p>
+    <h2 id="data-h">Built from 104 use cases</h2>
+    <p>The engine was built from 104 researched use cases, each backed by public evidence. About half are grounded in OpenRouter usage data, the other half in what Claude Code can’t do or does expensively. Each lists a recommended model, alternatives with Claude on equal footing, a severity, an expected cost, and how Claude checks the result. A few of them:</p>
+    <table class="cases">
+      <thead><tr><th scope="col">Use case</th><th scope="col">Catalog pick</th><th scope="col">Estimate</th></tr></thead>
+      <tbody>
+        <tr><td>Summarize a talk, meeting or lecture video</td><td data-label="Catalog pick">Gemini 3.8 Flash</td><td data-label="Estimate">$0.05–0.15 per 10 minutes</td></tr>
+        <tr><td>Meetings, memos and interviews to text</td><td data-label="Catalog pick">Whisper large v3 turbo</td><td data-label="Estimate">about $0.006 per 30 minutes</td></tr>
+        <tr><td>Bulk migration, gated file by file by tests</td><td data-label="Catalog pick">DeepSeek V4.1 Flash</td><td data-label="Estimate">about $0.002 per attempt</td></tr>
+        <tr><td>Condense big logs or CI output</td><td data-label="Catalog pick">DeepSeek V4.1 Flash</td><td data-label="Estimate">$0.004–0.013 per 1 MB log</td></tr>
+        <tr><td>Translate new keys in locale files</td><td data-label="Catalog pick">Gemini 3.8 Flash</td><td data-label="Estimate">about $0.017 per locale</td></tr>
+        <tr><td>Icons, illustrations, hero images</td><td data-label="Catalog pick">Gemini 3.1 Flash Image</td><td data-label="Estimate">about $0.04 per image</td></tr>
+        <tr><td>Label many issues, logs or files</td><td data-label="Catalog pick">GLM-5.3-Flash</td><td data-label="Estimate">about $0.04 per 1,000 items</td></tr>
+        <tr><td>Firewall rules, Terraform, IAM policies</td><td data-label="Catalog pick">Stays with Claude</td><td data-label="Estimate">critical</td></tr>
+        <tr><td>Auth, session, crypto and payment code</td><td data-label="Catalog pick">Stays with Claude</td><td data-label="Estimate">critical</td></tr>
+      </tbody>
+    </table>
+    <p class="small">Estimates are the catalog’s list-price figures; the engine prices each request again from live data.</p>
+    <p>Every number comes from data whose license allows reuse, with its source and date: OpenRouter’s public model list and Data API (CC BY 4.0), LMArena’s leaderboard dataset (CC BY 4.0), the benchmarks Epoch AI runs itself (CC BY 4.0), and models.dev (MIT) as a cross-check. Where no clean benchmark exists, as for audio and video, the engine says so and learns from your own outcomes.</p>
     <p>Sometimes the market and the evidence disagree. Cheap flash models run a 10–49-turn Claude Code session for a median $0.027 on DeepSeek V4.1 Flash, against $0.534 on Sonnet 5.5. On LMArena’s agent board, Opus 5.5 scores 0.201 and DeepSeek V4.1 Flash 0.024. The engine follows the evidence and treats agentic hand-offs as a priced risk.</p>
     <p class="cite">Session costs: Source: OpenRouter Data API (openrouter.ai/docs/cookbook/administration/data-api), as of 2026-11-02T07:25:14.332Z. Licensed under CC BY 4.0. Agent scores: LMArena leaderboard dataset, rev f566816, agent subsets as of 2026-11-04. Licensed under CC BY 4.0.</p>
   </div>
@@ -254,7 +347,7 @@
       <p class="l out c">2  direct  gemma-4-26b-a4b-it  $0.0773  $0.0058  $0.0550  $0.0165  0.25    ask: first use of this model</p>
       <p class="l out c">pick: handing this to glm-5.3-flash: summarize a talk, meeting or lecture video</p>
       <p class="l in">why is there no claude row?</p>
-      <p class="l ai" data-d="800">Claude can’t watch video, so it isn’t a candidate. There’s no clean video benchmark either, so the catalog’s ordering is the prior until your own outcomes move it.</p>
+      <p class="l ai" data-d="800">Claude can’t watch video, so it isn’t a candidate. There’s no clean video benchmark either, so the catalog’s ordering is the prior: Gemini 3.8 Flash is its pick, but with no history yet GLM-5.3-Flash wins on price at this severity. Your own outcomes move that.</p>
     </div>
     <p class="foot"><span class="me">~/talks  Sonnet 5.5</span></p>
   </figure>
