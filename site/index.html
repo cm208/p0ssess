@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>p0ssess</title>
+<meta name="description" content="A Claude Code plugin. Claude stays in charge and hands video, audio and bulk work to other models through OpenRouter, within your budget and rules.">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#101119" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f5f5fa" media="(prefers-color-scheme: light)">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preload" href="fonts/atkinson-next.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/atkinson-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+<script src="scenes.js" defer></script>
+</head>
+<body>
+
+<main class="story">
+<div class="track">
+
+<header class="sec hero" id="top">
+  <div class="copy">
+    <div class="lockup">
+      <svg class="ghost" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 15 15" shape-rendering="crispEdges" aria-hidden="true"><path class="g-body" d="M5 0h5v1h-5zM3 1h9v1h-9zM2 2h11v1h-11zM1 3h13v1h-13zM1 4h3v1h-3zM11 4h3v1h-3zM0 5h2v1h-2zM13 5h2v1h-2zM0 6h1v1h-1zM14 6h1v1h-1zM0 7h1v1h-1zM14 7h1v1h-1zM0 8h1v1h-1zM14 8h1v1h-1zM0 9h1v1h-1zM14 9h1v1h-1zM0 10h2v1h-2zM13 10h2v1h-2zM0 11h3v1h-3zM12 11h3v1h-3zM0 12h15v1h-15zM0 13h15v1h-15zM0 14h1v1h-1zM2 14h3v1h-3zM6 14h3v1h-3zM10 14h3v1h-3zM14 14h1v1h-1z"/><path class="g-mask" d="M4 4h7v1h-7zM2 5h11v1h-11zM1 6h3v1h-3zM5 6h5v1h-5zM11 6h3v1h-3zM1 7h3v1h-3zM5 7h5v1h-5zM11 7h3v1h-3zM1 8h13v1h-13zM1 9h6v1h-6zM8 9h6v1h-6zM2 10h4v1h-4zM7 10h1v1h-1zM9 10h4v1h-4zM3 11h4v1h-4zM8 11h4v1h-4z"/><path class="g-eye" d="M4 6h1v1h-1zM10 6h1v1h-1zM4 7h1v1h-1zM10 7h1v1h-1zM7 9h1v1h-1zM6 10h1v1h-1zM8 10h1v1h-1zM7 11h1v1h-1z"/></svg>
+      <svg class="wordmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 9" shape-rendering="crispEdges" role="img" aria-label="p0ssess"><path class="wm-ink" d="M0 2h3v1h-3zM0 3h1v1h-1zM3 3h1v1h-1zM0 4h1v1h-1zM3 4h1v1h-1zM0 5h3v1h-3zM0 6h1v1h-1zM0 7h1v1h-1zM0 8h1v1h-1zM11 2h3v1h-3zM10 3h1v1h-1zM11 4h2v1h-2zM13 5h1v1h-1zM10 6h3v1h-3zM16 2h3v1h-3zM15 3h1v1h-1zM16 4h2v1h-2zM18 5h1v1h-1zM15 6h3v1h-3zM21 2h2v1h-2zM20 3h1v1h-1zM23 3h1v1h-1zM20 4h4v1h-4zM20 5h1v1h-1zM21 6h3v1h-3zM26 2h3v1h-3zM25 3h1v1h-1zM26 4h2v1h-2zM28 5h1v1h-1zM25 6h3v1h-3zM31 2h3v1h-3zM30 3h1v1h-1zM31 4h2v1h-2zM33 5h1v1h-1zM30 6h3v1h-3z"/><path class="wm-zero" d="M6 0h2v1h-2zM5 1h1v1h-1zM8 1h1v1h-1zM5 2h1v1h-1zM8 2h1v1h-1zM5 3h1v1h-1zM8 3h1v1h-1zM5 4h1v1h-1zM8 4h1v1h-1zM5 5h1v1h-1zM8 5h1v1h-1zM6 6h2v1h-2z"/></svg>
+    </div>
+    <h1>Claude stays in charge.</h1>
+    <p class="lede">p0ssess is a Claude Code plugin. When a job needs something Claude can’t do, like watching a video, or is bulk work another model can do for far less, Claude hands it over through OpenRouter, checks the result, and carries on. You see one line.</p>
+    <div class="install">
+      <pre><code>claude --plugin-dir /path/to/p0ssess</code></pre>
+      <p class="small">The repository is private for now, and public releases are coming. Until then, load a checkout in place. <a href="#try">What you need</a></p>
+    </div>
+    <p class="hint">The terminal replays a Claude Code session for each part of this page. Here p0ssess has nothing to say, which is how it spends most of its time.</p>
+  </div>
+  <figure class="scene" data-title="claude ~/shop-web" data-st="idle|" data-ph="scroll to continue" aria-labelledby="t-hero">
+    <figcaption class="sr-only" id="t-hero">Transcript: an ordinary question. p0ssess stays silent.</figcaption>
+    <div class="log">
+      <p class="l in">why does parseRange("") return [0, 0]?</p>
+      <p class="l ai" data-d="900">The early return on line 14 treats an empty string as “no range” and falls through to the default. Returning null there would let callers tell the two cases apart. Want me to change it?</p>
+    </div>
+    <p class="foot"><span class="me">~/shop-web  Sonnet 5.5</span></p>
+  </figure>
+</header>
+
+<section class="sec" id="media" aria-labelledby="media-h">
+  <div class="copy">
+    <h2 id="media-h">Media Claude can’t watch</h2>
+    <p>Claude reads code, text and images. It can’t watch a screen recording or listen to a voice memo. When a prompt mentions one, p0ssess adds a single line of context, and Claude sends the file to a model that can, with a prompt and a price ceiling. Then it works from the answer.</p>
+    <p>On real calls, Gemini 3.8 Flash described a ten-second clip for $0.0067, and Whisper transcribed sixteen seconds of speech for $0.0002. Nothing large goes out quietly: a video over the size or length limit stops and offers local ffmpeg steps (downscale, keyframes or segments), and Claude says which one it picked.</p>
+  </div>
+  <figure class="scene" data-title="claude ~/shop-web" data-st="idle|" aria-labelledby="t-media">
+    <figcaption class="sr-only" id="t-media">Transcript: a screen recording goes to Gemini 3.8 Flash.</figcaption>
+    <div class="log">
+      <p class="l in">bug-repro.mp4 is the checkout crash. what happens right before it?</p>
+      <p class="l ai" data-d="700">handing this to gemini-3.8-flash: describe the screen recording</p>
+      <p class="l tool" data-d="500"><b>p0ssess - direct</b> (MCP)(model: "google/gemini-3.8-flash", prompt: "Describe what happens in this screen recording, with timestamps", files: ["…/bug-repro.mp4"], stakes: 1, max_cost_usd: 0.02)</p>
+      <p class="l res" data-d="1500">&lt;answer&gt;</p>
+      <p class="l res c">0:02  The cart shows two items and a coupon field.</p>
+      <p class="l res c">0:05  “Place order” is clicked twice in quick succession.</p>
+      <p class="l res c">0:07  A red toast reads “order_id is undefined” and the page goes blank.</p>
+      <p class="l res c">&lt;/answer&gt;</p>
+      <p class="l res c dim" data-st="idle|$0.01 today">google/gemini-3.8-flash  Google AI Studio  cost $0.006684  estimate $0.0058</p>
+      <p class="l ai" data-d="800">The second click submits again before the first request returns an order_id. I’ll disable the button while the order is in flight.</p>
+      <p class="l tool"><b>Update</b>(src/checkout/PlaceOrder.tsx)</p>
+      <p class="l res">Updated src/checkout/PlaceOrder.tsx with 2 additions and 1 removal</p>
+    </div>
+    <p class="foot"><span class="me">~/shop-web  Sonnet 5.5</span><span class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  $0.01 today</span></p>
+  </figure>
+</section>
+
+<section class="sec tall" id="bulk" aria-labelledby="bulk-h">
+  <div class="copy">
+    <h2 id="bulk-h">Bulk work at bulk prices</h2>
+    <p>Name a model and the work goes to it. For multi-step jobs on files, a small relay agent runs an OpenCode session on that model in a sandbox, in the background, and returns a diff from a separate git worktree. Nothing is merged. Claude reads the whole diff, runs the tests, and applies it only if it’s right.</p>
+    <p>In testing, DeepSeek V4.1 Flash finished small coding tasks for $0.001 to $0.005 each. The hand-off is the expensive part: every one took $0.04 to $0.12 of Claude’s own usage before the other model spent a cent. So p0ssess sends out work that is big enough to clear that line, and leaves the rest where it is.</p>
+  </div>
+  <figure class="scene" data-title="claude ~/stats-lib" data-st="idle|$0.01 today" aria-labelledby="t-bulk">
+    <figcaption class="sr-only" id="t-bulk">Transcript: test drafting goes to DeepSeek V4.1 Flash in the sandbox.</figcaption>
+    <div class="log">
+      <p class="l in">use deepseek flash to draft tests for stats.py</p>
+      <p class="l ai" data-d="600">handing this to deepseek-v4.1-flash: draft tests for stats.py</p>
+      <p class="l tool" data-d="500"><b>p0ssess:p0ssess</b>(Draft tests for stats.py)</p>
+      <p class="l res dim">deepseek/deepseek-v4.1-flash: draft tests for stats.py, edit mode, stakes 2, max $0.02</p>
+      <p class="l res c" data-st="run|1 running  $0.01">Running in the background</p>
+      <p class="l sys" data-d="2200">Agent “draft tests for stats.py” finished</p>
+      <p class="l res">&lt;answer&gt;Added tests/test_stats.py: cases for mean, median, percentile and empty input. All pass.&lt;/answer&gt;</p>
+      <p class="l res c dim" data-st="idle|$0.01 today">done  deepseek/deepseek-v4.1-flash  $0.003  diff +88 −0</p>
+      <p class="l tool" data-d="700"><b>Bash</b>(python3 -m pytest tests/test_stats.py -q)</p>
+      <p class="l res" data-d="900">11 passed</p>
+      <p class="l ai" data-d="800">The tests look right. Two compare floats with ==, so I’ll apply the diff and switch those to pytest.approx.</p>
+      <p class="l tool"><b>Bash</b>(git apply ~/.config/p0ssess/runs/ses_4f1c/diff.patch)</p>
+    </div>
+    <p class="foot"><span class="me">~/stats-lib  Sonnet 5.5</span><span class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  $0.01 today</span></p>
+  </figure>
+</section>
+
+<section class="sec" id="stakes" aria-labelledby="stakes-h">
+  <div class="copy">
+    <h2 id="stakes-h">Some work stays with Claude</h2>
+    <p>Every route is scored the same way, Claude included: the cash, the Claude usage it spends or saves, the chance the result isn’t accepted, and what a bad result would cost. The lowest expected cost per accepted result wins, and Claude makes the call.</p>
+    <p>What a bad result costs depends on the stakes. Claude rates each task from 1 to 4 and only mentions the rating when it changes where the work goes.</p>
+    <dl class="stakes">
+      <div><dt>1 Trivial</dt><dd>Renames, log summaries, captions. Easy to undo, and mistakes are obvious.</dd></div>
+      <div><dt>2 Routine</dt><dd>Test drafts, transcripts, bulk edits Claude reviews.</dd></div>
+      <div><dt>3 Important</dt><dd>Features that ship, security write-ups, migration plans.</dd></div>
+      <div><dt>4 Critical</dt><dd>Auth, firewalls, infrastructure, production, money, anything sent to other people.</dd></div>
+    </dl>
+    <p>Critical work stays on Claude unless you write a rule that names a model for it, and the tools enforce that whatever Claude decides. Small work stays too: a rename costs Claude less to do than to hand off, so it is never offered. If a rating is wrong, say so.</p>
+    <p>For important code changes, Claude can also offer a second opinion from two other model families, with its cost. It adds to Claude’s own review and never replaces it.</p>
+  </div>
+  <figure class="scene" data-title="claude ~/edge" data-st="idle|" aria-labelledby="t-stakes">
+    <figcaption class="sr-only" id="t-stakes">Transcript: a firewall change stays on Claude; a rename stays without comment.</figcaption>
+    <div class="log">
+      <p class="l in">use deepseek flash to open 443 for the new ingress in nft/edge.nft</p>
+      <p class="l ai" data-d="700">critical: keeping this on Claude</p>
+      <p class="l tool" data-d="500"><b>Read</b>(nft/edge.nft)</p>
+      <p class="l res">Read 64 lines</p>
+      <p class="l tool" data-d="700"><b>Update</b>(nft/edge.nft)</p>
+      <p class="l res">Updated nft/edge.nft with 1 addition</p>
+      <p class="l ai" data-d="700">Added an accept rule for tcp/443 to the ingress address only, above the default drop. Firewall changes stay here unless you add a rule that allows a model at stakes 4.</p>
+      <p class="l in">rename getUsr to getUser everywhere</p>
+      <p class="l tool" data-d="700"><b>Update</b>(src/users.ts)</p>
+      <p class="l res">Updated src/users.ts with 3 additions and 3 removals</p>
+      <p class="l ai" data-d="600">Renamed it in src/users.ts, the only file that used it.</p>
+    </div>
+    <p class="foot"><span class="me">~/edge  Sonnet 5.5</span></p>
+  </figure>
+</section>
+
+<section class="sec" id="rules" aria-labelledby="rules-h">
+  <div class="copy">
+    <h2 id="rules-h">Rules in your own words</h2>
+    <p>Say what you want: “never use grok”, “only use gemini-3.8-flash for video”, “keep this repo on Claude”. Claude writes the structured rule, shows it to you in one line, and saves it when you say yes. A rule can cover the session, the project or everything, and it can expire.</p>
+    <p>A standing approval pre-approves a kind of job up to a price. Once one covers a job, repeats run without asking and still get their one line. p0ssess may suggest an approval after you’ve said yes to the same thing a few times. It never makes one on its own.</p>
+    <p>A rules file that arrives inside a cloned repository can only tighten your limits. Anything that would loosen them is ignored, and you’re told once.</p>
+  </div>
+  <figure class="scene" data-title="claude ~/talks" data-st="idle|" aria-labelledby="t-rules">
+    <figcaption class="sr-only" id="t-rules">Transcript: a standing approval in plain language, then a video job that runs without asking.</figcaption>
+    <div class="log">
+      <p class="l in">auto-approve video descriptions up to 15 cents each</p>
+      <p class="l tool" data-d="600"><b>p0ssess - approvals_add</b> (MCP)(use_cases: ["video-understand"], max_per_run_usd: 0.15, scope: "global", dry_run: true)</p>
+      <p class="l res">auto-approve for video-understand up to $0.15 each (global)</p>
+      <p class="l ai" data-d="600">auto-approve for video-understand up to $0.15 each (global). Save it?</p>
+      <p class="l in">yes</p>
+      <p class="l tool" data-d="500"><b>p0ssess - approvals_add</b> (MCP)(use_cases: ["video-understand"], max_per_run_usd: 0.15, scope: "global")</p>
+      <p class="l res">saved</p>
+      <p class="l in">what changes between take-1.mp4 and take-2.mp4?</p>
+      <p class="l ai" data-d="600">handing this to gemini-3.8-flash: compare the two takes</p>
+      <p class="l tool" data-d="500"><b>p0ssess - direct</b> (MCP)(model: "google/gemini-3.8-flash", prompt: "Compare the two takes", files: ["…/take-1.mp4", "…/take-2.mp4"], stakes: 1, max_cost_usd: 0.15)</p>
+      <p class="l res" data-d="1500" data-st="idle|$0.01 today">&lt;answer&gt;Take 2 drops the intro slide and starts on the demo; the closing line is the same.&lt;/answer&gt;</p>
+    </div>
+    <p class="foot"><span class="me">~/talks  Sonnet 5.5</span><span class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  $0.01 today</span></p>
+  </figure>
+</section>
+
+<section class="sec" id="ghost" aria-labelledby="ghost-h">
+  <div class="copy">
+    <h2 id="ghost-h">A ghost in the status line</h2>
+    <p>p0ssess adds one segment after your own status line, and shows nothing at all until something has happened that day.</p>
+    <ul class="states">
+      <li><span class="say">Idle, spent today</span><code class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  $0.14 today</code></li>
+      <li><span class="say">Working</span><code class="seg run"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  2 running  $0.14</code></li>
+      <li><span class="say">Near the budget</span><code class="seg amber"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  $8.10 of $10 this month</code></li>
+    </ul>
+    <p>Muted when idle, a little brighter while something runs, amber near your budget. Never red, never animated.</p>
+    <p><code>/p0ssess:p0ssess-me</code> walks through the budget, your Claude plan and privacy, one question at a time, then opens a local page with spend against each limit, recent hand-offs, what it has learned, your rules and your settings. The page listens on 127.0.0.1, loads nothing from the network, and stops after two hours.</p>
+  </div>
+  <figure class="scene" data-title="claude ~/talks" data-st="amber|$8.10 of $10 this month" aria-labelledby="t-ghost">
+    <figcaption class="sr-only" id="t-ghost">Transcript: the settings walkthrough near the monthly cap, then the local page.</figcaption>
+    <div class="log">
+      <p class="l in">/p0ssess:p0ssess-me</p>
+      <p class="l tool" data-d="600"><b>p0ssess - budget_status</b> (MCP)</p>
+      <p class="l ai" data-d="800">You’ve spent $8.10 of your $10 cap this month, on a subscription plan with no-training privacy. There’s a fresh Claude usage reading.</p>
+      <p class="l ai" data-d="500">Monthly cap: $10. Keep it, or change it?</p>
+      <p class="l in">keep it</p>
+      <p class="l tool" data-d="600"><b>Bash</b>(p0ssess me --open)</p>
+      <p class="l res" data-d="700">http://127.0.0.1:41873/9c2e…/</p>
+      <p class="l ai" data-d="600">Your page is open at that address. It only listens on 127.0.0.1, makes no outside requests, and stops after two hours.</p>
+    </div>
+    <p class="foot"><span class="me">~/talks  Sonnet 5.5</span><span class="seg amber"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  $8.10 of $10 this month</span></p>
+  </figure>
+</section>
+
+<section class="sec tall" id="sandbox" aria-labelledby="sandbox-h">
+  <div class="copy">
+    <h2 id="sandbox-h">The sandbox</h2>
+    <p>Multi-step work runs in OpenCode inside a rootless podman pod. Only the repository is mounted, read-only, plus separate worktrees for edits. There is no home directory, no SSH key and no credential inside. The pod can reach the internet, but nftables rules loaded from outside it block your local network, Tailscale and the host.</p>
+    <p>Your OpenRouter key lives in a proxy container next to the agent, which the model never sees. Every shell command the model runs gets fresh namespaces and a scrubbed environment, so by default it has no network at all. A command outside the task’s allowlist pauses the run and comes back to Claude, which can allow it once or refuse.</p>
+    <p>Rules, stakes, privacy and every spending limit are checked by the tool that spends, not left to Claude’s judgment. Each call’s maximum is reserved before it goes out, so parallel calls can’t overshoot.</p>
+    <p>Before release, an independent review found that a delegated edit task could run code on the host through a tampered git worktree. That is fixed, with a regression test, along with the review’s other high-priority findings.</p>
+  </div>
+  <figure class="scene" data-title="claude ~/parser" data-st="idle|$0.02 today" aria-labelledby="t-sandbox">
+    <figcaption class="sr-only" id="t-sandbox">Transcript: a sandboxed run asks to install a package, and Claude says no.</figcaption>
+    <div class="log">
+      <p class="l in">use deepseek flash to add property tests for parser.py</p>
+      <p class="l ai" data-d="600">handing this to deepseek-v4.1-flash: add property tests for parser.py</p>
+      <p class="l tool" data-d="500"><b>p0ssess:p0ssess</b>(Add property tests for parser.py)</p>
+      <p class="l res dim">deepseek/deepseek-v4.1-flash: add property tests for parser.py, edit mode, stakes 2, max $0.02</p>
+      <p class="l res c" data-st="run|1 running  $0.02">Running in the background</p>
+      <p class="l sys" data-d="1800">Agent “add property tests for parser.py” paused</p>
+      <p class="l res">needs_permission  bash: pip install hypothesis</p>
+      <p class="l ai" data-d="800">Rejecting that one. Commands in the sandbox have no network, so pip can’t install anything; the standard library will do.</p>
+      <p class="l tool" data-d="500"><b>SendMessage</b>(p0ssess: reject, and use unittest from the standard library)</p>
+      <p class="l sys" data-d="2000">Agent “add property tests for parser.py” finished</p>
+      <p class="l res">&lt;answer&gt;Added tests/test_parser.py: table-driven unittest cases for empty, nested and malformed input. python3 -m unittest passes.&lt;/answer&gt;</p>
+      <p class="l res c dim" data-st="idle|$0.02 today">done  deepseek/deepseek-v4.1-flash  $0.004  diff +61 −0</p>
+      <p class="l ai" data-d="800">The diff only touches tests/test_parser.py. Reading it now.</p>
+    </div>
+    <p class="foot"><span class="me">~/parser  Sonnet 5.5</span><span class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  $0.02 today</span></p>
+  </figure>
+</section>
+
+<section class="sec" id="wont" aria-labelledby="wont-h">
+  <div class="copy">
+    <h2 id="wont-h">What it won’t do</h2>
+    <ul class="wont">
+      <li>Patch, preload into or otherwise modify Claude Code.</li>
+      <li>Send prompts to providers that train on them. Every call says so to OpenRouter, and zero-retention mode is one setting away.</li>
+      <li>Spend past your monthly cap.</li>
+      <li>Create a rule or a standing approval on its own.</li>
+      <li>Attach files that look like secrets, or send anything from a repository with a <code>.p0ssess-private</code> file.</li>
+      <li>Read, store or relay your Claude credentials.</li>
+      <li>Phone home. There is no telemetry. The history it learns from stays in local files and never holds prompt content.</li>
+    </ul>
+  </div>
+  <figure class="scene" data-title="claude ~/standups" data-st="idle|" aria-labelledby="t-wont">
+    <figcaption class="sr-only" id="t-wont">Transcript: a private repository blocks delegation.</figcaption>
+    <div class="log">
+      <p class="l in">transcribe standup.m4a and list the action items</p>
+      <p class="l ai" data-d="900">This repository has a .p0ssess-private file, so p0ssess won’t send anything from it, and I can’t listen to audio myself. If that file is no longer what you want, remove it and ask again.</p>
+    </div>
+    <p class="foot"><span class="me">~/standups  Sonnet 5.5</span></p>
+  </figure>
+</section>
+
+<section class="sec" id="data" aria-labelledby="data-h">
+  <div class="copy">
+    <h2 id="data-h">Numbers with a source</h2>
+    <p>The engine starts from data whose license allows reuse, and every value carries its source and date: OpenRouter’s public model list and Data API (CC BY 4.0), LMArena’s leaderboard dataset (CC BY 4.0), the benchmarks Epoch AI runs itself (CC BY 4.0), and models.dev (MIT) as a cross-check. Where no clean benchmark exists, as for audio and video, it says so and learns from your own outcomes.</p>
+    <p>The catalog holds 104 use cases, each backed by public evidence, with a recommended model, alternatives that include Claude on equal footing, stakes, expected cost, and how Claude checks the result.</p>
+    <p>Sometimes the market and the evidence disagree. Cheap flash models run a 10–49-turn Claude Code session for a median $0.027 on DeepSeek V4.1 Flash, against $0.534 on Sonnet 5.5. On LMArena’s agent board, Opus 5.5 scores 0.201 and DeepSeek V4.1 Flash 0.024. The engine follows the evidence and treats agentic hand-offs as a priced risk.</p>
+    <p class="cite">Session costs: Source: OpenRouter Data API (openrouter.ai/docs/cookbook/administration/data-api), as of 2026-11-02T07:25:14.332Z. Licensed under CC BY 4.0. Agent scores: LMArena leaderboard dataset, rev f566816, agent subsets as of 2026-11-04. Licensed under CC BY 4.0.</p>
+  </div>
+  <figure class="scene" data-title="claude ~/talks" data-st="idle|" aria-labelledby="t-data">
+    <figcaption class="sr-only" id="t-data">Transcript: the engine’s ranking for describing a video.</figcaption>
+    <div class="log">
+      <p class="l in bang">p0ssess engine recommend --use-case video-understand --top 2</p>
+      <p class="l out" data-d="700">video-understand (#75, media) · stakes 1 · λ 1.00 (API-key plan: Claude at list price)</p>
+      <p class="l out c">   route   model               total    cash     claude   risk     p_fail</p>
+      <p class="l out c">1  direct  glm-5.3-flash       $0.0734  $0.0064  $0.0550  $0.0120  0.18    ask: first use of this model</p>
+      <p class="l out c">2  direct  gemma-4-26b-a4b-it  $0.0773  $0.0058  $0.0550  $0.0165  0.25    ask: first use of this model</p>
+      <p class="l out c">pick: handing this to glm-5.3-flash: summarize a talk, meeting or lecture video</p>
+      <p class="l in">why is there no claude row?</p>
+      <p class="l ai" data-d="800">Claude can’t watch video, so it isn’t a candidate. There’s no clean video benchmark either, so the catalog’s ordering is the prior until your own outcomes move it.</p>
+    </div>
+    <p class="foot"><span class="me">~/talks  Sonnet 5.5</span></p>
+  </figure>
+</section>
+
+<section class="sec" id="try" aria-labelledby="try-h">
+  <div class="copy">
+    <h2 id="try-h">Try it</h2>
+    <p>The repository is private for now, and public releases are coming. With a checkout, start Claude Code with the plugin loaded in place:</p>
+    <pre class="cmd"><code>claude --plugin-dir /path/to/p0ssess</code></pre>
+    <p>You need Claude Code 2.1.319 or later, an OpenRouter API key, and Go 1.27 or later; the plugin builds its binary on first use, offline, in a few seconds. The sandboxed agent path also needs Linux with rootless podman. Without it, media and one-shot jobs still work, macOS included.</p>
+    <p>Put the key in <code>~/.config/p0ssess/secrets/openrouter_key</code> with mode 0600, then run <code>/p0ssess:p0ssess-me</code>. It asks about your budget, plan and privacy, and offers each change to Claude Code’s settings only after you say yes. <code>p0ssess setup undo</code> reverts them all.</p>
+  </div>
+  <figure class="scene" data-title="claude ~/shop-web" data-st="idle|" aria-labelledby="t-try">
+    <figcaption class="sr-only" id="t-try">Transcript: the first run of the setup command.</figcaption>
+    <div class="log">
+      <p class="l in">/p0ssess:p0ssess-me</p>
+      <p class="l tool" data-d="600"><b>p0ssess - budget_status</b> (MCP)</p>
+      <p class="l ai" data-d="800">Nothing spent yet, against a $10 monthly cap. Plan is auto, privacy is no-training, and there’s no Claude usage reading yet.</p>
+      <p class="l ai" data-d="500">Plan: subscription (Pro, Max or Ultra), api (pay per token), or leave it on auto?</p>
+      <p class="l in">subscription</p>
+      <p class="l tool" data-d="500"><b>p0ssess - settings_set</b> (MCP)(key: "plan", value: "subscription")</p>
+      <p class="l ai" data-d="600">Saved. Are usage credits turned on for your plan?</p>
+    </div>
+    <p class="foot"><span class="me">~/shop-web  Sonnet 5.5</span></p>
+  </figure>
+</section>
+
+</div>
+
+<div class="stage">
+  <div class="term">
+    <div class="bar">
+      <span class="title" aria-hidden="true">claude ~/shop-web</span>
+      <button class="replay" type="button" aria-label="Replay this terminal scene">Replay</button>
+    </div>
+    <div class="screen" aria-hidden="true">
+      <div class="log"></div>
+    </div>
+    <div class="input" aria-hidden="true"><span class="caret-row"><span class="gt">&gt;</span> <span class="typed"></span><span class="caret"></span><span class="ph"></span></span></div>
+    <p class="foot" aria-hidden="true"><span class="me"></span><span class="seg idle" hidden><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  <span class="seg-text"></span></span></p>
+  </div>
+</div>
+</main>
+
+<footer class="site-foot">
+  <svg class="ghost small" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 15 15" shape-rendering="crispEdges" aria-hidden="true"><path class="g-body" d="M5 0h5v1h-5zM3 1h9v1h-9zM2 2h11v1h-11zM1 3h13v1h-13zM1 4h3v1h-3zM11 4h3v1h-3zM0 5h2v1h-2zM13 5h2v1h-2zM0 6h1v1h-1zM14 6h1v1h-1zM0 7h1v1h-1zM14 7h1v1h-1zM0 8h1v1h-1zM14 8h1v1h-1zM0 9h1v1h-1zM14 9h1v1h-1zM0 10h2v1h-2zM13 10h2v1h-2zM0 11h3v1h-3zM12 11h3v1h-3zM0 12h15v1h-15zM0 13h15v1h-15zM0 14h1v1h-1zM2 14h3v1h-3zM6 14h3v1h-3zM10 14h3v1h-3zM14 14h1v1h-1z"/><path class="g-mask" d="M4 4h7v1h-7zM2 5h11v1h-11zM1 6h3v1h-3zM5 6h5v1h-5zM11 6h3v1h-3zM1 7h3v1h-3zM5 7h5v1h-5zM11 7h3v1h-3zM1 8h13v1h-13zM1 9h6v1h-6zM8 9h6v1h-6zM2 10h4v1h-4zM7 10h1v1h-1zM9 10h4v1h-4zM3 11h4v1h-4zM8 11h4v1h-4z"/><path class="g-eye" d="M4 6h1v1h-1zM10 6h1v1h-1zM4 7h1v1h-1zM10 7h1v1h-1zM7 9h1v1h-1zM6 10h1v1h-1zM8 10h1v1h-1zM7 11h1v1h-1z"/></svg>
+  <div>
+    <p>p0ssess is MIT licensed. Made by Christian Moore.</p>
+    <p class="small">The terminal sessions are reconstructed from how the plugin behaves, with run costs taken from measured runs. Set in Atkinson Hyperlegible Next and Mono, with one glyph from Noto Sans Canadian Aboriginal, all under the <a href="fonts/OFL-atkinson-hyperlegible-next.txt">SIL Open Font License</a>.</p>
+  </div>
+</footer>
+
+</body>
+</html>
