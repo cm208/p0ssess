@@ -3,7 +3,7 @@ Usage: python -I site/shoot.py [--browser PATH] [--out DIR] [--only name,name] [
 Serves site/ on 127.0.0.1 (browsers refuse web fonts over file://) and aborts every
 other request. Console errors and horizontal overflow are printed.
 --live also captures the desktop animation mid-flight (motion allowed): each scene with a
-hand-off is shot while the island shows it, and each chart while its bars grow."""
+hand-off is shot while the island shows it, and the engine chart while its bars grow."""
 import argparse
 import functools
 import http.server
@@ -40,7 +40,7 @@ desk = ["top", "engine", "gauge", "media", "chores", "review", "usage", "stakes"
 phone = ["top", "engine", "gauge", "media-cmp", "chores-cmp", "review-cmp", "usage-cmp", "data", "try"]
 # Shots that start at a part of a section rather than the section itself.
 parts = {"gauge": "#engine .chart", "gates": "#engine .gates"}
-# Live shots: scenes that hand work off, and the first chart.
+# Live shots: the first chart while its bars grow, then scenes that hand work off.
 live = ["media", "chores", "usage", "rules"]
 
 
@@ -87,6 +87,13 @@ with sync_playwright() as p:
         ctx.close()
     if args.live:
         ctx, pg = page(b, {"width": 1280, "height": 860}, "no-preference", "live")
+        if not only or "gauge" in only:
+            # First, before anything else scrolls past it: a chart draws its bars once.
+            # A context's first screenshot is slow, so one is thrown away to keep the timing.
+            pg.screenshot()
+            pg.evaluate("document.querySelector('#engine .chart').scrollIntoView({block: 'center', behavior: 'instant'})")
+            pg.wait_for_timeout(260)
+            pg.screenshot(path=str(out / "live-gauge.png"))
         for sid in live:
             if only and sid not in only:
                 continue
@@ -100,12 +107,6 @@ with sync_playwright() as p:
             except Exception:
                 log.append(f"live: no hand-off seen in #{sid}")
             pg.screenshot(path=str(out / f"live-{sid}.png"))
-        if not only or "gauge" in only:
-            pg.evaluate("scrollTo(0, 0)")
-            pg.wait_for_timeout(300)
-            pg.evaluate("document.querySelector('#engine .chart').scrollIntoView({block: 'center', behavior: 'instant'})")
-            pg.wait_for_timeout(420)
-            pg.screenshot(path=str(out / "live-gauge.png"))
         ctx.close()
     b.close()
 srv.shutdown()
