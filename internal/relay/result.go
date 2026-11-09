@@ -68,7 +68,6 @@ func (e *Engine) result(w *watch, status string) (*Result, error) {
 	pending := w.pending
 	rejected := append([]string(nil), w.rejected...)
 	escalated := w.escalated
-	tampered, tamperReason := w.tampered, w.tamperReason
 	w.mu.Unlock()
 	if status == "" {
 		switch outcome {
@@ -80,19 +79,10 @@ func (e *Engine) result(w *watch, status string) (*Result, error) {
 			status = "failed"
 		}
 	}
-	if tampered {
-		// Tampering overrides every other outcome: the session acted on by something other than the relay
-		// cannot be trusted, so the run is reported as tampered and (above) has been interrupted.
-		status = "tampered"
-		pending = nil
-	}
 	r := &Result{Status: status, SessionID: rec.SessionID, Model: rec.Model, Mode: rec.Mode, Note: note,
 		AsksRejected: rejected, DurationS: time.Since(rec.PromptAt).Round(100 * time.Millisecond).Seconds()}
 	if errMsg != "" && status != "done" {
 		r.Error, _ = clip(errMsg, errorCap, "…")
-	}
-	if tampered {
-		r.Error = "tampered: " + tamperReason
 	}
 	if s, err := w.c.GetSession(ctx, rec.SessionID); err == nil {
 		r.CostUSD = math.Round((s.Cost-rec.CostBefore)*1e6) / 1e6

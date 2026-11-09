@@ -347,7 +347,6 @@ func Up(ctx context.Context, repo string, cfg config.Config, log io.Writer) (*Ja
 	args = append([]string{"run", "-d", "--pod", name, "--name", name + "-server", "--label", "p0ssess=1"}, j.securityOpts(cfg)...)
 	args = append(args, "--tmpfs", "/tmp:rw,size=1g,mode=1777",
 		"-v", vol+":/state:U",
-		"-v", exe+":"+ServerExePath+":"+j.mountOpt(cfg, "ro"),
 		"-v", repo+":"+repo+":"+j.mountOpt(cfg, "ro"))
 	if j.Git {
 		wt := filepath.Join(repo, WorktreeDir)

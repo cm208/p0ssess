@@ -82,13 +82,6 @@ func (e *Engine) Run(ctx context.Context, req RunRequest, progress func(float64,
 	if req.Mode == "unsafe-allow-all" && os.Getenv("P0SSESS_ALLOW_UNSAFE_TEST_MODE") != "1" {
 		return nil, errors.New("unsafe-allow-all is a test-only mode")
 	}
-	if req.Model != "" {
-		m, err := e.ResolveModelID(req.Model)
-		if err != nil {
-			return nil, err
-		}
-		req.Model = m
-	}
 	var rec *SessionRecord
 	var err error
 	if req.Session != "" {
@@ -299,7 +292,6 @@ func (e *Engine) Answer(ctx context.Context, sid, requestID, decision, message s
 	}
 	w.mu.Lock()
 	w.seen[requestID] = true
-	w.issued[requestID] = true
 	w.mu.Unlock()
 	if err := c.ReplyPermission(ctx, sid, requestID, decision, message); err != nil {
 		return nil, err
@@ -320,7 +312,6 @@ func (e *Engine) Abort(ctx context.Context, sid string) (*Result, error) {
 	}
 	if w := e.watch(sid); w != nil {
 		w.setNote("aborted by the caller")
-		w.markRelayInterrupt()
 	}
 	if _, err := c.Interrupt(ctx, sid); err != nil {
 		return nil, err
@@ -342,7 +333,6 @@ func (e *Engine) Shutdown() {
 	e.mu.Unlock()
 	for _, w := range ws {
 		if !w.finished() {
-			w.markRelayInterrupt()
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			w.c.Interrupt(ctx, w.rec.SessionID)
 			cancel()

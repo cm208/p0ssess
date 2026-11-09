@@ -118,12 +118,6 @@ type UsageUpdated struct {
 	Tokens    Tokens  `json:"tokens"`
 }
 
-// PermissionReplied is the payload of a permission.replied event: a request was answered.
-type PermissionReplied struct {
-	SessionID string `json:"sessionID"`
-	RequestID string `json:"requestID"`
-}
-
 // SessionID extracts data.sessionID, or "" when the event has none.
 func (e Event) SessionID() string {
 	var r SessionRef
