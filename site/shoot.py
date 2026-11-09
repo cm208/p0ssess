@@ -33,7 +33,7 @@ log = []
 desk = ["top", "engine", "gauge", "media", "chores", "review", "usage", "stakes", "rules", "ghost", "sandbox", "wont", "data", "try", "end"]
 phone = ["top", "engine", "gauge", "media-cmp", "chores-cmp", "review-cmp", "usage-cmp", "data"]
 # Shots that start at a part of a section rather than the section itself.
-parts = {"gauge": "#engine .gauge", "gates": "#engine .gates", "media-cmp": "#cmp-media", "chores-cmp": "#cmp-chores", "review-cmp": "#cmp-review"}
+parts = {"gauge": "#engine .chart", "gates": "#engine .gates"}
 
 with sync_playwright() as p:
     b = p.chromium.launch(executable_path=args.browser, headless=True,
@@ -61,7 +61,7 @@ with sync_playwright() as p:
                 else:
                     sel = parts.get(sid, "#" + sid)
                     if sid.endswith("-cmp"):
-                        sel = f"#{sid[:-4]} .cmp"
+                        sel = f"#{sid[:-4]} .chart"
                     block = "center" if name == "desk" and sid not in ("engine", "data") else "start"
                     pg.evaluate(f"document.querySelector('{sel}').scrollIntoView({{block: '{block}'}})")
                 pg.wait_for_timeout(450)
