@@ -40,11 +40,13 @@ Before delegating, say one line and nothing more, using the `announce` field: "h
 - An option with `needs_approval: true` needs a yes from the user first. Ask in one line with the cost: "This is about $0.06 on gemini-3.8-flash (first use of this model). Go ahead?"
 - An option covered by a standing approval (`standing_approval` set) runs without asking. Still announce it.
 - Pass the option's `max_cost_usd` as the direct tool's `max_cost_usd`: it is the ceiling already authorized (the standing approval's per-run limit, or the per-task limit). When the user approved a stated cost instead, pass that amount. Never more.
+- The direct and run tools enforce every limit themselves, whatever `recommend` said: rules, the allow and deny lists, stakes, privacy mode, `.p0ssess-private`, and the per-task, daily and monthly limits. A call above the per-task limit with no standing approval comes back as "needs approval". Ask the user with the cost; if they agree, call `approvals_add` exactly as the message says (a one-run session approval; its permission prompt is the user's confirmation), then call again. Never add an approval the user did not agree to. A call past the daily soft limit is refused; only a session override of `daily_usd` lifts it, and only when the user asks.
+- Always pass your `stakes` (and `use_case` when you have it) to `direct`; without them the tool assumes the use case's catalog stakes, or 3.
 
 ## Running it
 
 - **Media and one-shot jobs:** call `direct` with the model, a prompt, absolute file paths, `max_cost_usd` (see Approval), and the `offer_id` and `use_case` from `recommend`. The direct tool estimates conservatively (full output allowance at the highest endpoint price) and refuses a call whose estimate is above the ceiling; if that happens, ask the user before raising it. Videos over the size or length limit come back with an error naming `video_prep` options (`downscale`, `keyframes`, `segment`); pick one and say which.
-- **Multi-step work on files:** start the relay subagent with the Agent tool, `subagent_type: "p0ssess:p0ssess"`, prompt `"<model>: <task>"`, adding "edit mode" when it should change files. It runs in the background; continue the same session with SendMessage. Edits come back as a diff from a separate git worktree; nothing is merged.
+- **Multi-step work on files:** start the relay subagent with the Agent tool, `subagent_type: "p0ssess:p0ssess"`, prompt `"<model>: <task>"`, adding "edit mode" when it should change files, and "stakes N, max $X" with your rating and the authorized cost cap (without a cap a run may cost up to `max_run_cost_usd`, $0.50 by default, which usually needs approval). It runs in the background; continue the same session with SendMessage. Edits come back as a diff from a separate git worktree; nothing is merged.
 - The agent path needs Linux with rootless podman. If a tool says it is unavailable, use `direct` for one-shot work or keep the work.
 
 ## Review by type

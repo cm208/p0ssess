@@ -57,7 +57,7 @@ func (e *Engine) secondOpinion(uc *catalog.UseCase, stakes int, p *catalog.Profi
 		if m == nil || m.IsClaude() || authors[m.Author] || d.Forbidden[id] != nil {
 			continue
 		}
-		if d.Only != nil && !contains(d.Only.Models, id) {
+		if ok, _ := d.OnlyAllows(id); !ok {
 			continue
 		}
 		var providers []string

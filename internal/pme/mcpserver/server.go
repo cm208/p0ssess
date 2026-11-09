@@ -1,18 +1,15 @@
-// Package mcpserver exposes the engine to Claude as a stdio MCP server:
-// recommend, budget_status, settings_set, rules_list, rules_add,
-// rules_remove, approvals_add, approvals_list, history_record_outcome and
-// tendencies.
+// Package mcpserver defines the engine's MCP tools (recommend, budget_status,
+// settings_set, rules_list, rules_add, rules_remove, approvals_add,
+// approvals_list, history_record_outcome and tendencies). The plugin's MCP
+// server in internal/server serves them.
 package mcpserver
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
-	"sync"
 	"time"
 
 	"p0ssess/internal/pme/catalog"
@@ -21,119 +18,17 @@ import (
 	"p0ssess/internal/rules"
 )
 
-const Version = "0.1.0"
-
-var protocols = []string{"2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"}
-
 // Instructions tell Claude how to use the engine tools.
 const Instructions = `p0ssess routes work to other models through OpenRouter; Claude stays in charge and reviews what comes back.
 - Call recommend before work Claude cannot do (audio, video, image/audio/video generation, embeddings, over 1M tokens), bulk one-shot text jobs, or long agent work. Pass use_case when you know the catalog id, else a profile. Rate stakes 1-4 yourself.
 - Follow the pick unless you have a stated reason. Announce routing in one line (the announce field). Ask the user first when the option says needs_approval.
+- The direct and run tools enforce every limit themselves. When one answers "needs approval", ask the user with the cost; if they agree, save a one-run session approval with approvals_add as the message says (its permission prompt is the user's confirmation) and call again. Never add an approval the user has not agreed to.
 - Spend is measured: the relay and the direct tool record each run's real cost. After delegated work, call history_record_outcome with the offer_id and the run_id from the result (a relay session id or a direct run id): accepted, redo (you had to redo it), overridden or declined. Never include prompt content.
 - To turn a plain-language rule into a structured one, call rules_add or approvals_add with dry_run true, show the user the one-line text, and save only after they confirm. Never create rules on your own.`
 
+// Server answers the engine tools; the plugin's one MCP server (internal/server) carries them.
 type Server struct {
-	E   *engine.Engine
-	mu  sync.Mutex
-	out *json.Encoder
-	// Refresh, when set, runs once in the background at start-up.
-	Refresh func()
-}
-
-type request struct {
-	JSONRPC string          `json:"jsonrpc"`
-	ID      json.RawMessage `json:"id,omitempty"`
-	Method  string          `json:"method"`
-	Params  json.RawMessage `json:"params,omitempty"`
-}
-
-type rpcError struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-}
-
-type response struct {
-	JSONRPC string          `json:"jsonrpc"`
-	ID      json.RawMessage `json:"id"`
-	Result  any             `json:"result,omitempty"`
-	Error   *rpcError       `json:"error,omitempty"`
-}
-
-// Serve reads newline-delimited JSON-RPC from r until EOF.
-func (s *Server) Serve(r io.Reader, w io.Writer) error {
-	s.out = json.NewEncoder(w)
-	if s.Refresh != nil {
-		go s.Refresh()
-	}
-	sc := bufio.NewScanner(r)
-	sc.Buffer(make([]byte, 1<<20), 16<<20)
-	for sc.Scan() {
-		line := sc.Bytes()
-		if len(line) == 0 {
-			continue
-		}
-		var req request
-		if err := json.Unmarshal(line, &req); err != nil {
-			s.send(response{JSONRPC: "2.0", ID: json.RawMessage("null"), Error: &rpcError{-32700, "parse error"}})
-			continue
-		}
-		if len(req.ID) == 0 {
-			continue // notification
-		}
-		res, rerr := s.handle(req)
-		s.send(response{JSONRPC: "2.0", ID: req.ID, Result: res, Error: rerr})
-	}
-	return sc.Err()
-}
-
-func (s *Server) send(r response) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.out.Encode(r)
-}
-
-func (s *Server) handle(req request) (any, *rpcError) {
-	switch req.Method {
-	case "initialize":
-		var p struct {
-			ProtocolVersion string `json:"protocolVersion"`
-		}
-		json.Unmarshal(req.Params, &p)
-		v := protocols[0]
-		for _, x := range protocols {
-			if x == p.ProtocolVersion {
-				v = x
-			}
-		}
-		return map[string]any{
-			"protocolVersion": v,
-			"capabilities":    map[string]any{"tools": map[string]any{}},
-			"serverInfo":      map[string]any{"name": "p0ssess-engine", "version": Version},
-			"instructions":    Instructions,
-		}, nil
-	case "ping":
-		return map[string]any{}, nil
-	case "tools/list":
-		return map[string]any{"tools": tools()}, nil
-	case "tools/call":
-		var p struct {
-			Name      string          `json:"name"`
-			Arguments json.RawMessage `json:"arguments"`
-		}
-		if err := json.Unmarshal(req.Params, &p); err != nil {
-			return nil, &rpcError{-32602, "bad params"}
-		}
-		out, err := s.call(p.Name, p.Arguments)
-		if errors.Is(err, errUnknownTool) {
-			return nil, &rpcError{-32602, err.Error()}
-		}
-		if err != nil {
-			return map[string]any{"isError": true, "content": []map[string]any{{"type": "text", "text": err.Error()}}}, nil
-		}
-		b, _ := json.MarshalIndent(out, "", " ")
-		return map[string]any{"content": []map[string]any{{"type": "text", "text": string(b)}}}, nil
-	}
-	return nil, &rpcError{-32601, "method not found: " + req.Method}
+	E *engine.Engine
 }
 
 var errUnknownTool = errors.New("unknown tool")

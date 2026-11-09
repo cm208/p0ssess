@@ -214,6 +214,8 @@ func (c *Client) chatOnce(ctx context.Context, p *plan, inputs []Input, prompt s
 	if fr := cr.Choices[0].FinishReason; fr == "length" {
 		res.Warnings = append(res.Warnings, "the answer hit max_tokens and is cut off")
 	}
+	// Count the cost before saving images, so a failed save still records what the call was billed.
+	c.addUsage(ctx, res, cr)
 	for i, im := range cr.Choices[0].Message.Images {
 		f, err := c.saveImage(ctx, im.ImageURL.URL, outDir, len(res.Files)+i+1)
 		if err != nil {
@@ -224,12 +226,16 @@ func (c *Client) chatOnce(ctx context.Context, p *plan, inputs []Input, prompt s
 	if p.req.Output == OutImage && len(cr.Choices[0].Message.Images) == 0 {
 		res.Warnings = append(res.Warnings, "the model returned no image")
 	}
-	c.addUsage(ctx, res, cr)
 	return nil
 }
 
 func (c *Client) addUsage(ctx context.Context, res *Result, cr chatResponse) {
-	if res.Usage.add(cr.Usage) || cr.ID == "" {
+	if res.Usage.add(cr.Usage) {
+		return
+	}
+	if cr.ID == "" {
+		res.Usage.unmeasured()
+		res.Warnings = append(res.Warnings, "the answer reported no cost")
 		return
 	}
 	c.lookupCost(ctx, res, cr.ID)
@@ -238,9 +244,7 @@ func (c *Client) addUsage(ctx context.Context, res *Result, cr chatResponse) {
 func (c *Client) lookupCost(ctx context.Context, res *Result, id string) {
 	g, err := c.generation(ctx, id)
 	if err != nil {
-		if res.Usage.CostSource == "" {
-			res.Usage.CostSource = "unknown"
-		}
+		res.Usage.unmeasured()
 		res.Warnings = append(res.Warnings, "cost not reported: "+err.Error())
 		return
 	}
@@ -321,4 +325,18 @@ func writeImage(data []byte, mt, outDir string, n int) (OutFile, error) {
 		return OutFile{}, err
 	}
 	return OutFile{Path: path, MIME: mt, Bytes: int64(len(data))}, nil
+}
+
+// GenerationCost looks up the billed cost of a finished call by its generation id: OpenRouter's charge
+// plus, for bring-your-own-key calls, the upstream one.
+func (c *Client) GenerationCost(ctx context.Context, id string) (float64, error) {
+	g, err := c.generation(ctx, id)
+	if err != nil {
+		return 0, err
+	}
+	cost := g.TotalCost
+	if g.IsBYOK && g.Upstream != nil {
+		cost += *g.Upstream
+	}
+	return cost, nil
 }

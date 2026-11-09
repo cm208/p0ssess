@@ -50,7 +50,7 @@ func TestHandlerInjectsKeyAndPolicy(t *testing.T) {
 		w.Write([]byte(`{"ok":true}`))
 	}))
 	defer up.Close()
-	h := httptest.NewServer(Handler(up.URL, "real-key"))
+	h := httptest.NewServer(Handler(up.URL, "real-key", false))
 	defer h.Close()
 
 	req, _ := http.NewRequest("POST", h.URL+"/api/v1/chat/completions", strings.NewReader(`{"model":"a/b","messages":[]}`))
@@ -83,5 +83,17 @@ func TestHandlerInjectsKeyAndPolicy(t *testing.T) {
 	r.Body.Close()
 	if r.StatusCode != http.StatusUnsupportedMediaType {
 		t.Errorf("compressed body: status %d", r.StatusCode)
+	}
+}
+
+func TestForceZDR(t *testing.T) {
+	var m struct {
+		Provider map[string]any `json:"provider"`
+	}
+	if err := json.Unmarshal(ForceZDR([]byte(`{"model":"a","provider":{"zdr":false}}`)), &m); err != nil {
+		t.Fatal(err)
+	}
+	if m.Provider["zdr"] != true || m.Provider["data_collection"] != "deny" {
+		t.Errorf("provider = %v", m.Provider)
 	}
 }

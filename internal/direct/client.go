@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -29,6 +30,8 @@ type Client struct {
 	GenerationWait time.Duration
 	// RecordDir, when set, receives each raw response body (for building test fixtures).
 	RecordDir string
+
+	sent, rejected atomic.Int64
 }
 
 func New(key string) *Client {
@@ -301,6 +304,11 @@ func (c *Client) Run(ctx context.Context, req Request) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
+	sent0, rejected0 := c.sent.Load(), c.rejected.Load()
+	defer func() {
+		res.Sent = int(c.sent.Load() - sent0)
+		res.Rejected = int(c.rejected.Load() - rejected0)
+	}()
 	switch p.route {
 	case "stt":
 		err = c.runSTT(ctx, p, res)
@@ -361,11 +369,16 @@ func (c *Client) post(ctx context.Context, path string, body any, out any) error
 	}
 	c.headers(req)
 	req.Header.Set("Content-Type", "application/json")
+	c.sent.Add(1)
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
 		return redact(err, c.Key)
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		// OpenRouter does not bill a request it answers with an error status.
+		c.rejected.Add(1)
+	}
 	data, err := io.ReadAll(io.LimitReader(resp.Body, 512<<20))
 	if err != nil {
 		return err

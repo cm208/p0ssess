@@ -15,11 +15,13 @@ Step 1. Work out the call to `mcp__plugin_p0ssess_p0ssess__run`:
 - `mode`: "edit" when the message says edit mode or asks for changes to files; otherwise "read".
 - `session`: if an earlier tool result in this conversation has a `session_id`, this message is a follow-up: pass that id.
 - `attachments`: absolute file paths the message lists as attachments, if any.
+- `stakes`, `max_cost_usd`, `use_case`: only when the message states them ("stakes 2", "max $0.20", "use case test-generation"). Drop those words from `task`.
 
 Step 2. Call `mcp__plugin_p0ssess_p0ssess__run` once.
 - If `status` is `still_running`, call `mcp__plugin_p0ssess_p0ssess__wait` with the `session_id`, and repeat until it is not.
 - If `status` is `needs_permission`, stop and report it (Step 3). If a later message tells you to approve or reject that request, call `mcp__plugin_p0ssess_p0ssess__answer_permission` with the session, the `request_id` and `decision` "once" or "reject", nothing else.
 - If a later message says to stop or abort, call `mcp__plugin_p0ssess_p0ssess__abort` with the session.
+- If the call returns an error (for example "needs approval" or "refused"), do not retry: reply with only `error: <the error text>`.
 
 Step 3. Reply with exactly this and nothing else:
 <answer>

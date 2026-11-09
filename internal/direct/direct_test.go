@@ -569,17 +569,24 @@ func TestWAVDuration(t *testing.T) {
 	}
 }
 
-func TestCallTool(t *testing.T) {
+func TestToolArgsAndFormat(t *testing.T) {
 	f, c := newFake(t)
 	f.answer["/chat/completions"] = chatOK("tool answer", "")
-	text, isErr := c.CallTool(context.Background(), json.RawMessage(`{"model":"deepseek/deepseek-v4.1-flash","prompt":"hi","max_cost_usd":0.01}`))
-	if isErr || !strings.HasPrefix(text, "<answer>\ntool answer\n</answer>\nmodel: m via Google; cost $0.000420 (usage") {
+	req, err := ParseArgs(json.RawMessage(`{"model":"deepseek/deepseek-v4.1-flash","prompt":"hi","max_cost_usd":0.01}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := c.Run(context.Background(), req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if text := Format(res); !strings.HasPrefix(text, "<answer>\ntool answer\n</answer>\nmodel: m via Google; cost $0.000420 (usage") {
 		t.Errorf("text = %q", text)
 	}
-	if _, isErr := c.CallTool(context.Background(), json.RawMessage(`{"model":"x","prompt":"hi"}`)); !isErr {
+	if _, err := ParseArgs(json.RawMessage(`{"model":"x","prompt":"hi"}`)); err == nil {
 		t.Error("missing max_cost_usd accepted")
 	}
-	if _, isErr := c.CallTool(context.Background(), json.RawMessage(`{"model":"x","prompt":"hi","max_cost_usd":1,"bogus":1}`)); !isErr {
+	if _, err := ParseArgs(json.RawMessage(`{"model":"x","prompt":"hi","max_cost_usd":1,"bogus":1}`)); err == nil {
 		t.Error("unknown field accepted")
 	}
 	var schema map[string]any

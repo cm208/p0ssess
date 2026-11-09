@@ -63,7 +63,7 @@ func (c *Client) runSTT(ctx context.Context, p *plan, res *Result) error {
 		c.lookupCost(ctx, res, tr.ID)
 		return nil
 	}
-	res.Usage.CostSource = "unknown"
+	res.Usage.unmeasured()
 	res.Warnings = append(res.Warnings, "the transcription API reported no cost")
 	return nil
 }

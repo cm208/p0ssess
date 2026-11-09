@@ -447,3 +447,14 @@ func TestConfigLoad(t *testing.T) {
 		t.Error("ceiling above 1 should fail")
 	}
 }
+
+func TestConfigRejectsHeadroomBelowOne(t *testing.T) {
+	for _, in := range []string{"cash_headroom = 0\n", "cash_headroom = 0.5\n", "cash_headroom = nan\n", "credit_fee = -1\n"} {
+		if _, err := LoadConfigFrom([]byte(in)); err == nil {
+			t.Errorf("%q accepted", in)
+		}
+	}
+	if _, err := LoadConfigFrom([]byte("cash_headroom = 2\n")); err != nil {
+		t.Error(err)
+	}
+}

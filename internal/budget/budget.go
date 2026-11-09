@@ -43,6 +43,8 @@ type Budget struct {
 	Models       List    `toml:"models" json:"models"`
 	Providers    List    `toml:"providers" json:"providers"`
 	Privacy      Privacy `toml:"privacy" json:"privacy"`
+	// DailyCapUSD is a lower daily limit set by project rules; 0 means none. It is never saved.
+	DailyCapUSD float64 `toml:"-" json:"daily_cap_usd,omitempty"`
 }
 
 func Default() Budget {
@@ -107,6 +109,14 @@ func Save(path string, b Budget) error {
 // DailyLimit is the soft limit for today. spentBeforeToday is this month's
 // spend up to the start of today.
 func (b Budget) DailyLimit(spentBeforeToday float64, now time.Time) float64 {
+	limit := b.dailyLimit(spentBeforeToday, now)
+	if b.DailyCapUSD > 0 {
+		limit = math.Min(limit, b.DailyCapUSD)
+	}
+	return limit
+}
+
+func (b Budget) dailyLimit(spentBeforeToday float64, now time.Time) float64 {
 	if b.DailyUSD > 0 {
 		return b.DailyUSD
 	}

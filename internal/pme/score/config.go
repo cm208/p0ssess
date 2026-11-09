@@ -207,6 +207,12 @@ func (c Config) Validate() error {
 	if c.Lambda.Preset == "custom" && (c.Lambda.Floor < 0 || c.Lambda.Floor > 1 || c.Lambda.Exponent <= 0) {
 		return errors.New("custom lambda needs 0 <= floor <= 1 and exponent > 0")
 	}
+	if !(c.CashHeadroom >= 1) || math.IsInf(c.CashHeadroom, 0) {
+		return errors.New("cash_headroom must be a finite number, 1 or more")
+	}
+	if !(c.CreditFee >= 0) || math.IsInf(c.CreditFee, 0) {
+		return errors.New("credit_fee must be a finite number, 0 or more")
+	}
 	switch c.Candidates {
 	case "evidence", "catalog", "all":
 	default:

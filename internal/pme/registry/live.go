@@ -69,7 +69,7 @@ func Refresh(ctx context.Context, client *http.Client, cachePath string, maxAge 
 	if err != nil {
 		return false, err
 	}
-	req.Header.Set("User-Agent", "p0ssess-engine")
+	req.Header.Set("User-Agent", "p0ssess")
 	resp, err := client.Do(req)
 	if err != nil {
 		return false, err

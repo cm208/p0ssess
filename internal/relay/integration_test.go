@@ -1,6 +1,6 @@
 package relay
 
-// The R1 exit check, against a real jail and real OpenRouter calls (a few tenths of a cent per run).
+// The end-to-end check, against a real jail and real OpenRouter calls (a few tenths of a cent per run).
 //
 //	P0SSESS_IT=1 P0SSESS_OPENROUTER_KEY_FILE=/path/to/key \
 //	P0SSESS_IT_LAN=host:port,host:port   # optional extra LAN targets that must be unreachable
@@ -66,7 +66,10 @@ func itSetup(t *testing.T) (repo string, e *Engine) {
 	}
 	cfg.MaxRunCostUSD = 0.05
 	t.Cleanup(func() { jail.Purge(context.Background(), repo) })
-	return repo, NewEngine(cfg, "test", os.Stderr)
+	re := NewEngine(cfg, "test", os.Stderr)
+	// The budget guard lives in the server package and is tested there; this checks the jail.
+	re.Unguarded = true
+	return repo, re
 }
 
 func listen(t *testing.T, ip string) string {
@@ -87,7 +90,7 @@ func listen(t *testing.T, ip string) string {
 	return l.Addr().String()
 }
 
-func TestIntegrationR1(t *testing.T) {
+func TestIntegrationRelay(t *testing.T) {
 	repo, e := itSetup(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()

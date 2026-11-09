@@ -126,7 +126,7 @@ func (s *State) TouchSession(se Session) {
 }
 
 // SessionFor guesses the active session for a directory: the most recently
-// seen session whose project or cwd contains dir, else the most recent one.
+// seen session for the same directory or project.
 func (s State) SessionFor(dir string) (Session, bool) {
 	ss := append([]Session(nil), s.Sessions...)
 	sort.SliceStable(ss, func(i, j int) bool { return ss[i].Seen.After(ss[j].Seen) })
@@ -136,9 +136,7 @@ func (s State) SessionFor(dir string) (Session, bool) {
 			return x, true
 		}
 	}
-	if len(ss) > 0 {
-		return ss[0], true
-	}
+	// No fallback to the newest session elsewhere: its session-scoped rules would apply to an unrelated project.
 	return Session{}, false
 }
 

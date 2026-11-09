@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -69,8 +70,13 @@ func TestPrecedence(t *testing.T) {
 	if d.Forbidden["deepseek/x"] == nil {
 		t.Error("forbid must beat a narrower allow")
 	}
-	if d.Only == nil || d.Only.Models[0] != "xiaomi/m" {
-		t.Errorf("narrowest only should win, got %+v", d.Only)
+	// The user's global only rule picks; the project's only rule can narrow it further but never
+	// replace it, so here nothing is left.
+	if d.Only == nil || d.Only.Models[0] != "google/g" || len(d.Restrict) != 1 {
+		t.Errorf("the user's only should hold with the project's as a restriction, got %+v %+v", d.Only, d.Restrict)
+	}
+	if ok, _ := d.OnlyAllows("google/g"); ok {
+		t.Error("project only rule should narrow the global one")
 	}
 	if d.Budget["per_task_usd"].Value != 0.05 {
 		t.Errorf("narrowest budget override should win: %+v", d.Budget)
@@ -139,3 +145,122 @@ func TestRemoveAndString(t *testing.T) {
 		t.Error("missing scope path should fail")
 	}
 }
+
+// TestProjectRulesOnlyTighten checks that a rules file arriving with a repository cannot loosen the
+// user's limits: allow, approve and loosening budget rules are ignored and reported, while forbid, only
+// and lower limits apply.
+func TestProjectRulesOnlyTighten(t *testing.T) {
+	f := files(t)
+	raw := `
+[[rule]]
+id = "p1"
+kind = "approve"
+max_per_run_usd = 1000000.0
+[[rule]]
+id = "p2"
+kind = "allow"
+target = "delegation"
+max_stakes = 4
+[[rule]]
+id = "p3"
+kind = "budget"
+field = "daily_usd"
+value = -1.0
+[[rule]]
+id = "p4"
+kind = "budget"
+field = "monthly_usd"
+value = 500.0
+[[rule]]
+id = "p5"
+kind = "forbid"
+target = "model"
+models = ["x/y"]
+[[rule]]
+id = "p6"
+kind = "allow"
+target = "model"
+models = ["x/y"]
+max_stakes = 99
+[[rule]]
+id = "p7"
+kind = "budget"
+field = "per_task_usd"
+value = 5.0
+kinds = ["media"]
+`
+	if err := writeRaw(f.Project, raw); err != nil {
+		t.Fatal(err)
+	}
+	s, err := Load(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	kept := map[string]bool{}
+	for _, r := range s.Rules {
+		kept[r.ID] = true
+	}
+	if !kept["p4"] || !kept["p5"] || len(s.Rules) != 2 {
+		t.Errorf("kept %v, want only the forbid and the budget override (applied as a cap)", kept)
+	}
+	ignored := map[string]string{}
+	for _, ig := range s.Ignored {
+		ignored[ig.Rule.ID] = ig.Why
+	}
+	for _, id := range []string{"p1", "p2", "p3", "p6", "p7"} {
+		if ignored[id] == "" {
+			t.Errorf("%s should be ignored: %v", id, ignored)
+		}
+	}
+	d := s.Decide("video-understand", "media", now)
+	if len(d.Approvals) != 0 || d.AllowAll != nil || d.MaxStakesFor("x/y") != 0 {
+		t.Errorf("project loosening applied: %+v", d)
+	}
+	if d.Forbidden["x/y"] == nil {
+		t.Error("project forbid should apply")
+	}
+	if _, ok := d.Budget["monthly_usd"]; ok {
+		t.Error("project budget override must not set the value outright")
+	}
+	if d.ProjectBudget["monthly_usd"].Value != 500 {
+		t.Errorf("project budget override should be kept as a cap: %+v", d.ProjectBudget)
+	}
+
+	// The same rules at global scope keep their full power.
+	g := files(t)
+	if err := writeRaw(g.Global, strings.ReplaceAll(raw, "max_stakes = 99", "max_stakes = 4")); err != nil {
+		t.Fatal(err)
+	}
+	gs, _ := Load(g)
+	gd := gs.Decide("video-understand", "media", now)
+	if len(gd.Approvals) != 1 || gd.AllowAll == nil || gd.Budget["daily_usd"].Value != -1 {
+		t.Errorf("global rules lost power: %+v", gd)
+	}
+}
+
+func TestStakesFourNeedsANamedModel(t *testing.T) {
+	d := Decision{Allowed: map[string]*Rule{}, AllowAll: &Rule{Kind: KindAllow, Target: TargetDelegation, MaxStakes: 4}}
+	if got := d.MaxStakesFor("a/b"); got != 3 {
+		t.Errorf("allow delegation lifted stakes to %d, want 3", got)
+	}
+	d.Allowed["a/b"] = &Rule{Kind: KindAllow, Target: TargetModel, Models: []string{"a/b"}, MaxStakes: 4}
+	if got := d.MaxStakesFor("a/b"); got != 4 {
+		t.Errorf("named allow = %d, want 4", got)
+	}
+}
+
+func TestUnknownUseCaseAppliesScopedForbids(t *testing.T) {
+	s := Set{Rules: []Rule{
+		{ID: "f", Kind: KindForbid, Target: TargetModel, Models: []string{"a/b"}, Kinds: []string{"media"}, Scope: ScopeGlobal},
+		{ID: "a", Kind: KindApprove, MaxPerRunUSD: 1, Kinds: []string{"media"}, Scope: ScopeGlobal},
+	}}
+	d := s.Decide("", "", now)
+	if d.Forbidden["a/b"] == nil {
+		t.Error("a call that names no use case escaped a scoped forbid")
+	}
+	if len(d.Approvals) != 0 {
+		t.Error("a scoped approval covered a call that names no use case")
+	}
+}
+
+func writeRaw(path, s string) error { return os.WriteFile(path, []byte(s), 0o600) }

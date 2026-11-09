@@ -1,21 +1,23 @@
 package direct
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 )
 
-// The MCP tool for the direct path. It does not depend on an MCP package; a server registers it with
-// ToolName, ToolDescription and ToolSchema, and calls CallTool with the raw arguments.
+// The MCP tool for the direct path. It does not depend on an MCP package; the plugin's server registers it
+// with ToolName, ToolDescription and ToolSchema, parses arguments with ParseArgs and runs the request
+// through its budget guard (server.RunDirect), never through the client alone.
 
 const ToolName = "direct"
 
 const ToolDescription = `Run a one-shot job on an OpenRouter model in a single call, with local files attached by path. ` +
 	`Use it for media Claude cannot read or make: describe or transcribe video and audio, read PDFs, caption images, generate an image. ` +
 	`Files are checked locally (secret-looking names and .p0ssess-private repositories are refused) and the cost is estimated before sending; ` +
-	`the call is refused when the estimate is above max_cost_usd. Set dry_run to get the estimate only. ` +
+	`the call is refused when the estimate is above max_cost_usd. max_cost_usd is checked against every limit (rules, allow and deny lists, ` +
+	`stakes, privacy mode, the per-task, daily and monthly limits) and reserved before sending; above the per-task limit with no standing ` +
+	`approval the result is "needs approval": ask the user. Set dry_run to get the estimate only. ` +
 	`The answer comes back inside <answer>, followed by any output files, the model, provider and cost.`
 
 var ToolSchema = json.RawMessage(`{
@@ -26,7 +28,7 @@ var ToolSchema = json.RawMessage(`{
     "system": {"type": "string"},
     "files": {"type": "array", "items": {"type": "string"}, "description": "absolute local paths: images, PDFs, audio, video or text"},
     "output": {"type": "string", "enum": ["text", "json", "image", "transcript"], "default": "text"},
-    "max_cost_usd": {"type": "number", "description": "refuse when the estimate is above this"},
+    "max_cost_usd": {"type": "number", "description": "the most this call may spend: refused when the estimate is above it, reserved against your limits"},
     "max_tokens": {"type": "integer"},
     "strict_zdr": {"type": "boolean", "description": "zero-data-retention endpoints only"},
     "reasoning": {"type": "string", "enum": ["none", "low", "medium", "high"]},
@@ -87,22 +89,6 @@ func ParseArgs(raw json.RawMessage) (Request, error) {
 		r.MaxCostUSD = *a.MaxCostUSD
 	}
 	return r, nil
-}
-
-// CallTool runs the tool and returns the text for the MCP result.
-func (c *Client) CallTool(ctx context.Context, raw json.RawMessage) (text string, isError bool) {
-	req, err := ParseArgs(raw)
-	if err != nil {
-		return err.Error(), true
-	}
-	res, err := c.Run(ctx, req)
-	if err != nil {
-		if res != nil && res.Usage.CostUSD > 0 {
-			return fmt.Sprintf("%v\n(spent $%.6f before the error)", err, res.Usage.CostUSD), true
-		}
-		return err.Error(), true
-	}
-	return Format(res), false
 }
 
 // Format renders a result: answer first, then files, then the accounting line.

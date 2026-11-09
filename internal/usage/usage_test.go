@@ -59,6 +59,10 @@ func TestRecordAndSessions(t *testing.T) {
 	if !ok || se.ID != "abc" || se.Project != dir {
 		t.Errorf("SessionFor = %+v", se)
 	}
+	// Another project's session (and its session-scoped rules) never applies here.
+	if se, ok := s.SessionFor(t.TempDir()); ok {
+		t.Errorf("SessionFor fell back to %+v for an unrelated directory", se)
+	}
 	path := filepath.Join(dir, "usage.json")
 	if err := Save(path, s); err != nil {
 		t.Fatal(err)

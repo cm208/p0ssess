@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,6 +29,9 @@ type Config struct {
 	MaxRuntimeSec int `json:"max_runtime_s,omitempty"`
 	// RegistryFile is a models.json snapshot for the models tool.
 	RegistryFile string `json:"registry_file,omitempty"`
+	// ZDR makes the jail's key proxy require zero-retention endpoints. Set per run from the budget's
+	// privacy mode, never read from config.json.
+	ZDR bool `json:"-"`
 }
 
 // Dir is ~/.config/p0ssess ($XDG_CONFIG_HOME honored, on macOS too), or $P0SSESS_HOME when set.
@@ -60,6 +64,12 @@ func Load() (Config, error) {
 	}
 	if c.MaxRuntimeSec == 0 {
 		c.MaxRuntimeSec = 3600
+	}
+	if !(c.MaxRunCostUSD > 0) || math.IsInf(c.MaxRunCostUSD, 0) {
+		return c, errors.New("config.json: max_run_cost_usd must be a finite number above 0")
+	}
+	if c.MaxRuntimeSec < 0 {
+		return c, errors.New("config.json: max_runtime_s must be 0 or more")
 	}
 	return c, nil
 }

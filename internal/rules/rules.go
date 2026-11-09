@@ -1,10 +1,14 @@
 // Package rules holds the user's routing rules, standing approvals and budget
 // overrides, at session, project and global scope.
 //
-// Precedence: a forbid rule at any scope beats any allow. For everything that
-// picks one value (only, mix, budget overrides) the narrowest scope wins
-// (session, then project, then global), and within a scope the newest rule.
-// Rules are only ever created by the user; the engine may suggest one.
+// Precedence: a forbid rule at any scope beats any allow. Session and global
+// rules are the user's own and have full power; for rules that pick one value
+// (only, mix, budget overrides) the session beats global, and within a scope the
+// newest rule wins. Project rules (.p0ssess/rules.toml, which arrives with a
+// cloned repository) can only tighten: forbid rules, only and mix rules that
+// narrow the user's own choice, and lower budget limits. Anything that would
+// loosen is ignored and reported. Rules are only ever created by the user; the
+// engine may suggest one.
 package rules
 
 import (
@@ -132,6 +136,9 @@ func (r Rule) Validate() error {
 		}
 		if r.Value < 0 && r.Field != "daily_usd" {
 			return errors.New("value must be 0 or more")
+		}
+		if len(r.UseCases) > 0 || len(r.Kinds) > 0 {
+			return errors.New("budget overrides apply to all work; they cannot be limited to use cases or kinds")
 		}
 	default:
 		return fmt.Errorf("kind must be forbid, allow, only, mix, approve or budget, not %q", r.Kind)
@@ -323,11 +330,20 @@ func writeFile(path string, rs []Rule) error {
 	return paths.WriteFileAtomic(path, buf.Bytes(), 0o600)
 }
 
-// Set is every rule across scopes.
+// Set is every rule in force across scopes, and the rules that were read but not applied.
 type Set struct {
-	Rules []Rule
+	Rules   []Rule
+	Ignored []Ignored
 }
 
+// Ignored is a rule that is not applied, with the reason.
+type Ignored struct {
+	Rule Rule   `json:"rule"`
+	Why  string `json:"why"`
+}
+
+// Load reads every scope. Invalid rules and project rules that would loosen a limit are left out of
+// Rules and listed in Ignored.
 func Load(f Files) (Set, error) {
 	var s Set
 	var errs []error
@@ -337,9 +353,40 @@ func Load(f Files) (Set, error) {
 			errs = append(errs, err)
 			continue
 		}
-		s.Rules = append(s.Rules, rs...)
+		for _, r := range rs {
+			if err := r.Validate(); err != nil {
+				s.Ignored = append(s.Ignored, Ignored{Rule: r, Why: "invalid: " + err.Error()})
+				continue
+			}
+			if scope == ScopeProject {
+				if why := r.Loosens(); why != "" {
+					s.Ignored = append(s.Ignored, Ignored{Rule: r, Why: why})
+					continue
+				}
+			}
+			s.Rules = append(s.Rules, r)
+		}
 	}
 	return s, errors.Join(errs...)
+}
+
+// Loosens says why a rule could widen what the user's own config allows, or "" when it can only
+// tighten. Project scope takes only rules that tighten.
+func (r Rule) Loosens() string {
+	switch r.Kind {
+	case KindForbid, KindOnly, KindMix:
+		return ""
+	case KindAllow:
+		return "allow rules widen what may run"
+	case KindApprove:
+		return "standing approvals pre-approve spend"
+	case KindBudget:
+		if r.Field == "daily_usd" && r.Value <= 0 {
+			return "it would pace or turn off the daily limit"
+		}
+		return ""
+	}
+	return "unknown rule kind"
 }
 
 // NewID makes a short random rule id.
@@ -422,22 +469,43 @@ type Decision struct {
 	Forbidden          map[string]*Rule // model -> rule
 	Allowed            map[string]*Rule // model -> allow rule
 	AllowAll           *Rule            // allow delegation
-	Only               *Rule            // narrowest only or mix rule
-	Budget             map[string]Rule  // field -> narrowest override
-	Approvals          []Rule           // narrowest first
+	// Only is the narrowest only or mix rule of the user's own (session, then global), else the
+	// project's. Restrict holds project only and mix rules that narrow a user rule further: a model
+	// must be in Only and in every Restrict rule.
+	Only     *Rule
+	Restrict []*Rule
+	// Budget holds the narrowest session or global override per field; ProjectBudget the project's,
+	// which only ever lower a limit.
+	Budget        map[string]Rule
+	ProjectBudget map[string]Rule
+	// ProjectCaps lists every project budget override, applied or not.
+	ProjectCaps []Rule
+	Approvals   []Rule // narrowest first
 }
 
+// Decide applies the rules to one use case. With no use case and no kind (a call that did not say
+// what it is), forbid, only and mix rules apply whatever they are limited to, and only approvals
+// that cover all work count.
 func (s Set) Decide(useCase, kind string, now time.Time) Decision {
-	d := Decision{Forbidden: map[string]*Rule{}, Allowed: map[string]*Rule{}, Budget: map[string]Rule{}}
+	d := Decision{Forbidden: map[string]*Rule{}, Allowed: map[string]*Rule{}, Budget: map[string]Rule{}, ProjectBudget: map[string]Rule{}}
+	unknown := useCase == "" && kind == ""
+	var projectOnly []*Rule
 	for _, r := range s.Active(now) {
 		r := r
 		if r.Kind == KindBudget {
-			if _, ok := d.Budget[r.Field]; !ok {
+			if r.Scope == ScopeProject {
+				// Every project override is a cap; the lowest one holds.
+				d.ProjectCaps = append(d.ProjectCaps, r)
+				if old, ok := d.ProjectBudget[r.Field]; !ok || r.Value < old.Value {
+					d.ProjectBudget[r.Field] = r
+				}
+			} else if _, ok := d.Budget[r.Field]; !ok {
 				d.Budget[r.Field] = r
 			}
 			continue
 		}
-		if !r.Covers(useCase, kind) {
+		restricts := r.Kind == KindForbid || r.Kind == KindOnly || r.Kind == KindMix
+		if !r.Covers(useCase, kind) && !(unknown && restricts) {
 			continue
 		}
 		switch r.Kind {
@@ -473,24 +541,47 @@ func (s Set) Decide(useCase, kind string, now time.Time) Decision {
 				d.AllowAll = &r
 			}
 		case KindOnly, KindMix:
-			if d.Only == nil {
+			if r.Scope == ScopeProject {
+				projectOnly = append(projectOnly, &r)
+			} else if d.Only == nil {
 				d.Only = &r
 			}
 		case KindApprove:
 			d.Approvals = append(d.Approvals, r)
 		}
 	}
+	if len(projectOnly) > 0 {
+		if d.Only == nil {
+			d.Only, projectOnly = projectOnly[0], projectOnly[1:]
+		}
+		d.Restrict = projectOnly
+	}
 	return d
 }
 
-// MaxStakesFor is the highest stakes level an allow rule lifts for a model.
+// OnlyAllows reports whether the only, mix and project restrictions leave model in play, and the rule
+// that excludes it otherwise.
+func (d Decision) OnlyAllows(model string) (bool, *Rule) {
+	if d.Only != nil && !contains(d.Only.Models, model) {
+		return false, d.Only
+	}
+	for _, r := range d.Restrict {
+		if !contains(r.Models, model) {
+			return false, r
+		}
+	}
+	return true, nil
+}
+
+// MaxStakesFor is the highest stakes level an allow rule lifts for a model. Only a rule that names the
+// model can lift stakes 4; "allow delegation" lifts at most stakes 3.
 func (d Decision) MaxStakesFor(model string) int {
 	best := 0
 	if r := d.Allowed[model]; r != nil && r.MaxStakes > best {
 		best = r.MaxStakes
 	}
-	if d.AllowAll != nil && d.AllowAll.MaxStakes > best {
-		best = d.AllowAll.MaxStakes
+	if d.AllowAll != nil && min(d.AllowAll.MaxStakes, 3) > best {
+		best = min(d.AllowAll.MaxStakes, 3)
 	}
 	return best
 }

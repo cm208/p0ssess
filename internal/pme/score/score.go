@@ -175,8 +175,10 @@ func Score(in Input) Result {
 		opts = append(opts, c.localOption())
 	}
 	if c.uc.Engine != "" && delegationOff == "" {
-		if o, ok := c.engineOption(); ok {
+		if o, why := c.engineOption(); why == "" {
 			opts = append(opts, o)
+		} else if why != "-" {
+			exclude("engine:"+c.uc.Engine, RouteEngine, why)
 		}
 	}
 
@@ -400,10 +402,18 @@ func (c *ctx) localOption() Option {
 		PFail: eff, PFailUpper: math.Min(1, eff+0.1), Evidence: "local tool; no model", ClaudeListUSD: l, Review: c.review}
 }
 
-func (c *ctx) engineOption() (Option, bool) {
+// engineOption prices an OpenRouter PDF engine. It is still delegation to another provider, so the
+// stakes-4 rule, zero-retention mode and the monthly cap apply. why is "-" when there is nothing to offer.
+func (c *ctx) engineOption() (Option, string) {
 	est := c.uc.EstCost
 	if est == nil || (est.Min == nil && est.Max == nil) {
-		return Option{}, false
+		return Option{}, "-"
+	}
+	if c.stakes >= 4 {
+		return Option{}, "stakes 4 stays on Claude"
+	}
+	if c.zdr {
+		return Option{}, "zero-retention mode: PDF engines have no zero-retention guarantee"
 	}
 	cash := mid(est) * (1 + c.cfg.CreditFee)
 	lam := c.in.Lambda
@@ -414,8 +424,11 @@ func (c *ctx) engineOption() (Option, bool) {
 	o := Option{Route: RouteEngine, Model: "engine:" + c.uc.Engine, Breakdown: b, Total: b.Cash + b.Overhead + b.Review + b.Risk,
 		PFail: eff, PFailUpper: math.Min(1, eff+0.15), Evidence: "OpenRouter PDF engine; catalog estimate",
 		CashMax: cash * c.cfg.CashHeadroom * runs, Review: c.review, PriceSource: "catalog estimate"}
+	if c.in.Spend.Month+c.in.Spend.Reserved+o.CashMax > c.in.Budget.MonthlyUSD+1e-9 {
+		return Option{}, fmt.Sprintf("would pass the $%.2f monthly cap", c.in.Budget.MonthlyUSD)
+	}
 	c.approval(&o, false)
-	return o, true
+	return o, ""
 }
 
 func (c *ctx) subagentOption(m *registry.Model) (Option, string) {
@@ -462,8 +475,8 @@ func (c *ctx) delegatedOption(m *registry.Model) (Option, string) {
 	if r := d.Forbidden[m.ID]; r != nil {
 		return Option{}, "rule: " + r.String()
 	}
-	if d.Only != nil && !contains(d.Only.Models, m.ID) {
-		return Option{}, "rule: " + d.Only.String()
+	if ok, r := d.OnlyAllows(m.ID); !ok {
+		return Option{}, "rule: " + r.String()
 	}
 	var providers []string
 	if m.Endpoints != nil {
@@ -500,7 +513,7 @@ func (c *ctx) delegatedOption(m *registry.Model) (Option, string) {
 	if c.feasible && (1-eff)*c.lDirect <= ov+rv {
 		return Option{}, fmt.Sprintf("cannot save: hand-off and review ($%.3f of Claude) exceed the expected work saved ($%.3f)", ov+rv, (1-eff)*c.lDirect)
 	}
-	if c.in.Budget.MonthlyUSD >= 0 && c.in.Spend.Month+cashMax*runs > c.in.Budget.MonthlyUSD+1e-9 {
+	if c.in.Budget.MonthlyUSD >= 0 && c.in.Spend.Month+c.in.Spend.Reserved+cashMax*runs > c.in.Budget.MonthlyUSD+1e-9 {
 		return Option{}, fmt.Sprintf("would pass the $%.2f monthly cap", c.in.Budget.MonthlyUSD)
 	}
 	redo := lam * c.lDirect
@@ -664,9 +677,11 @@ func (c *ctx) approval(o *Option, firstUse bool) {
 	d := c.in.Rules
 	limit := c.in.Budget.PerTaskUSD
 	var reasons []string
-	if c.in.DailyLimit >= 0 && c.in.Spend.Today >= c.in.DailyLimit && o.CashMax > 0 {
-		limit = 0
-		reasons = append(reasons, fmt.Sprintf("daily soft limit $%.2f reached", c.in.DailyLimit))
+	if o.CashMax > 0 && c.in.Spend.Today+c.in.Spend.Reserved+o.CashMax > c.in.DailyLimit+1e-9 {
+		// The tools refuse a call past the daily soft limit; only a session override of daily_usd lifts it.
+		o.NeedsApproval = true
+		o.ApprovalReasons = []string{fmt.Sprintf("would pass the $%.2f daily soft limit; only a session override of daily_usd lifts it", c.in.DailyLimit)}
+		return
 	}
 	if o.CashMax > limit+1e-12 && limit > 0 {
 		reasons = append(reasons, fmt.Sprintf("up to $%.3f, above the $%.2f per-task limit", o.CashMax, limit))

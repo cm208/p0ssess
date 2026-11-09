@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"p0ssess"
@@ -31,6 +32,9 @@ type Engine struct {
 	Bench *bench.Set
 	Cat   *catalog.Catalog
 	Now   func() time.Time
+
+	// reported holds the ignored rules already reported, per session.
+	reported sync.Map
 }
 
 // Load reads the embedded data and merges the cached live model list.
@@ -106,7 +110,26 @@ func (e *Engine) RuleFiles(s Scope) rules.Files {
 
 func (e *Engine) Rules(s Scope) (rules.Set, error) { return rules.Load(e.RuleFiles(s)) }
 
-// EffectiveBudget applies budget overrides from rules.
+// IgnoredNotes words the rules that were read but not applied, each once per session (once per
+// process when no session is known).
+func (e *Engine) IgnoredNotes(s Scope, set rules.Set) []string {
+	var out []string
+	for _, ig := range set.Ignored {
+		key := s.Session + "\x00" + ig.Rule.Scope + "\x00" + ig.Rule.ID + "\x00" + ig.Rule.String()
+		if _, seen := e.reported.LoadOrStore(key, true); seen {
+			continue
+		}
+		if ig.Rule.Scope == rules.ScopeProject && !strings.HasPrefix(ig.Why, "invalid") {
+			out = append(out, fmt.Sprintf("project rules tried to loosen a limit (%s: %s); ignored — add it yourself if you want it", ig.Rule.String(), ig.Why))
+		} else {
+			out = append(out, fmt.Sprintf("rule %s (%s) ignored: %s", ig.Rule.ID, ig.Rule.Scope, ig.Why))
+		}
+	}
+	return out
+}
+
+// EffectiveBudget applies budget overrides from rules: the user's own (session, else global) set the
+// value; a project's only ever lowers it.
 func EffectiveBudget(b budget.Budget, d rules.Decision) (budget.Budget, []string) {
 	var notes []string
 	for field, r := range d.Budget {
@@ -120,8 +143,52 @@ func EffectiveBudget(b budget.Budget, d rules.Decision) (budget.Budget, []string
 		}
 		notes = append(notes, r.String())
 	}
+	for field, r := range d.ProjectBudget {
+		applied := false
+		switch field {
+		case "per_task_usd":
+			if r.Value < b.PerTaskUSD {
+				b.PerTaskUSD, applied = r.Value, true
+			}
+		case "monthly_usd":
+			if r.Value < b.MonthlyUSD {
+				b.MonthlyUSD, applied = r.Value, true
+			}
+		case "daily_usd":
+			if r.Value > 0 {
+				b.DailyCapUSD, applied = r.Value, true
+			}
+		}
+		if applied {
+			notes = append(notes, r.String())
+		}
+	}
 	sort.Strings(notes)
 	return b, notes
+}
+
+// ProjectRaises lists the project budget overrides that do not lower the user's own limit: a project
+// may only tighten, so these are ignored and reported. own is the budget with the user's overrides only.
+func ProjectRaises(own budget.Budget, d rules.Decision) []rules.Ignored {
+	var out []rules.Ignored
+	for _, r := range d.ProjectCaps {
+		cur := map[string]float64{"per_task_usd": own.PerTaskUSD, "monthly_usd": own.MonthlyUSD, "daily_usd": own.DailyUSD}[r.Field]
+		if r.Field == "daily_usd" && cur <= 0 {
+			continue // any positive project limit is below a paced or absent one
+		}
+		if r.Value >= cur {
+			out = append(out, rules.Ignored{Rule: r, Why: fmt.Sprintf("it would raise the limit above your $%.2f", cur)})
+		}
+	}
+	return out
+}
+
+// effectiveBudget applies the overrides and adds project overrides that tried to raise a limit to the
+// set's ignored rules.
+func effectiveBudget(b budget.Budget, d rules.Decision, set *rules.Set) (budget.Budget, []string) {
+	own, _ := EffectiveBudget(b, rules.Decision{Budget: d.Budget})
+	set.Ignored = append(set.Ignored, ProjectRaises(own, d)...)
+	return EffectiveBudget(b, d)
 }
 
 var ccModel = regexp.MustCompile(`^(?:anthropic/)?claude-([a-z]+)-(\d+)[-.](\d+)`)
@@ -246,10 +313,11 @@ func (e *Engine) Recommend(req Request) (*Recommendation, error) {
 
 	rs, err := e.Rules(req.Scope)
 	if err != nil {
-		rec.Notes = append(rec.Notes, "rules: "+err.Error())
+		rec.Notes = append(rec.Notes, "rules: "+err.Error()+" (the tools refuse to spend until this is fixed)")
 	}
 	d := rs.Decide(uc.ID, uc.Kind(), now)
-	bud, overrides := EffectiveBudget(bud, d)
+	bud, overrides := effectiveBudget(bud, d, &rs)
+	rec.Notes = append(rec.Notes, e.IgnoredNotes(req.Scope, rs)...)
 	ledger := e.Ledger()
 	spend := ledger.Spend(now)
 	daily := bud.DailyLimit(spend.MonthBeforeToday, now)
@@ -340,7 +408,9 @@ func (e *Engine) Recommend(req Request) (*Recommendation, error) {
 	if bud.Privacy.Mode == "zdr" {
 		rec.Privacy = "zero-retention endpoints only (zdr=true)"
 	}
-	if so, note := e.secondOpinion(uc, stakes, req.Profile, bud, rs, ledger, spend, daily, now); so != nil {
+	if in.Private {
+		rec.Notes = append(rec.Notes, "this repository has a .p0ssess-private file: no delegation from here")
+	} else if so, note := e.secondOpinion(uc, stakes, req.Profile, bud, rs, ledger, spend, daily, now); so != nil {
 		rec.SecondOpinion = so
 	} else if note != "" {
 		rec.Notes = append(rec.Notes, note)
@@ -397,6 +467,9 @@ func applied(d rules.Decision) []string {
 	add(d.ForbidClaudeAgents)
 	add(d.ForbidOpenCode)
 	add(d.Only)
+	for _, r := range d.Restrict {
+		add(r)
+	}
 	add(d.AllowAll)
 	seen := map[string]bool{}
 	for _, m := range []map[string]*rules.Rule{d.Forbidden, d.Allowed} {
@@ -419,7 +492,8 @@ func (e *Engine) candidates(cfg score.Config, uc *catalog.UseCase, d rules.Decis
 	for _, id := range uc.Candidates() {
 		want[id] = true
 	}
-	if d.Only != nil {
+	// A project's only rule narrows the choice; it never brings in a model the use case does not name.
+	if d.Only != nil && d.Only.Scope != rules.ScopeProject {
 		for _, id := range d.Only.Models {
 			want[id] = true
 		}

@@ -22,6 +22,7 @@ type Result struct {
 	Model          string           `json:"model"`
 	Mode           string           `json:"mode"`
 	CostUSD        float64          `json:"cost_usd"`
+	CostEstimated  bool             `json:"cost_estimated,omitempty"`
 	Tokens         *opencode.Tokens `json:"tokens,omitempty"`
 	DurationS      float64          `json:"duration_s"`
 	TranscriptPath string           `json:"transcript_path,omitempty"`
@@ -98,6 +99,11 @@ func (e *Engine) result(w *watch, status string) (*Result, error) {
 		r.CostUSD = math.Round((s.Cost-rec.CostBefore)*1e6) / 1e6
 		t := subTokens(s.Tokens, rec.TokensBefore)
 		r.Tokens = &t
+	} else {
+		w.mu.Lock()
+		r.CostUSD = math.Round(w.cost*1e6) / 1e6
+		w.mu.Unlock()
+		r.CostEstimated = true
 	}
 	msgs, msgErr := w.c.AllMessages(ctx, rec.SessionID)
 	if msgErr == nil {
@@ -141,6 +147,8 @@ func (e *Engine) result(w *watch, status string) (*Result, error) {
 			r.Note = strings.TrimSpace(r.Note + " diff failed: " + err.Error())
 		}
 	}
+	e.recMu.Lock()
+	defer e.recMu.Unlock()
 	if status != "still_running" && status != "needs_permission" && !rec.Recorded {
 		rec.Recorded = true
 		rec.save()
@@ -148,8 +156,13 @@ func (e *Engine) result(w *watch, status string) (*Result, error) {
 			Outcome: status, CostUSD: r.CostUSD, Tokens: r.Tokens, DurationS: r.DurationS, Session: rec.SessionID,
 			Turn: rec.Turns, TaskHash: rec.PromptHash, Rejected: len(rejected), Escalated: escalated})
 		if e.obs != nil {
-			e.obs.RunFinished(e.runInfo(rec), r)
+			if err := e.obs.RunFinished(e.runInfo(rec), r); err != nil {
+				r.Note = strings.TrimSpace(r.Note + " recording the cost failed (" + err.Error() + "); the reservation counts as spent")
+			}
 		}
+	}
+	if r.CostEstimated {
+		r.Note = strings.TrimSpace(r.Note + " the session cost could not be read; the run is counted at its cap")
 	}
 	return r, nil
 }

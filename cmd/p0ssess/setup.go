@@ -28,9 +28,13 @@ import (
 const toolPrefix = "mcp__plugin_p0ssess_p0ssess__"
 
 // AllowTools are the tools a background relay or shortcut agent must be able to call without a prompt,
-// and the engine's read-only tools. Rule changes, settings changes and shortcut files keep asking.
+// the engine's read-only tools and history_record_outcome, which only appends to the local ledger. Rule,
+// approval and settings changes and shortcut files keep asking: those prompts are the user's approval.
 var AllowTools = []string{"run", "wait", "answer_permission", "abort", "models", "direct",
 	"recommend", "budget_status", "rules_list", "approvals_list", "tendencies", "history_record_outcome", "shortcuts_suggest"}
+
+// gateTools change the user's limits; their permission prompt is the user's approval, so they are never allowed.
+var gateTools = []string{"rules_add", "rules_remove", "approvals_add", "settings_set", "shortcuts_create", "shortcuts_remove"}
 
 const summariesEnv = "CLAUDE_CODE_DISABLE_AGENT_PROGRESS_SUMMARIES"
 
@@ -131,6 +135,12 @@ func setupShow(st setupState) error {
 		}
 	}
 	fmt.Println("settings file:", st.Settings)
+	for _, a := range allow {
+		if a == strings.TrimSuffix(toolPrefix, "__") || a == toolPrefix+"*" || contains(gateTools, strings.TrimPrefix(a, toolPrefix)) {
+			fmt.Printf("warning: %q lets Claude change rules, approvals or settings without asking you; "+
+				"those prompts are how you approve spending, so remove it\n", a)
+		}
+	}
 	if len(missing) == 0 {
 		fmt.Println("allow rules: all plugin tools the relay needs are allowed")
 	} else {

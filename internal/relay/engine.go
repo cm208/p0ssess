@@ -15,6 +15,7 @@ import (
 	"p0ssess/internal/config"
 	"p0ssess/internal/jail"
 	"p0ssess/internal/opencode"
+	"p0ssess/internal/pme/paths"
 )
 
 const rejectFeedback = "Not allowed in this delegated read-only task, and nobody is available to approve it. " +
@@ -28,6 +29,10 @@ type Engine struct {
 	mu      sync.Mutex
 	watches map[string]*watch
 	obs     Observer
+	// recMu serializes recording a finished run, which both a waiting caller and the watch may do.
+	recMu sync.Mutex
+	// Unguarded lets tests run without an observer; nothing else sets it.
+	Unguarded bool
 }
 
 func NewEngine(cfg config.Config, version string, log io.Writer) *Engine {
@@ -43,6 +48,11 @@ type RunRequest struct {
 	Session     string   `json:"session"`
 	Kind        string   `json:"kind"`
 	WaitS       int      `json:"wait_s"`
+	UseCase     string   `json:"use_case"`
+	Stakes      int      `json:"stakes"`
+	// MaxCostUSD caps this prompt's cost; the relay interrupts the run past it. 0 takes max_run_cost_usd
+	// from config.json, which is also the ceiling.
+	MaxCostUSD float64 `json:"max_cost_usd"`
 }
 
 // ParseModel accepts "openrouter/vendor/model", "vendor/model" or "vendor/model#variant".
@@ -111,7 +121,25 @@ func (e *Engine) Run(ctx context.Context, req RunRequest, progress func(float64,
 	if err != nil {
 		return nil, err
 	}
-	j, c, err := jail.Ensure(ctx, rec.Repo, e.cfg, e.log)
+	if req.Kind != "" {
+		rec.Kind = req.Kind
+	}
+	if req.UseCase != "" {
+		rec.UseCase = req.UseCase
+	}
+	grant, err := e.authorize(rec, req)
+	if err != nil {
+		return nil, err
+	}
+	sent := false
+	defer func() {
+		if !sent && e.obs != nil {
+			e.obs.Release(grant)
+		}
+	}()
+	cfg := e.cfg
+	cfg.ZDR = grant.ZDR
+	j, c, err := jail.Ensure(ctx, rec.Repo, cfg, e.log)
 	if err != nil {
 		return nil, fmt.Errorf("jail: %w", err)
 	}
@@ -132,14 +160,48 @@ func (e *Engine) Run(ctx context.Context, req RunRequest, progress func(float64,
 			rec.Model = strings.TrimPrefix(m.String(), "openrouter/")
 		}
 	}
-	if req.Kind != "" {
-		rec.Kind = req.Kind
-	}
-	w, err := e.prompt(ctx, c, rec, req.Task, files)
+	rec.Grant = grant
+	w, err := e.prompt(ctx, c, rec, req.Task, files, &sent)
 	if err != nil {
 		return nil, err
 	}
-	return e.block(ctx, w, waitDuration(req.WaitS), progress)
+	res, err := e.block(ctx, w, waitDuration(req.WaitS), progress)
+	if res != nil && grant.Note != "" {
+		res.Note = strings.TrimSpace(res.Note + " " + grant.Note)
+	}
+	return res, err
+}
+
+// authorize asks the observer to apply the user's limits to the prompt and reserve its cap. Without an
+// observer the relay refuses, unless a test said otherwise.
+func (e *Engine) authorize(rec *SessionRecord, req RunRequest) (Grant, error) {
+	ceiling := e.cfg.MaxRunCostUSD
+	capUSD := req.MaxCostUSD
+	if capUSD < 0 || capUSD != capUSD {
+		return Grant{}, errors.New("max_cost_usd must be a number, 0 or more")
+	}
+	if capUSD == 0 || (ceiling > 0 && capUSD > ceiling) {
+		capUSD = ceiling
+	}
+	if e.obs == nil {
+		if e.Unguarded {
+			return Grant{CapUSD: capUSD}, nil
+		}
+		return Grant{}, ErrNoObserver
+	}
+	model := rec.Model
+	if req.Model != "" {
+		m, err := ParseModel(req.Model)
+		if err != nil {
+			return Grant{}, err
+		}
+		model = strings.TrimPrefix(m.String(), "openrouter/")
+	}
+	if i := strings.Index(model, "#"); i >= 0 {
+		model = model[:i]
+	}
+	return e.obs.Authorize(RunAuth{Model: model, Mode: rec.Mode, Kind: rec.Kind, UseCase: rec.UseCase, Stakes: req.Stakes,
+		MaxCostUSD: capUSD, MaxRuntime: time.Duration(e.cfg.MaxRuntimeSec) * time.Second, Repo: rec.Repo, Cwd: rec.Cwd})
 }
 
 func waitDuration(s int) time.Duration {
@@ -161,7 +223,7 @@ func (e *Engine) newRecord(cwd string, req RunRequest) (*SessionRecord, error) {
 	if err != nil {
 		return nil, err
 	}
-	if _, err := os.Stat(filepath.Join(repo, ".p0ssess-private")); err == nil {
+	if paths.Private(cwd) || paths.Private(repo) {
 		return nil, errors.New("this repository has a .p0ssess-private file; delegation is blocked here")
 	}
 	m, err := ParseModel(req.Model)
@@ -229,7 +291,7 @@ func lastSeq(ctx context.Context, c *opencode.Client, sid string) (int64, error)
 
 // prompt records the session totals, subscribes to events, then sends the task. The global event feed has
 // no replay, so the subscription must be live before the prompt is admitted.
-func (e *Engine) prompt(ctx context.Context, c *opencode.Client, rec *SessionRecord, task string, files []opencode.FileAttachment) (*watch, error) {
+func (e *Engine) prompt(ctx context.Context, c *opencode.Client, rec *SessionRecord, task string, files []opencode.FileAttachment, sent *bool) (*watch, error) {
 	seq, err := lastSeq(ctx, c, rec.SessionID)
 	if err != nil {
 		return nil, fmt.Errorf("reading session log: %w", err)
@@ -251,8 +313,15 @@ func (e *Engine) prompt(ctx context.Context, c *opencode.Client, rec *SessionRec
 	item, err := c.Prompt(ctx, rec.SessionID, opencode.Prompt{Text: task, Files: files})
 	if err != nil {
 		w.stop()
+		var ae *opencode.APIError
+		if !errors.As(err, &ae) {
+			// The prompt may have been admitted even though the answer was lost: keep the reservation,
+			// which counts as spent if nothing settles it.
+			*sent = true
+		}
 		return nil, err
 	}
+	*sent = true
 	rec.PromptID = item.ID
 	if e.obs != nil {
 		e.obs.RunStarted(e.runInfo(rec))

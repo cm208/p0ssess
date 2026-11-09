@@ -1,6 +1,5 @@
-// Package cli is the p0ssess-engine command line. Run is also meant to be
-// mounted under the main p0ssess command as "p0ssess engine ..." and
-// "p0ssess me".
+// Package cli is the engine's command line, mounted under the main command as
+// "p0ssess engine ..." and "p0ssess me".
 package cli
 
 import (
@@ -22,7 +21,6 @@ import (
 	"p0ssess/internal/pme/catalog"
 	"p0ssess/internal/pme/engine"
 	"p0ssess/internal/pme/hook"
-	"p0ssess/internal/pme/mcpserver"
 	"p0ssess/internal/pme/me"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/pme/registry"
@@ -30,7 +28,7 @@ import (
 	"p0ssess/internal/rules"
 )
 
-const usage = `p0ssess-engine: the Predictive Model Engine
+const usage = `p0ssess engine: the Predictive Model Engine
 
   recommend   rank routes for a task (--use-case ID or --text/--in/--out ...)
   status      spend, limits, Claude pressure and λ
@@ -42,12 +40,12 @@ const usage = `p0ssess-engine: the Predictive Model Engine
   refresh     fetch OpenRouter's public model list (cached a day)
   statusline  status line wrapper (reads Claude Code's JSON on stdin)
   hook        UserPromptSubmit hook (reads the hook JSON on stdin)
-  mcp         stdio MCP server for Claude
   me          open the local settings page
   version
 `
 
-const Version = "0.1.0"
+// Version is the binary's version; the main command sets it.
+var Version = "dev"
 
 type IO struct {
 	In       io.Reader
@@ -79,7 +77,7 @@ func Run(args []string, s IO) int {
 		}
 		return 0
 	case "version":
-		fmt.Fprintln(s.Out, "p0ssess-engine", Version)
+		fmt.Fprintln(s.Out, "p0ssess", Version)
 		return 0
 	}
 	e, err := engine.Load(d)
@@ -118,9 +116,6 @@ func Run(args []string, s IO) int {
 		tw.Flush()
 	case "refresh":
 		runErr = refresh(e, rest, s)
-	case "mcp":
-		srv := &mcpserver.Server{E: e, Refresh: mcpserver.BackgroundRefresh(e)}
-		runErr = srv.Serve(s.In, s.Out)
 	case "me":
 		runErr = serveMe(e, rest, s)
 	default:

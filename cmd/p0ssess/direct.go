@@ -79,6 +79,8 @@ func directRun(ctx context.Context, mode string, args []string) error {
 	resolution := fs.String("resolution", "", "image resolution")
 	out := fs.String("out", "", "output directory")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
+	useCase := fs.String("use-case", "", "catalog use case id")
+	stakes := fs.Int("stakes", 0, "stakes 1-4")
 	fs.Parse(args)
 	req := direct.Request{
 		Model: *model, Prompt: *prompt, System: *system, Files: fl, Output: direct.Output(*output),
@@ -95,7 +97,7 @@ func directRun(ctx context.Context, mode string, args []string) error {
 	if err != nil {
 		return err
 	}
-	res, runID, err := server.RunDirect(ctx, cfg, eng, req, "", "")
+	res, runID, err := server.RunDirect(ctx, cfg, eng, req, server.DirectJob{UseCase: *useCase, Stakes: *stakes})
 	if res != nil {
 		if *asJSON {
 			b, _ := json.MarshalIndent(res, "", "  ")
@@ -127,7 +129,7 @@ func directTool(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	res, runID, err := server.RunDirect(ctx, cfg, eng, req, "", "")
+	res, runID, err := server.RunDirect(ctx, cfg, eng, req, server.DirectJob{})
 	if err != nil {
 		return err
 	}

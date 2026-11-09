@@ -135,6 +135,8 @@ type Usage struct {
 	UpstreamUSD   float64 `json:"upstream_usd,omitempty"`
 	BYOK          bool    `json:"byok,omitempty"`
 	CostSource    string  `json:"cost_source"` // "usage", "generation" or "unknown"
+	// Unmeasured counts sent calls whose cost was not reported.
+	Unmeasured int `json:"unmeasured_calls,omitempty"`
 }
 
 // apiUsage is the usage block shared by chat, image and transcription answers.
@@ -179,6 +181,13 @@ func (u *Usage) add(a *apiUsage) bool {
 	return true
 }
 
+func (u *Usage) unmeasured() {
+	u.Unmeasured++
+	if u.CostSource == "" {
+		u.CostSource = "unknown"
+	}
+}
+
 func (u *Usage) bill(openrouter float64, byok bool, upstream *float64) {
 	u.OpenRouterUSD += openrouter
 	u.CostUSD += openrouter
@@ -202,4 +211,15 @@ type Result struct {
 	Route    string        `json:"route"`
 	Warnings []string      `json:"warnings,omitempty"`
 	Elapsed  time.Duration `json:"elapsed_ns"`
+	// Sent counts the requests sent to OpenRouter; Rejected those answered with an error status.
+	Sent     int `json:"-"`
+	Rejected int `json:"-"`
 }
+
+// Measured reports whether every billed call's cost is known.
+func (r *Result) Measured() bool {
+	return r.Usage.Unmeasured == 0 && (r.Usage.CostSource == "usage" || r.Usage.CostSource == "generation")
+}
+
+// Billed reports whether any request may have been charged.
+func (r *Result) Billed() bool { return r.Sent > r.Rejected }

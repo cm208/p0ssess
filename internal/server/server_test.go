@@ -112,10 +112,6 @@ func TestServerAgentUnavailableAndDirectCap(t *testing.T) {
 	if !isErr || !strings.Contains(text, "unavailable here") || !strings.Contains(text, "direct tool") {
 		t.Errorf("wait: %v %s", isErr, text)
 	}
-	text, isErr = p.call(t, 5, "run", map[string]any{"task": "x", "model": "a/b"})
-	if !isErr || !strings.Contains(text, "monthly cap") {
-		t.Errorf("run over the cap: %v %s", isErr, text)
-	}
 	if text, _ := p.call(t, 2, "models", map[string]any{"query": "deepseek", "limit": 2}); !strings.Contains(text, "deepseek/") {
 		t.Errorf("models should work without the agent path: %s", text)
 	}

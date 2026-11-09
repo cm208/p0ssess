@@ -45,6 +45,8 @@ type Jail struct {
 	Image   string    `json:"image"`
 	Git     bool      `json:"git"`
 	Created time.Time `json:"created"`
+	// ZDR is set when the key proxy requires zero-retention endpoints.
+	ZDR bool `json:"zdr,omitempty"`
 }
 
 // Canonical resolves symlinks so the mount path, the session directory and Claude's paths agree.
@@ -267,7 +269,8 @@ func Up(ctx context.Context, repo string, cfg config.Config, log io.Writer) (*Ja
 	}
 	name := NameFor(repo)
 	j, _ := Load(repo)
-	if j != nil && j.Verify(ctx) == nil {
+	// A jail whose proxy was started for another privacy mode is restarted, so the mode always holds.
+	if j != nil && j.ZDR == cfg.ZDR && j.Verify(ctx) == nil {
 		return j, nil
 	}
 	key, err := cfg.OpenRouterKey()
@@ -294,7 +297,7 @@ func Up(ctx context.Context, repo string, cfg config.Config, log io.Writer) (*Ja
 	if j == nil {
 		j = &Jail{Name: name, Repo: repo}
 	}
-	j.Image, j.Created = image, time.Now().UTC()
+	j.Image, j.Created, j.ZDR = image, time.Now().UTC(), cfg.ZDR
 	if j.Port == 0 || !portFree(j.Port) {
 		j.Port = freePort(name)
 		if j.Port == 0 {
@@ -340,6 +343,9 @@ func Up(ctx context.Context, repo string, cfg config.Config, log io.Writer) (*Ja
 	args := append([]string{"run", "-d", "--pod", name, "--name", name + "-proxy", "--label", "p0ssess=1"}, j.securityOpts(cfg)...)
 	args = append(args, "-e", "OPENROUTER_API_KEY", "-v", exe+":/opt/p0ssess:"+j.mountOpt(cfg, "ro"),
 		"--entrypoint", "/opt/p0ssess", image, "proxy", "--listen", ProxyAddr)
+	if cfg.ZDR {
+		args = append(args, "--zdr")
+	}
 	if _, err := podman(ctx, []string{"OPENROUTER_API_KEY=" + key}, nil, args...); err != nil {
 		return fail(err)
 	}

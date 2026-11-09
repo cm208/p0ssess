@@ -35,6 +35,7 @@ type Status struct {
 	RegistryAge string            `json:"registry_as_of"`
 	Files       map[string]string `json:"files"`
 	Scope       Scope             `json:"scope"`
+	Notes       []string          `json:"notes,omitempty"`
 }
 
 func (e *Engine) Status(s Scope) (*Status, error) {
@@ -48,10 +49,17 @@ func (e *Engine) Status(s Scope) (*Status, error) {
 	if err != nil {
 		return nil, err
 	}
-	rs, _ := e.Rules(s)
+	rs, err := e.Rules(s)
+	if err != nil {
+		return nil, err
+	}
 	d := rs.Decide("", "", now)
-	b, notes := EffectiveBudget(b, d)
-	sp := e.Ledger().Spend(now)
+	b, notes := effectiveBudget(b, d, &rs)
+	es, err := history.Read(e.Dirs.HistoryFile())
+	if err != nil {
+		return nil, fmt.Errorf("reading the ledger: %w", err)
+	}
+	sp := history.NewLedger(es).Spend(now)
 	us := e.Usage()
 	plan := b.Plan
 	if plan == "auto" {
@@ -62,8 +70,8 @@ func (e *Engine) Status(s Scope) (*Status, error) {
 	}
 	pr := us.Project(now, cfg.Lambda.EMin, time.Duration(cfg.Lambda.StaleMinutes)*time.Minute)
 	daily := b.DailyLimit(sp.MonthBeforeToday, now)
-	st := &Status{Budget: b, Overrides: notes, Spend: sp, DailyLimit: finite(daily),
-		MonthLeft: max(0, b.MonthlyUSD-sp.Month), NearBudget: b.MonthlyUSD > 0 && sp.Month >= 0.8*b.MonthlyUSD,
+	st := &Status{Budget: b, Overrides: notes, Spend: sp, DailyLimit: finite(daily), Notes: e.IgnoredNotes(s, rs),
+		MonthLeft: max(0, b.MonthlyUSD-sp.Month-sp.Reserved), NearBudget: b.MonthlyUSD > 0 && sp.Month+sp.Reserved >= 0.8*b.MonthlyUSD,
 		Plan: plan, Lambda: score.LambdaFor(plan, b.UsageCredits, b.SaveClaude, pr, cfg.Lambda),
 		Running: usage.Running(e.Dirs.RunningDir(), now), LeadModel: us.LeadModel, RegistryAge: e.Reg.AsOf, Scope: s,
 		Files: map[string]string{"budget": e.Dirs.BudgetFile(), "engine": e.Dirs.EngineFile(),
@@ -83,6 +91,7 @@ type RuleView struct {
 	rules.Rule
 	Text    string     `json:"text"`
 	Expired bool       `json:"expired,omitempty"`
+	Ignored string     `json:"ignored,omitempty"`
 	Used    *rules.Use `json:"used,omitempty"`
 }
 
@@ -102,6 +111,11 @@ func (e *Engine) RulesList(s Scope, kind string) ([]RuleView, error) {
 			v.Used = &u
 		}
 		out = append(out, v)
+	}
+	for _, ig := range rs.Ignored {
+		if kind == "" || ig.Rule.Kind == kind {
+			out = append(out, RuleView{Rule: ig.Rule, Text: ig.Rule.String(), Ignored: ig.Why})
+		}
 	}
 	order := map[string]int{rules.ScopeSession: 0, rules.ScopeProject: 1, rules.ScopeGlobal: 2}
 	sort.SliceStable(out, func(i, j int) bool { return order[out[i].Scope] < order[out[j].Scope] })
@@ -138,6 +152,11 @@ func (e *Engine) RuleAdd(s Scope, r rules.Rule, dryRun bool, expiresIn int) (Rul
 	}
 	if err := r.Validate(); err != nil {
 		return RuleView{}, err
+	}
+	if r.Scope == rules.ScopeProject {
+		if why := r.Loosens(); why != "" {
+			return RuleView{}, fmt.Errorf("project rules can only tighten (%s); save it at session or global scope", why)
+		}
 	}
 	f := e.RuleFiles(s)
 	switch {
@@ -229,7 +248,8 @@ func (e *Engine) RecordOutcome(o Outcome) (history.Entry, error) {
 		} else if o.CashUSD > 0 {
 			en.RunID = "r-" + history.NewOfferID()[2:]
 			run := history.Entry{TS: en.TS, Type: history.TypeRun, RunID: en.RunID, Route: "reported", Model: o.Model,
-				CashUSD: o.CashUSD, OfferID: o.OfferID, UseCase: en.UseCase, Session: en.Session, Project: en.Project}
+				CashUSD: o.CashUSD, OfferID: o.OfferID, UseCase: en.UseCase, Session: en.Session, Project: en.Project,
+				ApprovalID: en.ApprovalID}
 			if err := history.Append(e.Dirs.HistoryFile(), run); err != nil {
 				return en, err
 			}
@@ -253,16 +273,22 @@ type Run struct {
 	UseCase     string
 	Cwd         string
 	Session     string
+	ApprovalID  string
+	Reserve     string
+	// Estimated marks a cost that was not measured; CashUSD is then the reserved maximum.
+	Estimated   bool
+	Generations []string
 }
 
-// RecordRun adds a measured run to the ledger; spend is the sum of these.
+// RecordRun adds a run to the ledger; spend is the sum of these.
 func (e *Engine) RecordRun(r Run) error {
-	if r.CashUSD < 0 {
+	if r.CashUSD < 0 || math.IsNaN(r.CashUSD) {
 		r.CashUSD = 0
 	}
 	return history.Append(e.Dirs.HistoryFile(), history.Entry{TS: e.Now().UTC(), Type: history.TypeRun, RunID: r.ID,
 		Route: r.Route, Model: r.Model, CashUSD: r.CashUSD, UpstreamUSD: r.UpstreamUSD, Status: r.Status,
-		OfferID: r.OfferID, UseCase: r.UseCase, Session: r.Session, Project: paths.ProjectRoot(r.Cwd)})
+		OfferID: r.OfferID, UseCase: r.UseCase, Session: r.Session, Project: paths.ProjectRoot(r.Cwd),
+		ApprovalID: r.ApprovalID, Reserve: r.Reserve, Estimated: r.Estimated, Generations: r.Generations})
 }
 
 type Learned struct {

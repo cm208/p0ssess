@@ -1,6 +1,6 @@
 // Package proxy is the OpenRouter forwarder that runs in its own container inside the jail pod. It holds
 // the API key so the OpenCode container (and anything a model runs there) never sees it, and it forces
-// provider.data_collection = "deny" on every model request.
+// provider.data_collection = "deny" on every model request, plus provider.zdr = true in zero-retention mode.
 package proxy
 
 import (
@@ -20,8 +20,9 @@ const Upstream = "https://openrouter.ai"
 
 const maxBody = 64 << 20
 
-// Handler returns the forwarding handler. upstream is normally Upstream; tests pass a local server.
-func Handler(upstream, key string) http.Handler {
+// Handler returns the forwarding handler. upstream is normally Upstream; tests pass a local server. zdr
+// requires zero-retention endpoints on every model request.
+func Handler(upstream, key string, zdr bool) http.Handler {
 	u, err := url.Parse(upstream)
 	if err != nil {
 		panic(err)
@@ -53,7 +54,7 @@ func Handler(upstream, key string) http.Handler {
 				http.Error(w, "request too large", http.StatusRequestEntityTooLarge)
 				return
 			}
-			body = ForceNoDataCollection(body)
+			body = forceProvider(body, zdr)
 			model = modelOf(body)
 			r.Body = io.NopCloser(bytes.NewReader(body))
 			r.ContentLength = int64(len(body))
@@ -92,7 +93,12 @@ func modelOf(body []byte) string {
 
 // ForceNoDataCollection sets provider.data_collection = "deny" in a JSON request that names a model.
 // Bodies that are not JSON objects with a "model" field pass through unchanged.
-func ForceNoDataCollection(body []byte) []byte {
+func ForceNoDataCollection(body []byte) []byte { return forceProvider(body, false) }
+
+// ForceZDR also sets provider.zdr = true.
+func ForceZDR(body []byte) []byte { return forceProvider(body, true) }
+
+func forceProvider(body []byte, zdr bool) []byte {
 	var m map[string]json.RawMessage
 	if json.Unmarshal(body, &m) != nil {
 		return body
@@ -107,6 +113,9 @@ func ForceNoDataCollection(body []byte) []byte {
 		_ = json.Unmarshal(raw, &prov)
 	}
 	prov["data_collection"] = json.RawMessage(`"deny"`)
+	if zdr {
+		prov["zdr"] = json.RawMessage(`true`)
+	}
 	pb, _ := json.Marshal(prov)
 	m["provider"] = pb
 	out, err := json.Marshal(m)
@@ -117,10 +126,10 @@ func ForceNoDataCollection(body []byte) []byte {
 }
 
 // Serve listens on addr until the process exits.
-func Serve(addr, key string) error {
+func Serve(addr, key string, zdr bool) error {
 	srv := &http.Server{
 		Addr:              addr,
-		Handler:           Handler(Upstream, key),
+		Handler:           Handler(Upstream, key, zdr),
 		ReadHeaderTimeout: 30 * time.Second,
 	}
 	return srv.ListenAndServe()

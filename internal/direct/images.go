@@ -82,7 +82,7 @@ func (c *Client) runImages(ctx context.Context, p *plan, res *Result, outDir str
 		c.lookupCost(ctx, res, ir.ID)
 		return nil
 	}
-	res.Usage.CostSource = "unknown"
+	res.Usage.unmeasured()
 	res.Warnings = append(res.Warnings, "the image API reported no cost")
 	return nil
 }

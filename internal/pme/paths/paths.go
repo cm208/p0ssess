@@ -99,14 +99,26 @@ func ProjectRulesFile(root string) string {
 	return filepath.Join(root, ".p0ssess", "rules.toml")
 }
 
-// Private reports whether a .p0ssess-private file blocks delegation from dir.
+// Private reports whether a .p0ssess-private file in dir or any directory above it blocks delegation
+// from dir, so a nested repository or submodule inside a private one is private too.
 func Private(dir string) bool {
-	root := ProjectRoot(dir)
-	if root == "" {
+	if dir == "" {
 		return false
 	}
-	_, err := os.Stat(filepath.Join(root, ".p0ssess-private"))
-	return err == nil
+	dir, err := filepath.Abs(dir)
+	if err != nil {
+		return true
+	}
+	for {
+		if _, err := os.Lstat(filepath.Join(dir, ".p0ssess-private")); err == nil {
+			return true
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return false
+		}
+		dir = parent
+	}
 }
 
 // WriteFileAtomic writes via a temp file and rename.

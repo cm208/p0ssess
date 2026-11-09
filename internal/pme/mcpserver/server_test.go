@@ -1,7 +1,6 @@
 package mcpserver
 
 import (
-	"bufio"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -12,6 +11,7 @@ import (
 	"p0ssess/internal/pme/paths"
 )
 
+// run answers each tools/call line through Call, in the shape the MCP server returns.
 func run(t *testing.T, lines ...string) []map[string]any {
 	t.Helper()
 	home := t.TempDir()
@@ -23,20 +23,28 @@ func run(t *testing.T, lines ...string) []map[string]any {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var out strings.Builder
 	s := &Server{E: e}
-	if err := s.Serve(strings.NewReader(strings.Join(lines, "\n")+"\n"), &out); err != nil {
-		t.Fatal(err)
-	}
 	var res []map[string]any
-	sc := bufio.NewScanner(strings.NewReader(out.String()))
-	sc.Buffer(make([]byte, 1<<20), 16<<20)
-	for sc.Scan() {
-		var m map[string]any
-		if err := json.Unmarshal(sc.Bytes(), &m); err != nil {
-			t.Fatalf("bad response %q", sc.Text())
+	for _, line := range lines {
+		var req struct {
+			Params struct {
+				Name      string          `json:"name"`
+				Arguments json.RawMessage `json:"arguments"`
+			} `json:"params"`
 		}
-		res = append(res, m)
+		if err := json.Unmarshal([]byte(line), &req); err != nil {
+			t.Fatal(err)
+		}
+		out, err := s.Call(req.Params.Name, req.Params.Arguments)
+		r := map[string]any{}
+		if err != nil {
+			r["isError"] = true
+			r["content"] = []any{map[string]any{"text": err.Error()}}
+		} else {
+			b, _ := json.MarshalIndent(out, "", " ")
+			r["content"] = []any{map[string]any{"text": string(b)}}
+		}
+		res = append(res, map[string]any{"result": r})
 	}
 	return res
 }
@@ -57,32 +65,18 @@ func call(id int, name, args string) string {
 	return string(b)
 }
 
-func TestProtocol(t *testing.T) {
-	res := run(t,
-		`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}}`,
-		`{"jsonrpc":"2.0","method":"notifications/initialized"}`,
-		`{"jsonrpc":"2.0","id":2,"method":"tools/list"}`,
-		`{"jsonrpc":"2.0","id":3,"method":"nope"}`,
-		`garbage`,
-	)
-	if len(res) != 4 {
-		t.Fatalf("want 4 responses, got %d", len(res))
-	}
-	init := res[0]["result"].(map[string]any)
-	if init["protocolVersion"] != "2025-06-18" || init["instructions"] == "" {
-		t.Errorf("initialize = %v", init)
-	}
+func TestToolList(t *testing.T) {
 	names := map[string]bool{}
-	for _, tl := range res[1]["result"].(map[string]any)["tools"].([]any) {
-		names[tl.(map[string]any)["name"].(string)] = true
+	for _, tl := range Tools() {
+		names[tl["name"].(string)] = true
 	}
 	for _, n := range []string{"recommend", "budget_status", "rules_list", "rules_add", "rules_remove", "approvals_add", "approvals_list", "history_record_outcome", "tendencies", "settings_set"} {
 		if !names[n] {
 			t.Errorf("missing tool %s", n)
 		}
 	}
-	if res[2]["error"] == nil || res[3]["error"] == nil {
-		t.Error("unknown method and parse errors must return errors")
+	if _, err := (&Server{}).Call("nope", nil); err == nil {
+		t.Error("unknown tool must be an error")
 	}
 }
 

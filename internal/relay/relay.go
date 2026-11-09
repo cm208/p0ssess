@@ -3,11 +3,6 @@ package relay
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"io"
-	"os"
-
-	"p0ssess/internal/config"
 	"p0ssess/internal/mcp"
 )
 
@@ -25,7 +20,10 @@ var runSchema = json.RawMessage(`{
     "attachments": {"type": "array", "items": {"type": "string"}, "description": "Absolute paths of text, PDF or image files to attach."},
     "session": {"type": "string", "description": "A session id from an earlier result, to continue that session."},
     "kind": {"type": "string", "description": "Optional short task kind for the local history, e.g. tests, summary, refactor."},
-    "wait_s": {"type": "integer", "description": "Return still_running after this many seconds (default 1500); then call wait."}
+    "wait_s": {"type": "integer", "description": "Return still_running after this many seconds (default 1500); then call wait."},
+    "use_case": {"type": "string", "description": "Catalog use case id, when known; rules limited to use cases apply by it."},
+    "stakes": {"type": "integer", "minimum": 1, "maximum": 4, "description": "Stakes 1-4 as the caller rated them; without it the use case's catalog stakes apply, or 3."},
+    "max_cost_usd": {"type": "number", "description": "Cost cap for this run; the relay interrupts it past this. Defaults to and cannot exceed max_run_cost_usd in config.json. Every limit is checked against it before the run starts."}
   },
   "required": ["task"]
 }`)
@@ -139,22 +137,4 @@ func NewServer(e *Engine, version string) *mcp.Server {
 			return textResult(map[string]any{"source": source, "models": list}, err)
 		})
 	return s
-}
-
-// Serve runs the relay MCP server on stdio. When stdin closes, active runs are interrupted.
-func Serve(ctx context.Context, in io.Reader, out io.Writer, version string) error {
-	cfg, err := config.Load()
-	if err != nil {
-		return err
-	}
-	e := NewEngine(cfg, version, os.Stderr)
-	defer e.Shutdown()
-	err = NewServer(e, version).Serve(ctx, in, out)
-	if err == io.EOF || err == context.Canceled {
-		return nil
-	}
-	if err != nil {
-		return fmt.Errorf("mcp: %w", err)
-	}
-	return nil
 }

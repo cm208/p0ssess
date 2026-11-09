@@ -17,6 +17,8 @@ import (
 	"p0ssess/internal/config"
 	"p0ssess/internal/jail"
 	"p0ssess/internal/pme/cli"
+	"p0ssess/internal/pme/engine"
+	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/proxy"
 	"p0ssess/internal/relay"
 	"p0ssess/internal/server"
@@ -35,16 +37,17 @@ usage:
   p0ssess statusline                  status line wrapper (reads Claude Code's JSON on stdin)
   p0ssess hook prompt                 UserPromptSubmit hook (reads the hook JSON on stdin)
   p0ssess jail build|up|down|purge|status|probe|unit ...   the sandbox for the agent path (Linux)
-  p0ssess run --model M [--mode read|edit] [--cwd D] [--session S] [--attach F] TASK
+  p0ssess run --model M [--mode read|edit] [--cwd D] [--session S] [--attach F] [--max-cost USD] TASK
   p0ssess wait|abort --session S      the relay tools, from the command line (JSON out)
   p0ssess answer --session S --request R --decision once|reject
-  p0ssess proxy --listen ADDR         (inside the jail) OpenRouter forwarder; key from OPENROUTER_API_KEY
+  p0ssess proxy --listen ADDR [--zdr] (inside the jail) OpenRouter forwarder; key from OPENROUTER_API_KEY
   p0ssess version
 
 The OpenRouter key is read from ~/.config/p0ssess/secrets/openrouter_key, or $P0SSESS_OPENROUTER_KEY_FILE.
 `
 
 func main() {
+	cli.Version = version
 	if len(os.Args) < 2 {
 		fmt.Fprintf(os.Stderr, usage, version)
 		os.Exit(2)
@@ -114,13 +117,14 @@ func stdio() cli.IO { return cli.IO{In: os.Stdin, Out: os.Stdout, Err: os.Stderr
 func proxyCmd(args []string) error {
 	fs := flag.NewFlagSet("proxy", flag.ExitOnError)
 	listen := fs.String("listen", jail.ProxyAddr, "listen address")
+	zdr := fs.Bool("zdr", false, "require zero-retention endpoints")
 	fs.Parse(args)
 	key := os.Getenv("OPENROUTER_API_KEY")
 	os.Unsetenv("OPENROUTER_API_KEY")
 	if key == "" {
 		return errors.New("OPENROUTER_API_KEY is not set")
 	}
-	return proxy.Serve(*listen, key)
+	return proxy.Serve(*listen, key, *zdr)
 }
 
 func jailCmd(ctx context.Context, args []string) error {
@@ -246,6 +250,9 @@ func runCmd(ctx context.Context, name string, args []string) error {
 	fs.StringVar(&req.Cwd, "cwd", "", "working directory")
 	fs.StringVar(&req.Session, "session", "", "session to continue")
 	fs.StringVar(&req.Kind, "kind", "", "task kind for the history")
+	fs.StringVar(&req.UseCase, "use-case", "", "catalog use case id")
+	fs.IntVar(&req.Stakes, "stakes", 0, "stakes 1-4")
+	fs.Float64Var(&req.MaxCostUSD, "max-cost", 0, "cost cap for this run (USD); 0 takes max_run_cost_usd")
 	fs.IntVar(&req.WaitS, "wait", 0, "seconds before returning still_running")
 	fs.Var(&attach, "attach", "file to attach (repeatable)")
 	fs.StringVar(&request, "request", "", "permission request id")
@@ -261,6 +268,11 @@ func runCmd(ctx context.Context, name string, args []string) error {
 	// No Shutdown here: a run that is paused on a permission request or still running stays alive for a
 	// later answer or wait. Ctrl-C still interrupts the run being waited on.
 	e := relay.NewEngine(cfg, version, os.Stderr)
+	eng, err := engine.Load(paths.Default())
+	if err != nil {
+		return err
+	}
+	e.SetObserver(server.NewObserver(eng))
 	progress := func(v float64, msg string) { fmt.Fprintf(os.Stderr, "progress: %s\n", msg) }
 	var res *relay.Result
 	switch name {

@@ -57,7 +57,24 @@ func (e *Engine) startWatch(c *opencode.Client, rec *SessionRecord) *watch {
 	e.watches[rec.SessionID] = w
 	go w.follow()
 	go w.poll()
+	go w.recordWhenDone()
 	return w
+}
+
+// recordWhenDone records a run that ends while nobody is waiting on it (a caller got still_running and
+// never called wait), so its cost reaches the ledger.
+func (w *watch) recordWhenDone() {
+	<-w.ctx.Done()
+	if !w.finished() {
+		return
+	}
+	time.Sleep(3 * time.Second)
+	w.e.recMu.Lock()
+	recorded := w.rec.Recorded
+	w.e.recMu.Unlock()
+	if !recorded {
+		w.e.result(w, "")
+	}
 }
 
 func (w *watch) stop() { w.cancel() }
@@ -322,7 +339,11 @@ func (w *watch) checkSession(ctx context.Context) {
 	w.cost = s.Cost - w.rec.CostBefore
 	cost := w.cost
 	w.mu.Unlock()
-	if cap := w.e.cfg.MaxRunCostUSD; cap > 0 && cost > cap {
+	capUSD := w.rec.Grant.CapUSD
+	if capUSD <= 0 {
+		capUSD = w.e.cfg.MaxRunCostUSD
+	}
+	if cap := capUSD; cap > 0 && cost > cap {
 		w.interrupt(fmt.Sprintf("stopped: run cost $%.4f passed the $%.2f cap", cost, cap))
 	}
 	// Backstop for a missed terminal event: the session went idle after this prompt was sent.

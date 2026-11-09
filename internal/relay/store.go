@@ -35,6 +35,9 @@ type SessionRecord struct {
 	TokensBefore opencode.Tokens `json:"tokens_before"`
 	Recorded     bool            `json:"recorded"`
 	Turns        int             `json:"turns"`
+	UseCase      string          `json:"use_case,omitempty"`
+	// Grant is the current prompt's authorization: its reservation and cost cap.
+	Grant Grant `json:"grant"`
 }
 
 var storeMu sync.Mutex
