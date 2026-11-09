@@ -46,7 +46,7 @@ Claude rates each task on four levels from signals it can see: how reversible it
 | 4 Critical | auth, firewall and infrastructure changes, production, money, anything sent to other people |
 
 - The rating is shown only when it changes the routing ("important: keeping this on Claude"). The user can correct it in plain language, and corrections feed the history.
-- Stakes 4 stays on Claude unless a rule explicitly allows otherwise, and even then Claude reviews the result.
+- Stakes 4 stays on Claude unless a global or session `allow` rule names the model with `max_stakes = 4`, and even then Claude reviews the result. The tools enforce it: a call that does not state its stakes takes the use case's catalog stakes, or 3.
 - A cheap model plus a Claude check can take an important task when checking costs much less than doing.
 
 ## Two ways to run delegated work
@@ -82,6 +82,8 @@ When Claude has to redo a model's work, that counts against the model's score fo
 - optional "save Claude" mode that lowers the bar for routing as Claude limits near
 - model and provider allow and deny lists
 
+These are enforced where money is spent, not only advised. Before the direct tool or a relay run sends anything, it applies the rules, the allow and deny lists, the stakes gate, privacy mode, `.p0ssess-private`, and the per-task, daily and monthly limits on its own, whatever `recommend` said, and fails closed when the budget, rules or ledger cannot be read. It then reserves the call's maximum cost in the ledger under a file lock, so concurrent calls cannot each pass the same headroom; the measured cost settles the reservation afterwards. A call above the per-task limit with no standing approval is refused as "needs approval" and Claude asks the user. A cost that is never reported is recorded at the reserved maximum, marked estimated, until OpenRouter reports it.
+
 `/p0ssess-me` walks through these settings in the terminal and opens a local page (served on `localhost`, works offline) showing spend against each limit, learned tendencies, recent delegations, and editable settings.
 
 ## Rules and standing approvals
@@ -95,7 +97,7 @@ Rule kinds:
 - **Standing approvals:** pre-approve spend for a kind of task up to a per-run price, with an optional count or total ("auto-approve 10-minute video edits up to $0.20 each", "up to $5 today"). Within a standing approval, runs go through without asking and are announced in one line as usual.
 - **Budget overrides:** raise or lower the per-task limit, daily limit, or monthly cap, for the session or permanently.
 
-Scope: each rule applies to the **session**, a **project** (`.p0ssess/rules.toml` in the repository), or **globally** (`~/.config/p0ssess/rules.toml`). The narrowest scope wins; a rule that forbids something always beats one that allows it. Rules can expire ("for the next hour", "until the end of this project").
+Scope: each rule applies to the **session**, a **project** (`.p0ssess/rules.toml` in the repository), or **globally** (`~/.config/p0ssess/rules.toml`). A rule that forbids something always beats one that allows it. Session and global rules are the user's own and have full power; between them the session wins. A project file arrives with whatever repository the user clones, so **project scope only tightens**: it may forbid models, providers, Claude agents, OpenCode or all delegation, narrow the user's `only`/`mix` choice, and lower the per-task, daily or monthly limit. Anything that would loosen (allow rules, standing approvals, lifting the stakes-4 gate, raising or turning off a limit) is ignored and reported once per session: "project rules tried to loosen …; ignored — add it yourself if you want it". Rules can expire ("for the next hour").
 
 Rules are never inferred silently: the engine may *suggest* one from the user's history ("you've approved 8 video edits at about $0.15; make that a standing approval?"), but only the user creates it. `/p0ssess-me` lists every active rule with its scope and lets the user edit or remove it.
 
@@ -103,8 +105,7 @@ Rules are never inferred silently: the engine may *suggest* one from the user's 
 
 A local history file records each delegation: kind of task, model offered and chosen, cost, whether the user accepted, overrode, or declined, and whether Claude had to redo the work.
 From it the engine learns tendencies (for example "always accepts Gemini for media", "declines cheap models for Swift edits") and adjusts its offers.
-The user's Claude Code memory files are read for stated preferences, never written.
-An opt-in evaluation set (a few real tasks per family of use cases, run on a small capped budget) measures routing quality; aggregate results are published.
+Planned, not built: reading the user's Claude Code memory files for stated preferences (never writing them), and an opt-in evaluation set (a few real tasks per family of use cases, on a small capped budget) to measure routing quality and publish aggregate results.
 
 ## Claude usage signal
 
@@ -131,14 +132,16 @@ Muted when idle, slightly brighter while running, amber near the budget. Never r
 
 Claude Code asks for a one-line status summary of each running background agent about every 30 seconds. Relay agents are long-running background agents, so these requests can eat into what routing saves.
 
-- p0ssess measures how many summary requests its relay jobs cause and what they cost, next to the delegation itself.
-- If the cost is significant, `/p0ssess-me` offers Claude Code's own switch, `CLAUDE_CODE_DISABLE_AGENT_PROGRESS_SUMMARIES=1` (Claude Code 2.1.318 and later, currently undocumented), written to the `env` block of the user's settings only with their consent, labeled as undocumented, and reversible with one command. The trade-off is stated: it turns status lines off for all background agents, and after a context compaction Claude no longer sees progress lines for running agents.
+- Planned, not built: measuring how many summary requests relay jobs cause and what they cost, next to the delegation itself.
+- `p0ssess setup summaries` (offered by `/p0ssess-me`) sets Claude Code's own switch, `CLAUDE_CODE_DISABLE_AGENT_PROGRESS_SUMMARIES=1` (Claude Code 2.1.318 and later, currently undocumented), written to the `env` block of the user's settings only with their consent, labeled as undocumented, and reversible with one command. The trade-off is stated: it turns status lines off for all background agents, and after a context compaction Claude no longer sees progress lines for running agents.
 - p0ssess never patches, preloads into, or otherwise modifies Claude Code at runtime.
 
 ## Privacy
 
 - Only providers that do not train on prompts are used by default; the user can loosen this.
-- A `.p0ssess-private` file in a repository blocks all delegation from it.
+- A `.p0ssess-private` file in a repository blocks all delegation from it and from every directory below it, including prompt-only calls; the tools refuse, not only the advice.
+- Zero-retention mode (`privacy.mode = "zdr"`) is enforced at the call: the direct tool sends `provider.zdr = true` and refuses models with no zero-retention endpoint, and the relay's key proxy adds `zdr = true` to every request.
+- The ledger holds no prompt content, but the relay keeps each run's task and output transcript under `~/.config/p0ssess/runs/<session>/`, and nothing prunes it yet.
 - Files that look like secrets (`.env`, keys) are never attached.
 
 ## Sandbox for the agent path
@@ -152,15 +155,15 @@ Questions OpenCode would ask the user are rejected on read-only tasks and return
 Used, with attribution and the date of each value:
 
 - OpenRouter public model list: prices, context, modalities, supported parameters, uptime
-- OpenRouter Data API (CC BY 4.0): model rankings, top apps by category, task-type shares, OpenRouter's own evaluations; derived results only, never a mirror
+- OpenRouter Data API (CC BY 4.0): model rankings, top apps by category, task-type shares, OpenRouter's own evaluations; filtered to the referenced models and attributed, never a full mirror
 - Epoch AI benchmarks that Epoch runs itself (CC BY)
 - LMArena's published leaderboard dataset (CC BY 4.0)
-- Aider's leaderboard data (Apache-2.0)
+- Aider's leaderboard data (Apache-2.0): checked, but no referenced model appears in it, so it contributes no values (the file ships as an empty header)
 - models.dev (MIT) as a cross-check
 
 Not used: any source whose terms restrict republishing or commercial use, or whose license is unclear.
 
-Live data is refreshed on the user's machine (cached about a day). A weekly job in this repository rebuilds the registry with its own zero-credit key and opens a pull request for a human to merge.
+Live data is refreshed on the user's machine (cached about a day). Planned, not built: a weekly job in this repository that rebuilds the registry with its own zero-credit key and opens a pull request for a human to merge; today `registry/scripts/` is run by hand.
 
 ## Research deliverables
 

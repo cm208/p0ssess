@@ -51,7 +51,7 @@ Start Claude Code and run `/p0ssess:p0ssess-me`. It:
 1. shows spend, your plan, privacy and whether a key was found;
 2. asks for the plan (subscription or API), the monthly cap, the per-task auto-approve limit, the daily limit, privacy and the pressure curve;
 3. offers each change to Claude Code's settings, one at a time, and makes it only after you say yes:
-   - `p0ssess setup allow`: allow rules for the relay tools, the direct tool and the engine's read-only tools. Background relay agents cannot ask for permission, so the agent path needs these. Plugins cannot ship allow rules.
+   - `p0ssess setup allow`: allow rules for the relay tools, the direct tool, the engine's read-only tools and `history_record_outcome` (it only appends to the local ledger). `rules_add`, `approvals_add`, `settings_set` and the shortcut tools keep asking: their permission prompt is how you approve spending above your limits, so do not allow them. Background relay agents cannot ask for permission, so the agent path needs these. Plugins cannot ship allow rules.
    - `p0ssess setup statusline`: wraps your status line. Your command keeps running first and the p0ssess segment follows. Plugins cannot install a status line.
    - `p0ssess jail build`: builds the sandbox image for the agent path (about 1.1 GB), on Linux with podman.
 4. lists your rules and suggestions, and opens the local page.

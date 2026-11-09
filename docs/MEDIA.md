@@ -29,7 +29,8 @@ PDF engine, unless the caller picks one: `native` when the model takes files, `m
 
 ## Privacy
 
-- Every call sends `provider.data_collection: "deny"`. `--zdr` (`strict_zdr`) adds `provider.zdr: true`.
+- Every call sends `provider.data_collection: "deny"`. `--zdr` (`strict_zdr`) adds `provider.zdr: true`, and so does every call when the budget's privacy mode is `zdr`.
+- Every call is authorized by the engine first (rules, lists, stakes, privacy, `.p0ssess-private`, per-task, daily and monthly limits; see ENGINE.md, Enforcement), and `max_cost_usd` is reserved until the measured cost settles it. A cost the answer and `/generation` do not report is recorded at the reserved maximum, marked estimated, and replaced when a later lookup succeeds. An error answer (HTTP status other than 200) is not billed and releases the reservation.
 - With `zdr: true`, OpenRouter routes to zero-retention endpoints, or to Safety Retention endpoints when the account's privacy settings allow them. On the test account a Gemini 3.8 Flash call with `zdr: true` succeeded through a "Google" endpoint, although the registry lists no ZDR endpoint for Gemini. So strict mode means "ZDR or what the account allows", not "never Gemini".
 - The image API (`/images`) documents only `only`, `order`, `ignore`, `sort` and `allow_fallbacks` as routing fields. p0ssess sends `data_collection: "deny"` there too, and OpenRouter accepted it without error, but it is not documented to be honored. Under strict ZDR, image-only models are refused; use an image model served on chat completions.
 - Files are checked before anything is read for upload:
@@ -128,4 +129,4 @@ Some jobs need no model at all, or a much smaller one. These run ffmpeg locally 
 
 ## Not covered yet
 
-Text-to-speech (`/audio/speech`), audio output from chat models, video generation (`/videos`, asynchronous), embeddings and rerank. They use other routes and billing units and belong in a later milestone. Reranking stays off until OpenRouter exposes a price (see RESEARCH.md).
+Text-to-speech (`/audio/speech`), audio output from chat models, video generation (`/videos`, asynchronous), embeddings and rerank. They use other routes and billing units and are not built yet. Reranking stays off until OpenRouter exposes a price (see RESEARCH.md).

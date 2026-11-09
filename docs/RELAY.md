@@ -12,7 +12,7 @@ Claude Code (main model)
                  └─ <pod>-proxy               holds the OpenRouter key, forwards to openrouter.ai
 ```
 
-Status: built and tested (milestones R1 and R2), and shipped in the plugin since R3. The relay tools live on the plugin's one MCP server next to the direct and engine tools; inside the plugin their names are `mcp__plugin_p0ssess_p0ssess__<tool>` and the agent is `p0ssess:p0ssess`. Each run's start and end are reported to the engine: the status line counts it as running, and its measured cost becomes spend.
+Status: built, tested and shipped in the plugin. The relay tools live on the plugin's one MCP server next to the direct and engine tools; inside the plugin their names are `mcp__plugin_p0ssess_p0ssess__<tool>` and the agent is `p0ssess:p0ssess`. Each run's start and end are reported to the engine: the status line counts it as running, and its measured cost becomes spend.
 
 ## Pinned versions
 
@@ -30,7 +30,7 @@ The client refuses any server that does not report version 2.2.5. To upgrade Ope
 
 - **A pod** with `--userns=keep-id` (files written in the jail belong to you) and one published port, `127.0.0.1:<port>` → 4096. The password is 32 random bytes in `~/.config/p0ssess/jails/<pod>.pw` (mode 0600).
 - **An egress filter** in the pod's network namespace. nftables rules are loaded from outside (`podman unshare nsenter -t <infra pid> -n nft -f -`) after the pod starts and before the server starts, so nothing inside the pod can change them. Rejected destinations: `0/8`, `10/8`, `100.64/10` (Tailscale), `127/8` off loopback, `169.254/16` (includes pasta's host mapping, 169.254.1.2), `172.16/12`, `192.168/16`, multicast and broadcast; IPv6 `::1`, `fc00::/7` (includes `fd00::/8` and Tailscale's `fd7a:115c:a1e0::/48`), `fe80::/10`, `ff00::/8`; and any global prefix the host itself is on. The only allowed link-local destination is pasta's DNS forwarder, 169.254.1.1 port 53. Everything else (the internet) is allowed. The relay checks that the table is present before every run and refuses to run without it.
-- **The proxy container.** It runs `p0ssess proxy` from the host binary (mounted read-only) and is the only place the OpenRouter key exists. It forwards `/api/v1/*` to `https://openrouter.ai`, replaces the `Authorization` header, and sets `provider.data_collection` to `"deny"` on every request that names a model. Compressed request bodies are refused, so the rule cannot be bypassed. Its log lists method, path, model and status, never bodies.
+- **The proxy container.** It runs `p0ssess proxy` from the host binary (mounted read-only) and is the only place the OpenRouter key exists. It forwards `/api/v1/*` to `https://openrouter.ai`, replaces the `Authorization` header, and sets `provider.data_collection` to `"deny"` on every request that names a model, plus `provider.zdr = true` when the budget's privacy mode is `zdr` (`--zdr`; a jail started for the other mode is restarted). Compressed request bodies are refused, so the rule cannot be bypassed. Its log lists method, path, model and status, never bodies.
 - **The server container.** It runs `opencode serve`. Read-only root filesystem, `--cap-drop ALL`, `no-new-privileges`, a 2048 process limit and a private `/tmp`. Its state (OpenCode's database) is the volume `<pod>-state`. Its OpenRouter key is a placeholder; its base URL points at the proxy. Mounts:
   - the repository, read-only, at its host path, so session directories and Claude's paths agree;
   - `<repo>/.p0ssess/wt` and `<repo>/.git/worktrees`, read-write, for edit-mode worktrees.
@@ -94,10 +94,12 @@ Results are JSON with `answer` first, then `status` (`done`, `failed`, `interrup
 Only the relay answers permission requests, interrupts, or otherwise steers a session. The watcher subscribes to `permission.replied` and the interruption events and records every reply and interrupt the relay itself issues. A permission reply the relay did not issue (a model that found the API password answering its own request, say) or an interruption the relay did not request aborts the session and returns `status: tampered` with the reason. In normal operation this never fires, because a model's shell commands have no network and webfetch to the loopback API is denied; it is the backstop if those ever fail. The answer is capped at 30,000 characters and the diff at 8,000, so a result stays under Claude Code's 50,000-character limit; past that, Claude Code saves the result to a file and the relay would lose the session id. The full answer and transcript are on disk.
 
 - **Progress** goes out every 15 seconds while a run is active, which keeps Claude Code's idle timer from aborting the call.
-- **Limits** per run: a cost cap (`max_run_cost_usd`, default $0.50) and a maximum runtime (`max_runtime_s`, default one hour). Either interrupts the run.
+- **Limits** per run: a cost cap and a maximum runtime (`max_runtime_s`, default one hour). Either interrupts the run. The cap is the run's `max_cost_usd`, which defaults to and cannot exceed `max_run_cost_usd` (default $0.50).
+- **The budget guard.** Before each prompt the relay asks the engine to authorize it: rules, the allow and deny lists, stakes (`stakes`, else the `use_case`'s catalog stakes, else 3), privacy, `.p0ssess-private`, and the per-task, daily and monthly limits, checked against the run's cap and reserved in the ledger (see ENGINE.md, Enforcement). A refusal returns before the jail is touched; a cap above the per-task limit needs a standing approval. A run that fails before its prompt is sent gives the reservation back; one whose session cost cannot be read is recorded at its cap, marked estimated. A run that ends while nobody waits on it is still recorded. Without the guard (no engine attached) the relay refuses to run. The command-line `p0ssess run` uses the same guard.
 - **Cancellation**: a cancelled call and a closed stdin both interrupt the OpenCode run. Claude Code does not send a cancellation when its idle timer fires, so the server-side limits matter.
 - **Attachments** are sent as `data:` URIs, so the jail never needs the files mounted. Text, PDF, PNG, JPEG, GIF and WebP are accepted, up to 20 MiB each. Audio and video are refused (OpenCode 2.2.5 drops them silently; they belong to the direct path), and so are files that look like secrets.
-- **`.p0ssess-private`** at a repository root blocks delegation from it.
+- **`.p0ssess-private`** in a repository, or any directory above the working directory, blocks delegation from it.
+- **Transcripts** of each run's task and output are kept under `~/.config/p0ssess/runs/<session>/`; nothing prunes them yet.
 
 ### Edit mode
 
@@ -128,7 +130,7 @@ On macOS, and on Linux without podman, the agent path reports itself unavailable
 ## Tests
 
 - `go test ./...` runs the unit tests: the contract test against the pinned OpenAPI document, the recorded event stream, the MCP protocol (progress, cancellation, stdin close), the proxy, the policy and nftables builders, the session rules and attachment checks.
-- `P0SSESS_IT=1 P0SSESS_OPENROUTER_KEY_FILE=… go test -run Integration -v ./internal/relay/` is the R1 exit check against a real jail (about $0.005 per run). It starts a jail on a temporary repository and checks:
+- `P0SSESS_IT=1 P0SSESS_OPENROUTER_KEY_FILE=… go test -run Integration -v ./internal/relay/` is the end-to-end check against a real jail (about $0.005 per run). It starts a jail on a temporary repository and checks:
   - **Egress**: a host service through pasta's 169.254.1.2 mapping, 100.100.100.100:53, `[fd7a:115c:a1e0::53]:53` and any targets in `P0SSESS_IT_LAN` all fail from inside, while a control container with no filter reaches the host service and the LAN targets; `https://openrouter.ai` works.
   - **Identity**: your uid, no effective capabilities, an empty `/home`, no real key in the server's environment.
   - **A coding task** in edit mode completes, the diff has the change, and the main checkout is untouched.

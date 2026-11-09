@@ -70,11 +70,11 @@ OpenRouter candidates are the models the catalog names anywhere plus every model
 In order, a candidate is dropped when:
 
 1. **It does not fit.** Every input modality must be accepted and the output produced (a transcript can come from a speech-to-text model or from a chat model that takes audio). The prompt plus output must fit the context window and the output limit. Agent routes need tool use.
-2. **Privacy says no.** A `.p0ssess-private` file in the repository blocks every route but Claude and local tools. In `zdr` mode only models with a zero-retention endpoint qualify (optionally also safety-retention ones), priced at that endpoint, and batch variants never do. In the default `no-training` mode every call sends `provider.data_collection: "deny"`, so no model is dropped for policy.
+2. **Privacy says no.** A `.p0ssess-private` file in the repository, or in any directory above the working directory, blocks every route but Claude and local tools. In `zdr` mode only models with a zero-retention endpoint qualify (optionally also safety-retention ones), priced at that endpoint, and batch variants never do. In the default `no-training` mode every call sends `provider.data_collection: "deny"`, so no model is dropped for policy.
 3. **A rule or list forbids it.** Forbid rules, `only` and `mix` rules, the OpenCode and Claude-subagent switches, and the budget's model and provider allow and deny lists.
-4. **The stakes gate.** Stakes 4 stays on Claude (the lead model) unless an `allow` rule with `max_stakes = 4` names the model; then Claude reviews all of it. Otherwise the candidate's p_fail upper bound must be under the ceiling for the level.
+4. **The stakes gate.** Stakes 4 stays on Claude (the lead model) unless an `allow` rule with `max_stakes = 4` names the model; then Claude reviews all of it. `allow delegation` lifts the gate at most to stakes 3, and project rules cannot lift it. Otherwise the candidate's p_fail upper bound must be under the ceiling for the level. The PDF-engine route is delegation too: stakes 4 and zero-retention mode exclude it.
 5. **It cannot save anything.** If Claude could do the work and `(1 - p_fail) × L_direct ≤ L_overhead + L_review`, delegating costs more Claude usage than it saves at any pressure, so it is never offered. This is RESEARCH.md's break-even rule; it is why one-turn questions and small edits stay on Claude. It does not apply when Claude cannot do the job at all.
-6. **The monthly cap.** If this month's spend plus the run's conservative cash would pass the cap.
+6. **The monthly cap.** If this month's spend and open reservations plus the run's conservative cash would pass the cap.
 
 Every dropped model the catalog names is reported with its reason (`excluded`).
 
@@ -328,11 +328,16 @@ created = 2026-11-08T21:00:00Z
 
 Kinds: `media` (reads audio, video, images or documents; also covers `generate`), `generate` (makes images, audio, speech or video), `agent`, `review`, `code`, `text`.
 
-Precedence: a forbid at any scope beats any allow. For rules that pick one value (`only`, `mix`, budget overrides) the narrowest scope wins (session, then project, then global), and the newest within a scope. Expired rules stay in the file, are shown as expired, and do nothing.
+Precedence: a forbid at any scope beats any allow. Session and global rules are yours and have full power; for rules that pick one value (`only`, `mix`, budget overrides) the session beats global, and the newest wins within a scope. Project rules only tighten, because `.p0ssess/rules.toml` arrives with whatever repository you clone:
+
+- kept: `forbid` (any target); `only` and `mix`, which narrow your own choice (a model must pass yours and the project's) and never bring in a model the use case does not name; `budget` overrides, applied only when lower than your limit (a project `daily_usd` must be above 0).
+- ignored and reported once per session ("project rules tried to loosen …; ignored — add it yourself if you want it"): `allow` (including `max_stakes`), `approve`, and any budget override that would raise, pace or turn off a limit. `rules_add` refuses to save them at project scope.
+
+Every rule is validated when it is read; an invalid one is ignored and reported. Budget overrides cannot be limited to use cases or kinds. A call that does not name its use case meets every `forbid`, `only` and `mix` rule whatever it is limited to, and only approvals that cover all work. Expired rules stay in the file, are shown as expired, and do nothing.
 
 ## The ledger
 
-`history.jsonl` has two kinds of line, and never prompt content:
+`history.jsonl` holds these kinds of line, and never prompt content:
 
 - **offer**: written by `recommend` from the MCP server (or `--record`): offer id, use case, kind, family, stakes, project, session, the top options with total, cash, p_fail and approval status, λ and the preset.
 - **outcome**: written by `history_record_outcome`: the model, `accepted` (the result was used), `redo` (Claude had to redo it), `overridden` (another route ran instead; `chosen` says which) or `declined` (the user said no), the cash spent, and a reason of at most 160 characters. With an offer id, use case, stakes and the standing approval are filled in from the offer.
@@ -341,7 +346,23 @@ From it the engine reads spend (today, this month), first uses, standing-approva
 
 - **run**: written by the relay and the direct path when a delegated call ends: run id (a relay `session_id/turn`, or `d-…` for a direct call), route, model, the measured cost and, for bring-your-own-key calls, the part billed upstream. **Spend is the sum of these runs.** The relay's cost is OpenCode's session cost; the direct path's is OpenRouter's `usage.cost` plus `upstream_inference_cost`. In testing both matched the OpenRouter key's own usage to within $0.000001.
 
-An outcome takes its cash from the run it names (`run_id`), or from the newest unclaimed run of the same model in the last three hours. An outcome that reports cash for a run p0ssess did not measure becomes a `reported` run, so nothing counts twice.
+- **reserve**, **release**, **settle**: before a direct call or relay run sends anything, its maximum cost is reserved; the run that ends it (or a release, when nothing was sent) closes the reservation. A reservation still open after its hold (the call's maximum runtime: two hours for a direct call, `max_runtime_s` plus 15 minutes for a relay run) counts as spent at its maximum, because the process that held it ended without measuring the call. A run whose cost was not reported is recorded at the reserved maximum with `estimated: true`; a later `settle` line replaces it with the cost OpenRouter reports for its generation ids. Spend, the daily and monthly limits and standing-approval use all count open reservations.
+
+An outcome takes its cash from the run it names (`run_id`), or from the newest unclaimed run of the same model in the last three hours. An outcome that reports cash for a run p0ssess did not measure becomes a `reported` run, so nothing counts twice. Standing-approval use is counted from the runs and reservations the tools tagged with the approval when they authorized the call, not from outcomes Claude chooses to report.
+
+## Enforcement
+
+`recommend` is advice; the tools that spend enforce. Before the `direct` tool or a relay `run` sends anything, it applies, under a lock on the ledger (a file lock, so other p0ssess processes wait too):
+
+1. `.p0ssess-private` in the working directory or above it: refused, even for a prompt-only call.
+2. The budget, rules and ledger must be readable and valid: otherwise refused (fail closed).
+3. Forbid rules (delegation, the model, OpenCode for the agent path), `only`/`mix`/project restrictions, and the model and provider allow and deny lists.
+4. Stakes: the caller's rating, else the use case's catalog stakes, else 3. Stakes 4 is refused for a non-Claude model unless an `allow` rule names it with `max_stakes = 4`.
+5. Privacy: in `zdr` mode a model whose endpoints are known and include no zero-retention one is refused, and the call goes out with `provider.zdr = true` (the direct client sets it; the relay's key proxy adds it to every request).
+6. The monthly cap and the daily soft limit, counting open reservations. The daily limit is lifted only by a session-scope `daily_usd` override.
+7. The per-task limit: a call whose maximum cost is above it needs a standing approval whose per-run, count and total limits cover it. Otherwise the result is "needs approval", with the exact `approvals_add` call (scope session, one run) that records the user's yes; Claude Code's permission prompt for that tool is the confirmation. Keep `rules_add`, `approvals_add` and `settings_set` out of your allow list; `p0ssess setup show` warns when they are in it.
+
+Then it reserves the maximum (`max_cost_usd` for `direct`; for `run`, its `max_cost_usd`, default and ceiling `max_run_cost_usd` from `config.json`, which is also the cost at which the relay interrupts the run).
 
 The relay also keeps its own run log at `~/.config/p0ssess/history.jsonl` (status, tokens and cost of each OpenCode run).
 
@@ -382,7 +403,7 @@ A reading older than two hours, or none (before the first response in a session,
 | `tendencies` | learned patterns, suggestions and recent delegations |
 | `shortcuts_suggest`, `shortcuts_create`, `shortcuts_remove` | named shortcut agents (below) |
 
-The `direct` tool refuses a call when this month's spend plus its `max_cost_usd` would pass the monthly cap.
+The `direct` and `run` tools enforce every limit before they spend (see Enforcement); both take optional `stakes` and `use_case`.
 
 ### Shortcut agents
 
