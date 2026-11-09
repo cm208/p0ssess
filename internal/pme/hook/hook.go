@@ -97,10 +97,9 @@ func Run(raw []byte, d paths.Dirs, now time.Time) string {
 		return ""
 	}
 	if in.SessionID != "" {
-		if st, err := usage.Load(d.UsageFile()); err == nil {
+		usage.Update(d.UsageFile(), func(st *usage.State) {
 			st.TouchSession(usage.Session{ID: in.SessionID, Cwd: in.Cwd, Project: paths.ProjectRoot(in.Cwd), Seen: now.UTC()})
-			usage.Save(d.UsageFile(), st)
-		}
+		})
 	}
 	return strings.TrimSpace(Hint(in, d, now))
 }

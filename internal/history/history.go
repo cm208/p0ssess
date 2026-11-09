@@ -15,9 +15,9 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 
+	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/rules"
 )
 
@@ -93,8 +93,6 @@ type Entry struct {
 	Expires *time.Time `json:"expires,omitempty"`
 }
 
-var mu sync.Mutex
-
 func NewOfferID() string {
 	var b [6]byte
 	rand.Read(b[:])
@@ -136,12 +134,10 @@ func Append(path string, e Entry) error {
 // another writer. A ledger that cannot be read is an error: spend that cannot be counted cannot be
 // checked.
 func Update(path string, fn func(l *Ledger) ([]Entry, error)) error {
-	mu.Lock()
-	defer mu.Unlock()
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
 	}
-	unlock, err := lockFile(path + ".lock")
+	unlock, err := paths.LockFile(path + ".lock")
 	if err != nil {
 		return fmt.Errorf("locking the ledger: %w", err)
 	}

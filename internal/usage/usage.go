@@ -67,6 +67,20 @@ func Save(path string, s State) error {
 	return paths.WriteFileAtomic(path, b, 0o600)
 }
 
+// Update applies fn to the stored state and saves it, holding a lock across the read and the write so
+// a concurrent update (another session's status line or prompt hook) is not lost. An unreadable file is
+// left alone.
+func Update(path string, fn func(*State)) error {
+	return paths.WithLock(path, func() error {
+		s, err := Load(path)
+		if err != nil {
+			return err
+		}
+		fn(&s)
+		return Save(path, s)
+	})
+}
+
 // StatusInput is the subset of Claude Code's status line JSON p0ssess reads.
 type StatusInput struct {
 	SessionID string `json:"session_id"`

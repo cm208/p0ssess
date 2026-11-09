@@ -165,10 +165,7 @@ func Run(input []byte, d paths.Dirs, now time.Time) string {
 	st := LoadSettings(d.EngineFile())
 	var in usage.StatusInput
 	if json.Unmarshal(input, &in) == nil {
-		if state, err := usage.Load(d.UsageFile()); err == nil {
-			state.Record(in, now)
-			usage.Save(d.UsageFile(), state)
-		}
+		usage.Update(d.UsageFile(), func(s *usage.State) { s.Record(in, now) })
 	}
 	user := runUser(st, input)
 	width := st.Width

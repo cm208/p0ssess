@@ -414,30 +414,46 @@ func Add(f Files, r Rule, now time.Time) (Rule, error) {
 	if r.Created.IsZero() {
 		r.Created = now.UTC().Truncate(time.Second)
 	}
-	rs, err := ReadFile(path, r.Scope)
-	if err != nil {
-		return r, err
-	}
-	for _, x := range rs {
-		if x.ID == r.ID {
-			return r, fmt.Errorf("rule %s already exists", r.ID)
+	return r, paths.WithLock(path, func() error {
+		rs, err := ReadFile(path, r.Scope)
+		if err != nil {
+			return err
 		}
-	}
-	return r, writeFile(path, append(rs, r))
+		for _, x := range rs {
+			if x.ID == r.ID {
+				return fmt.Errorf("rule %s already exists", r.ID)
+			}
+		}
+		return writeFile(path, append(rs, r))
+	})
 }
 
 // Remove deletes a rule by id from whichever scope holds it.
 func Remove(f Files, id string) (Rule, error) {
 	for _, scope := range []string{ScopeSession, ScopeProject, ScopeGlobal} {
 		path := f.path(scope)
-		rs, err := ReadFile(path, scope)
+		if _, err := os.Stat(path); path == "" || errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		var found *Rule
+		err := paths.WithLock(path, func() error {
+			rs, err := ReadFile(path, scope)
+			if err != nil {
+				return err
+			}
+			for i, r := range rs {
+				if r.ID == id {
+					found = &r
+					return writeFile(path, append(rs[:i], rs[i+1:]...))
+				}
+			}
+			return nil
+		})
 		if err != nil {
 			return Rule{}, err
 		}
-		for i, r := range rs {
-			if r.ID == id {
-				return r, writeFile(path, append(rs[:i], rs[i+1:]...))
-			}
+		if found != nil {
+			return *found, nil
 		}
 	}
 	return Rule{}, fmt.Errorf("no rule %s", id)

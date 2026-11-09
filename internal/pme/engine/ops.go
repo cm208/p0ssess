@@ -312,12 +312,22 @@ var settingKeys = []string{"monthly_usd", "per_task_usd", "daily_usd", "save_cla
 
 func SettingKeys() []string { return append([]string(nil), settingKeys...) }
 
-// SetSetting changes one setting in budget.toml or engine.toml.
-func (e *Engine) SetSetting(key, value string) (string, error) {
-	switch {
-	case strings.HasPrefix(key, "lambda.") || strings.HasPrefix(key, "statusline."):
-		return e.setEngine(key, value)
+// SetSetting changes one setting in budget.toml or engine.toml. The file is read and rewritten under
+// a lock, so concurrent changes to different settings are all kept.
+func (e *Engine) SetSetting(key, value string) (msg string, err error) {
+	path := e.Dirs.BudgetFile()
+	set := e.setBudget
+	if strings.HasPrefix(key, "lambda.") || strings.HasPrefix(key, "statusline.") {
+		path, set = e.Dirs.EngineFile(), e.setEngine
 	}
+	err = paths.WithLock(path, func() error {
+		msg, err = set(key, value)
+		return err
+	})
+	return msg, err
+}
+
+func (e *Engine) setBudget(key, value string) (string, error) {
 	b, err := e.Budget()
 	if err != nil {
 		return "", err

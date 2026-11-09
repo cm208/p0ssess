@@ -1,9 +1,11 @@
 package usage
 
 import (
+	"fmt"
 	"math"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 )
@@ -87,5 +89,31 @@ func TestJobs(t *testing.T) {
 	FinishJob(dir, j.ID)
 	if len(Running(dir, time.Now())) != 0 {
 		t.Error("finished job still listed")
+	}
+}
+
+func TestConcurrentUpdatesAreAllKept(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "usage.json")
+	now := time.Date(2026, 11, 9, 12, 0, 0, 0, time.UTC)
+	var wg sync.WaitGroup
+	for n := 0; n < 15; n++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := Update(path, func(s *State) {
+				s.TouchSession(Session{ID: fmt.Sprintf("s%d", n), Seen: now.Add(time.Duration(n) * time.Second)})
+			})
+			if err != nil {
+				t.Error(err)
+			}
+		}()
+	}
+	wg.Wait()
+	s, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(s.Sessions) != 15 {
+		t.Errorf("%d sessions kept after 15 concurrent updates", len(s.Sessions))
 	}
 }
