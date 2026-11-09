@@ -34,12 +34,7 @@ func (c *Client) runSTT(ctx context.Context, p *plan, res *Result) error {
 			Text    string  `json:"text"`
 			Speaker *int    `json:"speaker"`
 		} `json:"segments"`
-		Usage *struct {
-			Seconds      float64  `json:"seconds"`
-			InputTokens  int      `json:"input_tokens"`
-			OutputTokens int      `json:"output_tokens"`
-			Cost         *float64 `json:"cost"`
-		} `json:"usage"`
+		Usage *apiUsage `json:"usage"`
 	}
 	if err := c.post(ctx, "/audio/transcriptions", body, &tr); err != nil {
 		return err
@@ -61,13 +56,12 @@ func (c *Client) runSTT(ctx context.Context, p *plan, res *Result) error {
 	if tr.ID != "" {
 		res.IDs = append(res.IDs, tr.ID)
 	}
-	if tr.Usage != nil {
-		res.Usage.AudioSeconds = tr.Usage.Seconds
-		res.Usage.PromptTokens, res.Usage.CompletionTokens = tr.Usage.InputTokens, tr.Usage.OutputTokens
-		if tr.Usage.Cost != nil {
-			res.Usage.CostUSD, res.Usage.CostSource = *tr.Usage.Cost, "usage"
-			return nil
-		}
+	if res.Usage.add(tr.Usage) {
+		return nil
+	}
+	if tr.ID != "" {
+		c.lookupCost(ctx, res, tr.ID)
+		return nil
 	}
 	res.Usage.CostSource = "unknown"
 	res.Warnings = append(res.Warnings, "the transcription API reported no cost")

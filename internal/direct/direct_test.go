@@ -185,6 +185,9 @@ func TestTextChat(t *testing.T) {
 	if pr["data_collection"] != "deny" || pr["zdr"] != nil {
 		t.Errorf("provider = %v", pr)
 	}
+	if mp := pr["max_price"].(map[string]any); mp["prompt"] != "0.051" || mp["completion"] != "0.567" {
+		t.Errorf("max_price = %v", mp)
+	}
 	if body["max_tokens"].(float64) != DefaultMaxTokens {
 		t.Errorf("max_tokens = %v", body["max_tokens"])
 	}
@@ -445,6 +448,26 @@ func TestGenerationLookup(t *testing.T) {
 	}
 	if res.Usage.CostUSD != 0.0011 || res.Usage.CostSource != "generation" || res.Provider != "Vertex" {
 		t.Errorf("result = %+v", res)
+	}
+}
+
+func TestBYOKCostCountsUpstream(t *testing.T) {
+	f, c := newFake(t)
+	f.answer["/chat/completions"] = func(map[string]any) (int, string) {
+		return 200, `{"id":"gen-2","provider":"Google AI Studio","choices":[{"message":{"content":"x"}}],` +
+			`"usage":{"prompt_tokens":936,"completion_tokens":704,"cost":0,"is_byok":true,` +
+			`"prompt_tokens_details":{"video_tokens":910},"cost_details":{"upstream_inference_cost":0.006684}}}`
+	}
+	res, err := c.Run(context.Background(), Request{Model: "google/gemini-3.8-flash", Prompt: "x", MaxCostUSD: 0.05})
+	if err != nil {
+		t.Fatal(err)
+	}
+	u := res.Usage
+	if !u.BYOK || u.CostUSD != 0.006684 || u.OpenRouterUSD != 0 || u.UpstreamUSD != 0.006684 || u.VideoTokens != 910 {
+		t.Errorf("usage = %+v", u)
+	}
+	if !strings.Contains(Format(res), "bring-your-own-key: OpenRouter $0.000000 + provider $0.006684") {
+		t.Errorf("format = %q", Format(res))
 	}
 }
 

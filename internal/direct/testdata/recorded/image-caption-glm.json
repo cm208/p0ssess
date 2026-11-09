@@ -1,0 +1,54 @@
+{
+ "id": "gen-1794202561-kySOwICdBg5OXrjyU99j",
+ "object": "chat.completion",
+ "created": 1794202561,
+ "model": "z-ai/glm-5.3-flash",
+ "provider": "Friendli",
+ "system_fingerprint": null,
+ "service_tier": null,
+ "choices": [
+  {
+   "index": 0,
+   "logprobs": null,
+   "finish_reason": "stop",
+   "native_finish_reason": "stop",
+   "message": {
+    "role": "assistant",
+    "content": "**Alt text:** A blue square and a golden circle side by side on a white background.\n\n**Shapes and colors:**\n- Square \u2014 blue\n- Circle \u2014 golden (orange/amber)",
+    "refusal": null,
+    "reasoning": "The image shows a blue square on the left and a golden/orange (amber/yellow-orange) circle on the right, on a white background.\n\nAlt text: \"A blue square and a golden circle side by side on a white background.\"\n\nShapes:\n- Square: blue\n- Circle: golden/orange (amber)",
+    "reasoning_details": [
+     {
+      "type": "reasoning.text",
+      "text": "The image shows a blue square on the left and a golden/orange (amber/yellow-orange) circle on the right, on a white background.\n\nAlt text: \"A blue square and a golden circle side by side on a white background.\"\n\nShapes:\n- Square: blue\n- Circle: golden/orange (amber)",
+      "format": "unknown",
+      "index": 0
+     }
+    ]
+   }
+  }
+ ],
+ "usage": {
+  "prompt_tokens": 298,
+  "completion_tokens": 106,
+  "total_tokens": 404,
+  "cost": 9.77e-05,
+  "is_byok": false,
+  "prompt_tokens_details": {
+   "cached_tokens": 0,
+   "cache_write_tokens": 0,
+   "audio_tokens": 0,
+   "video_tokens": 0
+  },
+  "cost_details": {
+   "upstream_inference_cost": 9.77e-05,
+   "upstream_inference_prompt_cost": 4.47e-05,
+   "upstream_inference_completions_cost": 5.3e-05
+  },
+  "completion_tokens_details": {
+   "reasoning_tokens": 68,
+   "image_tokens": 0,
+   "audio_tokens": 0
+  }
+ }
+}

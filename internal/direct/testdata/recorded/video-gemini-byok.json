@@ -1,0 +1,60 @@
+{
+ "id": "gen-1794202221-TsUyEJ9suYvEWSFbSaEc",
+ "object": "chat.completion",
+ "created": 1794202221,
+ "model": "google/gemini-3.8-flash",
+ "provider": "Google AI Studio",
+ "system_fingerprint": null,
+ "service_tier": "default",
+ "choices": [
+  {
+   "index": 0,
+   "logprobs": null,
+   "finish_reason": "stop",
+   "native_finish_reason": "STOP",
+   "message": {
+    "role": "assistant",
+    "content": "Here is a detailed breakdown of the video:\n\n### **Visuals & Text**\n* **Static Text:** The text **\"TEST CARD 42\"** is displayed in bold white capital letters across the upper-middle portion of the screen throughout the entire video.\n* **Dynamic Text:** Directly beneath the title, a timer is displayed in yellow text, counting up second-by-second from `t=0s` to `t=9s`.\n* **Background Color Transition:**\n  * **0:00 \u2013 0:04 (`t=0s` to `t=4s`):** Solid bright **red** background.\n  * **0:05 \u2013 0:10 (`t=5s` to `t=9s`):** Switches instantly to a solid bright **blue** background for the remainder of the video.\n\n### **Audio**\n* The video contains a continuous, unbroken, high-pitched audio test tone (sine wave beep) that plays at a constant frequency and volume from start to finish.",
+    "refusal": null,
+    "reasoning": "**Analyzing Video Details**\n\nI'm currently focused on extracting the visual components from the video. I'm noting the background colors, on-screen text, and how these elements change throughout the video. I'll need to pinpoint when these transitions occur, and describe it step-by-step. Next, I plan to analyze the audio track to understand it better.\n\n\n",
+    "reasoning_details": [
+     {
+      "type": "reasoning.text",
+      "text": "**Analyzing Video Details**\n\nI'm currently focused on extracting the visual components from the video. I'm noting the background colors, on-screen text, and how these elements change throughout the video. I'll need to pinpoint when these transitions occur, and describe it step-by-step. Next, I plan to analyze the audio track to understand it better.\n\n\n",
+      "format": "google-gemini-v1",
+      "index": 0
+     },
+     {
+      "type": "reasoning.encrypted",
+      "data": "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",
+      "format": "google-gemini-v1",
+      "index": 1
+     }
+    ]
+   }
+  }
+ ],
+ "usage": {
+  "prompt_tokens": 936,
+  "completion_tokens": 704,
+  "total_tokens": 1640,
+  "cost": 0,
+  "is_byok": true,
+  "prompt_tokens_details": {
+   "cached_tokens": 0,
+   "cache_write_tokens": 0,
+   "audio_tokens": 0,
+   "video_tokens": 910
+  },
+  "cost_details": {
+   "upstream_inference_cost": 0.006684,
+   "upstream_inference_prompt_cost": 0.001404,
+   "upstream_inference_completions_cost": 0.00528
+  },
+  "completion_tokens_details": {
+   "reasoning_tokens": 481,
+   "image_tokens": 0,
+   "audio_tokens": 0
+  }
+ }
+}

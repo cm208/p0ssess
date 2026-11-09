@@ -126,9 +126,69 @@ type Usage struct {
 	CompletionTokens int     `json:"completion_tokens"`
 	ReasoningTokens  int     `json:"reasoning_tokens,omitempty"`
 	AudioTokens      int     `json:"audio_tokens,omitempty"`
+	VideoTokens      int     `json:"video_tokens,omitempty"`
 	AudioSeconds     float64 `json:"audio_seconds,omitempty"`
-	CostUSD          float64 `json:"cost_usd"`
-	CostSource       string  `json:"cost_source"` // "usage", "generation" or "unknown"
+	// CostUSD is the full price of the call: OpenRouter's charge plus, for bring-your-own-key calls, what
+	// the provider bills the user's own account.
+	CostUSD       float64 `json:"cost_usd"`
+	OpenRouterUSD float64 `json:"openrouter_usd"`
+	UpstreamUSD   float64 `json:"upstream_usd,omitempty"`
+	BYOK          bool    `json:"byok,omitempty"`
+	CostSource    string  `json:"cost_source"` // "usage", "generation" or "unknown"
+}
+
+// apiUsage is the usage block shared by chat, image and transcription answers.
+type apiUsage struct {
+	PromptTokens     int      `json:"prompt_tokens"`
+	CompletionTokens int      `json:"completion_tokens"`
+	InputTokens      int      `json:"input_tokens"`
+	OutputTokens     int      `json:"output_tokens"`
+	Seconds          float64  `json:"seconds"`
+	Cost             *float64 `json:"cost"`
+	IsBYOK           bool     `json:"is_byok"`
+	CostDetails      struct {
+		Upstream *float64 `json:"upstream_inference_cost"`
+	} `json:"cost_details"`
+	CompletionTokensDetails struct {
+		ReasoningTokens int `json:"reasoning_tokens"`
+	} `json:"completion_tokens_details"`
+	PromptTokensDetails struct {
+		AudioTokens int `json:"audio_tokens"`
+		VideoTokens int `json:"video_tokens"`
+	} `json:"prompt_tokens_details"`
+}
+
+// add folds one answer's usage in and reports whether it carried a cost.
+func (u *Usage) add(a *apiUsage) bool {
+	if a == nil {
+		return false
+	}
+	u.PromptTokens += a.PromptTokens + a.InputTokens
+	u.CompletionTokens += a.CompletionTokens + a.OutputTokens
+	u.ReasoningTokens += a.CompletionTokensDetails.ReasoningTokens
+	u.AudioTokens += a.PromptTokensDetails.AudioTokens
+	u.VideoTokens += a.PromptTokensDetails.VideoTokens
+	u.AudioSeconds += a.Seconds
+	if a.Cost == nil {
+		return false
+	}
+	u.bill(*a.Cost, a.IsBYOK, a.CostDetails.Upstream)
+	if u.CostSource == "" {
+		u.CostSource = "usage"
+	}
+	return true
+}
+
+func (u *Usage) bill(openrouter float64, byok bool, upstream *float64) {
+	u.OpenRouterUSD += openrouter
+	u.CostUSD += openrouter
+	if byok {
+		u.BYOK = true
+		if upstream != nil {
+			u.UpstreamUSD += *upstream
+			u.CostUSD += *upstream
+		}
+	}
 }
 
 type Result struct {

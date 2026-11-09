@@ -41,12 +41,8 @@ func (c *Client) runImages(ctx context.Context, p *plan, res *Result, outDir str
 			URL       string `json:"url"`
 			MediaType string `json:"media_type"`
 		} `json:"data"`
-		Usage *struct {
-			PromptTokens     int      `json:"prompt_tokens"`
-			CompletionTokens int      `json:"completion_tokens"`
-			Cost             *float64 `json:"cost"`
-		} `json:"usage"`
-		Provider string `json:"provider"`
+		Usage    *apiUsage `json:"usage"`
+		Provider string    `json:"provider"`
 	}
 	if err := c.post(ctx, "/images", body, &ir); err != nil {
 		return err
@@ -79,22 +75,12 @@ func (c *Client) runImages(ctx context.Context, p *plan, res *Result, outDir str
 	if ir.ID != "" {
 		res.IDs = append(res.IDs, ir.ID)
 	}
-	if ir.Usage != nil {
-		res.Usage.PromptTokens = ir.Usage.PromptTokens
-		res.Usage.CompletionTokens = ir.Usage.CompletionTokens
-		if ir.Usage.Cost != nil {
-			res.Usage.CostUSD, res.Usage.CostSource = *ir.Usage.Cost, "usage"
-			return nil
-		}
+	if res.Usage.add(ir.Usage) {
+		return nil
 	}
 	if ir.ID != "" {
-		if cost, prov, err := c.generation(ctx, ir.ID); err == nil {
-			res.Usage.CostUSD, res.Usage.CostSource = cost, "generation"
-			if res.Provider == "" {
-				res.Provider = prov
-			}
-			return nil
-		}
+		c.lookupCost(ctx, res, ir.ID)
+		return nil
 	}
 	res.Usage.CostSource = "unknown"
 	res.Warnings = append(res.Warnings, "the image API reported no cost")

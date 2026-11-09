@@ -129,6 +129,9 @@ func Format(r *Result) string {
 		if r.Usage.ReasoningTokens > 0 {
 			fmt.Fprintf(&b, " (%d reasoning)", r.Usage.ReasoningTokens)
 		}
+		if r.Usage.BYOK {
+			fmt.Fprintf(&b, "; bring-your-own-key: OpenRouter $%.6f + provider $%.6f", r.Usage.OpenRouterUSD, r.Usage.UpstreamUSD)
+		}
 		b.WriteString("\n")
 	}
 	for _, w := range r.Warnings {

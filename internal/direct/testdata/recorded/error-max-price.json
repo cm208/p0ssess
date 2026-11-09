@@ -1,0 +1,19 @@
+{
+ "error": {
+  "message": "No endpoints found that satisfy the max price for this request",
+  "code": 404,
+  "metadata": {
+   "routing_funnel": [
+    {
+     "step": "Initial Endpoints",
+     "endpoint_count": 41
+    },
+    {
+     "step": "Filter by Image Support",
+     "endpoint_count": 38
+    }
+   ],
+   "failed_routing_step": "Filter by Max Price"
+  }
+ }
+}

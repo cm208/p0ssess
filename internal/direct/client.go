@@ -124,8 +124,8 @@ func (c *Client) Plan(ctx context.Context, req Request) (*plan, error) {
 	if req.StrictZDR && p.route == "images" {
 		return nil, fmt.Errorf("strict ZDR: the image API does not document zdr or data_collection routing, so %s cannot be used; pick an image model served on chat completions", m.ID)
 	}
-	if req.StrictZDR && !m.HasZDR && m.Source == "registry" {
-		p.warn = append(p.warn, m.ID+" has no ZDR endpoint in the registry snapshot; OpenRouter will likely refuse the call")
+	if req.StrictZDR && m.ZDRKnown && !m.HasZDR {
+		p.warn = append(p.warn, m.ID+" has no ZDR endpoint in the registry snapshot; with zdr on, OpenRouter refuses the call or, if the account allows it, uses a Safety Retention endpoint")
 	}
 
 	switch p.route {
@@ -313,6 +313,12 @@ func (c *Client) Run(ctx context.Context, req Request) (*Result, error) {
 	if err != nil {
 		return res, err
 	}
+	if lim := p.req.MaxTokens * max(p.est.Calls, 1); p.route == "chat" && res.Usage.CompletionTokens > lim {
+		res.Warnings = append(res.Warnings, fmt.Sprintf("the provider billed %d completion tokens against a max_tokens of %d", res.Usage.CompletionTokens, lim))
+	}
+	if res.Usage.CostUSD > p.est.CostUSD*1.0001 {
+		res.Warnings = append(res.Warnings, fmt.Sprintf("actual cost $%.6f was above the estimate $%.6f", res.Usage.CostUSD, p.est.CostUSD))
+	}
 	return res, nil
 }
 
@@ -422,35 +428,37 @@ func truncate(s string, n int) string {
 
 // generation asks OpenRouter for the billed cost and provider of a finished call. Stats can lag the
 // answer by a few seconds.
-func (c *Client) generation(ctx context.Context, id string) (cost float64, provider string, err error) {
+type generationInfo struct {
+	TotalCost    float64  `json:"total_cost"`
+	ProviderName string   `json:"provider_name"`
+	IsBYOK       bool     `json:"is_byok"`
+	Upstream     *float64 `json:"upstream_inference_cost"`
+}
+
+func (c *Client) generation(ctx context.Context, id string) (generationInfo, error) {
 	deadline := time.Now().Add(c.GenerationWait)
 	for wait := 500 * time.Millisecond; ; wait *= 2 {
 		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(c.BaseURL, "/")+"/generation?id="+id, nil)
 		c.headers(req)
 		resp, err := c.HTTP.Do(req)
 		if err != nil {
-			return 0, "", redact(err, c.Key)
+			return generationInfo{}, redact(err, c.Key)
 		}
 		data, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 		resp.Body.Close()
 		if resp.StatusCode == 200 {
 			var g struct {
-				Data struct {
-					TotalCost    float64 `json:"total_cost"`
-					ProviderName string  `json:"provider_name"`
-				} `json:"data"`
+				Data generationInfo `json:"data"`
 			}
-			if err := json.Unmarshal(data, &g); err != nil {
-				return 0, "", err
-			}
-			return g.Data.TotalCost, g.Data.ProviderName, nil
+			err := json.Unmarshal(data, &g)
+			return g.Data, err
 		}
 		if resp.StatusCode != 404 || time.Now().Add(wait).After(deadline) {
-			return 0, "", apiError(resp.StatusCode, data)
+			return generationInfo{}, apiError(resp.StatusCode, data)
 		}
 		select {
 		case <-ctx.Done():
-			return 0, "", ctx.Err()
+			return generationInfo{}, ctx.Err()
 		case <-time.After(wait):
 		}
 	}

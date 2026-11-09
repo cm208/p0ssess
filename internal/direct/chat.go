@@ -33,17 +33,7 @@ type chatResponse struct {
 			Message string `json:"message"`
 		} `json:"error"`
 	} `json:"choices"`
-	Usage *struct {
-		PromptTokens            int      `json:"prompt_tokens"`
-		CompletionTokens        int      `json:"completion_tokens"`
-		Cost                    *float64 `json:"cost"`
-		CompletionTokensDetails struct {
-			ReasoningTokens int `json:"reasoning_tokens"`
-		} `json:"completion_tokens_details"`
-		PromptTokensDetails struct {
-			AudioTokens int `json:"audio_tokens"`
-		} `json:"prompt_tokens_details"`
-	} `json:"usage"`
+	Usage *apiUsage `json:"usage"`
 }
 
 func (r *chatResponse) text() string {
@@ -128,11 +118,16 @@ func (c *Client) chatBody(p *plan, inputs []Input, prompt string, labels map[str
 		msgs = append(msgs, map[string]any{"role": "system", "content": p.req.System})
 	}
 	msgs = append(msgs, map[string]any{"role": "user", "content": content})
+	pr := c.provider(p)
+	// Cap endpoint prices at the ones the estimate used, so routing cannot pick a pricier endpoint.
+	if in, out := p.model.InPerM, max(p.model.OutPerM, p.model.ReasonPerM); in > 0 && out > 0 {
+		pr["max_price"] = map[string]string{"prompt": ff(in), "completion": ff(out)}
+	}
 	body := map[string]any{
 		"model":      p.model.ID,
 		"messages":   msgs,
 		"max_tokens": p.req.MaxTokens,
-		"provider":   c.provider(p),
+		"provider":   pr,
 	}
 	if p.engine != "" {
 		body["plugins"] = []any{map[string]any{"id": "file-parser", "pdf": map[string]any{"engine": p.engine}}}
@@ -234,33 +229,25 @@ func (c *Client) chatOnce(ctx context.Context, p *plan, inputs []Input, prompt s
 }
 
 func (c *Client) addUsage(ctx context.Context, res *Result, cr chatResponse) {
-	u := &res.Usage
-	known := false
-	if cr.Usage != nil {
-		u.PromptTokens += cr.Usage.PromptTokens
-		u.CompletionTokens += cr.Usage.CompletionTokens
-		u.ReasoningTokens += cr.Usage.CompletionTokensDetails.ReasoningTokens
-		u.AudioTokens += cr.Usage.PromptTokensDetails.AudioTokens
-		if cr.Usage.Cost != nil {
-			u.CostUSD += *cr.Usage.Cost
-			known = true
-			if u.CostSource == "" {
-				u.CostSource = "usage"
-			}
-		}
+	if res.Usage.add(cr.Usage) || cr.ID == "" {
+		return
 	}
-	if !known && cr.ID != "" {
-		cost, prov, err := c.generation(ctx, cr.ID)
-		if err == nil {
-			u.CostUSD += cost
-			u.CostSource = "generation"
-			if res.Provider == "" {
-				res.Provider = prov
-			}
-			return
+	c.lookupCost(ctx, res, cr.ID)
+}
+
+func (c *Client) lookupCost(ctx context.Context, res *Result, id string) {
+	g, err := c.generation(ctx, id)
+	if err != nil {
+		if res.Usage.CostSource == "" {
+			res.Usage.CostSource = "unknown"
 		}
-		u.CostSource = "unknown"
 		res.Warnings = append(res.Warnings, "cost not reported: "+err.Error())
+		return
+	}
+	res.Usage.bill(g.TotalCost, g.IsBYOK, g.Upstream)
+	res.Usage.CostSource = "generation"
+	if res.Provider == "" {
+		res.Provider = g.ProviderName
 	}
 }
 

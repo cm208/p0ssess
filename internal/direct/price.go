@@ -20,6 +20,7 @@ type ModelInfo struct {
 	Output      []string           `json:"output_modalities"`
 	Routes      []string           `json:"api_routes,omitempty"`
 	HasZDR      bool               `json:"has_zdr_endpoint"`
+	ZDRKnown    bool               `json:"-"`      // HasZDR comes from the registry snapshot
 	Source      string             `json:"source"` // "registry" or "live"
 	InPerM      float64            `json:"input_per_m"`
 	OutPerM     float64            `json:"output_per_m"`
@@ -30,8 +31,8 @@ type ModelInfo struct {
 	// Image output, from the image endpoints listing: the highest price across endpoints.
 	ImageUnit string  `json:"image_unit,omitempty"` // "image", "megapixel" or "token"
 	ImageCost float64 `json:"image_cost,omitempty"`
-	// Speech-to-text raw price; OpenRouter does not document its unit (see docs/MEDIA.md).
-	STTRaw float64 `json:"stt_raw,omitempty"`
+	// Speech-to-text price in USD per second of audio, the highest across endpoints when known live.
+	STTRaw float64 `json:"stt_usd_per_second,omitempty"`
 }
 
 type LongContextPrice struct {
@@ -93,7 +94,7 @@ func (c *Catalog) LoadRegistry(path string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	for _, m := range doc.Models {
-		mi := ModelInfo{ID: m.ID, Input: m.Input, Output: m.Output, Routes: m.Routes, HasZDR: m.Endpoints.HasZDR, Source: "registry"}
+		mi := ModelInfo{ID: m.ID, Input: m.Input, Output: m.Output, Routes: m.Routes, HasZDR: m.Endpoints.HasZDR, ZDRKnown: true, Source: "registry"}
 		num := func(k string) float64 {
 			var f float64
 			_ = json.Unmarshal(m.Pricing[k], &f)
@@ -119,25 +120,28 @@ func (c *Catalog) Add(m ModelInfo) {
 	c.reg[m.ID] = m
 }
 
-// Lookup returns what is known about a model. For image-output models it also asks the image endpoints
-// listing for per-image prices, because the model listing does not carry them in a usable unit.
+// Lookup returns what is known about a model. Unless live lookups are off, prices come from OpenRouter's
+// public endpoint listings and are the highest across endpoints, so the estimate (and the max_price cap
+// sent with chat calls) holds whichever endpoint serves the call. The registry snapshot fills in what the
+// listings lack (ZDR, long-context prices) and is the offline fallback.
 func (c *Catalog) Lookup(ctx context.Context, id string) (ModelInfo, error) {
 	c.mu.Lock()
-	mi, ok := c.reg[id]
-	if !ok {
-		mi, ok = c.live[id]
-	}
-	c.mu.Unlock()
-	if ok && (!mi.Makes("image") || mi.ImageUnit == "image" || mi.ImageUnit == "megapixel" || c.NoLive || mi.Source == "live") {
+	if mi, ok := c.live[id]; ok {
+		c.mu.Unlock()
 		return mi, nil
 	}
+	reg, inReg := c.reg[id]
+	c.mu.Unlock()
 	if c.NoLive {
+		if inReg {
+			return reg, nil
+		}
 		return ModelInfo{}, fmt.Errorf("model %s is not in the registry (live lookup disabled)", id)
 	}
-	live, err := c.fetch(ctx, id, mi)
+	live, err := c.fetch(ctx, id, reg)
 	if err != nil {
-		if ok {
-			return mi, nil
+		if inReg {
+			return reg, nil
 		}
 		return ModelInfo{}, err
 	}
@@ -363,11 +367,8 @@ func imageFee(m ModelInfo) (float64, string) {
 	return 0, "no image output price found; only token prices are counted"
 }
 
+// estimateSTT prices transcription per second of audio. OpenRouter lists the price as "prompt" without a
+// unit; a billed call (docs/MEDIA.md) matched the serving endpoint's price times the audio seconds.
 func estimateSTT(m ModelInfo, in Input) Estimate {
-	// The raw price is per second if the unit is seconds and per token otherwise; pricing it as tokens at
-	// 32 per second covers both until the unit is confirmed.
-	e := Estimate{Calls: 1, InputTokens: int(in.Seconds * 32)}
-	e.CostUSD = m.STTRaw * math.Max(in.Seconds, 1) * 32
-	e.Notes = append(e.Notes, "transcription price unit is undocumented; estimate assumes the higher reading")
-	return e
+	return Estimate{Calls: 1, CostUSD: m.STTRaw * math.Max(in.Seconds, 1)}
 }

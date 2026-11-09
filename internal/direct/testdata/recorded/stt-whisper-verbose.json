@@ -1,0 +1,137 @@
+{
+ "text": " This is a short test recording for the direct path. The meeting moves to Thursday at 3.30. Please bring the blue folder and two printed copies of the budget. The room is on the fourth floor, next to the kitchen. Thank you.",
+ "usage": {
+  "seconds": 16.207437824,
+  "cost": 0.0001800826424887088
+ },
+ "task": "transcribe",
+ "language": "English",
+ "duration": 16.207437824,
+ "segments": [
+  {
+   "id": 0,
+   "seek": 0,
+   "start": 0,
+   "end": 3.1,
+   "text": " This is a short test recording for the direct path.",
+   "tokens": [
+    50365,
+    639,
+    307,
+    257,
+    2099,
+    1500,
+    6613,
+    337,
+    264,
+    2047,
+    3100,
+    13,
+    50520
+   ],
+   "temperature": 0,
+   "avg_logprob": -0.15970656,
+   "compression_ratio": 1.4203821,
+   "no_speech_prob": 0
+  },
+  {
+   "id": 1,
+   "seek": 0,
+   "start": 3.58,
+   "end": 6.2599998,
+   "text": " The meeting moves to Thursday at 3.30.",
+   "tokens": [
+    50544,
+    440,
+    3440,
+    6067,
+    281,
+    10383,
+    412,
+    805,
+    13,
+    3446,
+    13,
+    50678
+   ],
+   "temperature": 0,
+   "avg_logprob": -0.15970656,
+   "compression_ratio": 1.4203821,
+   "no_speech_prob": 0
+  },
+  {
+   "id": 2,
+   "seek": 0,
+   "start": 6.7799997,
+   "end": 10.8,
+   "text": " Please bring the blue folder and two printed copies of the budget.",
+   "tokens": [
+    50704,
+    2555,
+    1565,
+    264,
+    3344,
+    10820,
+    293,
+    732,
+    13567,
+    14341,
+    295,
+    264,
+    4706,
+    13,
+    50905
+   ],
+   "temperature": 0,
+   "avg_logprob": -0.15970656,
+   "compression_ratio": 1.4203821,
+   "no_speech_prob": 0
+  },
+  {
+   "id": 3,
+   "seek": 0,
+   "start": 11.38,
+   "end": 14.48,
+   "text": " The room is on the fourth floor, next to the kitchen.",
+   "tokens": [
+    50934,
+    440,
+    1808,
+    307,
+    322,
+    264,
+    6409,
+    4123,
+    11,
+    958,
+    281,
+    264,
+    6525,
+    13,
+    51089
+   ],
+   "temperature": 0,
+   "avg_logprob": -0.15970656,
+   "compression_ratio": 1.4203821,
+   "no_speech_prob": 0
+  },
+  {
+   "id": 4,
+   "seek": 0,
+   "start": 15.08,
+   "end": 15.78,
+   "text": " Thank you.",
+   "tokens": [
+    51119,
+    1044,
+    291,
+    13,
+    51154
+   ],
+   "temperature": 0,
+   "avg_logprob": -0.15970656,
+   "compression_ratio": 1.4203821,
+   "no_speech_prob": 0
+  }
+ ]
+}

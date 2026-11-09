@@ -104,6 +104,7 @@ func client(registry string, needKey bool) (*direct.Client, error) {
 		}
 	}
 	c := direct.New(key)
+	c.RecordDir = os.Getenv("P0SSESS_DIRECT_RECORD")
 	if registry == "" {
 		registry = os.Getenv("P0SSESS_REGISTRY")
 	}
