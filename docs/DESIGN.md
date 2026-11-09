@@ -17,10 +17,37 @@ Status: design agreed, research next. Nothing here is built yet.
 
 1. A `UserPromptSubmit` hook adds a one-line hint **only when it matters**: an attached media file, a Claude usage limit that is close, a task that looks cheap and bulky, or a route the user's history favors. Otherwise it adds nothing.
 2. Claude can ask the engine for a ranked list of options for the task at hand.
-3. The engine scores every candidate with one formula: expected quality for this kind of task × fit (modalities, context size, tool use) ÷ cost.
-   - A Claude call costs its API list price, or, on a subscription, the user's share of the usage limit expressed as a dollar-equivalent that rises as the limit nears.
+3. Claude rates the task's **stakes** (see below), and the engine scores every candidate that fits the task (modalities, context size, tool use) by its expected cost per **accepted** result:
+
+   ```
+   cost(model, task) = cash                          OpenRouter spend (0 for Claude)
+                     + λ(pressure) × claude_price    Claude's cost; λ rises as the user's limit nears
+                     + overhead + review             delegation and checking turns
+                     + p_fail(model, task) × (redo + harm(stakes))
+   ```
+
+   - `p_fail` is the chance the result is not accepted, from benchmark evidence and the user's history.
+   - `harm(stakes)` is the cost of a bad result beyond redoing it; small at stakes 1, steep at each level above.
+   - Stakes also gates: a model qualifies only if its `p_fail` is below the ceiling for that level.
+   - On API-key plans `λ` is 1 and `claude_price` is the list price. On subscriptions `λ(pressure)` follows the projected end-of-window usage (the worse of the 5-hour and weekly windows); its shape is a user preset.
+   - The lowest total wins. Delegation that cannot save anything (overhead and review above the work's own cost) is never offered.
 4. **Claude makes the final call** and may override the ranking with a stated reason.
 5. Claude routes on its own when the work needs a capability it lacks (video, audio, image generation) or is cheap and within the per-task budget. It asks first when the cost is above the user's threshold, when the work edits the user's code, or the first time a model is used.
+
+## Stakes
+
+Claude rates each task on four levels from signals it can see: how reversible it is (read-only, an edit in a worktree, a production change), its blast radius, sensitive areas (auth, secrets, firewalls, infrastructure, payments), whether the result ships or reaches other people, how cheaply Claude can check it, the user's own words ("quick draft", "this matters"), and the user's rules.
+
+| Stakes | Typical work |
+|---|---|
+| 1 Trivial | renames, log summaries, captions; easy to undo, errors are obvious |
+| 2 Routine | test drafts, transcripts, bulk edits Claude reviews |
+| 3 Important | features that ship, security write-ups, migration plans |
+| 4 Critical | auth, firewall and infrastructure changes, production, money, anything sent to other people |
+
+- The rating is shown only when it changes the routing ("important: keeping this on Claude"). The user can correct it in plain language, and corrections feed the history.
+- Stakes 4 stays on Claude unless a rule explicitly allows otherwise, and even then Claude reviews the result.
+- A cheap model plus a Claude check can take an important task when checking costs much less than doing.
 
 ## Two ways to run delegated work
 
@@ -59,7 +86,7 @@ When Claude has to redo a model's work, that counts against the model's score fo
 
 ## Rules and standing approvals
 
-Users set **rules** that gate what the engine may do, either in `/p0ssess-me` or in plain language ("no Claude agents for this", "only use gemini-3.8-flash for video", "mix deepseek and glm for bulk edits", "no OpenCode", "stop using model X").
+Every setting, rule, budget and stakes rating can be changed in plain language as well as in `/p0ssess-me`. Users set **rules** that gate what the engine may do, either in `/p0ssess-me` or in plain language ("no Claude agents for this", "only use gemini-3.8-flash for video", "mix deepseek and glm for bulk edits", "no OpenCode", "stop using model X").
 Claude turns a plain-language request into a rule, shows the rule it wrote in one line, and saves it once the user confirms.
 
 Rule kinds:
