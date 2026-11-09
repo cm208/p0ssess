@@ -34,6 +34,34 @@ type Result struct {
 	AsksRejected   []string         `json:"asks_rejected,omitempty"`
 	Error          string           `json:"error,omitempty"`
 	Note           string           `json:"note,omitempty"`
+	// ShellInternet says the model's shell commands could reach the public internet in this run.
+	ShellInternet bool `json:"shell_internet,omitempty"`
+	// JailStartS is how long the session's jail took to start, on its first run.
+	JailStartS float64 `json:"jail_start_s,omitempty"`
+}
+
+// ShellInternetNote is added to every result of a session with shell internet, so it is never on quietly.
+const ShellInternetNote = "shell internet was ON for this run: the model's shell commands could reach public internet " +
+	"addresses on ports 80 and 443 through the egress proxy (never the local network, the host, VPNs or the jail's own services)."
+
+func saveFinal(r *Result) {
+	b, err := json.MarshalIndent(r, "", " ")
+	if err != nil {
+		return
+	}
+	dir := RunDir(r.SessionID)
+	if os.MkdirAll(dir, 0o700) == nil {
+		os.WriteFile(filepath.Join(dir, "result.json"), b, 0o600)
+	}
+}
+
+func loadFinal(sid string) (*Result, error) {
+	b, err := os.ReadFile(filepath.Join(RunDir(sid), "result.json"))
+	if err != nil {
+		return nil, err
+	}
+	var r Result
+	return &r, json.Unmarshal(b, &r)
 }
 
 type Escalation struct {
@@ -88,7 +116,8 @@ func (e *Engine) result(w *watch, status string) (*Result, error) {
 		pending = nil
 	}
 	r := &Result{Status: status, SessionID: rec.SessionID, Model: rec.Model, Mode: rec.Mode, Note: note,
-		AsksRejected: rejected, DurationS: time.Since(rec.PromptAt).Round(100 * time.Millisecond).Seconds()}
+		AsksRejected: rejected, DurationS: time.Since(rec.PromptAt).Round(100 * time.Millisecond).Seconds(),
+		ShellInternet: rec.ShellInternet}
 	if errMsg != "" && status != "done" {
 		r.Error, _ = clip(errMsg, errorCap, "…")
 	}
@@ -163,6 +192,12 @@ func (e *Engine) result(w *watch, status string) (*Result, error) {
 	}
 	if r.CostEstimated {
 		r.Note = strings.TrimSpace(r.Note + " the run's cost was not measured (the session cost could not be read, or no price is known for the model); it is counted at its cap")
+	}
+	if r.ShellInternet {
+		r.Note = strings.TrimSpace(ShellInternetNote + " " + r.Note)
+	}
+	if status != "still_running" && status != "needs_permission" {
+		saveFinal(r)
 	}
 	return r, nil
 }

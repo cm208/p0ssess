@@ -8,7 +8,7 @@
 #   5. a local build with Go (the source is the plugin; dependencies are vendored, so no network)
 set -eu
 
-version=0.3.0
+version=0.4.0
 root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 
 if [ -n "${P0SSESS_BIN:-}" ]; then exec "$P0SSESS_BIN" "$@"; fi

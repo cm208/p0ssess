@@ -6,40 +6,49 @@ import (
 	"os/exec"
 	"strings"
 	"syscall"
+
+	"p0ssess/internal/egress"
 )
 
 // This file is the jailed shell wrapper. OpenCode is configured with `shell: ServerExePath`, so for every
 // command the model runs it spawns `<ServerExePath> -c <cmd>`; the host binary dispatches that to
-// RunJailedShell. The wrapper does two things before the command runs:
+// RunJailedShell. The wrapper:
 //
 //  1. Builds a clean environment: it drops OPENCODE_* and anything that looks like a key, token, secret or
 //     password (so `echo $OPENCODE_PASSWORD` and the proxy's variables leak nothing) and points HOME and
 //     TMPDIR at the writable private /tmp rather than the masked /state.
 //  2. Enters fresh user, network, mount and pid namespaces (`unshare -U -r -n -m -p --fork`). The new
-//     network namespace removes all connectivity, so the OpenCode API, the key proxy and the internet are
-//     unreachable from a command. The new user namespace makes /proc/1/environ (the server's own
-//     environment) unreadable and blocks ptrace of the server. In the new mount namespace the wrapper
-//     overmounts /state (OpenCode's database) with an empty tmpfs, and for a read-mode task remounts every
-//     edit worktree read-only, so a read task has nothing writable under the repository.
+//     network namespace has nothing but loopback, so the OpenCode API, the key proxy, the LAN and the
+//     internet are unreachable from a command. The new user namespace makes /proc/1/environ (the server's
+//     own environment) unreadable and blocks ptrace of the server. In the new mount namespace the wrapper
+//     overmounts /state (OpenCode's database) with an empty tmpfs.
+//  3. Only when the user opted the project in to shell internet (the jail then sets EgressSocketEnv), starts
+//     a forwarder inside the command's namespaces that relays 127.0.0.1:3128 to the egress proxy's Unix
+//     socket, and sets HTTP(S)_PROXY. The proxy connects only to public addresses on ports 80 and 443.
 //
-// Commands therefore have no network: pip/npm/go module downloads fail. Offline, vendored builds and tests
-// still work. The repository is mounted read-only and edit worktrees are writable only for edit-mode tasks.
+// Without the opt-in, commands have no network: pip/npm/go module downloads fail. Offline, vendored builds
+// and tests still work. A read session has nothing writable under the repository; an edit session's own
+// worktree is its only writable mount there.
 
-// jailShellInner runs inside the new namespaces as `/bin/sh -c <inner> p0ssess-shell <cmd> <lockflag>`.
-// $1 is the command, $2 is "lock" for a read-mode task. It masks /state, optionally locks worktrees, then
-// execs the command. Everything is best-effort with `|| true` so a command still runs if a mount is absent.
+// jailShellInner runs inside the new namespaces as `/bin/sh -c <inner> p0ssess-shell <cmd> <socket>`.
+// It masks /state, starts the egress forwarder when $2 names a socket, then execs the command.
 const jailShellInner = `mount -t tmpfs -o size=1M,mode=000 tmpfs /state 2>/dev/null || true
-if [ "$2" = lock ]; then
-  for m in $(awk '$5 ~ /\/\.p0ssess\/wt$|\/\.git\/worktrees$/ {print $5}' /proc/self/mountinfo); do
-    mount -o remount,bind,ro "$m" 2>/dev/null || true
-  done
+if [ -n "$2" ]; then
+  ` + ServerExePath + ` ` + NetForwardArg + ` "$2" </dev/null >/dev/null 2>&1 || echo "p0ssess: shell internet is unavailable for this command" >&2
 fi
 exec /bin/sh -c "$1"`
+
+// NetForwardArg and NetServeArg are the hidden subcommands that start the egress forwarder inside a
+// jailed command's namespaces.
+const (
+	NetForwardArg = "jail-net-forward"
+	NetServeArg   = "jail-net-serve"
+)
 
 // sensitiveEnv reports whether an environment variable must be dropped before running a command.
 func sensitiveEnv(name string) bool {
 	up := strings.ToUpper(name)
-	if strings.HasPrefix(up, "OPENCODE") {
+	if strings.HasPrefix(up, "OPENCODE") || strings.HasPrefix(up, "P0SSESS") {
 		return true
 	}
 	for _, s := range []string{"KEY", "TOKEN", "SECRET", "PASSWORD", "PASSWD", "CREDENTIAL"} {
@@ -106,14 +115,16 @@ func RunJailedShell(args []string) error {
 	default:
 		return errors.New("jailed shell: expected -c <command>")
 	}
-	lock := "nolock"
-	if wd, err := os.Getwd(); err != nil || !strings.Contains(wd, "/"+WorktreeDir+"/") {
-		// A read-mode session runs in the repository (or a subdirectory); an edit session runs inside its
-		// own worktree under .p0ssess/wt/. Only read-mode tasks lock the worktrees read-only.
-		lock = "lock"
+	env := CleanShellEnv(os.Environ())
+	sock := ""
+	if s := os.Getenv(EgressSocketEnv); s != "" {
+		if _, err := os.Stat(s); err == nil {
+			sock = s
+			env = append(env, egress.ProxyEnv()...)
+		}
 	}
 	ub := unshareBinary()
 	argv := []string{ub, "-U", "-r", "-n", "-m", "-p", "--fork", "--kill-child", "--",
-		"/bin/sh", "-c", jailShellInner, "p0ssess-shell", cmd, lock}
-	return syscall.Exec(ub, argv, CleanShellEnv(os.Environ()))
+		"/bin/sh", "-c", jailShellInner, "p0ssess-shell", cmd, sock}
+	return syscall.Exec(ub, argv, env)
 }

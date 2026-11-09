@@ -78,6 +78,7 @@
       ["Runs this month", String(sp.runs_this_month || 0)],
       ["Auto-approve", "Up to " + money(b.per_task_usd)],
       ["Privacy", b.privacy && b.privacy.mode === "zdr" ? "Zero retention" : "No training"],
+      ["Shell internet", list(b.sandbox && b.sandbox.shell_internet).join(", ") || "Off"],
     ];
     const dl = $("#spend-facts");
     dl.replaceChildren(...facts.map(([k, v]) => el("div", {}, el("dt", { text: k }), el("dd", { text: v }))));

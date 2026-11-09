@@ -7,7 +7,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
+	"net/netip"
 	"os"
 	"path/filepath"
 	"strings"
@@ -29,6 +31,12 @@ type Config struct {
 	MaxRuntimeSec int `json:"max_runtime_s,omitempty"`
 	// RegistryFile is a models.json snapshot for the models tool.
 	RegistryFile string `json:"registry_file,omitempty"`
+	// SessionIdleSec is how long a relay session's jail stays up after its last run ends, so a follow-up
+	// can continue the session. Default 1800.
+	SessionIdleSec int `json:"session_idle_s,omitempty"`
+	// BlockedCIDRs are more destinations the jail must never reach, for example the network's own public
+	// address when the router forwards ports back into it.
+	BlockedCIDRs []string `json:"blocked_cidrs,omitempty"`
 	// ZDR makes the jail's key proxy require zero-retention endpoints. Set per run from the budget's
 	// privacy mode, never read from config.json.
 	ZDR bool `json:"-"`
@@ -38,6 +46,14 @@ type Config struct {
 func Dir() string { return paths.Default().Config }
 
 func Path(parts ...string) string { return filepath.Join(append([]string{Dir()}, parts...)...) }
+
+// RelayDir holds the relay's state: sessions/, runs/, jails/ and relay-runs.jsonl, under
+// ~/.local/state/p0ssess/relay ($XDG_STATE_HOME honored), or $P0SSESS_HOME/state/relay.
+func RelayDir() string { return filepath.Join(paths.Default().State, "relay") }
+
+func RelayPath(parts ...string) string {
+	return filepath.Join(append([]string{RelayDir()}, parts...)...)
+}
 
 func Load() (Config, error) {
 	c := Config{}
@@ -65,11 +81,24 @@ func Load() (Config, error) {
 	if c.MaxRuntimeSec == 0 {
 		c.MaxRuntimeSec = 3600
 	}
+	if c.SessionIdleSec == 0 {
+		c.SessionIdleSec = 1800
+	}
 	if !(c.MaxRunCostUSD > 0) || math.IsInf(c.MaxRunCostUSD, 0) {
 		return c, errors.New("config.json: max_run_cost_usd must be a finite number above 0")
 	}
 	if c.MaxRuntimeSec < 0 {
 		return c, errors.New("config.json: max_runtime_s must be 0 or more")
+	}
+	if c.SessionIdleSec < 0 {
+		return c, errors.New("config.json: session_idle_s must be 0 or more")
+	}
+	for _, s := range c.BlockedCIDRs {
+		if _, err := netip.ParsePrefix(s); err != nil {
+			if _, err := netip.ParseAddr(s); err != nil {
+				return c, fmt.Errorf("config.json: blocked_cidrs: %q is not a CIDR or address", s)
+			}
+		}
 	}
 	return c, nil
 }

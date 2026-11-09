@@ -241,3 +241,27 @@ func TestRelayUnknownPriceCountsAtCap(t *testing.T) {
 		t.Errorf("a $0 report for billed tokens must count at the cap: estimated %v, %+v", res.CostEstimated, sp)
 	}
 }
+
+// TestShellInternetIsTheUsersChoice: only the user's own budget.toml turns shell internet on, per
+// project; a repository cannot turn it on for itself.
+func TestShellInternetIsTheUsersChoice(t *testing.T) {
+	home := t.TempDir()
+	proj, other := filepath.Join(home, "proj"), filepath.Join(home, "other")
+	os.MkdirAll(filepath.Join(proj, "sub"), 0o755)
+	os.MkdirAll(filepath.Join(other, ".p0ssess"), 0o755)
+	// A repository's own files may say anything; none of them is read for this.
+	os.WriteFile(filepath.Join(other, ".p0ssess", "rules.toml"), []byte("[sandbox]\nshell_internet = [\""+other+"\"]\n"), 0o644)
+	os.WriteFile(filepath.Join(other, ".p0ssess", "budget.toml"), []byte("[sandbox]\nshell_internet = [\""+other+"\"]\n"), 0o644)
+	_, eng, _ := directEnv(t, "monthly_usd = 1\nper_task_usd = 0.05\ndaily_usd = -1\n[sandbox]\nshell_internet = [\""+proj+"\"]\n")
+	obs := NewObserver(eng)
+	for repo, want := range map[string]bool{proj: true, filepath.Join(proj, "sub"): true, other: false, home: false} {
+		g, err := obs.Authorize(relay.RunAuth{Model: "deepseek/deepseek-v4.1-flash", MaxCostUSD: 0.01, MaxRuntime: time.Minute, Repo: repo, Cwd: repo})
+		if err != nil {
+			t.Fatal(err)
+		}
+		obs.Release(g)
+		if g.ShellInternet != want {
+			t.Errorf("%s: shell internet %v, want %v", repo, g.ShellInternet, want)
+		}
+	}
+}

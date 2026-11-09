@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestPoliciesHardDeny(t *testing.T) {
@@ -100,19 +101,36 @@ func TestNftRules(t *testing.T) {
 	}
 }
 
-func TestUnitFileMatches(t *testing.T) {
-	b, err := os.ReadFile("../../packaging/systemd/p0ssess-jail@.service")
-	if err != nil {
-		t.Fatal(err)
+func TestNewName(t *testing.T) {
+	a, b := newName(), newName()
+	if a == b || !strings.HasPrefix(a, "p0ssess-") || len(a) != len("p0ssess-")+12 {
+		t.Errorf("%s %s", a, b)
 	}
-	if string(b) != SystemdUnit() {
-		t.Error("packaging/systemd/p0ssess-jail@.service differs from SystemdUnit(); regenerate it with `p0ssess jail unit`")
+	if _, err := Load("../etc"); err == nil {
+		t.Error("Load accepted a path")
 	}
 }
 
-func TestNameFor(t *testing.T) {
-	a, b := NameFor("/src/a"), NameFor("/src/b")
-	if a == b || !strings.HasPrefix(a, "p0ssess-") || len(a) != len("p0ssess-")+10 {
-		t.Errorf("%s %s", a, b)
+func TestStale(t *testing.T) {
+	now := time.Now()
+	self := &Jail{Owner: Self()}
+	if self.Stale(now) {
+		t.Error("a jail owned by this process is stale")
+	}
+	// A pid that exists but started at another time is not the owner.
+	reused := &Jail{Owner: Owner{PID: os.Getpid(), Start: Self().Start + 1}}
+	if !reused.Stale(now) {
+		t.Error("a reused pid kept the jail")
+	}
+	dead := &Jail{Owner: Owner{PID: 1 << 30}}
+	if !dead.Stale(now) {
+		t.Error("a jail whose owner is gone is not stale")
+	}
+	detached := &Jail{Owner: Owner{PID: 1 << 30}, Detached: true, KeepUntil: now.Add(time.Minute)}
+	if detached.Stale(now) {
+		t.Error("a detached jail was stale before its keep time")
+	}
+	if !detached.Stale(now.Add(2 * time.Minute)) {
+		t.Error("a detached jail outlived its keep time")
 	}
 }

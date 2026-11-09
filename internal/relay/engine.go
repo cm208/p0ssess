@@ -28,15 +28,27 @@ type Engine struct {
 
 	mu      sync.Mutex
 	watches map[string]*watch
-	obs     Observer
+	// jails are the sessions whose pods this process owns and removes.
+	jails map[string]*sessionJail
+	obs   Observer
 	// recMu serializes recording a finished run, which both a waiting caller and the watch may do.
 	recMu sync.Mutex
-	// Unguarded lets tests run without an observer; nothing else sets it.
-	Unguarded bool
+	// Unguarded lets tests run without an observer; nothing else sets it. TestShellInternet is the
+	// shell internet such a run gets.
+	Unguarded         bool
+	TestShellInternet bool
 }
 
 func NewEngine(cfg config.Config, version string, log io.Writer) *Engine {
-	return &Engine{cfg: cfg, version: version, log: log, watches: map[string]*watch{}}
+	return &Engine{cfg: cfg, version: version, log: log, watches: map[string]*watch{}, jails: map[string]*sessionJail{}}
+}
+
+// sessionJail is a session's pod while this process owns it. idle removes it once the session has had no
+// run for session_idle_s.
+type sessionJail struct {
+	j    *jail.Jail
+	rec  *SessionRecord
+	idle *time.Timer
 }
 
 type RunRequest struct {
@@ -105,6 +117,9 @@ func (e *Engine) Run(ctx context.Context, req RunRequest, progress func(float64,
 		if rec, err = loadRecord(req.Session); err != nil {
 			return nil, fmt.Errorf("unknown session %s (only sessions started by this relay can be continued)", req.Session)
 		}
+		if err := continuable(rec); err != nil {
+			return nil, err
+		}
 		if w := e.watch(rec.SessionID); w != nil && !w.finished() {
 			return nil, fmt.Errorf("session %s is still running; call wait or abort first", rec.SessionID)
 		}
@@ -137,39 +152,277 @@ func (e *Engine) Run(ctx context.Context, req RunRequest, progress func(float64,
 			e.obs.Release(grant)
 		}
 	}()
-	cfg := e.cfg
-	cfg.ZDR = grant.ZDR
-	j, c, err := jail.Ensure(ctx, rec.Repo, cfg, e.log)
-	if err != nil {
-		return nil, fmt.Errorf("jail: %w", err)
-	}
-	_ = j
+	var j *jail.Jail
+	var c *opencode.Client
 	if req.Session == "" {
-		if err := e.createSession(ctx, c, rec, req); err != nil {
+		if j, c, err = e.startSession(ctx, rec, req, grant); err != nil {
 			return nil, err
 		}
-	} else if req.Model != "" {
-		m, err := ParseModel(req.Model)
-		if err != nil {
+	} else {
+		if j, c, err = e.jailFor(ctx, rec); err != nil {
 			return nil, err
 		}
-		if m.String() != "openrouter/"+rec.Model {
-			if err := c.SwitchModel(ctx, rec.SessionID, m); err != nil {
+		// Privacy and shell internet are fixed when a session's jail starts; a session may not continue
+		// under looser settings than the user now has.
+		if grant.ZDR && !j.ZDR {
+			return nil, errors.New("zero-retention mode was turned on after this session started; start a new run")
+		}
+		if j.ShellInternet && !grant.ShellInternet {
+			return nil, errors.New("shell internet was turned off for this project after this session started; start a new run")
+		}
+		if req.Model != "" {
+			m, err := ParseModel(req.Model)
+			if err != nil {
 				return nil, err
 			}
-			rec.Model = strings.TrimPrefix(m.String(), "openrouter/")
+			if m.String() != "openrouter/"+rec.Model {
+				if err := c.SwitchModel(ctx, rec.SessionID, m); err != nil {
+					return nil, err
+				}
+				rec.Model = strings.TrimPrefix(m.String(), "openrouter/")
+			}
 		}
+	}
+	e.busy(rec.SessionID)
+	maxRun := time.Duration(e.cfg.MaxRuntimeSec) * time.Second
+	if maxRun <= 0 {
+		maxRun = 6 * time.Hour
+	}
+	// The key proxy stops at the run's maximum runtime even if nothing watches the run any more.
+	end := time.Now().Add(maxRun + time.Minute)
+	if err := j.Keep(end.Add(e.idle()), end); err != nil {
+		return nil, fmt.Errorf("jail: %w", err)
 	}
 	rec.Grant = grant
 	w, err := e.prompt(ctx, c, rec, req.Task, files, &sent)
 	if err != nil {
+		e.idleAfter(rec.SessionID)
 		return nil, err
 	}
 	res, err := e.block(ctx, w, waitDuration(req.WaitS), progress)
 	if res != nil && grant.Note != "" {
 		res.Note = strings.TrimSpace(res.Note + " " + grant.Note)
 	}
+	if res != nil && req.Session == "" && j.StartupS > 0 {
+		res.JailStartS = j.StartupS
+	}
 	return res, err
+}
+
+// continuable reports why a recorded session cannot take another run.
+func continuable(rec *SessionRecord) error {
+	if rec.Jail == "" {
+		return fmt.Errorf("session %s was started by p0ssess 0.3 in a shared jail, which this version no longer runs; start a new run", rec.SessionID)
+	}
+	if rec.Closed {
+		return fmt.Errorf("session %s has ended and its jail was removed; start a new run (its transcript is in %s)", rec.SessionID, RunDir(rec.SessionID))
+	}
+	return nil
+}
+
+func (e *Engine) idle() time.Duration { return time.Duration(e.cfg.SessionIdleSec) * time.Second }
+
+// startSession creates the session's worktree (edit mode), its jail and the OpenCode session. Anything
+// it made is removed again if a later step fails.
+func (e *Engine) startSession(ctx context.Context, rec *SessionRecord, req RunRequest, grant Grant) (*jail.Jail, *opencode.Client, error) {
+	if rec.Mode != "read" {
+		if err := jail.PrepareGit(rec.Repo); err != nil {
+			return nil, nil, err
+		}
+		wt, base, err := addWorktree(rec.Repo)
+		if err != nil {
+			return nil, nil, err
+		}
+		rel, _ := filepath.Rel(rec.Repo, rec.Cwd)
+		rec.Worktree, rec.BaseRev = wt, base
+		rec.Location = filepath.Join(wt, rel)
+		if _, err := os.Stat(rec.Location); err != nil {
+			rec.Location = wt
+		}
+	}
+	cleanup := func() {
+		if rec.Worktree != "" {
+			removeWorktree(rec.Repo, rec.Worktree)
+		}
+	}
+	rec.ShellInternet = grant.ShellInternet
+	cfg := e.cfg
+	cfg.ZDR = grant.ZDR
+	j, err := jail.Start(ctx, jail.Spec{Repo: rec.Repo, Worktree: rec.Worktree, ShellInternet: grant.ShellInternet, ZDR: grant.ZDR}, cfg, e.log)
+	if err != nil {
+		cleanup()
+		return nil, nil, fmt.Errorf("jail: %w", err)
+	}
+	c, err := j.Client()
+	if err == nil {
+		err = e.createSession(ctx, c, rec, req)
+	}
+	if err != nil {
+		j.Remove(context.Background())
+		cleanup()
+		return nil, nil, err
+	}
+	rec.Jail = j.Name
+	j.Session = rec.SessionID
+	if err := rec.save(); err != nil {
+		j.Remove(context.Background())
+		cleanup()
+		return nil, nil, err
+	}
+	e.mu.Lock()
+	e.jails[rec.SessionID] = &sessionJail{j: j, rec: rec}
+	e.mu.Unlock()
+	return j, c, nil
+}
+
+// jailFor returns a running session's jail and a client for it. A jail whose owner is gone, or that was
+// detached, is adopted by this process.
+func (e *Engine) jailFor(ctx context.Context, rec *SessionRecord) (*jail.Jail, *opencode.Client, error) {
+	if err := continuable(rec); err != nil {
+		return nil, nil, err
+	}
+	e.mu.Lock()
+	sj := e.jails[rec.SessionID]
+	e.mu.Unlock()
+	var j *jail.Jail
+	if sj != nil {
+		j = sj.j
+	} else {
+		var err error
+		if j, err = jail.Load(rec.Jail); err != nil {
+			return nil, nil, fmt.Errorf("session %s has no jail any more (it idled out or was cleaned up); start a new run", rec.SessionID)
+		}
+	}
+	if err := j.Verify(ctx); err != nil {
+		return nil, nil, fmt.Errorf("session %s's jail is not usable (%v); start a new run", rec.SessionID, err)
+	}
+	if sj == nil && (j.Detached || !j.Owner.Alive()) {
+		if err := j.Adopt(); err != nil {
+			return nil, nil, err
+		}
+		e.mu.Lock()
+		e.jails[rec.SessionID] = &sessionJail{j: j, rec: rec}
+		e.mu.Unlock()
+	}
+	c, err := j.Client()
+	return j, c, err
+}
+
+// busy stops a session's idle timer: a run is starting.
+func (e *Engine) busy(sid string) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if sj := e.jails[sid]; sj != nil && sj.idle != nil {
+		sj.idle.Stop()
+		sj.idle = nil
+	}
+}
+
+// idleAfter starts a session's idle timer once its run has ended. When it fires with no new run, the
+// jail is removed. The key proxy refuses model calls from a minute after the run until the next prompt.
+func (e *Engine) idleAfter(sid string) {
+	e.mu.Lock()
+	sj := e.jails[sid]
+	if sj == nil {
+		e.mu.Unlock()
+		return
+	}
+	if sj.idle != nil {
+		sj.idle.Stop()
+	}
+	now := time.Now()
+	sj.idle = time.AfterFunc(e.idle(), func() { e.closeSession(sid) })
+	e.mu.Unlock()
+	if err := sj.j.Keep(now.Add(e.idle()), now.Add(time.Minute)); err != nil {
+		fmt.Fprintf(e.log, "p0ssess: jail %s: %v\n", sj.j.Name, err)
+	}
+}
+
+// closeSession records the last run if needed, removes the session's jail and marks the session ended.
+// It does nothing while a run is active.
+func (e *Engine) closeSession(sid string) {
+	e.mu.Lock()
+	sj := e.jails[sid]
+	w := e.watches[sid]
+	if sj == nil || (w != nil && !w.finished()) {
+		e.mu.Unlock()
+		return
+	}
+	delete(e.jails, sid)
+	if w != nil {
+		delete(e.watches, sid)
+	}
+	if sj.idle != nil {
+		sj.idle.Stop()
+	}
+	e.mu.Unlock()
+	if w != nil {
+		e.recMu.Lock()
+		recorded := w.rec.Recorded
+		e.recMu.Unlock()
+		if !recorded {
+			e.result(w, "")
+		}
+		w.stop()
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := sj.j.Remove(ctx); err != nil {
+		fmt.Fprintf(e.log, "p0ssess: removing jail %s: %v\n", sj.j.Name, err)
+	}
+	rec := sj.rec
+	if w != nil {
+		rec = w.rec
+	}
+	e.recMu.Lock()
+	rec.Closed = true
+	rec.save()
+	e.recMu.Unlock()
+}
+
+// Release is for one-shot processes (the command line) when they are done with a session: a finished
+// run's jail is removed unless keep is set; otherwise the jail is detached so a later `p0ssess wait` or
+// `run --session` can pick it up, and a sweep removes it after its keep time.
+func (e *Engine) Release(res *Result, keep bool) {
+	if res == nil || res.SessionID == "" {
+		return
+	}
+	sid := res.SessionID
+	terminal := res.Status != "still_running" && res.Status != "needs_permission"
+	if terminal && !keep {
+		e.closeSession(sid)
+		return
+	}
+	e.mu.Lock()
+	sj := e.jails[sid]
+	if sj != nil {
+		if sj.idle != nil {
+			sj.idle.Stop()
+		}
+		delete(e.jails, sid)
+	}
+	e.mu.Unlock()
+	if sj == nil {
+		return
+	}
+	until := time.Now().Add(e.idle())
+	if !terminal {
+		until = sj.j.KeepUntil
+	}
+	if err := sj.j.Detach(until); err != nil {
+		fmt.Fprintf(e.log, "p0ssess: jail %s: %v\n", sj.j.Name, err)
+	}
+}
+
+// Sweep removes jails whose owners died, at start-up.
+func (e *Engine) Sweep(ctx context.Context) {
+	removed, err := jail.Sweep(ctx, e.log)
+	if err != nil {
+		fmt.Fprintf(e.log, "p0ssess: jail sweep: %v\n", err)
+	}
+	if len(removed) > 0 {
+		fmt.Fprintf(e.log, "p0ssess: removed stale jails: %s\n", strings.Join(removed, ", "))
+	}
 }
 
 // authorize asks the observer to apply the user's limits to the prompt and reserve its cap. Without an
@@ -186,7 +439,7 @@ func (e *Engine) authorize(rec *SessionRecord, req RunRequest) (Grant, error) {
 	}
 	if e.obs == nil {
 		if e.Unguarded {
-			return Grant{CapUSD: capUSD}, nil
+			return Grant{CapUSD: capUSD, ShellInternet: e.TestShellInternet}, nil
 		}
 		return Grant{}, ErrNoObserver
 	}
@@ -242,33 +495,18 @@ func (e *Engine) newRecord(cwd string, req RunRequest) (*SessionRecord, error) {
 }
 
 func (e *Engine) createSession(ctx context.Context, c *opencode.Client, rec *SessionRecord, req RunRequest) error {
-	if rec.Mode != "read" {
-		wt, base, err := addWorktree(rec.Repo)
-		if err != nil {
-			return err
-		}
-		rel, _ := filepath.Rel(rec.Repo, rec.Cwd)
-		rec.Worktree, rec.BaseRev = wt, base
-		rec.Location = filepath.Join(wt, rel)
-		if _, err := os.Stat(rec.Location); err != nil {
-			rec.Location = wt
-		}
-	}
 	m, _ := ParseModel(req.Model)
 	s, err := c.CreateSession(ctx, opencode.CreateSession{
 		Model:       &m,
 		Location:    &opencode.Location{Directory: rec.Location},
 		Metadata:    map[string]any{"p0ssess": e.version, "mode": rec.Mode, "kind": rec.Kind},
-		Permissions: Rules(rec.Mode),
+		Permissions: Rules(rec.Mode, rec.ShellInternet),
 	})
 	if err != nil {
-		if rec.Worktree != "" {
-			removeWorktree(rec.Repo, rec.Worktree)
-		}
 		return err
 	}
 	rec.SessionID = s.ID
-	return rec.save()
+	return nil
 }
 
 // lastSeq returns the newest durable sequence number of a session, or -1 when it has none.
@@ -338,7 +576,13 @@ func (e *Engine) Wait(ctx context.Context, sid string, waitS int, progress func(
 	}
 	w := e.watch(sid)
 	if w == nil {
-		_, c, err := jail.Ensure(ctx, rec.Repo, e.cfg, e.log)
+		if rec.Closed {
+			if res, err := loadFinal(sid); err == nil {
+				res.Note = strings.TrimSpace(res.Note + " the session has ended and its jail was removed")
+				return res, nil
+			}
+		}
+		_, c, err := e.jailFor(ctx, rec)
 		if err != nil {
 			return nil, err
 		}
@@ -359,7 +603,7 @@ func (e *Engine) Answer(ctx context.Context, sid, requestID, decision, message s
 	if err != nil {
 		return nil, fmt.Errorf("unknown session %s", sid)
 	}
-	_, c, err := jail.Ensure(ctx, rec.Repo, e.cfg, e.log)
+	_, c, err := e.jailFor(ctx, rec)
 	if err != nil {
 		return nil, err
 	}
@@ -384,7 +628,7 @@ func (e *Engine) Abort(ctx context.Context, sid string) (*Result, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unknown session %s", sid)
 	}
-	_, c, err := jail.Ensure(ctx, rec.Repo, e.cfg, e.log)
+	_, c, err := e.jailFor(ctx, rec)
 	if err != nil {
 		return nil, err
 	}
@@ -402,21 +646,45 @@ func (e *Engine) Abort(ctx context.Context, sid string) (*Result, error) {
 	return e.block(ctx, w, 20*time.Second, nil)
 }
 
-// Shutdown interrupts every run that is still active. Called when stdin closes.
+// Shutdown ends every session this process owns: it interrupts runs that are still active, records
+// them, and removes their jails. Called when the MCP server's stdin closes (the Claude Code session ended).
 func (e *Engine) Shutdown() {
 	e.mu.Lock()
 	ws := make([]*watch, 0, len(e.watches))
 	for _, w := range e.watches {
 		ws = append(ws, w)
 	}
+	sids := make([]string, 0, len(e.jails))
+	for sid := range e.jails {
+		sids = append(sids, sid)
+	}
 	e.mu.Unlock()
 	for _, w := range ws {
 		if !w.finished() {
 			w.markRelayInterrupt()
+			w.setNote("interrupted: the Claude Code session ended")
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			w.c.Interrupt(ctx, w.rec.SessionID)
 			cancel()
 		}
+	}
+	deadline := time.After(10 * time.Second)
+	for _, w := range ws {
+		select {
+		case <-w.done:
+		case <-deadline:
+		}
+		if !w.finished() {
+			w.finish("interrupted", "interrupted (the Claude Code session ended)")
+		}
+	}
+	var wg sync.WaitGroup
+	for _, sid := range sids {
+		wg.Add(1)
+		go func() { defer wg.Done(); e.closeSession(sid) }()
+	}
+	wg.Wait()
+	for _, w := range ws {
 		w.stop()
 	}
 }

@@ -33,6 +33,7 @@ Add these lines only when the result has the field:
 - `worktree`: `worktree: <worktree>` and `diff: <diff_path>`, then the result's `diff` in a ```diff block.
 - `permission`: `permission: <request_id> <action> <resources>`.
 - `error`: `error: <error>`.
+- `shell_internet` true: `shell internet: on`.
 
 If you got a follow-up message after a run, run it the same way, then reply with one <answer> block per run, oldest first, followed by the lines for the last run.
 If the tool result was saved to a file instead of shown, put that file path inside <answer>.

@@ -5,8 +5,12 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestForceNoDataCollection(t *testing.T) {
@@ -95,5 +99,31 @@ func TestForceZDR(t *testing.T) {
 	}
 	if m.Provider["zdr"] != true || m.Provider["data_collection"] != "deny" {
 		t.Errorf("provider = %v", m.Provider)
+	}
+}
+
+func TestDeadline(t *testing.T) {
+	f := filepath.Join(t.TempDir(), "deadline")
+	ok := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) })
+	h := WithDeadline(ok, f)
+	code := func() int {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest("POST", "/api/v1/chat/completions", nil))
+		return rec.Code
+	}
+	if c := code(); c != 503 {
+		t.Errorf("missing deadline file: %d, want 503", c)
+	}
+	os.WriteFile(f, []byte(strconv.FormatInt(time.Now().Add(time.Minute).Unix(), 10)), 0o600)
+	if c := code(); c != 204 {
+		t.Errorf("before the deadline: %d, want 204", c)
+	}
+	os.WriteFile(f, []byte(strconv.FormatInt(time.Now().Add(-time.Second).Unix(), 10)), 0o600)
+	if c := code(); c != 503 {
+		t.Errorf("after the deadline: %d, want 503", c)
+	}
+	os.WriteFile(f, []byte("garbage"), 0o600)
+	if c := code(); c != 503 {
+		t.Errorf("unreadable deadline: %d, want 503", c)
 	}
 }

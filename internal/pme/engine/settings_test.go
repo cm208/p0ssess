@@ -1,6 +1,9 @@
 package engine
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 
@@ -41,5 +44,34 @@ func TestConcurrentSettingsAreAllKept(t *testing.T) {
 	st := statusline.LoadSettings(e.Dirs.EngineFile())
 	if cfg.Lambda.Preset != "eager" || st.Width != 77 || st.Mark != "*" {
 		t.Errorf("engine.toml lost a concurrent change: preset %q, width %d, mark %q", cfg.Lambda.Preset, st.Width, st.Mark)
+	}
+}
+
+func TestShellInternetSetting(t *testing.T) {
+	e, _ := setup(t, "")
+	dir := t.TempDir()
+	link := filepath.Join(t.TempDir(), "link")
+	os.Symlink(dir, link)
+	real, _ := filepath.EvalSymlinks(dir)
+	msg, err := e.SetSetting("sandbox.shell_internet.add", link)
+	if err != nil || !strings.Contains(msg, "Shell internet is now on for: "+real) {
+		t.Fatalf("add: %q %v", msg, err)
+	}
+	e.SetSetting("sandbox.shell_internet.add", dir)
+	b, _ := e.Budget()
+	if len(b.Sandbox.ShellInternet) != 1 || !b.Sandbox.ShellInternetFor(filepath.Join(real, "x")) {
+		t.Errorf("list %v", b.Sandbox.ShellInternet)
+	}
+	for _, bad := range []string{"relative/dir", "/", filepath.Join(dir, "missing")} {
+		if _, err := e.SetSetting("sandbox.shell_internet.add", bad); err == nil {
+			t.Errorf("accepted %q", bad)
+		}
+	}
+	if msg, err := e.SetSetting("sandbox.shell_internet.remove", dir); err != nil || !strings.Contains(msg, "on for: none") {
+		t.Errorf("remove: %q %v", msg, err)
+	}
+	b, _ = e.Budget()
+	if len(b.Sandbox.ShellInternet) != 0 {
+		t.Errorf("still on: %v", b.Sandbox.ShellInternet)
 	}
 }

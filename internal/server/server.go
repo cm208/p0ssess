@@ -63,6 +63,9 @@ func New(opt Options) (s *mcp.Server, closeFn func(), err error) {
 	if err != nil {
 		return nil, nil, err
 	}
+	if err := relay.Migrate(opt.Log); err != nil {
+		fmt.Fprintln(opt.Log, "p0ssess: moving relay state:", err)
+	}
 	obs := NewObserver(eng).(*observer)
 	re := relay.NewEngine(cfg, opt.Version, opt.Log)
 	re.SetObserver(obs)
@@ -124,6 +127,10 @@ func New(opt Options) (s *mcp.Server, closeFn func(), err error) {
 			Reconcile(refreshCtx, cfg, eng)
 		}
 	}()
+	if agentCheck() == nil {
+		// Jails left by a p0ssess process that crashed or was killed.
+		go re.Sweep(refreshCtx)
+	}
 	return s, func() { cancel(); re.Shutdown(); obs.finishAll() }, nil
 }
 
@@ -175,8 +182,13 @@ func (o *observer) Authorize(a relay.RunAuth) (relay.Grant, error) {
 	if err != nil {
 		return relay.Grant{}, err
 	}
+	// Shell internet comes only from the user's own budget.toml; a failed read leaves it off.
+	internet := false
+	if b, err := o.eng.Budget(); err == nil {
+		internet = b.Sandbox.ShellInternetFor(a.Repo)
+	}
 	return relay.Grant{ReserveID: g.ReserveID, CapUSD: g.MaxUSD, ApprovalID: g.ApprovalID, ZDR: g.ZDR, Session: g.Session,
-		PriceUnknown: g.PriceUnknown, Note: strings.Join(g.Notes, "; ")}, nil
+		PriceUnknown: g.PriceUnknown, ShellInternet: internet, Note: strings.Join(g.Notes, "; ")}, nil
 }
 
 func (o *observer) Release(g relay.Grant) {

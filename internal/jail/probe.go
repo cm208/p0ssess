@@ -71,3 +71,15 @@ func (j *Jail) Identity(ctx context.Context) (string, error) {
 			`print("home:", sorted(os.listdir("/home")));`+
 			`print("key in env:", "OPENROUTER_API_KEY" in os.environ and os.environ["OPENROUTER_API_KEY"].startswith("sk-"))`)
 }
+
+// Exec runs a command in the server container, as the server's user. Tests use it to check what the
+// server, and so any command the model runs there, can see.
+func (j *Jail) Exec(ctx context.Context, args ...string) (string, error) {
+	return podman(ctx, nil, nil, append([]string{"exec", j.Name + "-server"}, args...)...)
+}
+
+// Shell runs cmd through the jailed shell wrapper exactly as OpenCode does ("<shell> -c <cmd>"),
+// returning its combined output.
+func (j *Jail) Shell(ctx context.Context, cmd string) (string, error) {
+	return j.Exec(ctx, "sh", "-c", ServerExePath+` -c "$0" 2>&1`, cmd)
+}

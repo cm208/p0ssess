@@ -44,7 +44,7 @@ func globMatch(pat, s string) bool {
 }
 
 func TestRules(t *testing.T) {
-	read, edit := Rules("read"), Rules("edit")
+	read, edit := Rules("read", false), Rules("edit", false)
 	cases := []struct {
 		rules            []opencode.Rule
 		action, resource string
@@ -69,7 +69,12 @@ func TestRules(t *testing.T) {
 			t.Errorf("%s %q: got %s, want %s", c.action, c.resource, got, c.want)
 		}
 	}
-	if Rules("read")[0] != (opencode.Rule{Action: "*", Resource: "*", Effect: "ask"}) {
+	net := Rules("edit", true)
+	if lastMatch(net, "shell", "pip install requests") != "allow" || lastMatch(edit, "shell", "pip install requests") != "ask" ||
+		lastMatch(Rules("read", true), "shell", "pip install requests") != "ask" {
+		t.Error("installs are allowed only in edit mode with shell internet")
+	}
+	if Rules("read", false)[0] != (opencode.Rule{Action: "*", Resource: "*", Effect: "ask"}) {
 		t.Error("rules must start with a catch-all ask")
 	}
 }

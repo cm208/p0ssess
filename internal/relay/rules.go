@@ -21,12 +21,20 @@ var editShell = []string{
 	"git add *", "git restore *", "git checkout -- *", "git stash*", "patch *", "chmod +x *",
 }
 
+// netShell are package installs and fetches, allowed in edit mode only when the project has shell
+// internet. Without it they would fail anyway, so they keep asking.
+var netShell = []string{
+	"pip install *", "pip3 install *", "python3 -m pip install *", "npm install*", "npm ci*", "pnpm install*",
+	"yarn install*", "go mod download*", "go mod tidy*", "go get *", "cargo fetch*", "curl *", "git fetch*", "git clone *",
+}
+
 func rule(action, resource, effect string) opencode.Rule {
 	return opencode.Rule{Action: action, Resource: resource, Effect: effect}
 }
 
 // Rules returns the per-session ruleset for a mode. "unsafe-allow-all" exists only for the policy tests.
-func Rules(mode string) []opencode.Rule {
+// internet adds the fetch and install commands to edit mode.
+func Rules(mode string, internet bool) []opencode.Rule {
 	if mode == "unsafe-allow-all" {
 		return []opencode.Rule{rule("*", "*", "allow")}
 	}
@@ -53,6 +61,11 @@ func Rules(mode string) []opencode.Rule {
 		r = append(r, rule("edit", "*", "allow"))
 		for _, c := range editShell {
 			r = append(r, rule("shell", c, "allow"))
+		}
+		if internet {
+			for _, c := range netShell {
+				r = append(r, rule("shell", c, "allow"))
+			}
 		}
 	default:
 		r = append(r, rule("edit", "*", "deny"))

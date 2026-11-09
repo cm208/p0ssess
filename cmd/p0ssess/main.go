@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"p0ssess/internal/config"
+	"p0ssess/internal/egress"
 	"p0ssess/internal/jail"
 	"p0ssess/internal/pme/cli"
 	"p0ssess/internal/pme/engine"
@@ -24,7 +25,7 @@ import (
 	"p0ssess/internal/server"
 )
 
-var version = "0.3.0"
+var version = "0.4.0"
 
 const usage = `p0ssess %s: Claude Code hands work to other models through OpenRouter
 
@@ -36,13 +37,15 @@ usage:
   p0ssess setup COMMAND ...           show, allow, statusline, summaries, undo (changes Claude Code settings)
   p0ssess statusline                  status line wrapper (reads Claude Code's JSON on stdin)
   p0ssess hook prompt                 UserPromptSubmit hook (reads the hook JSON on stdin)
-  p0ssess jail build|up|down|purge|status|probe|unit ...   the sandbox for the agent path (Linux)
-  p0ssess run --model M [--mode read|edit] [--cwd D] [--session S] [--attach F] [--max-cost USD] [--detach] TASK
+  p0ssess jail build|status|sweep|up|down|probe ...   the sandbox for the agent path (Linux)
+  p0ssess run --model M [--mode read|edit] [--cwd D] [--session S] [--attach F] [--max-cost USD] [--detach] [--keep] TASK
   p0ssess wait|abort --session S      the relay tools, from the command line (JSON out)
   p0ssess answer --session S --request R --decision once|reject
       run, wait and answer stay until the run ends or asks for a permission decision, printing progress.
       --detach returns after --wait seconds instead, leaving the run unwatched (see docs/RELAY.md).
-  p0ssess proxy --listen ADDR [--zdr] (inside the jail) OpenRouter forwarder; key from OPENROUTER_API_KEY
+      A finished run's jail is removed on exit unless --keep keeps it for a follow-up (--session).
+  p0ssess proxy --listen ADDR [--zdr] [--deadline-file F]   (inside the jail) OpenRouter forwarder
+  p0ssess egress --socket PATH [--block CIDR]...             (inside the jail) the shell's internet proxy
   p0ssess version
 
 The OpenRouter key is read from ~/.config/p0ssess/secrets/openrouter_key, or $P0SSESS_OPENROUTER_KEY_FILE.
@@ -60,6 +63,20 @@ func main() {
 		if err := jail.RunJailedShell(os.Args[1:]); err != nil {
 			fmt.Fprintln(os.Stderr, "p0ssess:", err)
 			os.Exit(127)
+		}
+		return
+	}
+	// The shell wrapper starts the egress forwarder inside a command's own namespaces with these.
+	if len(os.Args) == 3 && (os.Args[1] == jail.NetForwardArg || os.Args[1] == jail.NetServeArg) {
+		var err error
+		if os.Args[1] == jail.NetForwardArg {
+			err = egress.StartForwarder(jail.ServerExePath, jail.NetServeArg, os.Args[2])
+		} else {
+			err = egress.ServeForwarder(os.Args[2])
+		}
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "p0ssess:", err)
+			os.Exit(1)
 		}
 		return
 	}
@@ -94,6 +111,8 @@ func main() {
 		err = jailCmd(ctx, args)
 	case "proxy":
 		err = proxyCmd(args)
+	case "egress":
+		err = egressCmd(args)
 	case "run", "wait", "abort", "answer":
 		if aerr := server.AgentAvailable(); aerr != nil {
 			err = fmt.Errorf("the agent path is unavailable here: %w", aerr)
@@ -120,23 +139,43 @@ func proxyCmd(args []string) error {
 	fs := flag.NewFlagSet("proxy", flag.ExitOnError)
 	listen := fs.String("listen", jail.ProxyAddr, "listen address")
 	zdr := fs.Bool("zdr", false, "require zero-retention endpoints")
+	deadline := fs.String("deadline-file", "", "refuse requests after the Unix time in this file")
 	fs.Parse(args)
 	key := os.Getenv("OPENROUTER_API_KEY")
 	os.Unsetenv("OPENROUTER_API_KEY")
 	if key == "" {
 		return errors.New("OPENROUTER_API_KEY is not set")
 	}
-	return proxy.Serve(*listen, key, *zdr)
+	return proxy.Serve(*listen, key, *zdr, *deadline)
+}
+
+func egressCmd(args []string) error {
+	fs := flag.NewFlagSet("egress", flag.ExitOnError)
+	socket := fs.String("socket", "", "Unix socket to listen on")
+	var block multi
+	fs.Var(&block, "block", "another range to refuse (repeatable)")
+	fs.Parse(args)
+	if *socket == "" {
+		return errors.New("--socket is required")
+	}
+	extra, err := egress.ParsePrefixes(block)
+	if err != nil {
+		return err
+	}
+	return egress.Serve(*socket, egress.Policy{Extra: extra})
 }
 
 func jailCmd(ctx context.Context, args []string) error {
 	if len(args) == 0 {
-		return errors.New("jail: missing subcommand")
+		return errors.New("jail: missing subcommand (build, status, sweep, up, down, probe)")
 	}
 	fs := flag.NewFlagSet("jail "+args[0], flag.ExitOnError)
-	repo := fs.String("repo", "", "repository directory")
-	tarball := fs.String("tarball", "", "local OpenCode release tarball")
+	repo := fs.String("repo", "", "repository directory (up)")
+	name := fs.String("name", "", "jail name (down, probe)")
+	tarball := fs.String("tarball", "", "local OpenCode release tarball (build)")
 	image := fs.String("image", "", "image reference")
+	internet := fs.Bool("shell-internet", false, "up: start the shell's egress proxy too")
+	legacy := fs.Bool("legacy", false, "sweep: also remove p0ssess 0.3's shared per-repository jails")
 	asJSON := fs.Bool("json", false, "JSON output")
 	fs.Parse(args[1:])
 	cfg, err := config.Load()
@@ -146,11 +185,16 @@ func jailCmd(ctx context.Context, args []string) error {
 	if *image != "" {
 		cfg.Image = *image
 	}
-	needRepo := func() (string, error) {
-		if *repo == "" {
-			return "", errors.New("--repo is required")
+	if args[0] != "build" {
+		if err := relay.Migrate(os.Stderr); err != nil {
+			return err
 		}
-		return jail.Canonical(*repo)
+	}
+	load := func() (*jail.Jail, error) {
+		if *name == "" {
+			return nil, errors.New("--name is required (see `p0ssess jail status`)")
+		}
+		return jail.Load(*name)
 	}
 	switch args[0] {
 	case "build":
@@ -160,44 +204,54 @@ func jailCmd(ctx context.Context, args []string) error {
 		}
 		return jail.Build(ctx, img, *tarball, os.Stdout)
 	case "up":
-		r, err := needRepo()
+		// A read-only jail with no session, for probing and timing. It stays up for session_idle_s.
+		if *repo == "" {
+			return errors.New("--repo is required")
+		}
+		r, err := jail.RepoRoot(*repo)
 		if err != nil {
 			return err
 		}
 		cctx, cancel := context.WithTimeout(ctx, 3*time.Minute)
 		defer cancel()
-		j, err := jail.Up(cctx, r, cfg, os.Stdout)
+		j, err := jail.Start(cctx, jail.Spec{Repo: r, ShellInternet: *internet}, cfg, os.Stderr)
 		if err != nil {
 			return err
 		}
-		fmt.Println(j.Name, j.URL())
+		if err := j.Detach(time.Now().Add(time.Duration(cfg.SessionIdleSec) * time.Second)); err != nil {
+			return err
+		}
+		fmt.Printf("%s %s startup_s=%.2f\n", j.Name, j.URL(), j.StartupS)
 		return nil
 	case "down":
-		r, err := needRepo()
+		j, err := load()
 		if err != nil {
 			return err
 		}
-		return jail.Down(ctx, r)
-	case "purge":
-		r, err := needRepo()
+		return j.Remove(ctx)
+	case "sweep":
+		removed, err := jail.Sweep(ctx, os.Stderr)
 		if err != nil {
 			return err
 		}
-		return jail.Purge(ctx, r)
-	case "status":
-		var js []*jail.Jail
-		if *repo != "" {
-			r, err := needRepo()
+		if *legacy {
+			old, err := jail.SweepLegacy(ctx)
+			removed = append(removed, old...)
 			if err != nil {
 				return err
 			}
-			j, err := jail.Load(r)
-			if err != nil {
-				return fmt.Errorf("no jail recorded for %s", r)
-			}
-			js = []*jail.Jail{j}
-		} else {
-			js, _ = jail.List()
+		}
+		if len(removed) == 0 {
+			fmt.Println("nothing to remove")
+		}
+		for _, r := range removed {
+			fmt.Println("removed", r)
+		}
+		return nil
+	case "status":
+		js, err := jail.List()
+		if err != nil {
+			return err
 		}
 		var all []jail.Status
 		for _, j := range js {
@@ -210,17 +264,18 @@ func jailCmd(ctx context.Context, args []string) error {
 			fmt.Println("no jails")
 		}
 		for _, s := range all {
-			fmt.Printf("%s  %-8s egress=%-8s opencode=%-6s %s  %s\n", s.Jail.Name, s.State, s.Egress, s.Version, s.Jail.URL(), s.Jail.Repo)
+			net := ""
+			if s.Jail.ShellInternet {
+				net = " shell-internet"
+			}
+			fmt.Printf("%s  %-8s egress=%-8s opencode=%-6s session=%s%s  %s\n", s.Jail.Name, s.State, s.Egress, s.Version,
+				s.Jail.Session, net, s.Jail.Repo)
 		}
 		return nil
 	case "probe":
-		r, err := needRepo()
+		j, err := load()
 		if err != nil {
 			return err
-		}
-		j, err := jail.Load(r)
-		if err != nil {
-			return fmt.Errorf("no jail recorded for %s", r)
 		}
 		res, err := j.Probe(ctx, fs.Args())
 		if err != nil {
@@ -229,9 +284,6 @@ func jailCmd(ctx context.Context, args []string) error {
 		for _, p := range res {
 			fmt.Printf("%-45s %-5v %s\n", p.Target, p.OK, p.Detail)
 		}
-		return nil
-	case "unit":
-		fmt.Print(jail.SystemdUnit())
 		return nil
 	}
 	return fmt.Errorf("jail: unknown subcommand %q", strings.Join(args, " "))
@@ -247,7 +299,7 @@ func runCmd(ctx context.Context, name string, args []string) error {
 	var req relay.RunRequest
 	var attach multi
 	var request, decision, message string
-	var detach bool
+	var detach, keep bool
 	fs.StringVar(&req.Model, "model", "", "OpenRouter model id")
 	fs.StringVar(&req.Mode, "mode", "read", "read or edit")
 	fs.StringVar(&req.Cwd, "cwd", "", "working directory")
@@ -258,6 +310,7 @@ func runCmd(ctx context.Context, name string, args []string) error {
 	fs.Float64Var(&req.MaxCostUSD, "max-cost", 0, "cost cap for this run (USD); 0 takes max_run_cost_usd")
 	fs.IntVar(&req.WaitS, "wait", 0, "with --detach, seconds before returning still_running")
 	fs.BoolVar(&detach, "detach", false, "return still_running after --wait seconds instead of watching the run to its end")
+	fs.BoolVar(&keep, "keep", false, "keep a finished run's jail for a follow-up (--session) until session_idle_s passes")
 	fs.Var(&attach, "attach", "file to attach (repeatable)")
 	fs.StringVar(&request, "request", "", "permission request id")
 	fs.StringVar(&decision, "decision", "", "once or reject")
@@ -271,7 +324,11 @@ func runCmd(ctx context.Context, name string, args []string) error {
 	}
 	// No Shutdown here: a run that is paused on a permission request, or detached, stays alive for a
 	// later answer or wait. Ctrl-C still interrupts the run being waited on.
+	if err := relay.Migrate(os.Stderr); err != nil {
+		return err
+	}
 	e := relay.NewEngine(cfg, version, os.Stderr)
+	e.Sweep(ctx)
 	eng, err := engine.Load(paths.Default())
 	if err != nil {
 		return err
@@ -294,6 +351,7 @@ func runCmd(ctx context.Context, name string, args []string) error {
 			return e.Wait(ctx, sid, req.WaitS, progress)
 		})
 	}
+	e.Release(res, keep)
 	if err != nil {
 		return err
 	}

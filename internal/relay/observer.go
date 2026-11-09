@@ -39,8 +39,10 @@ type Grant struct {
 	ZDR        bool    `json:"zdr,omitempty"`
 	Session    string  `json:"claude_session,omitempty"`
 	// PriceUnknown means no price is known for the model: OpenCode may report $0 for a billed run.
-	PriceUnknown bool   `json:"price_unknown,omitempty"`
-	Note         string `json:"-"`
+	PriceUnknown bool `json:"price_unknown,omitempty"`
+	// ShellInternet is set when the user opted this project in to internet for shell commands.
+	ShellInternet bool   `json:"shell_internet,omitempty"`
+	Note          string `json:"-"`
 }
 
 // RunInfo identifies one prompt on one session.

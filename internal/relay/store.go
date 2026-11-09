@@ -4,8 +4,10 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -25,6 +27,10 @@ type SessionRecord struct {
 	Worktree  string    `json:"worktree,omitempty"`
 	BaseRev   string    `json:"base_rev,omitempty"`
 	Created   time.Time `json:"created"`
+	// Jail is the session's own pod; Closed is set once it is removed and the session cannot continue.
+	Jail          string `json:"jail,omitempty"`
+	Closed        bool   `json:"closed,omitempty"`
+	ShellInternet bool   `json:"shell_internet,omitempty"`
 
 	// Current prompt: where its events start, when it was sent, and the session totals before it.
 	PromptID     string          `json:"prompt_id,omitempty"`
@@ -42,12 +48,23 @@ type SessionRecord struct {
 
 var storeMu sync.Mutex
 
-func recordFile(sid string) string { return config.Path("sessions", sid+".json") }
+func recordFile(sid string) string { return config.RelayPath("sessions", safeID(sid)+".json") }
 
-func RunDir(sid string) string { return config.Path("runs", sid) }
+func RunDir(sid string) string { return config.RelayPath("runs", safeID(sid)) }
+
+// safeID keeps a session id from naming a path outside the relay's directories.
+func safeID(sid string) string {
+	if sid == "" || strings.ContainsAny(sid, "/\\") || strings.HasPrefix(sid, ".") {
+		return "invalid"
+	}
+	return sid
+}
 
 func loadRecord(sid string) (*SessionRecord, error) {
 	b, err := os.ReadFile(recordFile(sid))
+	if errors.Is(err, os.ErrNotExist) && safeID(sid) == sid {
+		b, err = os.ReadFile(legacySessionFile(sid))
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +86,7 @@ func (r *SessionRecord) save() error {
 	return os.Rename(tmp, recordFile(r.SessionID))
 }
 
-// HistoryEntry is one line of ~/.config/p0ssess/history.jsonl. It never holds prompt text, only a hash.
+// HistoryEntry is one line of the relay log, relay-runs.jsonl in the relay state directory. It never holds prompt text, only a hash.
 type HistoryEntry struct {
 	Time      time.Time        `json:"time"`
 	Kind      string           `json:"kind,omitempty"`
@@ -89,7 +106,7 @@ type HistoryEntry struct {
 func appendHistory(h HistoryEntry) error {
 	storeMu.Lock()
 	defer storeMu.Unlock()
-	p := config.Path("history.jsonl")
+	p := config.RelayPath("relay-runs.jsonl")
 	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
 		return err
 	}

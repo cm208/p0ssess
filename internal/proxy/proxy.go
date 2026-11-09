@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -125,11 +126,37 @@ func forceProvider(body []byte, zdr bool) []byte {
 	return out
 }
 
-// Serve listens on addr until the process exits.
-func Serve(addr, key string, zdr bool) error {
+// WithDeadline refuses every request once the time in deadlineFile (Unix seconds, written by the relay)
+// has passed, and when the file cannot be read. The relay moves the deadline forward for each prompt, so a
+// run whose relay process died stops spending at its maximum runtime even though nothing interrupts it.
+func WithDeadline(h http.Handler, deadlineFile string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !beforeDeadline(deadlineFile, time.Now()) {
+			http.Error(w, "this jail's deadline has passed", http.StatusServiceUnavailable)
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
+}
+
+func beforeDeadline(file string, now time.Time) bool {
+	b, err := os.ReadFile(file)
+	if err != nil {
+		return false
+	}
+	n, err := strconv.ParseInt(strings.TrimSpace(string(b)), 10, 64)
+	return err == nil && now.Unix() < n
+}
+
+// Serve listens on addr until the process exits. With deadlineFile set, requests stop at its deadline.
+func Serve(addr, key string, zdr bool, deadlineFile string) error {
+	h := Handler(Upstream, key, zdr)
+	if deadlineFile != "" {
+		h = WithDeadline(h, deadlineFile)
+	}
 	srv := &http.Server{
 		Addr:              addr,
-		Handler:           Handler(Upstream, key, zdr),
+		Handler:           h,
 		ReadHeaderTimeout: 30 * time.Second,
 	}
 	return srv.ListenAndServe()

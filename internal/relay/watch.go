@@ -68,6 +68,7 @@ func (w *watch) recordWhenDone() {
 	if !w.finished() {
 		return
 	}
+	w.e.idleAfter(w.rec.SessionID)
 	time.Sleep(3 * time.Second)
 	w.e.recMu.Lock()
 	recorded := w.rec.Recorded

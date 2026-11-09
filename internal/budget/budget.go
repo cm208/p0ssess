@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -30,6 +31,32 @@ type Privacy struct {
 	AllowSafetyRetention bool `toml:"allow_safety_retention" json:"allow_safety_retention"`
 }
 
+// Sandbox holds the sandbox opt-ins. It lives only in the user's own budget.toml: project rules cannot
+// set it.
+type Sandbox struct {
+	// ShellInternet lists project directories whose sandboxed shell commands may reach the public internet
+	// through the jail's egress proxy. Off for every project not listed.
+	ShellInternet []string `toml:"shell_internet" json:"shell_internet"`
+}
+
+// ShellInternetFor reports whether repo (a canonical path) is, or is inside, a listed project.
+func (s Sandbox) ShellInternetFor(repo string) bool {
+	if repo == "" || !filepath.IsAbs(repo) {
+		return false
+	}
+	repo = filepath.Clean(repo)
+	for _, p := range s.ShellInternet {
+		p = filepath.Clean(p)
+		if !filepath.IsAbs(p) || p == "/" {
+			continue
+		}
+		if repo == p || strings.HasPrefix(repo, p+string(filepath.Separator)) {
+			return true
+		}
+	}
+	return false
+}
+
 type Budget struct {
 	MonthlyUSD float64 `toml:"monthly_usd" json:"monthly_usd"`
 	PerTaskUSD float64 `toml:"per_task_usd" json:"per_task_usd"`
@@ -43,6 +70,7 @@ type Budget struct {
 	Models       List    `toml:"models" json:"models"`
 	Providers    List    `toml:"providers" json:"providers"`
 	Privacy      Privacy `toml:"privacy" json:"privacy"`
+	Sandbox      Sandbox `toml:"sandbox" json:"sandbox"`
 	// DailyCapUSD is a lower daily limit set by project rules; 0 means none. It is never saved.
 	DailyCapUSD float64 `toml:"-" json:"daily_cap_usd,omitempty"`
 }
@@ -88,6 +116,11 @@ func (b Budget) Validate() error {
 	case "no-training", "zdr":
 	default:
 		return fmt.Errorf("privacy.mode must be no-training or zdr, not %q", b.Privacy.Mode)
+	}
+	for _, p := range b.Sandbox.ShellInternet {
+		if !filepath.IsAbs(p) || filepath.Clean(p) == "/" {
+			return fmt.Errorf("sandbox.shell_internet: %q must be an absolute project path, not /", p)
+		}
 	}
 	return nil
 }

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -308,6 +310,7 @@ func (e *Engine) Learned(s Scope) Learned {
 // Settings that can be changed in plain language through Claude or the page.
 var settingKeys = []string{"monthly_usd", "per_task_usd", "daily_usd", "save_claude", "plan", "usage_credits",
 	"privacy.mode", "privacy.allow_safety_retention", "models.allow", "models.deny", "providers.allow", "providers.deny",
+	"sandbox.shell_internet", "sandbox.shell_internet.add", "sandbox.shell_internet.remove",
 	"lambda.preset", "statusline.command", "statusline.mark", "statusline.width"}
 
 func SettingKeys() []string { return append([]string(nil), settingKeys...) }
@@ -325,6 +328,30 @@ func (e *Engine) SetSetting(key, value string) (msg string, err error) {
 		return err
 	})
 	return msg, err
+}
+
+// projectPath canonicalizes a project directory for the shell internet list.
+func projectPath(p string) (string, error) {
+	p = strings.TrimSpace(p)
+	if strings.HasPrefix(p, "~/") {
+		if h, err := os.UserHomeDir(); err == nil {
+			p = filepath.Join(h, p[2:])
+		}
+	}
+	if !filepath.IsAbs(p) {
+		return "", fmt.Errorf("%q is not an absolute path", p)
+	}
+	c, err := filepath.EvalSymlinks(p)
+	if err != nil {
+		return "", err
+	}
+	if st, err := os.Stat(c); err != nil || !st.IsDir() {
+		return "", fmt.Errorf("%s is not a directory", c)
+	}
+	if c == "/" {
+		return "", errors.New("the whole filesystem cannot be one project")
+	}
+	return c, nil
 }
 
 func (e *Engine) setBudget(key, value string) (string, error) {
@@ -374,6 +401,32 @@ func (e *Engine) setBudget(key, value string) (string, error) {
 		b.Providers.Allow = list()
 	case "providers.deny":
 		b.Providers.Deny = list()
+	case "sandbox.shell_internet":
+		var ps []string
+		for _, p := range list() {
+			c, perr := projectPath(p)
+			if perr != nil {
+				return "", fmt.Errorf("%s: %w", key, perr)
+			}
+			ps = append(ps, c)
+		}
+		b.Sandbox.ShellInternet = ps
+	case "sandbox.shell_internet.add":
+		c, perr := projectPath(value)
+		if perr != nil {
+			return "", fmt.Errorf("%s: %w", key, perr)
+		}
+		if !slices.Contains(b.Sandbox.ShellInternet, c) {
+			b.Sandbox.ShellInternet = append(b.Sandbox.ShellInternet, c)
+		}
+		value = c
+	case "sandbox.shell_internet.remove":
+		c, perr := projectPath(value)
+		if perr != nil {
+			c = value
+		}
+		b.Sandbox.ShellInternet = slices.DeleteFunc(b.Sandbox.ShellInternet, func(p string) bool { return p == c || p == value })
+		value = c
 	default:
 		return "", fmt.Errorf("unknown setting %q (one of %s)", key, strings.Join(settingKeys, ", "))
 	}
@@ -382,6 +435,15 @@ func (e *Engine) setBudget(key, value string) (string, error) {
 	}
 	if err := budget.Save(e.Dirs.BudgetFile(), b); err != nil {
 		return "", err
+	}
+	if strings.HasPrefix(key, "sandbox.shell_internet") {
+		on := "none"
+		if len(b.Sandbox.ShellInternet) > 0 {
+			on = strings.Join(b.Sandbox.ShellInternet, ", ")
+		}
+		return fmt.Sprintf("%s %s (saved to %s). Shell internet is now on for: %s. New sandbox sessions pick it up; "+
+			"shell commands reach public addresses on ports 80 and 443 only, never the local network or the host.",
+			key, value, e.Dirs.BudgetFile(), on), nil
 	}
 	return fmt.Sprintf("%s = %s (saved to %s)", key, value, e.Dirs.BudgetFile()), nil
 }
