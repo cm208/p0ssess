@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="dark light">
+<title>p0ssess</title>
+<link rel="icon" href="ghost.svg" type="image/svg+xml">
+<link rel="stylesheet" href="app.css">
+<script src="app.js" defer></script>
+</head>
+<body>
+<header class="top">
+  <img class="ghost" id="ghost" src="ghost.svg" width="40" height="40" alt="">
+  <div>
+    <h1 class="wordmark">p0ssess</h1>
+    <p class="kicker">local only &middot; <span id="where"></span></p>
+  </div>
+  <p class="meta" id="updated"></p>
+</header>
+
+<main>
+  <section class="grid">
+    <article class="card" data-reveal>
+      <h2 class="title">Spend</h2>
+      <p class="say" id="spend-line">&nbsp;</p>
+      <div class="meter" id="month-meter"><span></span></div>
+      <dl class="facts" id="spend-facts"></dl>
+    </article>
+
+    <article class="card" data-reveal>
+      <h2 class="title">Claude usage</h2>
+      <p class="say" id="lambda-line">&nbsp;</p>
+      <div id="windows"></div>
+      <p class="note" id="lambda-note"></p>
+    </article>
+  </section>
+
+  <article class="card" data-reveal id="running-card" hidden>
+    <h2 class="title">Running</h2>
+    <ul class="list" id="running"></ul>
+  </article>
+
+  <article class="card" data-reveal>
+    <h2 class="title">Tendencies</h2>
+    <ul class="list" id="tendencies"></ul>
+    <div id="suggestions"></div>
+  </article>
+
+  <article class="card" data-reveal>
+    <h2 class="title">Recent delegations</h2>
+    <div class="table-wrap"><table id="recent"><thead><tr><th>When</th><th>Task</th><th>Model</th><th>Outcome</th><th class="num">Cash</th></tr></thead><tbody></tbody></table></div>
+  </article>
+
+  <article class="card" data-reveal>
+    <h2 class="title">Rules</h2>
+    <p class="note">Narrowest scope wins; a rule that forbids always beats one that allows. Ask Claude in plain language to add one.</p>
+    <ul class="list rules" id="rules"></ul>
+  </article>
+
+  <article class="card" data-reveal>
+    <h2 class="title">Settings</h2>
+    <form id="settings" class="settings" autocomplete="off">
+      <fieldset>
+        <legend class="kicker">Budget</legend>
+        <label>Monthly cap (US$) <input name="monthly_usd" inputmode="decimal"></label>
+        <label>Auto-approve per task (US$) <input name="per_task_usd" inputmode="decimal"></label>
+        <label>Daily soft limit (US$) <input name="daily_usd" inputmode="decimal"><small>0 paces the cap over the days left; &minus;1 turns it off</small></label>
+      </fieldset>
+      <fieldset>
+        <legend class="kicker">Claude</legend>
+        <label>Plan <select name="plan"><option value="auto">auto</option><option value="subscription">subscription</option><option value="api">API key</option></select></label>
+        <label>Pressure curve <select name="lambda.preset" id="preset"></select></label>
+        <label class="check"><input type="checkbox" name="save_claude"> Save Claude: route earlier as limits near</label>
+        <label class="check"><input type="checkbox" name="usage_credits"> Usage credits are on</label>
+      </fieldset>
+      <fieldset>
+        <legend class="kicker">Privacy</legend>
+        <label>Mode <select name="privacy.mode"><option value="no-training">no training (data_collection deny)</option><option value="zdr">zero retention only</option></select></label>
+        <label class="check"><input type="checkbox" name="privacy.allow_safety_retention"> In zero-retention mode, allow abuse-check retention</label>
+      </fieldset>
+      <fieldset>
+        <legend class="kicker">Models</legend>
+        <label>Never use <input name="models.deny" placeholder="author/model, author"></label>
+        <label>Providers to avoid <input name="providers.deny" placeholder="Provider name"></label>
+      </fieldset>
+      <fieldset>
+        <legend class="kicker">Status line</legend>
+        <label>Your own command <input name="statusline.command" placeholder="the command p0ssess wraps"></label>
+      </fieldset>
+      <div class="actions"><button class="btn" type="submit">Save</button><span class="meta" id="saved" role="status"></span></div>
+    </form>
+  </article>
+</main>
+<footer class="foot meta">Everything on this page lives on this machine. Nothing is sent anywhere.</footer>
+</body>
+</html>
