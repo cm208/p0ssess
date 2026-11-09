@@ -1,9 +1,0 @@
-{
-  "mcpServers": {
-    "p0ssess": {
-      "type": "stdio",
-      "command": "/path/to/p0ssess/bin/p0ssess",
-      "args": ["mcp"]
-    }
-  }
-}

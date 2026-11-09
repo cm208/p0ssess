@@ -18,6 +18,10 @@ build() {
       -ldflags "-s -w -buildid= -X main.version=$version" -o "$dir/p0ssess-$goos-$goarch" ./cmd/p0ssess
   done
   (cd "$dir" && sha256sum p0ssess-* > SHA256SUMS)
+  # The binaries carry vendored code, so its licenses and notices ship next to them.
+  cp LICENSE NOTICE "$dir/"
+  cp vendor/github.com/BurntSushi/toml/COPYING "$dir/LICENSE.BurntSushi-toml"
+  cp vendor/gopkg.in/yaml.v3/LICENSE "$dir/LICENSE.yaml.v3"
 }
 
 if [ "${1:-}" = "--check" ]; then
