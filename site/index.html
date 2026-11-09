@@ -187,8 +187,8 @@
 <section class="sec tall" id="sandbox" aria-labelledby="sandbox-h">
   <div class="copy">
     <h2 id="sandbox-h">The sandbox</h2>
-    <p>Multi-step work runs in OpenCode inside a rootless podman pod. Only the repository is mounted, read-only, plus separate worktrees for edits. There is no home directory, no SSH key and no credential inside. The pod can reach the internet, but nftables rules loaded from outside it block your local network, Tailscale and the host.</p>
-    <p>Your OpenRouter key lives in a proxy container next to the agent, which the model never sees. Every shell command the model runs gets fresh namespaces and a scrubbed environment, so by default it has no network at all. A command outside the task’s allowlist pauses the run and comes back to Claude, which can allow it once or refuse.</p>
+    <p>Multi-step work runs in OpenCode inside a rootless podman pod. Each session gets its own pod, created on its first run and removed when the session ends, so no run can see another’s files or transcript. Only the repository is mounted, read-only, plus that session’s worktree for edits. There is no home directory, no SSH key and no credential inside. OpenCode can reach the internet, but nftables rules loaded from outside the pod block your local network, Tailscale and the host.</p>
+    <p>Your OpenRouter key lives in a proxy container next to the agent, which the model never sees. Every shell command the model runs gets fresh namespaces and a scrubbed environment, so by default it has no network at all. You can let one project’s commands download packages; they then reach public sites through a filtering proxy that refuses everything else. A command outside the task’s allowlist pauses the run and comes back to Claude, which can allow it once or refuse.</p>
     <p>Rules, stakes, privacy and every spending limit are checked by the tool that spends, not left to Claude’s judgment. Each call’s maximum is reserved before it goes out, so parallel calls can’t overshoot.</p>
     <p>Before release, an independent review found that a delegated edit task could run code on the host through a tampered git worktree. That is fixed, with a regression test, along with the review’s other high-priority findings.</p>
   </div>
@@ -265,7 +265,7 @@
     <h2 id="try-h">Try it</h2>
     <p>The repository is private for now, and public releases are coming. With a checkout, start Claude Code with the plugin loaded in place:</p>
     <pre class="cmd"><code>claude --plugin-dir /path/to/p0ssess</code></pre>
-    <p>You need Claude Code 2.1.319 or later, an OpenRouter API key, and Go 1.27 or later; the plugin builds its binary on first use, offline, in a few seconds. The sandboxed agent path also needs Linux with rootless podman. Without it, media and one-shot jobs still work, macOS included.</p>
+    <p>You need Claude Code 2.1.319 or later, and an OpenRouter API key. Release archives carry the binary for Linux and Apple silicon Macs, checked against SHA-256 sums before it runs; a plain checkout builds it with Go 1.27 or later, offline, in a few seconds. The sandboxed agent path also needs Linux with rootless podman. Without it, media and one-shot jobs still work, macOS included.</p>
     <p>Put the key in <code>~/.config/p0ssess/secrets/openrouter_key</code> with mode 0600, then run <code>/p0ssess:p0ssess-me</code>. It asks about your budget, plan and privacy, and offers each change to Claude Code’s settings only after you say yes. <code>p0ssess setup undo</code> reverts them all.</p>
   </div>
   <figure class="scene" data-title="claude ~/shop-web" data-st="idle|" aria-labelledby="t-try">
