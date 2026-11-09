@@ -3,6 +3,11 @@
 (() => {
   const doc = document;
   doc.documentElement.classList.add("js");
+  // Sessions sit in closed disclosures on narrow screens; wide screens keep them open (visually hidden) as transcripts.
+  const wideNow = matchMedia("(min-width: 1024px)");
+  const openWrappers = () => { if (wideNow.matches) doc.querySelectorAll("details.scene-wrap").forEach((d) => { d.open = true; }); };
+  openWrappers();
+  wideNow.addEventListener("change", openWrappers);
 
   const term = doc.querySelector(".term");
   if (!term) return;
@@ -14,7 +19,23 @@
   const reduce = matchMedia("(prefers-reduced-motion: reduce)");
   const wide = matchMedia("(min-width: 1024px)");
 
-  let run = 0, current = null, pending = 0;
+  const island = doc.querySelector(".island");
+  const liveText = island?.querySelector(".live-text");
+  let run = 0, current = null, pending = 0, liveTimer = 0;
+
+  function markSection(fig) {
+    const id = fig.closest(".sec")?.id;
+    island?.querySelectorAll("a").forEach((a) => a.setAttribute("aria-current", a.getAttribute("href") === "#" + id ? "true" : "false"));
+  }
+
+  // A hand-off grows out of the island for a moment, like a live activity.
+  function live(text) {
+    if (!island) return;
+    clearTimeout(liveTimer);
+    liveText.textContent = " " + text;
+    island.classList.add("is-live");
+    liveTimer = setTimeout(() => island.classList.remove("is-live"), 2600);
+  }
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   function setStatus(v) {
@@ -35,8 +56,10 @@
   async function play(fig) {
     const id = ++run;
     current = fig;
+    markSection(fig);
+    island?.classList.remove("is-live");
     title.textContent = fig.dataset.title || "";
-    me.textContent = fig.querySelector(".foot .me")?.textContent || "";
+    me.textContent = fig.dataset.me || fig.querySelector(".foot .me")?.textContent || "";
     log.replaceChildren();
     typed.textContent = "";
     gt.textContent = ">";
@@ -49,6 +72,7 @@
       if (!instant) {
         if (src.classList.contains("in")) {
           await sleep(log.childElementCount ? 650 : 350);
+          if (src.dataset.me) me.textContent = src.dataset.me;
           ph.hidden = true;
           gt.textContent = src.classList.contains("bang") ? "!" : ">";
           await type(src.textContent, id);
@@ -64,6 +88,8 @@
       if (id !== run) return;
       log.append(src.cloneNode(true));
       if (src.dataset.st) setStatus(src.dataset.st);
+      if (src.dataset.me) me.textContent = src.dataset.me;
+      if (src.classList.contains("ann")) live("handing to " + src.textContent.replace(/^handing this to ([^:]+):.*$/, "$1"));
       screen.scrollTop = screen.scrollHeight;
     }
   }

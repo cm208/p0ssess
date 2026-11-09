@@ -30,15 +30,15 @@ origin = f"http://127.0.0.1:{srv.server_port}"
 url = origin + "/index.html"
 log = []
 
-desk = ["top", "engine", "gauge", "media", "chores", "review", "stakes", "rules", "ghost", "sandbox", "wont", "data", "try", "end"]
-phone = ["top", "engine", "gates", "gauge", "chores", "review", "data"]
+desk = ["top", "engine", "gauge", "media", "chores", "review", "usage", "stakes", "rules", "ghost", "sandbox", "wont", "data", "try", "end"]
+phone = ["top", "engine", "gauge", "media-cmp", "chores-cmp", "review-cmp", "usage-cmp", "stakes-cmp", "data"]
 # Shots that start at a part of a section rather than the section itself.
-parts = {"gauge": "#engine .gauge", "gates": "#engine .gates"}
+parts = {"gauge": "#engine .gauge", "gates": "#engine .gates", "media-cmp": "#cmp-media", "chores-cmp": "#cmp-chores", "review-cmp": "#cmp-review", "stakes-cmp": "#cmp-stakes"}
 
 with sync_playwright() as p:
     b = p.chromium.launch(executable_path=args.browser, headless=True,
                           args=["--no-first-run", "--disable-background-networking", "--proxy-server=127.0.0.1:9"])
-    for scheme in ("dark", "light"):
+    for scheme in ("dark",):
         for name, vp, ids in (("desk", {"width": 1280, "height": 860}, desk), ("phone", {"width": 390, "height": 844}, phone)):
             # Reduced motion renders each scene's final state at once, so captures are deterministic.
             ctx = b.new_context(viewport=vp, color_scheme=scheme, reduced_motion="reduce", device_scale_factor=1)
@@ -60,6 +60,8 @@ with sync_playwright() as p:
                     pg.evaluate("scrollTo(0, document.documentElement.scrollHeight)")
                 else:
                     sel = parts.get(sid, "#" + sid)
+                    if sid.endswith("-cmp"):
+                        sel = f"#{sid[:-4]} .cmp"
                     block = "center" if name == "desk" and sid not in ("engine", "data") else "start"
                     pg.evaluate(f"document.querySelector('{sel}').scrollIntoView({{block: '{block}'}})")
                 pg.wait_for_timeout(450)

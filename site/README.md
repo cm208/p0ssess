@@ -10,11 +10,11 @@ Browsers refuse web fonts over `file://`, so serve the folder:
 python3 -m http.server --bind 127.0.0.1 --directory site 8000
 ```
 
-Then open <http://127.0.0.1:8000/>. The pinned terminal appears at 1024 px and wider; narrower screens show each scene inline under its section. With `prefers-reduced-motion: reduce`, scenes show their final state with no typing.
+Then open <http://127.0.0.1:8000/>. The page is dark only. The pinned terminal and the section island appear at 1024 px and wider; narrower screens put each session in a "Show the session" disclosure under its section. With `prefers-reduced-motion: reduce`, scenes show their final state with no typing and the island cross-fades instead of morphing.
 
 ## Screenshots
 
-`shoot.py` serves the folder on 127.0.0.1, blocks every other request, and captures 1280×860 (each section) and 390×844 in both themes, with reduced motion so the captures are deterministic. It needs Playwright for Python and a Chromium-based browser:
+`shoot.py` serves the folder on 127.0.0.1, blocks every other request, and captures 1280×860 (each section) and 390×844 (the opening, the engine and each cost comparison), with reduced motion so the captures are deterministic. `--only name,name` retakes single shots. It needs Playwright for Python and a Chromium-based browser:
 
 ```sh
 python -I site/shoot.py --browser /path/to/chromium --out site/shots
@@ -24,7 +24,7 @@ It prints console errors and any horizontal overflow. The PNGs in `shots/` were 
 
 ## How the scenes work
 
-Each section holds its scene as plain markup in a `<figure class="scene">`. That markup is the transcript screen readers get, the inline terminal on phones, and the script for the pinned terminal, which replays it when the section crosses the middle of the viewport.
+Each section holds its scene as plain markup in a `<figure class="scene">` inside a `<details class="scene-wrap">`. That markup is the transcript screen readers get, the inline terminal on phones, and the script for the pinned terminal, which replays it when the section crosses the middle of the viewport.
 
 | Markup | Meaning |
 |---|---|
@@ -37,10 +37,12 @@ Each section holds its scene as plain markup in a `<figure class="scene">`. That
 | `p.l.out` | raw command output |
 | `data-d` on a line | delay before it appears, in ms |
 | `data-st` on a line | status segment after it appears |
+| `data-me` on the figure or a line | the user's own status line text (the usage scene shows a 5-hour reading there) |
+| `ann` on a line | a "handing this to …" line; the island shows it as a live activity |
 
 The `.foot` inside each figure is the final status line for the static version; keep it in step with the last `data-st`.
 
-Transcripts must match what the plugin does (see `docs/`), and any cost shown must come from a measured run.
+Transcripts must match what the plugin does (see `docs/`). Costs come from measured runs, or from `p0ssess engine recommend --json` for the comparison charts: a score is 100 × (1 − `p_fail_upper`), a cost is the option's `total_usd`, rounded. The usage example feeds two status-line readings through `p0ssess statusline` in a scratch `P0SSESS_HOME`.
 
 ## Deploy
 
@@ -58,4 +60,4 @@ Serve `.woff2` as `font/woff2` and cache `fonts/` for a long time. The links poi
 
 ## Fonts
 
-Atkinson Hyperlegible Next and Atkinson Hyperlegible Mono (Braille Institute, via Google Fonts), and the single glyph ᗣ from Noto Sans Canadian Aboriginal for the status-line mark, each subset to what the page uses. All three are under the SIL Open Font License 1.1; the license texts are in `fonts/`.
+Obel Mono (headings, numbers, terminal; instanced to weights 400–700 and subset), IBM Plex Sans 400 and 600 (body), and the single glyph ᗣ from Noto Sans Canadian Aboriginal for the status-line mark. All are under the SIL Open Font License 1.1; the license texts are in `fonts/`.
