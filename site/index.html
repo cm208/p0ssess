@@ -409,8 +409,11 @@
   <div class="copy">
     <h2 id="try-h">Try it</h2>
     <p>Private for now; releases are coming. You need Claude Code 2.1.319 or later and an OpenRouter key. Release archives carry the binary; a checkout builds it with Go 1.27. The agent sandbox needs Linux with rootless podman.</p>
-    <div class="cmd"><pre><code>claude --plugin-dir /path/to/p0ssess</code></pre><button class="copy-btn" type="button" hidden>Copy</button></div>
-    <p>Put the key in <code>~/.config/p0ssess/secrets/openrouter_key</code> (mode 0600) and run <code>/p0ssess:p0ssess-me</code>. Settings changes wait for your yes; <code>p0ssess setup undo</code> reverts them.</p>
+    <ol class="steps">
+      <li><p>Start Claude Code with the plugin.</p><div class="cmd"><pre><code>claude --plugin-dir /path/to/p0ssess</code></pre><button class="copy-btn" type="button" hidden>Copy</button></div></li>
+      <li><p>Put your OpenRouter key in <code>~/.config/<wbr>p0ssess/<wbr>secrets/<wbr>openrouter_key</code> (mode 0600).</p></li>
+      <li><p>Run <code>/p0ssess:p0ssess-me</code>. Settings changes wait for your yes; <code>p0ssess setup undo</code> reverts them.</p></li>
+    </ol>
     <p class="small">Usage-aware routing needs the p0ssess status line, which <code>/p0ssess:p0ssess-me</code> offers to install. On other plans, Claude is priced at API rates unless you set your plan. On Team and Enterprise, admins can block plugins loaded with <code>--plugin-dir</code> and restrict which plugins and tool servers you can use; check whether code may go to other providers.</p>
   </div>
   <details class="scene-wrap"><summary>Show the session</summary>

@@ -84,8 +84,8 @@ small { font-size: inherit; }
 .sec { padding-block: 2.5rem 2rem; scroll-margin-top: 1rem; }
 
 /* The frameless grid: a hairline with a 24 px violet start. Borders snap to device pixels. */
-.sec + .sec, .facts li, .wont li, .chart, .cases tr { position: relative; border-top: 1px solid var(--line); }
-.sec + .sec::before, .facts li::after, .wont li::after, .chart::after, .cases tr::after {
+.sec + .sec, .facts li, .wont li, .chart, .cases tr, .steps li { position: relative; border-top: 1px solid var(--line); }
+.sec + .sec::before, .facts li::after, .wont li::after, .chart::after, .cases tr::after, .steps li::after {
   content: ""; position: absolute; top: -1px; left: 0; width: 24px; height: 1px; background: var(--violet);
 }
 .sec.hero { padding-top: 2.2rem; }
@@ -144,7 +144,7 @@ h2 { font-size: clamp(1.5rem, 1.2vw + 1.2rem, 2rem); line-height: 1.12; letter-s
 .facts, .wont { list-style: none; padding: 0; }
 .facts li, .wont li { padding: 0.5rem 0; }
 .facts { margin-top: calc(var(--flow-lg) - 0.2rem); font-size: 0.93rem; line-height: 1.5; }
-.wont, .gates, .cases, .states { margin-top: calc(var(--flow) + 0.2rem); }
+.wont, .gates, .cases, .states, .steps { margin-top: calc(var(--flow) + 0.2rem); }
 .wont code { white-space: nowrap; }
 
 /* Gates: one row per severity. The rule under each row is the 0 to 100 score,
@@ -235,6 +235,17 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
   font-size: 0.84rem;
   white-space: pre;
 }
+
+/* Setup, in order */
+.steps { list-style: none; padding: 0; counter-reset: step; }
+.steps li {
+  counter-increment: step;
+  display: grid; grid-template-columns: 2.1rem minmax(0, 1fr);
+  padding: 0.65rem 0 0.75rem;
+}
+.steps li::before { content: counter(step); font: 700 1.15rem/1.45 var(--mono); color: var(--ink); }
+.steps li > * { grid-column: 2; }
+.steps .cmd { margin-top: 0.5rem; }
 
 /* Terminal, shared by the pinned panel and the inline scenes */
 .term, .scene {
@@ -412,6 +423,8 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
   .scene-wrap { margin-top: 0.85rem; }
   .chart { padding-top: 0.8rem; }
   .bars { row-gap: 0.5rem; }
+  .steps li { padding-block: 0.55rem 0.65rem; }
+  .steps .cmd { grid-column: 1 / -1; }
   .lockup { --px: 4px; }
   .states li { grid-template-columns: 1fr; gap: 0.3rem; }
   .cases tr { grid-template-columns: 1fr; row-gap: 0.1rem; }
