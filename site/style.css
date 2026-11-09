@@ -11,12 +11,6 @@
   font-display: swap;
 }
 @font-face {
-  font-family: "IBM Plex Sans";
-  src: url("fonts/plex-sans-600.woff2") format("woff2");
-  font-weight: 600;
-  font-display: swap;
-}
-@font-face {
   font-family: "Ghost Mark";
   src: url("fonts/ghost-mark.woff2") format("woff2");
   unicode-range: U+15E3;
