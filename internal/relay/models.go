@@ -49,6 +49,68 @@ func (e *Engine) registryFile() string {
 	return ""
 }
 
+// ResolveModelID turns the caller's model string into an exact OpenRouter id. An exact id (anything with a
+// "/", optionally with an "openrouter/" prefix or a "#variant") is accepted as given, since the registry
+// snapshot may lag OpenRouter. A bare name is matched against the registry: it resolves only when exactly
+// one model matches, and otherwise returns the candidates rather than guessing.
+func (e *Engine) ResolveModelID(s string) (string, error) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return s, nil
+	}
+	if strings.Contains(strings.TrimPrefix(s, "openrouter/"), "/") {
+		return s, nil // already an exact id
+	}
+	ids, err := e.registryIDs()
+	if err != nil {
+		return "", fmt.Errorf("%q is not an exact OpenRouter id (vendor/model) and the registry is unavailable to resolve it: %w", s, err)
+	}
+	term := strings.ToLower(s)
+	var exact, contains []string
+	for _, id := range ids {
+		low := strings.ToLower(id)
+		_, model, _ := strings.Cut(low, "/")
+		switch {
+		case low == term || model == term:
+			exact = append(exact, id)
+		case strings.Contains(low, term):
+			contains = append(contains, id)
+		}
+	}
+	cand := exact
+	if len(cand) == 0 {
+		cand = contains
+	}
+	switch len(cand) {
+	case 1:
+		return cand[0], nil
+	case 0:
+		return "", fmt.Errorf("no model matches %q; pass an exact OpenRouter id like deepseek/deepseek-v4.1-flash", s)
+	default:
+		sort.Strings(cand)
+		if len(cand) > 12 {
+			cand = cand[:12]
+		}
+		return "", fmt.Errorf("%q matches %d models; pass one exactly: %s", s, len(cand), strings.Join(cand, ", "))
+	}
+}
+
+func (e *Engine) registryIDs() ([]string, error) {
+	p := e.registryFile()
+	if p == "" {
+		return nil, fmt.Errorf("no registry snapshot found")
+	}
+	list, _, err := snapshotModels(p)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]string, 0, len(list))
+	for _, m := range list {
+		ids = append(ids, m.ID)
+	}
+	return ids, nil
+}
+
 func (e *Engine) Models(ctx context.Context, req ModelsRequest) ([]ModelInfo, string, error) {
 	var list []ModelInfo
 	var source string

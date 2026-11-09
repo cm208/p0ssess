@@ -34,6 +34,19 @@ func TestPoliciesHardDeny(t *testing.T) {
 	if !has("provider.use", "*", "deny") || !has("provider.use", "openrouter", "allow") || !has("tool.use", "external_directory:*", "deny") {
 		t.Error("provider or external_directory policy missing")
 	}
+	// Reads of absolute paths (always outside the worktree) are denied, /proc and /state among them.
+	for _, r := range []string{"read:/*", "read:/proc/*", "read:/state/*", "read:/state"} {
+		if !has("tool.use", r, "deny") {
+			t.Errorf("missing %q deny", r)
+		}
+	}
+	// Webfetch to the loopback API, the proxy and private ranges is denied.
+	for _, r := range []string{"webfetch:http://127.*", "webfetch:https://127.*", "webfetch:http://10.*",
+		"webfetch:http://192.168.*", "webfetch:http://localhost*"} {
+		if !has("tool.use", r, "deny") {
+			t.Errorf("missing %q deny", r)
+		}
+	}
 	// The provider allow must come after the provider deny: the last match wins.
 	if slices.Index(ps, policy{"provider.use", "openrouter", "allow"}) < slices.Index(ps, policy{"provider.use", "*", "deny"}) {
 		t.Error("provider allow precedes the deny")
@@ -58,6 +71,15 @@ func TestOpenCodeConfig(t *testing.T) {
 	}
 	if cfg["share"] != "disabled" {
 		t.Error("share not disabled")
+	}
+	if cfg["shell"] != ServerExePath {
+		t.Errorf("shell is %v, want %s", cfg["shell"], ServerExePath)
+	}
+	if cfg["formatter"] != false {
+		t.Error("formatter not disabled")
+	}
+	if cfg["lsp"] != false {
+		t.Error("lsp not disabled")
 	}
 	if strings.Contains(string(b), "sk-or-") {
 		t.Error("config contains a key")

@@ -23,7 +23,7 @@ What a p0ssess install puts on a machine, and how to remove each piece. Everythi
 | shortcut agents | `$CLAUDE_CONFIG_DIR/agents/p0ssess-<name>.md` (at most 12, each marked as made by p0ssess) | `shortcuts_create`, after you agree |
 | the agent path (Linux): | | |
 | jail image | `localhost/p0ssess-opencode:2.2.5-1` (about 1.1 GB: Fedora 44 base, git, Python, ripgrep, OpenCode) and the pinned `registry.fedoraproject.org/fedora:44` base | `p0ssess jail build` |
-| pods and volumes | `p0ssess-<hash>` pods (`-infra`, `-proxy`, `-server`) and `p0ssess-<hash>-state` volumes, one per repository | the first relay run in a repository |
+| pods and volumes | `p0ssess-<hash>` pods (`-infra`, `-proxy`, `-server`) and `p0ssess-<hash>-state` volumes, one per repository; `-proxy` and `-server` mount the `p0ssess` binary read-only at `/opt/p0ssess` (the proxy, and the jailed shell wrapper configured as OpenCode's shell) | the first relay run in a repository |
 | relay state | `~/.config/p0ssess/jails/` (records and passwords), `sessions/`, `runs/` (transcripts and diffs), `history.jsonl` (the relay's run log) | the relay |
 | optional systemd unit | `~/.config/systemd/user/p0ssess-jail@.service` | you (`p0ssess jail unit`) |
 | in each repository used | `.p0ssess/wt/` (edit-mode worktrees), `.git/worktrees/<name>`, a `/.p0ssess/` line in `.git/info/exclude`; with SELinux relabeling on, the shared `container_file_t` label on the repository's files | the relay |

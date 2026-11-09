@@ -81,7 +81,8 @@ func NewServer(e *Engine, version string) *mcp.Server {
 	s.AddTool(mcp.Tool{Name: "run", Description: "Run a task on an OpenRouter model in a sandboxed OpenCode session and " +
 		"block until it finishes. Returns the answer first, then session_id, status, cost, tokens and " +
 		"transcript_path; edit mode also returns the worktree and diff. status is done, failed, interrupted, " +
-		"needs_permission (call answer_permission after the caller decides) or still_running (call wait).",
+		"needs_permission (call answer_permission after the caller decides), still_running (call wait), or " +
+		"tampered (the session was acted on by something other than the relay; it was aborted, do not trust it).",
 		InputSchema: runSchema},
 		func(ctx context.Context, args json.RawMessage, p mcp.Progress) mcp.CallResult {
 			var req RunRequest

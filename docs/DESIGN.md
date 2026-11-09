@@ -144,7 +144,8 @@ Claude Code asks for a one-line status summary of each running background agent 
 ## Sandbox for the agent path
 
 OpenCode runs in a rootless container: only the repository (or a per-task git worktree) is mounted, no credentials or SSH keys are present, internet access is allowed but local networks and VPN ranges are blocked, and hard deny rules cover privilege escalation, remote shells, pushes, container and service control, and edits to `.git`, `.env`, and `.ssh`.
-Questions OpenCode would ask the user are rejected on read-only tasks and returned to Claude on edit tasks; "always allow" is never answered.
+Every command the model runs goes through a shell wrapper that scrubs the environment and puts the command in fresh user, network, mount and pid namespaces, so it has no network at all (the API, the key proxy and the internet are unreachable), cannot read the server's environment or `/state`, and — for a read-only task — has nothing writable. `formatter` and `lsp` are off so repository-controlled programs never run in the server. The full confinement, and its one documented residual, is in `docs/RELAY.md`.
+Questions OpenCode would ask the user are rejected on read-only tasks and returned to Claude on edit tasks; "always allow" is never answered. A reply or interruption the relay did not issue aborts the session as tampered.
 
 ## Data sources
 
