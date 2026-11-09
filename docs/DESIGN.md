@@ -50,12 +50,27 @@ When Claude has to redo a model's work, that counts against the model's score fo
 `~/.config/p0ssess/budget.toml`:
 
 - monthly OpenRouter cap (default $10)
-- per-task auto-approve limit (default $0.02); above it, Claude asks
+- per-task auto-approve limit (default $0.02); above it, Claude asks unless a standing approval covers the task (see Rules)
 - daily soft limit
 - optional "save Claude" mode that lowers the bar for routing as Claude limits near
 - model and provider allow and deny lists
 
 `/p0ssess-me` walks through these settings in the terminal and opens a local page (served on `localhost`, works offline) showing spend against each limit, learned tendencies, recent delegations, and editable settings.
+
+## Rules and standing approvals
+
+Users set **rules** that gate what the engine may do, either in `/p0ssess-me` or in plain language ("no Claude agents for this", "only use gemini-3.8-flash for video", "mix deepseek and glm for bulk edits", "no OpenCode", "stop using model X").
+Claude turns a plain-language request into a rule, shows the rule it wrote in one line, and saves it once the user confirms.
+
+Rule kinds:
+
+- **Who may run work:** allow or forbid Claude agents, a specific model, a set of models (a mix, with optional weights), or the OpenCode agent path.
+- **Standing approvals:** pre-approve spend for a kind of task up to a per-run price, with an optional count or total ("auto-approve 10-minute video edits up to $0.20 each", "up to $5 today"). Within a standing approval, runs go through without asking and are announced in one line as usual.
+- **Budget overrides:** raise or lower the per-task limit, daily limit, or monthly cap, for the session or permanently.
+
+Scope: each rule applies to the **session**, a **project** (`.p0ssess/rules.toml` in the repository), or **globally** (`~/.config/p0ssess/rules.toml`). The narrowest scope wins; a rule that forbids something always beats one that allows it. Rules can expire ("for the next hour", "until the end of this project").
+
+Rules are never inferred silently: the engine may *suggest* one from the user's history ("you've approved 8 video edits at about $0.15; make that a standing approval?"), but only the user creates it. `/p0ssess-me` lists every active rule with its scope and lets the user edit or remove it.
 
 ## Learning
 
