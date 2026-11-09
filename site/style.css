@@ -325,7 +325,7 @@ td { color: var(--ink-body); }
 .island .live {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 0.6ch;
   font: 400 12px/1 var(--mono); color: var(--ink); white-space: nowrap;
-  opacity: 0; transition: opacity 0.2s var(--out);
+  opacity: 0; pointer-events: none; transition: opacity 0.2s var(--out);
 }
 .island .live .mark { font-family: "Ghost Mark", var(--mono); color: var(--violet-ink); }
 .island.is-live { min-width: 21rem; background: var(--violet-deep); border-color: var(--violet); }
