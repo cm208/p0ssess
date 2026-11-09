@@ -56,9 +56,27 @@ func TestSpendAndStats(t *testing.T) {
 		out("google/g", "video-bug-repro", "media", Accepted, 0.02, now.Add(-40*24*time.Hour)),
 		out("deepseek/d", "code-file-edits", "agent", Declined, 0, now),
 	)
+	if s := l.Spend(now); s.Month != 0 || s.Runs != 0 {
+		t.Errorf("outcomes counted as spend: %+v", s)
+	}
+	run := func(id, model string, cash float64, ts time.Time) Entry {
+		return Entry{Type: TypeRun, RunID: id, Model: model, Route: "direct", CashUSD: cash, TS: ts}
+	}
+	l.Entries = append(l.Entries, run("d-1", "google/g", 0.10, now.Add(-time.Hour)), run("d-2", "google/g", 0.05, now.Add(-30*time.Hour)),
+		run("d-3", "google/g", 0.02, now.Add(-40*24*time.Hour)))
 	s := l.Spend(now)
-	if s.Today != 0.10 || math.Abs(s.Month-0.15) > 1e-9 || s.MonthBeforeToday != 0.05 || s.Runs != 2 {
+	if math.Abs(s.Today-0.10) > 1e-9 || math.Abs(s.Month-0.15) > 1e-9 || math.Abs(s.MonthBeforeToday-0.05) > 1e-9 || s.Runs != 2 {
 		t.Errorf("spend = %+v", s)
+	}
+	if c, ok := l.RunCost("d-2"); !ok || c != 0.05 {
+		t.Errorf("RunCost = %v %v", c, ok)
+	}
+	if r, ok := l.MatchRun("", "google/g", now.Add(-2*time.Hour)); !ok || r.RunID != "d-1" {
+		t.Errorf("MatchRun = %+v %v", r, ok)
+	}
+	l.Entries = append(l.Entries, Entry{Type: TypeOutcome, Model: "google/g", Outcome: Accepted, RunID: "d-1", TS: now})
+	if r, ok := l.MatchRun("", "google/g", now.Add(-2*time.Hour)); ok {
+		t.Errorf("claimed run matched again: %+v", r)
 	}
 	st := l.Stats("google/g", "video-understand", "video_understanding")
 	if st.UseCase.Accepted != 1 || st.UseCase.Redo != 1 || st.Family.Offers() != 3 {

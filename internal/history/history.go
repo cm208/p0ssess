@@ -23,6 +23,10 @@ import (
 const (
 	TypeOffer   = "offer"
 	TypeOutcome = "outcome"
+	// TypeRun is one finished delegated call with its measured cost: the
+	// relay's session cost or the direct path's OpenRouter plus upstream
+	// (bring-your-own-key) charge. Spend is the sum of these.
+	TypeRun = "run"
 
 	Accepted   = "accepted"   // the delegated result was used
 	Redo       = "redo"       // Claude had to redo the work
@@ -64,6 +68,12 @@ type Entry struct {
 	CashUSD    float64 `json:"cash_usd,omitempty"`
 	ApprovalID string  `json:"approval_id,omitempty"`
 	Reason     string  `json:"reason,omitempty"`
+
+	// Runs, and the outcome that names one.
+	RunID       string  `json:"run_id,omitempty"`
+	Route       string  `json:"route,omitempty"`
+	UpstreamUSD float64 `json:"upstream_usd,omitempty"`
+	Status      string  `json:"status,omitempty"`
 }
 
 var mu sync.Mutex
@@ -162,7 +172,8 @@ func (l *Ledger) outcomes() []Entry {
 	return out
 }
 
-// Spend sums recorded OpenRouter cash.
+// Spend sums the measured cost of delegated runs. Outcomes do not add to it:
+// their cash is the run's, filled in when the outcome names or matches a run.
 type Spend struct {
 	Today            float64 `json:"today_usd"`
 	Month            float64 `json:"month_usd"`
@@ -175,12 +186,12 @@ func (l *Ledger) Spend(now time.Time) Spend {
 	y, m, d := now.Date()
 	day := time.Date(y, m, d, 0, 0, 0, 0, now.Location())
 	month := time.Date(y, m, 1, 0, 0, 0, 0, now.Location())
-	for _, e := range l.outcomes() {
-		if e.CashUSD <= 0 || e.TS.Before(month) {
+	for _, e := range l.Entries {
+		if e.Type != TypeRun || e.TS.Before(month) {
 			continue
 		}
-		s.Month += e.CashUSD
 		s.Runs++
+		s.Month += e.CashUSD
 		if !e.TS.Before(day) {
 			s.Today += e.CashUSD
 		} else {
@@ -188,6 +199,54 @@ func (l *Ledger) Spend(now time.Time) Spend {
 		}
 	}
 	return s
+}
+
+// Runs returns run entries, newest first.
+func (l *Ledger) Runs(n int) []Entry {
+	var out []Entry
+	for i := len(l.Entries) - 1; i >= 0 && (n <= 0 || len(out) < n); i-- {
+		if l.Entries[i].Type == TypeRun {
+			out = append(out, l.Entries[i])
+		}
+	}
+	return out
+}
+
+// RunCost sums the runs with this id (a relay session has one per turn).
+func (l *Ledger) RunCost(id string) (float64, bool) {
+	var sum float64
+	found := false
+	for _, e := range l.Entries {
+		if e.Type == TypeRun && e.RunID == id {
+			sum += e.CashUSD
+			found = true
+		}
+	}
+	return sum, found
+}
+
+// MatchRun finds the run an outcome is about when Claude did not name it: the
+// newest run for the offer, else the newest run of the model since since that
+// no outcome has claimed yet.
+func (l *Ledger) MatchRun(offerID, model string, since time.Time) (Entry, bool) {
+	claimed := map[string]bool{}
+	for _, e := range l.Entries {
+		if e.Type == TypeOutcome && e.RunID != "" {
+			claimed[e.RunID] = true
+		}
+	}
+	for _, match := range []func(Entry) bool{
+		func(e Entry) bool { return offerID != "" && e.OfferID == offerID },
+		func(e Entry) bool { return model != "" && Short(e.Model) == Short(model) && !e.TS.Before(since) },
+	} {
+		for i := len(l.Entries) - 1; i >= 0; i-- {
+			e := l.Entries[i]
+			if e.Type == TypeRun && e.RunID != "" && !claimed[e.RunID] && match(e) {
+				return e, true
+			}
+		}
+	}
+	return Entry{}, false
 }
 
 // UsedModels lists models that have run at least once (accepted or redo).

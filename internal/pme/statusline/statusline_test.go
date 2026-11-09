@@ -62,7 +62,7 @@ func TestRunWrapsUserCommand(t *testing.T) {
 	os.MkdirAll(d.Config, 0o700)
 	os.WriteFile(d.EngineFile(), []byte("[statusline]\ncommand = \"cat >/dev/null; echo '[Opus] repo'\"\n"), 0o600)
 	now := time.Now()
-	history.Append(d.HistoryFile(), history.Entry{Type: history.TypeOutcome, Model: "m/x", Outcome: history.Accepted, CashUSD: 0.14, TS: now})
+	history.Append(d.HistoryFile(), history.Entry{Type: history.TypeRun, RunID: "d-1", Model: "m/x", CashUSD: 0.14, TS: now})
 	in := []byte(strings.ReplaceAll(strings.ReplaceAll(input, "%d", "1"), "\"resets_at\":1", "\"resets_at\":"+itoa(now.Add(2*time.Hour).Unix())))
 	got := Run(in, d, now)
 	if got != "[Opus] repo  ᗣ p0ssess  $0.14 today" {

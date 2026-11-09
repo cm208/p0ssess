@@ -162,6 +162,7 @@ func (e *Engine) RuleRemove(s Scope, id string) (RuleView, error) {
 
 type Outcome struct {
 	OfferID    string  `json:"offer_id,omitempty"`
+	RunID      string  `json:"run_id,omitempty"`
 	Model      string  `json:"model"`
 	Outcome    string  `json:"outcome"`
 	CashUSD    float64 `json:"cash_usd,omitempty"`
@@ -209,7 +210,55 @@ func (e *Engine) RecordOutcome(o Outcome) (history.Entry, error) {
 	if o.CashUSD < 0 {
 		return en, errors.New("cash_usd must be 0 or more")
 	}
+	// The cash on an outcome is the measured run's. Without a run to point
+	// at, reported cash becomes a run of its own so it is counted once.
+	if en.Outcome == history.Accepted || en.Outcome == history.Redo {
+		l := e.Ledger()
+		if o.RunID != "" {
+			cost, ok := l.RunCost(o.RunID)
+			if !ok {
+				return en, fmt.Errorf("unknown run %q", o.RunID)
+			}
+			en.RunID, en.CashUSD = o.RunID, cost
+		} else if r, ok := l.MatchRun(o.OfferID, o.Model, e.Now().Add(-RunMatchWindow)); ok {
+			en.RunID, en.CashUSD = r.RunID, r.CashUSD
+		} else if o.CashUSD > 0 {
+			en.RunID = "r-" + history.NewOfferID()[2:]
+			run := history.Entry{TS: en.TS, Type: history.TypeRun, RunID: en.RunID, Route: "reported", Model: o.Model,
+				CashUSD: o.CashUSD, OfferID: o.OfferID, UseCase: en.UseCase, Session: en.Session, Project: en.Project}
+			if err := history.Append(e.Dirs.HistoryFile(), run); err != nil {
+				return en, err
+			}
+		}
+	}
 	return en, history.Append(e.Dirs.HistoryFile(), en)
+}
+
+// RunMatchWindow is how far back an outcome without a run id looks for its run.
+const RunMatchWindow = 3 * time.Hour
+
+// Run is one finished delegated call, measured by the relay or the direct path.
+type Run struct {
+	ID          string
+	Route       string // "agent" or "direct"
+	Model       string
+	CashUSD     float64
+	UpstreamUSD float64
+	Status      string
+	OfferID     string
+	UseCase     string
+	Cwd         string
+	Session     string
+}
+
+// RecordRun adds a measured run to the ledger; spend is the sum of these.
+func (e *Engine) RecordRun(r Run) error {
+	if r.CashUSD < 0 {
+		r.CashUSD = 0
+	}
+	return history.Append(e.Dirs.HistoryFile(), history.Entry{TS: e.Now().UTC(), Type: history.TypeRun, RunID: r.ID,
+		Route: r.Route, Model: r.Model, CashUSD: r.CashUSD, UpstreamUSD: r.UpstreamUSD, Status: r.Status,
+		OfferID: r.OfferID, UseCase: r.UseCase, Session: r.Session, Project: paths.ProjectRoot(r.Cwd)})
 }
 
 type Learned struct {

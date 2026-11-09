@@ -185,3 +185,48 @@ func TestSessionCalibration(t *testing.T) {
 		}
 	}
 }
+
+func TestSecondOpinion(t *testing.T) {
+	e, proj := setup(t, "plan = \"api\"\n")
+	r, err := e.Recommend(Request{UseCase: "code-implement-feature", Stakes: 3, Scope: Scope{Cwd: proj}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	so := r.SecondOpinion
+	if so == nil || len(so.Models) != 2 || !so.NeedsApproval {
+		t.Fatalf("stakes 3 code work should offer a second opinion that asks first: %+v", so)
+	}
+	a, b := e.Reg.Get(so.Models[0]), e.Reg.Get(so.Models[1])
+	if a.Author == b.Author || a.IsClaude() || b.IsClaude() {
+		t.Errorf("second opinion must be two non-Claude families: %v", so.Models)
+	}
+	if r, _ := e.Recommend(Request{UseCase: "code-implement-feature", Stakes: 2, Scope: Scope{Cwd: proj}}); r.SecondOpinion != nil {
+		t.Error("no second opinion below stakes 3")
+	}
+	if r, _ := e.Recommend(Request{UseCase: "video-understand", Stakes: 3, Scope: Scope{Cwd: proj}}); r.SecondOpinion != nil {
+		t.Error("no second opinion for work that edits no code")
+	}
+	e2, proj2 := setup(t, "plan = \"api\"\nmonthly_usd = 0.05\n")
+	r, _ = e2.Recommend(Request{UseCase: "code-implement-feature", Stakes: 4, Scope: Scope{Cwd: proj2}})
+	if r.SecondOpinion != nil || !strings.Contains(strings.Join(r.Notes, " "), "monthly cap") {
+		t.Errorf("over budget: %+v %v", r.SecondOpinion, r.Notes)
+	}
+}
+
+func TestRunsAreSpend(t *testing.T) {
+	e, proj := setup(t, "plan = \"api\"\n")
+	if err := e.RecordRun(Run{ID: "d-1", Route: "direct", Model: "google/gemini-3.8-flash", CashUSD: 0.03, Cwd: proj}); err != nil {
+		t.Fatal(err)
+	}
+	en, err := e.RecordOutcome(Outcome{Model: "gemini-3.8-flash", Outcome: "accepted", CashUSD: 0.5, UseCase: "video-understand", Scope: Scope{Cwd: proj}})
+	if err != nil || en.RunID != "d-1" || en.CashUSD != 0.03 {
+		t.Fatalf("outcome should take the measured run: %+v %v", en, err)
+	}
+	if _, err := e.RecordOutcome(Outcome{Model: "x/y", Outcome: "accepted", CashUSD: 0.01, Scope: Scope{Cwd: proj}}); err != nil {
+		t.Fatal(err)
+	}
+	st, _ := e.Status(Scope{Cwd: proj})
+	if st.Spend.Runs != 2 || st.Spend.Month < 0.0399 || st.Spend.Month > 0.0401 {
+		t.Errorf("spend = %+v", st.Spend)
+	}
+}
