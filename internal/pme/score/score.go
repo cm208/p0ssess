@@ -250,7 +250,7 @@ func (c *ctx) fits(m *registry.Model, isLead bool) (bool, string) {
 			}
 		}
 	}
-	prompt := c.promptTokens()
+	prompt := c.promptTokens(m)
 	if ctxLen := m.ContextLen(); ctxLen > 0 && prompt+c.w.OutTokens > ctxLen {
 		return false, fmt.Sprintf("needs %dk tokens of context, has %dk", (prompt+c.w.OutTokens)/1000, ctxLen/1000)
 	}
@@ -265,12 +265,22 @@ func (c *ctx) fits(m *registry.Model, isLead bool) (bool, string) {
 
 func (c *ctx) agentPath() bool { return c.w.Turns > 0 }
 
-// promptTokens is the per-item prompt size including media read as tokens.
-func (c *ctx) promptTokens() int {
+func (c *ctx) videoRate(m *registry.Model) float64 {
+	if m != nil {
+		if r, ok := c.in.Bench.VideoTokensPerSec(m.ID); ok {
+			return r
+		}
+	}
+	return c.cfg.Media.VideoTokensPerSec
+}
+
+// promptTokens is the per-item prompt size on m including media read as tokens. Video uses m's measured
+// rate when p0ssess's video check has one, else the configured flat rate.
+func (c *ctx) promptTokens(m *registry.Model) int {
 	md := c.cfg.Media
 	n := c.w.InTokens
 	n += int(c.w.AudioSec * md.AudioTokensPerSec)
-	n += int(c.w.VideoSec * md.VideoTokensPerSec)
+	n += int(c.w.VideoSec * c.videoRate(m))
 	n += c.w.Images * md.ImageTokens
 	n += c.w.Pages * md.PageTokens
 	return n
@@ -308,7 +318,7 @@ func (c *ctx) claudeWork(m *registry.Model, shape SessionShape) float64 {
 	if c.agentPath() {
 		return sessionCost(tp, c.w.Turns, shape)
 	}
-	prompt := c.promptTokens()
+	prompt := c.promptTokens(m)
 	tpl := m.ForPrompt(tp, prompt)
 	per := (float64(prompt)*tpl.In + float64(c.w.OutTokens)*tpl.Out) / 1e6
 	// One round re-reads the live session's context.
@@ -641,7 +651,7 @@ func (c *ctx) cash(m *registry.Model) (exp, max float64, src string, notes []str
 		e = sessionCost(tp, w.Turns, c.cfg.Agent)
 		l = sessionCost(list, w.Turns, c.cfg.Agent)
 	} else {
-		prompt := c.promptTokens()
+		prompt := c.promptTokens(m)
 		out := float64(w.OutTokens)
 		if m.Caps.ReasoningRequired != nil && *m.Caps.ReasoningRequired {
 			out *= 1 + c.cfg.ReasoningFactor

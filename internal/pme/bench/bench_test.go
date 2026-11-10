@@ -111,6 +111,25 @@ func TestMeasuredVideoBoard(t *testing.T) {
 	}
 }
 
+// The video check's measured token rates are read per model; a fixed frame sample (null) has no rate.
+func TestVideoTokenRates(t *testing.T) {
+	s := load(t)
+	for model, want := range map[string]float64{"google/gemini-3.8-flash": 91, "qwen/qwen3.8-omni-flash": 227, "z-ai/glm-5.3-flash:batch": 287} {
+		if got, ok := s.VideoTokensPerSec(model); !ok || got != want {
+			t.Errorf("%s: %v %v, want %v", model, got, ok, want)
+		}
+	}
+	for _, model := range []string{"google/gemma-4-26b-a4b-it", "xiaomi/mimo-v2.6-flash", "x/never-measured"} {
+		if got, ok := s.VideoTokensPerSec(model); ok {
+			t.Errorf("%s: rate %v, want none", model, got)
+		}
+	}
+	var none *Set
+	if _, ok := none.VideoTokensPerSec("google/gemini-3.8-flash"); ok {
+		t.Error("a nil set has no rates")
+	}
+}
+
 func TestBase(t *testing.T) {
 	for in, want := range map[string]string{
 		"deepseek/deepseek-v4.1-flash-1017": "deepseek/deepseek-v4.1-flash",

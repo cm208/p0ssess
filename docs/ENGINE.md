@@ -51,7 +51,7 @@ Claude passes a catalog id (`use_case`) when it knows one, and a **profile** for
 
 **Size** comes from the profile (`size` T/S/M/R/L, `in_tokens`/`out_tokens`, `bytes` at 4 per token, `turns`, `items`, `audio_seconds`, `video_seconds`, `images`, `pages`, `chars`, `gen_seconds`). Anything missing comes from [`internal/pme/catalog/engine_map.yaml`](../internal/pme/catalog/engine_map.yaml), which gives every use case a default size, its evidence family and its modalities. The size profiles are the catalog's: T 1k in / 50 out, S 5k / 1k, M 30k / 3k, R 30k / 6k, L 200k / 4k.
 
-Media read by a chat model is converted to tokens at 32 per second of audio, 290 per second of video (Google's frame and audio rates), 1,500 per image and 2,000 per PDF page (RESEARCH.md's ranges).
+Media read by a chat model is converted to tokens at 32 per second of audio, 1,500 per image and 2,000 per PDF page (RESEARCH.md's ranges). Video uses the model's own rate where p0ssess's video check measured one (`prompt_tokens_per_video_second` in `registry/benchmarks/p0ssess_evals.json`: 91 for both Gemini models, about 228 for the Qwen models, 287 for GLM-5.3-Flash) and 290 per second (Google's frame and audio rates) for every other model, including those whose count did not grow with length.
 
 ### 2. The routes
 
@@ -482,7 +482,8 @@ Sol's row at λ = 1: $0.211 cash, $0.118 of Claude hand-off and full review, and
 
 - The presets are stances, not measurements. The ledger records λ, the preset and every outcome so they can be calibrated; the opt-in evaluation set in DESIGN.md does not exist yet.
 - Audio, speech, embeddings and reranking have no clean benchmark. Their p_fail is the catalog's ordering until outcomes accumulate. Video understanding rests on p0ssess's own check: three synthetic clips, two runs per model, scored by hand. It is small and its clips are 8 to 15 seconds long. Speech-to-text and text-to-speech prices are read as per second and per character, which OpenRouter does not confirm; image and music prices are scaled from the catalog's estimates.
-- Media token rates are one figure for every model (290 per second of video). The video check measured 91 for both Gemini models, about 228 for the Qwen models, about 290 for GLM-5.3-Flash, and a fixed count regardless of length for Gemma 4 and for MiMo on one provider. The engine does not use per-model rates yet, so it overprices Gemini video about threefold.
+- Video token rates are measured only for the five models whose prompt grew with clip length in the video check, on 8- to 15-second clips at 640×360. Gemma 4 and MiMo (a fixed frame sample on one provider) and every unmeasured model are priced at 290 per second. Audio, image and page rates are still one figure for every model.
+- With measured rates, Gemini 3.1 Flash Lite costs about a third of Qwen3.8 Omni Flash for a 10-minute video and ranks first at stakes 1 and 2, although it scored 0.68 to Qwen's 0.82 and described an invented sound in four of six answers. The check's score does not count invented sounds separately, so the risk term underprices that failure.
 - Rerank models show 0/0 prices and are never offered until a price appears.
 - Spend is measured per run. A run counts as accepted unless Claude reports otherwise, so a redo Claude forgets to report makes the model look better than it is.
 - The classifier is word overlap; an explicit use-case id is always better.

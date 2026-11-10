@@ -272,6 +272,31 @@ func TestCapabilityRoute(t *testing.T) {
 	}
 }
 
+// Video is priced at the model's measured token rate when the video check has one, else at the flat rate.
+func TestVideoTokenRate(t *testing.T) {
+	mods := []string{"text", "video", "audio"}
+	measured := model("google/gemini-3.8-flash", 1, 0, mods, []string{"text"}) // 91 tokens per second, measured
+	flat := model("x/unmeasured-video", 1, 0, mods, []string{"text"})
+	uc := useCase("none", measured.ID)
+	uc.In = []string{"video"}
+	in := baseInput(t, uc, measured, flat)
+	in.Work = catalog.Work{VideoSec: 600}
+	r := Score(in)
+	for _, tc := range []struct {
+		m    *registry.Model
+		rate float64
+	}{{measured, 91}, {flat, Default().Media.VideoTokensPerSec}} {
+		o := find(r, tc.m.ID)
+		if o == nil {
+			t.Fatalf("%s missing: %+v", tc.m.ID, r.Excluded)
+		}
+		want := 600 * tc.rate * 1 / 1e6 * 1.055
+		if !near(o.Breakdown.Cash, want) {
+			t.Errorf("%s: cash %.6f want %.6f (%v tokens per second)", tc.m.ID, o.Breakdown.Cash, want, tc.rate)
+		}
+	}
+}
+
 func TestFitAndPrivacy(t *testing.T) {
 	text := model("x/text", 1, 2, []string{"text"}, []string{"text"})
 	small := model("x/small", 1, 2, []string{"text"}, []string{"text"})
