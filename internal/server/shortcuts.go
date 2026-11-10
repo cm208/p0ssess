@@ -158,7 +158,7 @@ func shortcutBody(s Shortcut, description string) string {
 	fmt.Fprintf(&b, "name: %s%s\n", shortcutPrefix, s.Name)
 	desc := description + " Made by p0ssess."
 	if s.Route == "direct" {
-		desc += " Put the task, the absolute paths of any files, and the cost limit (\"max $0.05\") in the prompt."
+		desc += " Put the task and the absolute paths of any files in the prompt; add a cost limit (\"max $0.05\") only if the user named one."
 	} else {
 		desc += " Put only the task in the prompt; add \"edit mode\" when it should change files. Continue with SendMessage."
 	}
@@ -174,13 +174,13 @@ func shortcutBody(s Shortcut, description string) string {
 	fmt.Fprintf(&b, "<!-- p0ssess model: %s %s -->\n", s.Model, s.Route)
 	b.WriteString("You are a pipe to another model. You never do the task, answer it, summarize it or comment on it.\n\n")
 	if s.Route == "direct" {
-		fmt.Fprintf(&b, "Call `%sdirect` once with `model` %q, `prompt` set to the message text copied exactly (drop only the cost limit and instructions about reporting back), `files` set to the absolute paths the message lists, and `max_cost_usd` set to the limit the message gives. If the message gives no limit, call it with `dry_run: true` instead and report the estimate.\n\n", pluginTool, s.Model)
+		fmt.Fprintf(&b, "Call `%sdirect` once with `model` %q, `prompt` set to the message text copied exactly (drop only the cost limit and instructions about reporting back), `files` set to the absolute paths the message lists, and `max_cost_usd` only when the message gives a limit.\n\n", pluginTool, s.Model)
 		b.WriteString("Reply with the tool result exactly as it came back: the <answer> block first, then the lines after it, nothing else.\n")
 	} else {
 		fmt.Fprintf(&b, "Call `%srun` once with `model` %q, `task` set to the message text copied exactly (drop only routing words and instructions about reporting back), `mode` \"edit\" when the message says edit mode or asks for file changes (else \"read\"), and `session` when an earlier result in this conversation has a `session_id`.\n", pluginTool, s.Model)
 		fmt.Fprintf(&b, "If `status` is `still_running`, call `%swait` with the session until it is not. If `status` is `needs_permission`, stop and report it. If a later message says to approve or reject, call `%sanswer_permission` with `once` or `reject`; to stop, call `%sabort`.\n\n", pluginTool, pluginTool, pluginTool)
-		b.WriteString("Reply with exactly:\n<answer>\n…the result's `answer`, copied character for character…\n</answer>\nsession: <session_id>, status: <status>, model: <model>, cost: $<cost_usd>\n")
-		b.WriteString("Then, only when present: `worktree: <worktree>` and `diff: <diff_path>` lines and the result's `diff` in a ```diff block; `permission: <request_id> <action> <resources>`; `error: <error>`.\n")
+		b.WriteString("Reply with exactly:\n<answer>\n…the result's `answer`, copied character for character…\n</answer>\nvia: <model> · $<cost_usd> · <session_id>\n")
+		b.WriteString("Then, only when present: `files: <files JSON>`; `diff: <diff_path> (<diff_stat on one line>)`, never the diff itself; `permission: <request_id> <action> <resources>`; `error: <error>`.\n")
 	}
 	return b.String()
 }

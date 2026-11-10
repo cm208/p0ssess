@@ -82,8 +82,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET "+prefix+"/{$}", file("index.html", "text/html; charset=utf-8", static))
 	mux.HandleFunc("GET "+prefix+"/app.js", file("app.js", "text/javascript; charset=utf-8", static))
 	mux.HandleFunc("GET "+prefix+"/app.css", file("app.css", "text/css; charset=utf-8", static))
+	// The ghost comes from the one shipped asset, so a new mark in assets/ shows up here unchanged.
 	mux.HandleFunc("GET "+prefix+"/ghost.svg", file("assets/ghost.svg", "image/svg+xml", p0ssess.Data))
-	mux.HandleFunc("GET "+prefix+"/ghost-amber.svg", file("assets/ghost-amber.svg", "image/svg+xml", p0ssess.Data))
+	mux.HandleFunc("GET "+prefix+"/fonts/obel-mono.woff2", file("fonts/obel-mono.woff2", "font/woff2", static))
+	mux.HandleFunc("GET "+prefix+"/fonts/plex-sans-400.woff2", file("fonts/plex-sans-400.woff2", "font/woff2", static))
 	mux.HandleFunc("GET "+prefix+"/api/state", s.state)
 	mux.HandleFunc("POST "+prefix+"/api/settings", s.post(s.settings))
 	mux.HandleFunc("POST "+prefix+"/api/rules/remove", s.post(s.removeRule))
@@ -101,7 +103,7 @@ func (s *Server) guard(next http.Handler) http.Handler {
 			return
 		}
 		h := w.Header()
-		h.Set("Content-Security-Policy", "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
+		h.Set("Content-Security-Policy", "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
 		h.Set("X-Content-Type-Options", "nosniff")
 		h.Set("Referrer-Policy", "no-referrer")
 		h.Set("Cache-Control", "no-store")

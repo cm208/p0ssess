@@ -1,26 +1,15 @@
 ---
-description: Set up p0ssess and open its local page (budget, Claude plan, privacy, rules, status line)
-allowed-tools: mcp__plugin_p0ssess_p0ssess__budget_status, mcp__plugin_p0ssess_p0ssess__settings_set, mcp__plugin_p0ssess_p0ssess__rules_list, mcp__plugin_p0ssess_p0ssess__tendencies, mcp__plugin_p0ssess_p0ssess__shortcuts_suggest, Bash(p0ssess setup show), Bash(p0ssess me:*)
+description: p0ssess at a glance (spend, limits, running jobs) and its local page
+allowed-tools: Bash(p0ssess me:*), Bash(p0ssess setup:*), mcp__plugin_p0ssess_p0ssess__settings_set
 ---
 
-Walk the user through p0ssess's settings in the terminal, then open its local page. Keep every message short. Ask one thing at a time and show the current value with each question, so moving on with no change is easy.
+!`p0ssess me --brief`
 
-1. Call `budget_status`. If the tool is missing, say the p0ssess MCP server is not connected (check `/mcp`; the first start builds the binary and can take a minute) and stop.
-2. Say in two lines what you found: spend this month against the cap, the plan, the privacy mode, and whether a Claude usage reading exists. If the OpenRouter key file is missing, say where it goes (`~/.config/p0ssess/secrets/openrouter_key`, mode 0600, or `P0SSESS_OPENROUTER_KEY_FILE`) and that you will never read it aloud.
-3. Ask, in this order, and save each answer with `settings_set` as soon as the user gives it:
-   - **Plan**: `subscription` (Pro, Max or Ultra), `api` (pay per token), or leave `auto` (API pricing until a status line reading shows a subscription). On a subscription, ask whether usage credits are on (`usage_credits`).
-   - **Monthly OpenRouter cap** (`monthly_usd`, default $10) and **auto-approve per task** (`per_task_usd`, default $0.02). Media jobs usually cost more than $0.02, so they ask first unless a standing approval covers them.
-   - **Daily soft limit** (`daily_usd`): 0 paces the monthly cap over the days left, a number fixes it, -1 turns it off.
-   - **Privacy** (`privacy.mode`): `no-training` (default; every call tells OpenRouter not to use providers that train on prompts) or `zdr` (zero-retention endpoints only; this removes some media models).
-   - **Pressure curve** (`lambda.preset`): `balanced` (default), `gentle`, `eager` or `list`. Offer `save_claude` as the quick switch for "route more while my limits are tight".
-   - **Shell internet** for sandboxed agent runs, only on Linux with podman: off by default, so a delegated model's shell commands cannot download packages. List the projects that have it (`budget.sandbox.shell_internet` in `budget_status`). If the user wants it for a project, save it with `settings_set` key `sandbox.shell_internet.add` and the project's directory (`.remove` turns it off). Say what it allows: public internet on ports 80 and 443 through a proxy; never the local network, the host, VPNs or the sandbox's own services.
-4. Run `p0ssess setup show` and read the result. Then, one at a time, offer each change it lists. Explain each in one or two lines, and run the command only after the user says yes:
-   - **Allow the plugin's tools** (`p0ssess setup allow`). Background relay agents cannot ask for permission, so without this the agent path and shortcut agents fail. It adds allow rules for the relay tools, the direct tool, the engine's read-only tools and `history_record_outcome` (which only appends to the local ledger) to the user's Claude Code settings; rule, approval and settings changes and shortcut files still ask, and those prompts are the user's confirmation, so keep them out of the allow list.
-   - **Status line segment** (`p0ssess setup statusline`). Plugins cannot install a status line, so p0ssess wraps the user's: their current command keeps running first and the p0ssess segment follows. It also lets the engine see Claude's usage windows.
-   - **Background progress summaries**, only if the user asks about overhead (`p0ssess setup summaries`): it sets `CLAUDE_CODE_DISABLE_AGENT_PROGRESS_SUMMARIES=1`, an undocumented Claude Code switch that turns off one-line status summaries for all background agents.
-   - **Sandbox image** (`p0ssess jail build`), only when `setup show` says it is not built and the user wants the agent path: it downloads OpenCode (checked against pinned SHA-256 digests) and builds a local podman image of about 1.1 GB. Run it in the background; it takes a few minutes.
-   Each settings change is backed up first and `p0ssess setup undo` reverts all of them. Never change settings files any other way.
-5. Call `rules_list`, `tendencies` and `shortcuts_suggest`. List active rules with their scope, one line each. Read out any suggestions and say the user can accept one by asking.
-6. Start the page with `p0ssess me --open` in the background (it keeps running) and give the user the URL it prints. It listens on 127.0.0.1 only, makes no outside requests, and stops after two hours.
+Show the lines above to the user exactly as they are, in one code block, with nothing before or after it. If they are not a p0ssess summary (the command failed), run `p0ssess me --brief` with Bash and show its output the same way; if that fails too, say in one line that the p0ssess plugin is not working and to check `/mcp`.
 
-Any later change works in plain language too ("cap OpenRouter at $5 this month", "never use grok"): turn it into a setting or a rule, show the one-line rule, and save it only after the user confirms.
+Only when the summary has a `setup` line, add one short sentence offering its first item, and run that command only after the user says yes:
+- `p0ssess setup allow` adds allow rules for the plugin's tools to the user's Claude Code settings, so delegation runs without permission prompts. Rule, approval and settings changes keep asking: those prompts are how the user approves spending.
+- `p0ssess setup statusline` wraps the user's status line and adds the p0ssess segment; it also lets p0ssess see Claude's usage windows.
+- A missing OpenRouter key: say where it goes; never read it or ask for it in chat.
+
+Each setup change is backed up and `p0ssess setup undo` reverts it. Later changes work in plain words ("cap OpenRouter at $5", "auto-approve video up to 20 cents", "always ask before using grok"): turn them into a setting or rule, show the one line, save after the user confirms.

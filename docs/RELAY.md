@@ -5,7 +5,7 @@ This is the part of p0ssess that hands multi-step work on files to another model
 ```
 Claude Code (main model)
  └─ Agent(subagent_type="p0ssess:p0ssess")   background by default; SendMessage continues it
-     └─ relay subagent on Haiku               tools: the five p0ssess MCP tools, nothing else
+     └─ p0ssess agent on Haiku                tools: the routed p0ssess MCP tools, nothing else
          └─ p0ssess mcp (stdio)               run / wait / abort / answer_permission / models
              └─ pod p0ssess-<random>          one per relay session, rootless podman
                  ├─ <pod>-server              opencode serve 2.2.5
@@ -157,7 +157,7 @@ The OpenRouter key is read from `openrouter_key_file` (default `~/.config/p0sses
 
 ## The relay agent
 
-`agents/p0ssess.md` runs on Haiku with only the five MCP tools, `background: true` and `omitClaudeMd: true`. It copies the task, calls `run`, and replies with exactly one `<answer>` block per run followed by one metadata line (session, status, model, cost, transcript; for edit mode the worktree and the diff). In testing the answers came back exact, including a follow-up sent while the first run was still going (both answers, oldest first).
+`agents/p0ssess.md` is the possession agent: it runs on Haiku, in the background, with `omitClaudeMd: true` and only the routed MCP tools (`direct`, `run`, `wait`, `answer_permission`, `abort`, `models`, `recommend`). Every routed task goes through it; main Claude never calls those tools itself (a `PreToolUse` hook refuses them outside a subagent, see DESIGN.md, Agents). For the agent path it calls `run` (and `wait` while the run is going), then replies with the other model's answer in one `<answer>` block and a `via: <model> · <cost> · <session>` line, plus, only when present, `files:`, `diff: <diff_path> (<diff stat>)` (never the diff itself; Claude reads the file when it reviews), `session:`, `permission:`, `shell internet: on` and `note:`. Results also list the media and office files an edit run added to its worktree (`files`, regular files inside the worktree only).
 
 The plugin installs it. Background subagents cannot ask for permission, and Claude Code ignores a project's `permissions.allow` in a folder you have not trusted, so the relay's tools must be allowed at user level: `p0ssess setup allow` adds those rules (with your consent, through `/p0ssess:p0ssess-me`). Named shortcut agents with a fixed model can be generated as well (see [ENGINE.md](ENGINE.md#shortcut-agents)).
 

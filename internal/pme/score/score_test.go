@@ -354,9 +354,9 @@ func TestApproval(t *testing.T) {
 	used := history.NewLedger(es)
 	in := baseInput(t, useCase("spot", m.ID), m)
 	in.History = used
-	// cash max = 0.1266 * 1.5 = 0.19 > 0.02
+	// the estimate, 0.1266 at list price, is above 0.02; the 1.5x headroom is the ceiling, not the test
 	o := find(Score(in), m.ID)
-	if !o.NeedsApproval || !strings.Contains(o.ApprovalReasons[0], "per-task") {
+	if !o.NeedsApproval || !strings.Contains(o.ApprovalReasons[0], "auto-approve limit") || !near(o.EstimateUSD, 0.1266) {
 		t.Fatalf("expected per-task approval: %+v", o)
 	}
 	appr := rules.Rule{ID: "ap", Kind: rules.KindApprove, MaxPerRunUSD: 0.25}
@@ -365,10 +365,21 @@ func TestApproval(t *testing.T) {
 		t.Errorf("standing approval should cover: %+v", o)
 	}
 	in.Rules = rules.Decision{}
-	in.Budget.PerTaskUSD = 1
+	in.Budget.PerTaskUSD = 0.15
 	if o := find(Score(in), m.ID); o.NeedsApproval {
-		t.Errorf("under the limit, known model: %+v", o.ApprovalReasons)
+		t.Errorf("an estimate under the limit runs without asking, though its ceiling is above it: %+v", o.ApprovalReasons)
 	}
+	ask := rules.Rule{ID: "ask", Kind: rules.KindAsk, Scope: rules.ScopeGlobal}
+	in.Rules = rules.Decision{Asks: []rules.Rule{ask}, Approvals: []rules.Rule{{ID: "g", Kind: rules.KindApprove, MaxPerRunUSD: 1, Scope: rules.ScopeGlobal}}}
+	if o := find(Score(in), m.ID); !o.NeedsApproval || !strings.Contains(strings.Join(o.ApprovalReasons, ";"), "rule: ask first") {
+		t.Errorf("an ask rule asks, and a standing approval does not lift it: %+v", o)
+	}
+	in.Rules.Approvals = append(in.Rules.Approvals, rules.Rule{ID: "s", Kind: rules.KindApprove, MaxPerRunUSD: 1, MaxCount: 1, Scope: rules.ScopeSession})
+	in.Rules.Approvals[0], in.Rules.Approvals[1] = in.Rules.Approvals[1], in.Rules.Approvals[0]
+	if o := find(Score(in), m.ID); o.NeedsApproval || o.ApprovalID != "s" {
+		t.Errorf("a one-run session approval answers an ask rule: %+v", o)
+	}
+	in.Rules = rules.Decision{}
 	in.Spend = history.Spend{Today: 2}
 	if o := find(Score(in), m.ID); !o.NeedsApproval || !strings.Contains(o.ApprovalReasons[0], "daily") {
 		t.Errorf("daily soft limit should force asking: %+v", o)
@@ -379,8 +390,12 @@ func TestApproval(t *testing.T) {
 	}
 	in.Spend = history.Spend{}
 	in.History = history.NewLedger(nil)
+	if o := find(Score(in), m.ID); o.NeedsApproval {
+		t.Errorf("a first run does not ask by default: %+v", o.ApprovalReasons)
+	}
+	in.Budget.Ask.FirstUse = true
 	if o := find(Score(in), m.ID); !o.NeedsApproval || o.ApprovalReasons[len(o.ApprovalReasons)-1] != "first use of this model" {
-		t.Errorf("first use should ask: %+v", o.ApprovalReasons)
+		t.Errorf("first use should ask when ask.first_use is on: %+v", o.ApprovalReasons)
 	}
 }
 

@@ -55,8 +55,8 @@ func TestRecommendCapabilityAndKeep(t *testing.T) {
 	if r.ClaudeFeasible || r.Pick == nil || r.Pick.Route != score.RouteDirect {
 		t.Fatalf("video should be delegated: %+v", r.Pick)
 	}
-	if !r.Pick.NeedsApproval {
-		t.Error("a 10-minute video costs more than $0.02 and asks first")
+	if r.Pick.NeedsApproval != (r.Pick.EstimateUSD > 0.02) {
+		t.Errorf("asks exactly when the estimate is above the $0.02 per-task limit: %+v", r.Pick)
 	}
 	if !strings.HasPrefix(r.Announce, "handing this to ") {
 		t.Errorf("announce = %q", r.Announce)
@@ -231,18 +231,23 @@ func TestRunsAreSpend(t *testing.T) {
 	}
 }
 
-func TestMaxCostIsAuthorizedCeiling(t *testing.T) {
-	e, proj := setup(t, "plan = \"api\"\n")
+func TestAsksFromTheEstimate(t *testing.T) {
+	e, proj := setup(t, "plan = \"api\"\nper_task_usd = 0.0001\n")
 	p := &catalog.Profile{VideoSec: 10}
 	r, _ := e.Recommend(Request{UseCase: "video-understand", Stakes: 1, Profile: p, Scope: Scope{Cwd: proj}})
-	if !r.Pick.NeedsApproval || r.Pick.MaxCostUSD != 0 {
-		t.Fatalf("first use asks, with no ceiling yet: %+v", r.Pick)
+	if !r.Pick.NeedsApproval {
+		t.Fatalf("above the per-task limit asks: %+v", r.Pick)
 	}
 	if _, err := e.RuleAdd(Scope{Cwd: proj}, rules.Rule{Kind: rules.KindApprove, Kinds: []string{"media"}, MaxPerRunUSD: 0.05, Scope: "global"}, false, 0); err != nil {
 		t.Fatal(err)
 	}
 	r, _ = e.Recommend(Request{UseCase: "video-understand", Stakes: 1, Profile: p, Scope: Scope{Cwd: proj}})
-	if r.Pick.NeedsApproval || r.Pick.ApprovalID == "" || r.Pick.MaxCostUSD != 0.05 {
-		t.Errorf("standing approval should cover it with its per-run ceiling: %+v", r.Pick)
+	if r.Pick.NeedsApproval || r.Pick.ApprovalID == "" {
+		t.Errorf("a standing approval should cover it: %+v", r.Pick)
+	}
+	e2, proj2 := setup(t, "plan = \"api\"\nper_task_usd = 0.10\n")
+	r, _ = e2.Recommend(Request{UseCase: "video-understand", Stakes: 1, Profile: p, Scope: Scope{Cwd: proj2}})
+	if r.Pick.NeedsApproval {
+		t.Errorf("a first run under the limit runs without asking: %+v", r.Pick.ApprovalReasons)
 	}
 }

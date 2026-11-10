@@ -172,3 +172,30 @@ func TestReadSkipsTornAndOverlongLines(t *testing.T) {
 		t.Fatalf("spend read as %v, want 6 (corruption must not lower it)", sum)
 	}
 }
+
+// TestUnreportedRunsCountAsAccepted: a finished run nobody reports on is an accepted outcome; an outcome
+// naming the run (or its relay session) replaces it, and failed runs imply nothing.
+func TestUnreportedRunsCountAsAccepted(t *testing.T) {
+	now := time.Now()
+	l := NewLedger([]Entry{
+		{TS: now, Type: TypeOffer, OfferID: "o-1", UseCase: "video-understand", Kind: "media", Family: "video"},
+		{TS: now, Type: TypeRun, RunID: "d-1", Route: "direct", Model: "a/m", Status: "done", OfferID: "o-1", CashUSD: 0.01},
+		{TS: now, Type: TypeRun, RunID: "d-2", Route: "direct", Model: "a/m", Status: "failed", CashUSD: 0.01},
+		{TS: now, Type: TypeRun, RunID: "ses-1/1", Route: "agent", Model: "b/m", Status: "done"},
+		{TS: now, Type: TypeRun, RunID: "ses-1/2", Route: "agent", Model: "b/m", Status: "done"},
+		{TS: now, Type: TypeOutcome, RunID: "ses-1", Model: "b/m", Outcome: Redo},
+	})
+	if !l.UsedModels()["a/m"] {
+		t.Error("a finished run marks its model used")
+	}
+	st := l.Stats("a/m", "video-understand", "video")
+	if st.UseCase.Accepted != 1 || st.Family.Accepted != 1 {
+		t.Errorf("implied outcome takes the offer's use case and family: %+v", st)
+	}
+	if st := l.Stats("b/m", "", ""); st.UseCase.Accepted != 0 || st.UseCase.Redo != 1 {
+		t.Errorf("an outcome for the session replaces its turns' implied ones: %+v", st)
+	}
+	if n := len(l.Recent(10)); n != 2 {
+		t.Errorf("recent = %d, want the implied accept and the redo", n)
+	}
+}

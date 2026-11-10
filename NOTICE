@@ -71,3 +71,12 @@ The model registry, benchmark files and use-case catalog carry data from
 OpenRouter, LMArena, Epoch AI and others under their own terms (mostly CC BY
 4.0). Sources, licenses, dates and required citations are in
 registry/ATTRIBUTION.md.
+
+-------------------------------------------------------------------------------
+Fonts embedded in the p0ssess binary for the local page (internal/pme/me/web/fonts/)
+-------------------------------------------------------------------------------
+
+Obel Mono (obel-mono.woff2), Copyright 2026 The Obel Mono Project Authors
+IBM Plex Sans (plex-sans-400.woff2), Copyright IBM Corp.
+  License: SIL Open Font License 1.1. Full texts: internal/pme/me/web/fonts/OFL-obel-mono.txt and
+  internal/pme/me/web/fonts/OFL-ibm-plex.txt. Both are subsets of the original fonts.

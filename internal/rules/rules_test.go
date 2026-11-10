@@ -264,3 +264,26 @@ func TestUnknownUseCaseAppliesScopedForbids(t *testing.T) {
 }
 
 func writeRaw(path, s string) error { return os.WriteFile(path, []byte(s), 0o600) }
+
+func TestAskRules(t *testing.T) {
+	r := Rule{Kind: KindAsk, Kinds: []string{"media"}, Models: []string{"x-ai/grok-5"}, Scope: ScopeProject}
+	if err := r.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	if r.Loosens() != "" {
+		t.Error("an ask rule only tightens, so a project may set it")
+	}
+	if got := r.String(); got != "ask first for media work on grok-5 (project)" {
+		t.Errorf("text = %q", got)
+	}
+	if err := (Rule{Kind: KindAsk, Field: "per_task_usd"}).Validate(); err == nil {
+		t.Error("ask with a budget field accepted")
+	}
+	d := Set{Rules: []Rule{r}}.Decide("video-understand", "media", time.Now())
+	if d.AskFor("x-ai/grok-5") == nil || d.AskFor("google/gemini-3.8-flash") != nil {
+		t.Errorf("ask rules match by model: %+v", d.Asks)
+	}
+	if d := (Set{Rules: []Rule{r}}).Decide("", "", time.Now()); d.AskFor("x-ai/grok-5") == nil {
+		t.Error("a call that does not say what it is meets every ask rule")
+	}
+}

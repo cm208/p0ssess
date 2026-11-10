@@ -36,6 +36,8 @@ const (
 	KindMix     = "mix"
 	KindApprove = "approve"
 	KindBudget  = "budget"
+	// KindAsk makes Claude ask before a matching call even when it is within every limit.
+	KindAsk = "ask"
 
 	TargetModel        = "model"
 	TargetClaudeAgents = "claude_agents"
@@ -130,6 +132,10 @@ func (r Rule) Validate() error {
 		if r.Period != "" && r.Period != "day" && r.Period != "total" {
 			return errors.New(`period is "day" or "total"`)
 		}
+	case KindAsk:
+		if r.Target != "" || r.MaxStakes != 0 || r.Field != "" {
+			return errors.New("ask takes only models, use_cases and kinds")
+		}
 	case KindBudget:
 		if !budgetFields[r.Field] {
 			return errors.New("field must be per_task_usd, daily_usd or monthly_usd")
@@ -141,7 +147,7 @@ func (r Rule) Validate() error {
 			return errors.New("budget overrides apply to all work; they cannot be limited to use cases or kinds")
 		}
 	default:
-		return fmt.Errorf("kind must be forbid, allow, only, mix, approve or budget, not %q", r.Kind)
+		return fmt.Errorf("kind must be forbid, allow, only, mix, approve, ask or budget, not %q", r.Kind)
 	}
 	for _, k := range r.Kinds {
 		switch k {
@@ -220,7 +226,7 @@ func (r Rule) String() string {
 		}
 		fmt.Fprintf(&b, "mix %s%s", strings.Join(parts, ", "), what)
 	case KindApprove:
-		fmt.Fprintf(&b, "auto-approve%s up to $%.2f each", orAll(what), r.MaxPerRunUSD)
+		fmt.Fprintf(&b, "auto-approve%s up to $%.2f each", orAllBare(what), r.MaxPerRunUSD)
 		if len(r.Models) > 0 {
 			fmt.Fprintf(&b, " on %s", strings.Join(short(r.Models), ", "))
 		}
@@ -233,6 +239,11 @@ func (r Rule) String() string {
 		}
 		if r.MaxTotalUSD > 0 {
 			fmt.Fprintf(&b, ", $%.2f total%s", r.MaxTotalUSD, per)
+		}
+	case KindAsk:
+		fmt.Fprintf(&b, "ask first%s", orAll(what))
+		if len(r.Models) > 0 {
+			fmt.Fprintf(&b, " on %s", strings.Join(short(r.Models), ", "))
 		}
 	case KindBudget:
 		names := map[string]string{"per_task_usd": "per-task limit", "daily_usd": "daily limit", "monthly_usd": "monthly cap"}
@@ -265,6 +276,13 @@ func (r Rule) coverage() string {
 }
 
 func orAll(s string) string {
+	if s == "" {
+		return " for all delegations"
+	}
+	return s
+}
+
+func orAllBare(s string) string {
 	if s == "" {
 		return " all delegations"
 	}
@@ -374,7 +392,7 @@ func Load(f Files) (Set, error) {
 // tighten. Project scope takes only rules that tighten.
 func (r Rule) Loosens() string {
 	switch r.Kind {
-	case KindForbid, KindOnly, KindMix:
+	case KindForbid, KindOnly, KindMix, KindAsk:
 		return ""
 	case KindAllow:
 		return "allow rules widen what may run"
@@ -497,6 +515,8 @@ type Decision struct {
 	// ProjectCaps lists every project budget override, applied or not.
 	ProjectCaps []Rule
 	Approvals   []Rule // narrowest first
+	// Asks are the ask rules that cover the use case; AskFor says which apply to a model.
+	Asks []Rule
 }
 
 // Decide applies the rules to one use case. With no use case and no kind (a call that did not say
@@ -520,7 +540,7 @@ func (s Set) Decide(useCase, kind string, now time.Time) Decision {
 			}
 			continue
 		}
-		restricts := r.Kind == KindForbid || r.Kind == KindOnly || r.Kind == KindMix
+		restricts := r.Kind == KindForbid || r.Kind == KindOnly || r.Kind == KindMix || r.Kind == KindAsk
 		if !r.Covers(useCase, kind) && !(unknown && restricts) {
 			continue
 		}
@@ -564,6 +584,8 @@ func (s Set) Decide(useCase, kind string, now time.Time) Decision {
 			}
 		case KindApprove:
 			d.Approvals = append(d.Approvals, r)
+		case KindAsk:
+			d.Asks = append(d.Asks, r)
 		}
 	}
 	if len(projectOnly) > 0 {
@@ -600,6 +622,16 @@ func (d Decision) MaxStakesFor(model string) int {
 		best = min(d.AllowAll.MaxStakes, 3)
 	}
 	return best
+}
+
+// AskFor returns the ask rule that covers a call on model, or nil.
+func (d Decision) AskFor(model string) *Rule {
+	for i := range d.Asks {
+		if d.Asks[i].hasModel(model) {
+			return &d.Asks[i]
+		}
+	}
+	return nil
 }
 
 // Use is how much of a standing approval has been spent.

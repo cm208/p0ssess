@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -10,6 +11,8 @@ import (
 	"p0ssess/internal/history"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/pme/registry"
+	"p0ssess/internal/pme/score"
+	"p0ssess/internal/rules"
 )
 
 // Charge is one call about to spend OpenRouter money, as the direct tool or the relay sees it.
@@ -24,6 +27,15 @@ type Charge struct {
 	// ExplicitMax is true when the caller chose MaxUSD rather than taking a default. A model with no
 	// known price runs only with an explicit maximum above 0.
 	ExplicitMax bool
+	// EstimateUSD is what the call is expected to cost. Whether the user is asked is decided from it;
+	// MaxUSD stays the hard ceiling that is reserved and enforced. 0 means no estimate: MaxUSD is used,
+	// except on the agent path, where the engine prices a session of the use case's turns.
+	EstimateUSD float64
+	// Fit lets a default MaxUSD shrink to the daily and monthly room left, and to a standing approval's
+	// per-run limit, when the estimate still fits: the relay stops the run at the lowered ceiling.
+	Fit bool
+	// Edit is an agent run that may change files (its diff still comes back for review).
+	Edit bool
 	// Hold is how long the reservation holds before it counts as spent: the call's maximum runtime.
 	Hold time.Duration
 	Scope
@@ -31,11 +43,12 @@ type Charge struct {
 
 // Grant is an authorized call. ReserveID names its reservation; settle or release it when the call ends.
 type Grant struct {
-	ReserveID  string  `json:"reserve_id"`
-	MaxUSD     float64 `json:"max_usd"`
-	ApprovalID string  `json:"approval_id,omitempty"`
-	ZDR        bool    `json:"zdr,omitempty"`
-	Stakes     int     `json:"stakes"`
+	ReserveID   string  `json:"reserve_id"`
+	MaxUSD      float64 `json:"max_usd"`
+	EstimateUSD float64 `json:"estimate_usd"`
+	ApprovalID  string  `json:"approval_id,omitempty"`
+	ZDR         bool    `json:"zdr,omitempty"`
+	Stakes      int     `json:"stakes"`
 	// PriceUnknown means no price is known for the model, so a measured cost of $0 cannot be trusted.
 	PriceUnknown bool     `json:"price_unknown,omitempty"`
 	Notes        []string `json:"notes,omitempty"`
@@ -66,6 +79,9 @@ func (e *Engine) Authorize(c Charge) (*Grant, error) {
 	now := e.Now()
 	if math.IsNaN(c.MaxUSD) || math.IsInf(c.MaxUSD, 0) || c.MaxUSD < 0 {
 		return nil, refuse("max cost must be a finite number, 0 or more")
+	}
+	if math.IsNaN(c.EstimateUSD) || math.IsInf(c.EstimateUSD, 0) {
+		c.EstimateUSD = 0
 	}
 	c.Scope = e.Resolve(c.Scope)
 	if paths.Private(c.Cwd) {
@@ -139,6 +155,26 @@ func (e *Engine) Authorize(c Charge) (*Grant, error) {
 		g.ZDR = true
 	}
 
+	est := c.EstimateUSD
+	if est <= 0 && c.Route == "agent" {
+		est, _ = e.AgentEstimate(c.Model, ucID)
+	}
+	if est <= 0 || est > c.MaxUSD {
+		est = c.MaxUSD
+	}
+	g.EstimateUSD = est
+	var ask []string
+	strict := false // a yes for this run is needed, not a standing approval
+	if stakes >= 4 && !claude {
+		ask, strict = append(ask, "it is stakes 4"), true
+	}
+	if r := d.AskFor(c.Model); r != nil {
+		ask, strict = append(ask, "your rule says to ask ("+r.String()+")"), true
+	}
+	if c.Edit && bud.Ask.CodeEdits {
+		ask = append(ask, "it edits code and ask.code_edits is on")
+	}
+
 	hold := c.Hold
 	if hold <= 0 {
 		hold = time.Hour
@@ -146,34 +182,51 @@ func (e *Engine) Authorize(c Charge) (*Grant, error) {
 	err = history.Update(e.Dirs.HistoryFile(), func(l *history.Ledger) ([]history.Entry, error) {
 		sp := l.Spend(now)
 		committed := sp.Month + sp.Reserved
-		if committed+c.MaxUSD > bud.MonthlyUSD+1e-9 {
-			return nil, refuse("$%.2f spent or reserved this month plus up to $%.2f for this call would pass the $%.2f monthly cap; "+
-				"raise monthly_usd first", committed, c.MaxUSD, bud.MonthlyUSD)
-		}
+		today := sp.Today + sp.Reserved
 		daily := bud.DailyLimit(sp.MonthBeforeToday, now)
-		if today := sp.Today + sp.Reserved; c.MaxUSD > 0 && today+c.MaxUSD > daily+1e-9 {
+		if c.Fit {
+			if room := math.Floor(math.Min(bud.MonthlyUSD-committed, daily-today)*1e4) / 1e4; room < g.MaxUSD && room >= est-1e-9 && room > 0 {
+				g.MaxUSD = room
+				g.Notes = append(g.Notes, fmt.Sprintf("ceiling lowered to $%.4f to stay within your limits", room))
+			}
+		}
+		if committed+g.MaxUSD > bud.MonthlyUSD+1e-9 {
+			return nil, refuse("$%.2f spent or reserved this month plus up to $%.2f for this call would pass the $%.2f monthly cap; "+
+				"raise monthly_usd first", committed, g.MaxUSD, bud.MonthlyUSD)
+		}
+		if g.MaxUSD > 0 && today+g.MaxUSD > daily+1e-9 {
 			return nil, refuse("$%.2f spent or reserved today plus up to $%.2f would pass the $%.2f daily soft limit. "+
 				"Only a session override lifts it: ask the user, and if they agree, rules_add kind \"budget\", field \"daily_usd\", "+
-				"scope \"session\" with the new limit", today, c.MaxUSD, daily)
+				"scope \"session\" with the new limit", today, g.MaxUSD, daily)
 		}
-		if c.MaxUSD > bud.PerTaskUSD+1e-12 {
-			r, why := d.Approval(c.Model, c.MaxUSD, l.ApprovalUse(d.Approvals, now))
+		reasons := ask
+		if est > bud.PerTaskUSD+1e-12 {
+			reasons = append(reasons, fmt.Sprintf("it is above your $%.2f auto-approve limit", bud.PerTaskUSD))
+		}
+		if bud.Ask.FirstUse && !l.UsedModels()[c.Model] && d.Allowed[c.Model] == nil {
+			reasons = append(reasons, "it is the first run on this model and ask.first_use is on")
+		}
+		if len(reasons) > 0 {
+			r, why := d.Approval(c.Model, est, l.ApprovalUse(d.Approvals, now))
+			if r != nil && strict && r.Scope != rules.ScopeSession {
+				r, why = nil, "a standing approval does not cover this; it needs a yes for this run"
+			}
 			if r == nil {
-				if why == "" {
-					why = "no standing approval covers it"
+				if why != "" {
+					reasons = append(reasons, why)
 				}
-				return nil, &Refusal{NeedsApproval: true, Reason: fmt.Sprintf(
-					"up to $%.4f on %s is above the $%.2f per-task auto-approve limit, and %s. Ask the user before spending it. "+
-						"If they agree, save their yes as a one-run session approval: approvals_add with scope \"session\", "+
-						"max_per_run_usd %.4f, max_count 1, models [%q]; its permission prompt is the user's confirmation. Then call again.",
-					c.MaxUSD, c.Model, bud.PerTaskUSD, why, c.MaxUSD, c.Model)}
+				return nil, &Refusal{NeedsApproval: true, Reason: approvalAsk(c.Model, est, g.MaxUSD, reasons)}
 			}
 			g.ApprovalID = r.ID
+			// A standing approval's per-run limit is a ceiling too, wherever the call's own is a default.
+			if c.Fit && r.MaxPerRunUSD < g.MaxUSD && r.MaxPerRunUSD >= est-1e-9 {
+				g.MaxUSD = r.MaxPerRunUSD
+			}
 		}
 		g.ReserveID = "rsv-" + history.NewOfferID()[2:]
 		exp := now.Add(hold).UTC()
 		return []history.Entry{{TS: now.UTC(), Type: history.TypeReserve, RunID: g.ReserveID, Route: c.Route, Model: c.Model,
-			CashUSD: c.MaxUSD, ApprovalID: g.ApprovalID, UseCase: ucID, Stakes: stakes, Session: c.Session,
+			CashUSD: g.MaxUSD, ApprovalID: g.ApprovalID, UseCase: ucID, Stakes: stakes, Session: c.Session,
 			Project: paths.ProjectRoot(c.Cwd), Expires: &exp}}, nil
 	})
 	if err != nil {
@@ -184,6 +237,39 @@ func (e *Engine) Authorize(c Charge) (*Grant, error) {
 		return nil, refuse("cannot read or write the ledger, so spend cannot be checked: %v", err)
 	}
 	return g, nil
+}
+
+// DefaultAgentTurns sizes the estimate of an agent run whose use case gives no turns.
+const DefaultAgentTurns = 10
+
+// AgentEstimate is the expected cash of an agent session on model: the use case's catalog turns
+// (DefaultAgentTurns when it has none) at list price, with OpenRouter's fee.
+func (e *Engine) AgentEstimate(model, useCase string) (float64, bool) {
+	cfg, err := e.Config()
+	if err != nil {
+		return 0, false
+	}
+	turns := DefaultAgentTurns
+	if uc := e.Cat.Get(useCase); uc != nil {
+		if t := uc.WorkFor(nil).Turns; t > 0 {
+			turns = t
+		}
+	}
+	bud, _ := e.Budget()
+	return score.AgentEstimate(e.Reg.Get(model), turns, cfg, bud.Privacy.Mode == "zdr")
+}
+
+// approvalAsk words a call that needs the user's yes: the cost, why, and the exact one-run approval
+// that records the yes.
+func approvalAsk(model string, est, maxUSD float64, reasons []string) string {
+	args, _ := json.Marshal(map[string]any{"scope": rules.ScopeSession, "max_per_run_usd": math.Ceil(maxUSD*1e4) / 1e4,
+		"max_count": 1, "models": []string{model}})
+	cost := fmt.Sprintf("about $%.4f", est)
+	if maxUSD > est+1e-9 {
+		cost += fmt.Sprintf(" (at most $%.4f)", maxUSD)
+	}
+	return fmt.Sprintf("%s on %s; %s. Ask the user in one line with the cost. If they say yes, call approvals_add with %s, then call again.",
+		cost, history.Short(model), strings.Join(reasons, "; "), args)
 }
 
 // zdrBlock says why a model cannot run in zero-retention mode, or "" when it can. A model with no

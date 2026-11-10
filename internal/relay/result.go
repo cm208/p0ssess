@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"p0ssess/internal/direct"
 	"p0ssess/internal/opencode"
 )
 
@@ -30,10 +31,12 @@ type Result struct {
 	Worktree       string           `json:"worktree,omitempty"`
 	DiffStat       string           `json:"diff_stat,omitempty"`
 	DiffPath       string           `json:"diff_path,omitempty"`
-	Diff           string           `json:"diff,omitempty"`
-	AsksRejected   []string         `json:"asks_rejected,omitempty"`
-	Error          string           `json:"error,omitempty"`
-	Note           string           `json:"note,omitempty"`
+	// Files are the media and office files the run added or changed in its worktree, to present.
+	Files        []direct.FileHint `json:"files,omitempty"`
+	Diff         string            `json:"diff,omitempty"`
+	AsksRejected []string          `json:"asks_rejected,omitempty"`
+	Error        string            `json:"error,omitempty"`
+	Note         string            `json:"note,omitempty"`
 	// ShellInternet says the model's shell commands could reach the public internet in this run.
 	ShellInternet bool `json:"shell_internet,omitempty"`
 	// JailStartS is how long the session's jail took to start, on its first run.
@@ -164,6 +167,7 @@ func (e *Engine) result(w *watch, status string) (*Result, error) {
 		r.Worktree = rec.Worktree
 		if stat, patch, err := worktreeDiff(rec.Repo, rec.Worktree, rec.BaseRev); err == nil {
 			r.DiffStat = stat
+			r.Files = worktreeFiles(rec.Repo, rec.Worktree, rec.BaseRev)
 			if patch != "" {
 				p := filepath.Join(RunDir(rec.SessionID), "diff.patch")
 				os.MkdirAll(filepath.Dir(p), 0o700)

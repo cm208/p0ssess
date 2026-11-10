@@ -72,7 +72,13 @@ func Run(args []string, s IO) int {
 		return 0
 	case "hook":
 		in, _ := io.ReadAll(io.LimitReader(s.In, 4<<20))
-		if out := hook.Run(in, d, time.Now()); out != "" {
+		out := ""
+		if len(rest) > 0 && rest[0] == "tool" {
+			out = hook.Tool(in, d)
+		} else {
+			out = hook.Run(in, d, time.Now())
+		}
+		if out != "" {
 			fmt.Fprintln(s.Out, out)
 		}
 		return 0
@@ -416,6 +422,7 @@ func serveMe(e *engine.Engine, args []string, s IO) error {
 	open := fs.Bool("open", false, "open the page in a browser")
 	idle := fs.Duration("for", 2*time.Hour, "stop after this long")
 	cwd := fs.String("cwd", "", "project directory")
+	state := fs.String("state", "", "write the page's pid, URL and end time to this file (mode 0600)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -424,6 +431,14 @@ func serveMe(e *engine.Engine, args []string, s IO) error {
 		return err
 	}
 	fmt.Fprintln(s.Out, srv.URL())
+	if *state != "" {
+		b, _ := json.Marshal(map[string]any{"pid": os.Getpid(), "url": srv.URL(), "until": time.Now().Add(*idle)})
+		if err := paths.WriteFileAtomic(*state, b, 0o600); err != nil {
+			srv.Close()
+			return err
+		}
+		defer os.Remove(*state)
+	}
 	if *open {
 		opener := "xdg-open"
 		if runtime.GOOS == "darwin" {

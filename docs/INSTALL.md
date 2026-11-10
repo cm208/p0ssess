@@ -46,16 +46,15 @@ A key with a credit limit set on OpenRouter is a good second fence next to p0sse
 
 ## First run
 
-Start Claude Code and run `/p0ssess:p0ssess-me`. It:
+Start Claude Code and run `/p0ssess:p0ssess-me`. It prints a short summary (spend today and this month against the cap, your limits, what is running) and the address of the local page, where every setting is one click away. The defaults are a $10 monthly cap, a $0.02 per-task auto-approve limit and a paced daily limit; change any of them on the page or by telling Claude ("cap OpenRouter at $5", "auto-approve up to 10 cents a task").
 
-1. shows spend, your plan, privacy and whether a key was found;
-2. asks for the plan (subscription or API), the monthly cap, the per-task auto-approve limit, the daily limit, privacy and the pressure curve;
-3. offers each change to Claude Code's settings, one at a time, and makes it only after you say yes:
-   - `p0ssess setup allow`: allow rules for the relay tools, the direct tool, the engine's read-only tools and `history_record_outcome` (it only appends to the local ledger). `rules_add`, `approvals_add`, `settings_set` and the shortcut tools keep asking: their permission prompt is how you approve spending above your limits, so do not allow them. Background relay agents cannot ask for permission, so the agent path needs these. Plugins cannot ship allow rules.
-   - `p0ssess setup statusline`: wraps your status line. Your command keeps running first and the p0ssess segment follows. Plugins cannot install a status line.
-   - `p0ssess jail build`: builds the sandbox image for the agent path (about 1.1 GB), on Linux with podman.
-   - shell internet for a project, only if you want sandboxed shell commands to download packages (off by default; [RELAY.md](RELAY.md#shell-internet)).
-4. lists your rules and suggestions, and opens the local page.
+When something is missing for quiet runs, the summary ends with a `setup` line and Claude offers that one step, making it only after you say yes:
+
+- `p0ssess setup allow`: allow rules for the relay tools, the direct tool, the engine's read-only tools and `history_record_outcome` (it only appends to the local ledger), so delegation runs without permission prompts. `rules_add`, `approvals_add`, `settings_set` and the shortcut tools keep asking: their permission prompt is how you approve spending above your limits, so do not allow them. Background relay agents cannot ask for permission, so the agent path needs these. Plugins cannot ship allow rules.
+- `p0ssess setup statusline`: wraps your status line. Your command keeps running first and the p0ssess segment follows. Plugins cannot install a status line.
+- a missing key: where to put it.
+
+Two more steps are yours to run when you want them: `p0ssess jail build` builds the sandbox image for the agent path (about 1.1 GB, Linux with podman), and shell internet for a project lets sandboxed shell commands download packages (off by default; [RELAY.md](RELAY.md#shell-internet)).
 
 The same commands work from a shell. Inside Claude Code the plugin puts `p0ssess` on the Bash tool's PATH; from your own shell run the launcher by its path, `<plugin directory>/bin/p0ssess` (`claude plugin list` shows where the plugin is read from). `p0ssess setup show` reports what is set up, and `p0ssess setup undo` reverts every settings change p0ssess made.
 
@@ -72,7 +71,7 @@ The same commands work from a shell. Inside Claude Code the plugin puts `p0ssess
 A file that does not match its checksum is refused and never run. When nothing works the launcher says what it tried and how to fix it:
 
 ```
-p0ssess: cannot start: no verified p0ssess 0.4.0 binary for linux/amd64, and none could be built.
+p0ssess: cannot start: no verified p0ssess 0.5.0 binary for linux/amd64, and none could be built.
 Tried:
   - dist/p0ssess-linux-amd64: not in this plugin (a release archive ships it)
   - release download: no dist/release-url in this plugin

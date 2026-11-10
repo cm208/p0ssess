@@ -57,6 +57,15 @@ func (s Sandbox) ShellInternetFor(repo string) bool {
 	return false
 }
 
+// Ask holds opt-in reasons to ask before a call that is within every limit. Both are off by default:
+// a call whose estimate is under the per-task limit runs without asking.
+type Ask struct {
+	// FirstUse asks before the first run on a model the ledger has never seen run.
+	FirstUse bool `toml:"first_use" json:"first_use"`
+	// CodeEdits asks before an agent run in edit mode. The diff still comes back for review either way.
+	CodeEdits bool `toml:"code_edits" json:"code_edits"`
+}
+
 type Budget struct {
 	MonthlyUSD float64 `toml:"monthly_usd" json:"monthly_usd"`
 	PerTaskUSD float64 `toml:"per_task_usd" json:"per_task_usd"`
@@ -71,6 +80,7 @@ type Budget struct {
 	Providers    List    `toml:"providers" json:"providers"`
 	Privacy      Privacy `toml:"privacy" json:"privacy"`
 	Sandbox      Sandbox `toml:"sandbox" json:"sandbox"`
+	Ask          Ask     `toml:"ask" json:"ask"`
 	// DailyCapUSD is a lower daily limit set by project rules; 0 means none. It is never saved.
 	DailyCapUSD float64 `toml:"-" json:"daily_cap_usd,omitempty"`
 }

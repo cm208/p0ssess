@@ -45,18 +45,18 @@ check() {
 
 run hint "Reply with the word ok."
 run relay "use deepseek flash to explain what median() in stats.py does with an empty list"
-run video "What happens in media/demo.mp4? Use p0ssess."
+run video "What happens in media/demo.mp4?"
 run approve --allowedTools mcp__plugin_p0ssess_p0ssess__approvals_add \
   "Auto-approve media jobs up to 5 cents each for today. Save it without asking me again."
 run video2 "Describe media/demo.mp4 again, briefly."
-run me --allowedTools "Bash(p0ssess setup show)" "/p0ssess:p0ssess-me"
+run me "/p0ssess:p0ssess-me"
 
 check hint '"type":"system"' "session started with the plugin"
 check relay '"subagent_type":"p0ssess:p0ssess"' "named model went through the relay agent"
-check relay 'handing this to' "one-line announcement before delegating"
-check video 'mcp__plugin_p0ssess_p0ssess__direct' "video went through the direct path"
+check video '"subagent_type":"p0ssess:p0ssess"' "video went to the p0ssess agent"
+check video 'mcp__plugin_p0ssess_p0ssess__direct' "the agent used the direct path"
 check approve 'auto-approve for media' "plain-language approval became a structured rule"
-check video2 'standing_approval' "the second media job was covered by the standing approval"
-check me 'mcp__plugin_p0ssess_p0ssess__budget_status' "/p0ssess-me read the budget"
+check video2 '"subagent_type":"p0ssess:p0ssess"' "the second media job went to the agent too"
+check me 'month \$' "/p0ssess-me printed the summary"
 echo "status line now:"
 printf '{"session_id":"e2e","cwd":"%s","model":{"id":"claude-sonnet-5-5"}}' "$proj" | NO_COLOR=1 "$P0SSESS_HOME/bin/p0ssess" statusline

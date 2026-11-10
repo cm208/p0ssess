@@ -25,18 +25,19 @@ import (
 	"p0ssess/internal/server"
 )
 
-var version = "0.4.0"
+var version = "0.5.0"
 
 const usage = `p0ssess %s: Claude Code hands work to other models through OpenRouter
 
 usage:
   p0ssess mcp                         the plugin's MCP server on stdio (relay, direct and engine tools)
+  p0ssess me --brief                  a few lines: spend, limits, running jobs; starts the local page if none runs
   p0ssess me [--open]                 the local page: spend, Claude usage, rules, settings
   p0ssess engine COMMAND ...          the routing engine (recommend, status, set, rules, outcome, ...)
   p0ssess direct COMMAND ...          one-shot OpenRouter calls with local files, and ffmpeg helpers
   p0ssess setup COMMAND ...           show, allow, statusline, summaries, undo (changes Claude Code settings)
   p0ssess statusline                  status line wrapper (reads Claude Code's JSON on stdin)
-  p0ssess hook prompt                 UserPromptSubmit hook (reads the hook JSON on stdin)
+  p0ssess hook prompt|tool            UserPromptSubmit and PreToolUse hooks (read the hook JSON on stdin)
   p0ssess jail build|status|sweep|up|down|probe ...   the sandbox for the agent path (Linux)
   p0ssess run --model M [--mode read|edit] [--cwd D] [--session S] [--attach F] [--max-cost USD] [--detach] [--keep] TASK
   p0ssess wait|abort --session S      the relay tools, from the command line (JSON out)
@@ -86,14 +87,21 @@ func main() {
 	case "statusline":
 		os.Exit(cli.Run([]string{"statusline"}, stdio()))
 	case "hook":
-		if len(args) > 0 && args[0] != "prompt" {
-			fmt.Fprintln(os.Stderr, "p0ssess: unknown hook", args[0])
+		if len(args) == 0 || (args[0] != "prompt" && args[0] != "tool") {
+			fmt.Fprintln(os.Stderr, "p0ssess: unknown hook")
 			os.Exit(2)
 		}
-		os.Exit(cli.Run([]string{"hook"}, stdio()))
+		os.Exit(cli.Run([]string{"hook", args[0]}, stdio()))
 	case "engine":
 		os.Exit(cli.Run(args, stdio()))
 	case "me":
+		if contains(args, "--brief") || contains(args, "-brief") {
+			if err := meBrief(args); err != nil {
+				fmt.Fprintln(os.Stderr, "p0ssess:", err)
+				os.Exit(1)
+			}
+			return
+		}
 		os.Exit(cli.Run(append([]string{"me"}, args...), stdio()))
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

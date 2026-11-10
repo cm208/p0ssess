@@ -103,7 +103,7 @@ func TestRunDirectMeasuredEstimatedAndReleased(t *testing.T) {
 	f := &fakeRouter{chat: func() (int, string) { return 200, okChat }}
 	withFake(t, f)
 	cfg, eng, _ := directEnv(t, "monthly_usd = 1\nper_task_usd = 0.05\ndaily_usd = -1\n")
-	req := direct.Request{Model: testModel, Prompt: "hi", MaxCostUSD: 0.05, MaxTokens: 10}
+	req := direct.Request{Model: testModel, Prompt: "hi", MaxCostUSD: 0.05, MaxGiven: true, MaxTokens: 10}
 
 	if _, id, err := RunDirect(context.Background(), cfg, eng, req, DirectJob{}); err != nil || id == "" {
 		t.Fatalf("measured run: %q %v", id, err)
@@ -148,21 +148,35 @@ func TestRunDirectMeasuredEstimatedAndReleased(t *testing.T) {
 func TestRunDirectEnforcesAtTheTool(t *testing.T) {
 	f := &fakeRouter{chat: func() (int, string) { return 200, okChat }}
 	withFake(t, f)
-	cfg, eng, proj := directEnv(t, "monthly_usd = 1\nper_task_usd = 0.02\ndaily_usd = -1\n[privacy]\nmode = \"zdr\"\n")
-	req := direct.Request{Model: testModel, Prompt: "hi", MaxCostUSD: 0.05, MaxTokens: 10}
+	cfg, eng, proj := directEnv(t, "monthly_usd = 1\nper_task_usd = 0\ndaily_usd = -1\n[privacy]\nmode = \"zdr\"\n")
+	req := direct.Request{Model: testModel, Prompt: "hi", MaxTokens: 10}
 	_, _, err := RunDirect(context.Background(), cfg, eng, req, DirectJob{})
 	var r *engine.Refusal
-	if !errors.As(err, &r) || !r.NeedsApproval {
-		t.Errorf("above the per-task limit: %v", err)
+	if !errors.As(err, &r) || !r.NeedsApproval || !strings.Contains(err.Error(), `"max_count":1`) {
+		t.Errorf("an estimate above the per-task limit: %v", err)
 	}
-	req.MaxCostUSD = 0.01
+	if _, err := eng.SetSetting("per_task_usd", "0.02"); err != nil {
+		t.Fatal(err)
+	}
+	// The estimate decides whether to ask; a ceiling the caller set above the limit is reserved in full.
+	req.MaxCostUSD, req.MaxGiven = 0.05, true
 	if _, _, err := RunDirect(context.Background(), cfg, eng, req, DirectJob{}); err != nil {
 		t.Fatal(err)
+	}
+	l, _ := ledger(t, eng)
+	var reserved float64
+	for _, e := range l.Entries {
+		if e.Type == history.TypeReserve {
+			reserved = e.CashUSD
+		}
+	}
+	if reserved != 0.05 {
+		t.Errorf("reserved %v, want the caller's 0.05", reserved)
 	}
 	if !strings.Contains(f.bodies[len(f.bodies)-1], `"zdr":true`) {
 		t.Errorf("zdr mode did not force zero-retention routing: %s", f.bodies[len(f.bodies)-1])
 	}
-	_, _, err = RunDirect(context.Background(), cfg, eng, direct.Request{Model: testModel, Prompt: "hi", MaxCostUSD: 0.01, MaxTokens: 10}, DirectJob{Stakes: 4})
+	_, _, err = RunDirect(context.Background(), cfg, eng, direct.Request{Model: testModel, Prompt: "hi", MaxTokens: 10}, DirectJob{Stakes: 4})
 	if !errors.As(err, &r) || !strings.Contains(err.Error(), "stakes 4") {
 		t.Errorf("stakes 4: %v", err)
 	}
@@ -189,7 +203,7 @@ func (o *recordingObserver) Release(g relay.Grant) {
 // refuses over the limits before any jail work, and a run that fails before its prompt is sent gives
 // its reservation back.
 func TestRelayRunEnforcesLimits(t *testing.T) {
-	_, eng, proj := directEnv(t, "monthly_usd = 1\nper_task_usd = 0.02\ndaily_usd = -1\n")
+	_, eng, proj := directEnv(t, "monthly_usd = 1\nper_task_usd = 0.0001\ndaily_usd = -1\n")
 	os.Remove(filepath.Join(os.Getenv("P0SSESS_HOME"), "key")) // the jail cannot start without a key
 	cfg, _ := config.Load()
 	re := relay.NewEngine(cfg, "test", io.Discard)
@@ -201,9 +215,11 @@ func TestRelayRunEnforcesLimits(t *testing.T) {
 	re.SetObserver(obs)
 	_, err := re.Run(context.Background(), req, nil)
 	if err == nil || !strings.Contains(err.Error(), "needs approval") {
-		t.Errorf("a $0.50 run under a $0.02 per-task limit: %v", err)
+		t.Errorf("an agent run estimated above a $0.0001 per-task limit: %v", err)
 	}
-	req.MaxCostUSD = 0.02
+	if _, err := eng.SetSetting("per_task_usd", "0.5"); err != nil {
+		t.Fatal(err)
+	}
 	_, err = re.Run(context.Background(), req, nil)
 	if err == nil || !strings.Contains(err.Error(), "jail") {
 		t.Fatalf("want a jail error after authorizing, got %v", err)
@@ -262,6 +278,75 @@ func TestShellInternetIsTheUsersChoice(t *testing.T) {
 		obs.Release(g)
 		if g.ShellInternet != want {
 			t.Errorf("%s: shell internet %v, want %v", repo, g.ShellInternet, want)
+		}
+	}
+}
+
+// TestAgentCeilingFitsTheRoomLeft: an agent run is asked about from its estimate, its default ceiling
+// (max_run_cost_usd) is kept when it fits, and shrinks to the daily room or a standing approval's
+// per-run limit when the estimate still fits; a caller's own maximum is never shrunk.
+func TestAgentCeilingFitsTheRoomLeft(t *testing.T) {
+	_, eng, proj := directEnv(t, "monthly_usd = 10\nper_task_usd = 0.10\ndaily_usd = -1\n")
+	obs := NewObserver(eng)
+	auth := relay.RunAuth{Model: "deepseek/deepseek-v4.1-flash", MaxCostUSD: 0.5, MaxRuntime: time.Minute, Cwd: proj, Mode: "edit"}
+	g, err := obs.Authorize(auth)
+	if err != nil || g.CapUSD != 0.5 {
+		t.Fatalf("under the limit, the default ceiling holds: %+v %v", g, err)
+	}
+	obs.Release(g)
+	if _, err := eng.SetSetting("daily_usd", "0.3"); err != nil {
+		t.Fatal(err)
+	}
+	if g, err = obs.Authorize(auth); err != nil || g.CapUSD != 0.3 {
+		t.Fatalf("the default ceiling fits the daily room: %+v %v", g, err)
+	}
+	obs.Release(g)
+	auth.ExplicitMax = true
+	if _, err = obs.Authorize(auth); err == nil || !strings.Contains(err.Error(), "daily soft limit") {
+		t.Errorf("a caller's own $0.50 is not shrunk: %v", err)
+	}
+	if _, err := eng.SetSetting("ask.code_edits", "true"); err != nil {
+		t.Fatal(err)
+	}
+	auth.ExplicitMax, auth.MaxCostUSD = false, 0.5
+	if _, err = obs.Authorize(auth); err == nil || !strings.Contains(err.Error(), "ask.code_edits") {
+		t.Errorf("ask.code_edits asks before an edit run: %v", err)
+	}
+}
+
+// TestDirectPicksTheModel: with no model the direct tool picks one for the use case, given or read
+// from the files and output, and records the offer.
+func TestDirectPicksTheModel(t *testing.T) {
+	f := &fakeRouter{chat: func() (int, string) { return 200, okChat }}
+	withFake(t, f)
+	cfg, eng, _ := directEnv(t, "monthly_usd = 1\nper_task_usd = 0.10\ndaily_usd = -1\n")
+	res, _, err := RunDirect(context.Background(), cfg, eng, direct.Request{Prompt: "what happens", DryRun: true}, DirectJob{UseCase: "video-understand"})
+	if err != nil || res == nil || res.Model == "" {
+		t.Fatalf("picked: %+v %v", res, err)
+	}
+	if m := eng.Reg.Get(res.Model); m == nil || !m.HasInput("video") {
+		t.Errorf("picked %s, which does not take video", res.Model)
+	}
+	l, _ := ledger(t, eng)
+	if len(l.Entries) == 0 || l.Entries[0].Type != history.TypeOffer || l.Entries[0].UseCase != "video-understand" {
+		t.Errorf("the pick is recorded as an offer: %+v", l.Entries)
+	}
+	if _, _, err := RunDirect(context.Background(), cfg, eng, direct.Request{Prompt: "hi", DryRun: true}, DirectJob{}); err == nil || !strings.Contains(err.Error(), "use_case") {
+		t.Errorf("no model, no use case, no files: %v", err)
+	}
+	for _, tc := range []struct {
+		out   direct.Output
+		kinds map[direct.Kind]int
+		want  string
+	}{
+		{direct.OutImage, nil, "image-generate"},
+		{direct.OutImage, map[direct.Kind]int{direct.KindImage: 1}, "image-edit"},
+		{"", map[direct.Kind]int{direct.KindVideo: 1, direct.KindAudio: 1}, "video-understand"},
+		{"", map[direct.Kind]int{direct.KindAudio: 1}, "audio-transcribe"},
+		{"", map[direct.Kind]int{direct.KindPDF: 1}, ""},
+	} {
+		if got := inferUseCase(tc.out, tc.kinds); got != tc.want {
+			t.Errorf("%s %v: %q, want %q", tc.out, tc.kinds, got, tc.want)
 		}
 	}
 }

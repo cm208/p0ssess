@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"os/exec"
 	"runtime"
@@ -21,9 +22,11 @@ import (
 	"p0ssess/internal/direct"
 	"p0ssess/internal/history"
 	"p0ssess/internal/mcp"
+	"p0ssess/internal/pme/catalog"
 	"p0ssess/internal/pme/engine"
 	"p0ssess/internal/pme/mcpserver"
 	"p0ssess/internal/pme/paths"
+	"p0ssess/internal/pme/score"
 	"p0ssess/internal/relay"
 	"p0ssess/internal/usage"
 )
@@ -32,9 +35,9 @@ import (
 const Name = "p0ssess"
 
 const instructions = `p0ssess hands work to other models through OpenRouter while Claude stays in charge.
-- run/wait/abort/answer_permission/models: the agent path, a sandboxed OpenCode session for multi-step work on files. Use it through the p0ssess relay subagent.
-- direct: one OpenRouter call with local files, for media Claude cannot read or make (video, audio, image generation) and one-shot jobs.
-- recommend, budget_status, rules_*, approvals_*, history_record_outcome, tendencies, settings_set, shortcuts_*: the routing engine.
+Routed work runs in the p0ssess agent (subagent_type "p0ssess:p0ssess", on Haiku): from the main conversation, hand the request to it and reply with its result. The main conversation never calls direct, run, wait, abort, answer_permission, recommend or models itself unless the user asks for that.
+- direct: one call with local files (video, audio, images to make or edit). run/wait/abort/answer_permission/models: a sandboxed OpenCode session for work on files. recommend: prices routes.
+- budget_status, rules_*, approvals_*, settings_set, history_record_outcome, tendencies, shortcuts_*: the user's limits and history, used from the main conversation.
 `
 
 // Options configure New.
@@ -89,8 +92,7 @@ func New(opt Options) (s *mcp.Server, closeFn func(), err error) {
 	}
 
 	d := &directTool{cfg: cfg, eng: eng}
-	s.AddTool(mcp.Tool{Name: direct.ToolName, Description: direct.ToolDescription + " Pass offer_id and use_case from recommend when you have them. " +
-		"The result ends with a run id for history_record_outcome.", InputSchema: d.schema()}, d.call)
+	s.AddTool(mcp.Tool{Name: direct.ToolName, Description: direct.ToolDescription, InputSchema: d.schema()}, d.call)
 
 	es := &mcpserver.Server{E: eng}
 	for _, t := range mcpserver.Tools() {
@@ -177,8 +179,10 @@ type observer struct {
 
 // Authorize applies every limit to one relay prompt and reserves its cost cap.
 func (o *observer) Authorize(a relay.RunAuth) (relay.Grant, error) {
+	// The default ceiling (max_run_cost_usd) may shrink to the room left; a caller's own maximum is kept.
 	g, err := o.eng.Authorize(engine.Charge{Route: "agent", Model: a.Model, UseCase: a.UseCase, Stakes: a.Stakes,
-		MaxUSD: a.MaxCostUSD, ExplicitMax: a.ExplicitMax, Hold: a.MaxRuntime + 15*time.Minute, Scope: engine.Scope{Cwd: a.Cwd}})
+		MaxUSD: a.MaxCostUSD, ExplicitMax: a.ExplicitMax, Fit: !a.ExplicitMax, Edit: a.Mode == "edit",
+		Hold: a.MaxRuntime + 15*time.Minute, Scope: engine.Scope{Cwd: a.Cwd}})
 	if err != nil {
 		return relay.Grant{}, err
 	}
@@ -250,20 +254,52 @@ type DirectJob struct {
 	Stakes  int
 }
 
-// RunDirect runs one direct-path job under every limit: Authorize checks the rules, lists, stakes,
-// privacy, per-task, daily and monthly limits and reserves max_cost_usd; the measured cost settles the
-// reservation, or, when the cost is not known, the reserved maximum is recorded as an estimate. runID
-// is empty for dry runs and calls that were never sent.
+// RunDirect runs one direct-path job under every limit. With no model it picks one for the use case
+// (pickModel). The estimate decides whether the user is asked; the ceiling is the caller's
+// max_cost_usd, else the estimate. Authorize checks the rules, lists, stakes, privacy, per-task, daily
+// and monthly limits and reserves the ceiling; the measured cost settles the reservation, or, when the
+// cost is not known, the reserved maximum is recorded as an estimate. runID is empty for dry runs and
+// calls that were never sent.
 func RunDirect(ctx context.Context, cfg config.Config, eng *engine.Engine, req direct.Request, job DirectJob) (*direct.Result, string, error) {
 	cwd, _ := os.Getwd()
 	if v := os.Getenv("CLAUDE_PROJECT_DIR"); v != "" {
 		cwd = v
 	}
-	key := ""
+	if paths.Private(cwd) {
+		return nil, "", errors.New("refused: this repository has a .p0ssess-private file; delegation is blocked here")
+	}
+	c := newClient("")
+	c.RecordDir = os.Getenv("P0SSESS_DIRECT_RECORD")
+	if p, err := cfg.RegistryPath(); err == nil {
+		c.Catalog.LoadRegistry(p)
+	}
+	if req.Model == "" {
+		m, err := pickModel(eng, c, req, &job, cwd)
+		if err != nil {
+			return nil, "", err
+		}
+		req.Model = m
+	}
 	var grant *engine.Grant
 	if !req.DryRun {
+		dry := req
+		dry.DryRun = true
+		p, err := c.Plan(ctx, dry)
+		if err != nil {
+			return nil, "", err
+		}
+		est := p.Estimate()
+		switch {
+		case req.MaxGiven && !est.CostUnknown && est.CostUSD > req.MaxCostUSD:
+			return nil, "", fmt.Errorf("%w: about $%.4f for %s, limit $%.4f", direct.ErrOverBudget, est.CostUSD, req.Model, req.MaxCostUSD)
+		case !req.MaxGiven && est.CostUnknown:
+			return nil, "", fmt.Errorf("%w: no price is known for %s, so the cost cannot be estimated; ask the user for a ceiling "+
+				"and pass it as max_cost_usd", direct.ErrPriceUnknown, req.Model)
+		case !req.MaxGiven:
+			req.MaxCostUSD = math.Ceil(est.CostUSD*1e6) / 1e6
+		}
 		g, err := eng.Authorize(engine.Charge{Route: "direct", Model: req.Model, UseCase: job.UseCase, Stakes: job.Stakes,
-			MaxUSD: req.MaxCostUSD, ExplicitMax: true, Hold: DirectHold, Scope: engine.Scope{Cwd: cwd}})
+			MaxUSD: req.MaxCostUSD, ExplicitMax: true, EstimateUSD: est.CostUSD, Hold: DirectHold, Scope: engine.Scope{Cwd: cwd}})
 		if err != nil {
 			return nil, "", err
 		}
@@ -271,17 +307,10 @@ func RunDirect(ctx context.Context, cfg config.Config, eng *engine.Engine, req d
 		if g.ZDR {
 			req.StrictZDR = true
 		}
-		if key, err = cfg.OpenRouterKey(); err != nil {
+		if c.Key, err = cfg.OpenRouterKey(); err != nil {
 			eng.Release(grant)
 			return nil, "", err
 		}
-	} else if paths.Private(cwd) {
-		return nil, "", errors.New("refused: this repository has a .p0ssess-private file; delegation is blocked here")
-	}
-	c := newClient(key)
-	c.RecordDir = os.Getenv("P0SSESS_DIRECT_RECORD")
-	if p, err := cfg.RegistryPath(); err == nil {
-		c.Catalog.LoadRegistry(p)
 	}
 	var j usage.Job
 	if !req.DryRun {
@@ -300,6 +329,7 @@ func RunDirect(ctx context.Context, cfg config.Config, eng *engine.Engine, req d
 		}
 		return res, "", err
 	}
+	key := c.Key
 	runID := "d-" + randID()
 	status := "done"
 	if err != nil {
@@ -327,6 +357,90 @@ func RunDirect(ctx context.Context, cfg config.Config, eng *engine.Engine, req d
 		}()
 	}
 	return res, runID, err
+}
+
+// inferUseCase reads the use case from what a request carries, for a call that names neither a model
+// nor a use case. It returns "" when the files do not say.
+func inferUseCase(out direct.Output, kinds map[direct.Kind]int) string {
+	switch {
+	case out == direct.OutImage && kinds[direct.KindImage] > 0:
+		return "image-edit"
+	case out == direct.OutImage:
+		return "image-generate"
+	case out == direct.OutTranscript:
+		return "audio-transcribe"
+	case kinds[direct.KindVideo] > 0:
+		return "video-understand"
+	case kinds[direct.KindAudio] > 0:
+		return "audio-transcribe"
+	}
+	return ""
+}
+
+// pickModel chooses the model for a direct call that names none: the engine's best direct option for
+// the use case, sized from the files. It prefers an option that runs without asking when one costs at
+// most half again as much as the best. The offer is recorded, and job gets its id and the use case.
+func pickModel(eng *engine.Engine, c *direct.Client, req direct.Request, job *DirectJob, cwd string) (string, error) {
+	prof := catalog.Profile{Text: "direct call"}
+	kinds := map[direct.Kind]int{}
+	for _, f := range req.Files {
+		in, err := direct.Inspect(f, c.Limits)
+		if err != nil {
+			return "", err
+		}
+		kinds[in.Kind]++
+		switch in.Kind {
+		case direct.KindVideo:
+			prof.VideoSec += in.Seconds
+		case direct.KindAudio:
+			prof.AudioSec += in.Seconds
+		case direct.KindImage:
+			prof.Images++
+		case direct.KindPDF:
+			prof.Pages += in.Pages
+		default:
+			prof.InTokens += int(in.Bytes / 4)
+		}
+	}
+	uc := job.UseCase
+	if uc == "" {
+		uc = inferUseCase(req.Output, kinds)
+	}
+	if uc == "" {
+		return "", errors.New("name a model, or a use_case (for example video-understand, audio-transcribe, image-generate), so p0ssess can pick one")
+	}
+	rec, err := eng.Recommend(engine.Request{UseCase: uc, Profile: &prof, Stakes: job.Stakes, Record: true, Scope: engine.Scope{Cwd: cwd}})
+	if err != nil {
+		return "", err
+	}
+	var best *score.Option
+	for i := range rec.Options {
+		o := &rec.Options[i]
+		if o.Route != score.RouteDirect {
+			continue
+		}
+		switch {
+		case best == nil:
+			best = o
+		case best.NeedsApproval && !o.NeedsApproval && o.Total <= best.Total*1.5:
+			best = o
+		}
+		if !best.NeedsApproval {
+			break
+		}
+	}
+	if rec.Pick != nil && rec.Pick.Route == score.RouteDirect && rec.Pick.MixNext {
+		best = rec.Pick
+	}
+	if best == nil {
+		why := "no model fits " + uc + " within your rules and limits"
+		if len(rec.Notes) > 0 {
+			why += " (" + strings.Join(rec.Notes, "; ") + ")"
+		}
+		return "", errors.New(why)
+	}
+	job.UseCase, job.OfferID = uc, rec.OfferID
+	return best.Model, nil
 }
 
 // Reconcile looks up the measured cost of recent estimated direct runs and records it.
@@ -382,8 +496,8 @@ func (d *directTool) schema() json.RawMessage {
 	var m map[string]any
 	json.Unmarshal(direct.ToolSchema, &m)
 	props, _ := m["properties"].(map[string]any)
-	props["offer_id"] = map[string]any{"type": "string", "description": "offer_id from recommend, for the history"}
-	props["use_case"] = map[string]any{"type": "string", "description": "catalog use case id; rules limited to use cases apply by it"}
+	props["offer_id"] = map[string]any{"type": "string", "description": "offer_id, only if you called recommend"}
+	props["use_case"] = map[string]any{"type": "string", "description": "catalog use case id, e.g. video-understand, audio-transcribe, audio-tone, image-generate; inferred from the files when left out"}
 	props["stakes"] = map[string]any{"type": "integer", "minimum": 1, "maximum": 4,
 		"description": "your stakes rating, 1-4; without it the use case's catalog stakes apply, or 3"}
 	b, _ := json.Marshal(m)
@@ -420,9 +534,10 @@ func (d *directTool) call(ctx context.Context, raw json.RawMessage, _ mcp.Progre
 		return mcp.Error(msg)
 	}
 	var b bytes.Buffer
-	b.WriteString(direct.Format(res))
+	tail := ""
 	if runID != "" {
-		fmt.Fprintf(&b, "run: %s\n", runID)
+		tail = " · run " + runID
 	}
+	b.WriteString(direct.Compact(res, tail))
 	return mcp.Text(strings.TrimRight(b.String(), "\n"))
 }

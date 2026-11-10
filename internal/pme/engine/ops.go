@@ -287,7 +287,12 @@ func (e *Engine) RecordRun(r Run) error {
 	if r.CashUSD < 0 || math.IsNaN(r.CashUSD) {
 		r.CashUSD = 0
 	}
+	kind, family := "", ""
+	if uc := e.Cat.Get(r.UseCase); uc != nil {
+		kind, family = uc.Kind(), uc.Family
+	}
 	return history.Append(e.Dirs.HistoryFile(), history.Entry{TS: e.Now().UTC(), Type: history.TypeRun, RunID: r.ID,
+		Kind: kind, Family: family,
 		Route: r.Route, Model: r.Model, CashUSD: r.CashUSD, UpstreamUSD: r.UpstreamUSD, Status: r.Status,
 		OfferID: r.OfferID, UseCase: r.UseCase, Session: r.Session, Project: paths.ProjectRoot(r.Cwd),
 		ApprovalID: r.ApprovalID, Reserve: r.Reserve, Estimated: r.Estimated, Generations: r.Generations})
@@ -311,7 +316,7 @@ func (e *Engine) Learned(s Scope) Learned {
 var settingKeys = []string{"monthly_usd", "per_task_usd", "daily_usd", "save_claude", "plan", "usage_credits",
 	"privacy.mode", "privacy.allow_safety_retention", "models.allow", "models.deny", "providers.allow", "providers.deny",
 	"sandbox.shell_internet", "sandbox.shell_internet.add", "sandbox.shell_internet.remove",
-	"lambda.preset", "statusline.command", "statusline.mark", "statusline.width"}
+	"ask.first_use", "ask.code_edits", "lambda.preset", "statusline.command", "statusline.mark", "statusline.width"}
 
 func SettingKeys() []string { return append([]string(nil), settingKeys...) }
 
@@ -393,6 +398,10 @@ func (e *Engine) setBudget(key, value string) (string, error) {
 		b.Privacy.Mode = value
 	case "privacy.allow_safety_retention":
 		b.Privacy.AllowSafetyRetention, err = flag()
+	case "ask.first_use":
+		b.Ask.FirstUse, err = flag()
+	case "ask.code_edits":
+		b.Ask.CodeEdits, err = flag()
 	case "models.allow":
 		b.Models.Allow = list()
 	case "models.deny":

@@ -3,6 +3,7 @@ package direct
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"strings"
 )
 
@@ -12,23 +13,22 @@ import (
 
 const ToolName = "direct"
 
-const ToolDescription = `Run a one-shot job on an OpenRouter model in a single call, with local files attached by path. ` +
-	`Use it for media Claude cannot read or make: describe or transcribe video and audio, read PDFs, caption images, generate an image. ` +
-	`Files are checked locally (secret-looking names and .p0ssess-private repositories are refused) and the cost is estimated before sending; ` +
-	`the call is refused when the estimate is above max_cost_usd. max_cost_usd is checked against every limit (rules, allow and deny lists, ` +
-	`stakes, privacy mode, the per-task, daily and monthly limits) and reserved before sending; above the per-task limit with no standing ` +
-	`approval the result is "needs approval": ask the user. Set dry_run to get the estimate only. ` +
-	`The answer comes back inside <answer>, followed by any output files, the model, provider and cost.`
+const ToolDescription = `For the p0ssess agent: from the main conversation, hand the request to that agent (subagent_type "p0ssess:p0ssess") instead. ` +
+	`One OpenRouter call with local files attached by path, for media Claude cannot read or make: ` +
+	`watch or describe video, listen to or transcribe audio, generate or edit an image, read a PDF past Claude's limits. ` +
+	`Leave model out and it picks the best model for the use case (given, or read from the files and output). ` +
+	`It runs without asking when the estimate is within the user's limits; otherwise it answers "needs approval" with the cost. ` +
+	`The answer comes back in <answer>, then any generated files as JSON (present them), then one line with the model and cost.`
 
 var ToolSchema = json.RawMessage(`{
   "type": "object",
   "properties": {
-    "model": {"type": "string", "description": "OpenRouter model id, e.g. google/gemini-3.8-flash"},
+    "model": {"type": "string", "description": "OpenRouter model id; leave out to let p0ssess pick"},
     "prompt": {"type": "string"},
     "system": {"type": "string"},
     "files": {"type": "array", "items": {"type": "string"}, "description": "absolute local paths: images, PDFs, audio, video or text"},
     "output": {"type": "string", "enum": ["text", "json", "image", "transcript"], "default": "text"},
-    "max_cost_usd": {"type": "number", "description": "the most this call may spend: refused when the estimate is above it, reserved against your limits; must be above 0 when the model has no known price"},
+    "max_cost_usd": {"type": "number", "description": "only when the user named a ceiling: the most this call may spend. Without it the estimate is the ceiling"},
     "max_tokens": {"type": "integer"},
     "strict_zdr": {"type": "boolean", "description": "zero-data-retention endpoints only"},
     "reasoning": {"type": "string", "enum": ["none", "low", "medium", "high"]},
@@ -42,7 +42,7 @@ var ToolSchema = json.RawMessage(`{
     "out_dir": {"type": "string"},
     "dry_run": {"type": "boolean"}
   },
-  "required": ["model", "prompt", "max_cost_usd"],
+  "required": ["prompt"],
   "additionalProperties": false
 }`)
 
@@ -75,9 +75,6 @@ func ParseArgs(raw json.RawMessage) (Request, error) {
 	if err := dec.Decode(&a); err != nil {
 		return Request{}, fmt.Errorf("bad arguments: %w", err)
 	}
-	if a.MaxCostUSD == nil && !a.DryRun {
-		return Request{}, fmt.Errorf("max_cost_usd is required")
-	}
 	r := Request{
 		Model: a.Model, Prompt: a.Prompt, System: a.System, Files: a.Files, Output: Output(a.Output),
 		MaxTokens: a.MaxTokens, StrictZDR: a.StrictZDR, Reasoning: a.Reasoning, PDFEngine: a.PDFEngine,
@@ -86,7 +83,7 @@ func ParseArgs(raw json.RawMessage) (Request, error) {
 		OutDir: a.OutDir, DryRun: a.DryRun,
 	}
 	if a.MaxCostUSD != nil {
-		r.MaxCostUSD = *a.MaxCostUSD
+		r.MaxCostUSD, r.MaxGiven = *a.MaxCostUSD, true
 	}
 	return r, nil
 }
@@ -126,6 +123,70 @@ func Format(r *Result) string {
 	}
 	for _, w := range r.Warnings {
 		b.WriteString("note: " + w + "\n")
+	}
+	return b.String()
+}
+
+// FileHint is a generated file as the tool result lists it, for Claude to present to the user.
+type FileHint struct {
+	Path string `json:"path"`
+	Kind string `json:"kind"`
+}
+
+// FileKind sorts a file into image, video, audio, document or file, from its MIME type or name.
+func FileKind(path, mime string) string {
+	switch {
+	case strings.HasPrefix(mime, "image/"):
+		return "image"
+	case strings.HasPrefix(mime, "video/"):
+		return "video"
+	case strings.HasPrefix(mime, "audio/"):
+		return "audio"
+	}
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg":
+		return "image"
+	case ".mp4", ".mov", ".webm", ".mkv", ".m4v":
+		return "video"
+	case ".mp3", ".wav", ".m4a", ".flac", ".ogg", ".opus", ".aac":
+		return "audio"
+	case ".pdf", ".docx", ".xlsx", ".pptx", ".odt", ".ods", ".odp", ".csv", ".epub":
+		return "document"
+	}
+	return "file"
+}
+
+// Compact renders a result for the MCP tool: the answer, the generated files as one JSON line, and
+// one line with the model and cost. tail is appended to that line (the run id).
+func Compact(r *Result, tail string) string {
+	var b strings.Builder
+	b.WriteString("<answer>\n")
+	b.WriteString(strings.TrimSpace(r.Text))
+	b.WriteString("\n</answer>\n")
+	if len(r.Files) > 0 {
+		hints := make([]FileHint, len(r.Files))
+		for i, f := range r.Files {
+			hints[i] = FileHint{Path: f.Path, Kind: FileKind(f.Path, f.MIME)}
+		}
+		js, _ := json.Marshal(hints)
+		fmt.Fprintf(&b, "files: %s\n", js)
+	}
+	model := r.Model
+	if _, after, ok := strings.Cut(model, "/"); ok {
+		model = after
+	}
+	cost := fmt.Sprintf("$%.4f", r.Usage.CostUSD)
+	switch {
+	case r.Usage.CostSource == "" && r.Estimate.CostUnknown:
+		cost = "cost unknown"
+	case r.Usage.CostSource == "":
+		cost = fmt.Sprintf("about $%.4f", r.Estimate.CostUSD)
+	case !r.Measured():
+		cost += " so far"
+	}
+	b.WriteString(model + " · " + cost + tail + "\n")
+	if len(r.Warnings) > 0 {
+		b.WriteString("note: " + strings.Join(r.Warnings, "; ") + "\n")
 	}
 	return b.String()
 }

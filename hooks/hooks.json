@@ -14,6 +14,22 @@
           { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/p0ssess", "args": ["hook", "prompt"], "timeout": 5 }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "mcp__plugin_p0ssess_p0ssess__(direct|run|wait|abort|answer_permission|recommend|models)",
+        "hooks": [
+          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/p0ssess", "args": ["hook", "tool"], "timeout": 5 }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/p0ssess", "args": ["hook", "tool"], "timeout": 5 }
+        ]
+      }
     ]
   }
 }

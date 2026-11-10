@@ -100,3 +100,39 @@ func trim(s string) string {
 	}
 	return s
 }
+
+// TestWorktreeFilesListsOnlyRealMediaInside: an edit run's new images and documents are listed for
+// Claude to present; source files, and symlinks the model planted to reach files outside, are not.
+func TestWorktreeFilesListsOnlyRealMediaInside(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+	root := t.TempDir()
+	repo := filepath.Join(root, "repo")
+	os.MkdirAll(repo, 0o755)
+	runGit(t, repo, "init", "-q", repo)
+	os.WriteFile(filepath.Join(repo, "a.txt"), []byte("a\n"), 0o644)
+	runGit(t, repo, "add", "-A")
+	runGit(t, repo, "commit", "-qm", "base")
+	base, _ := git(repo, "rev-parse", "HEAD")
+	base = trim(base)
+	wt, _, err := addWorktree(repo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	secret := filepath.Join(root, "secret.png")
+	os.WriteFile(secret, []byte("x"), 0o600)
+	os.MkdirAll(filepath.Join(wt, "out"), 0o755)
+	os.WriteFile(filepath.Join(wt, "out", "chart.png"), []byte("png"), 0o644)
+	os.WriteFile(filepath.Join(wt, "report.docx"), []byte("docx"), 0o644)
+	os.WriteFile(filepath.Join(wt, "main.go"), []byte("package main\n"), 0o644)
+	os.Symlink(secret, filepath.Join(wt, "leak.png"))
+	if _, _, err := worktreeDiff(repo, wt, base); err != nil {
+		t.Fatal(err)
+	}
+	got := worktreeFiles(repo, wt, base)
+	if len(got) != 2 || got[0].Path != filepath.Join(wt, "out", "chart.png") || got[0].Kind != "image" ||
+		got[1].Path != filepath.Join(wt, "report.docx") || got[1].Kind != "document" {
+		t.Errorf("files = %+v", got)
+	}
+}

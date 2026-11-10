@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"p0ssess/internal/direct"
 	"p0ssess/internal/jail"
 	"p0ssess/internal/opencode"
 )
@@ -82,6 +83,41 @@ func worktreeDiff(repo, wt, base string) (string, string, error) {
 	}
 	patch, err := gitEnv(wt, env, "diff", "--cached", "--no-color", "--no-ext-diff", base)
 	return strings.TrimSpace(stat), patch, err
+}
+
+// worktreeFiles lists the media and office files an edit run added or changed, as absolute paths in the
+// worktree, for Claude to present. Call it after worktreeDiff (which stages everything); git runs with the
+// same pinned, hardened environment. Symlinks and anything that is not a regular file inside the worktree
+// are left out, so a model cannot point Claude at a file outside it.
+func worktreeFiles(repo, wt, base string) []direct.FileHint {
+	gd := filepath.Join(repo, ".git", "worktrees", filepath.Base(wt))
+	env := []string{"GIT_DIR=" + gd, "GIT_COMMON_DIR=" + filepath.Join(repo, ".git"), "GIT_WORK_TREE=" + wt}
+	out, err := gitEnv(wt, env, "diff", "--cached", "--name-only", "--diff-filter=AM", "-z", base)
+	if err != nil {
+		return nil
+	}
+	var hints []direct.FileHint
+	for _, name := range strings.Split(out, "\x00") {
+		if name == "" {
+			continue
+		}
+		kind := direct.FileKind(name, "")
+		if kind == "file" {
+			continue
+		}
+		p := filepath.Join(wt, name)
+		if !strings.HasPrefix(p, filepath.Clean(wt)+string(filepath.Separator)) {
+			continue
+		}
+		if st, err := os.Lstat(p); err != nil || !st.Mode().IsRegular() {
+			continue
+		}
+		hints = append(hints, direct.FileHint{Path: p, Kind: kind})
+		if len(hints) == 20 {
+			break
+		}
+	}
+	return hints
 }
 
 var secretName = regexp.MustCompile(`(?i)(^\.env($|\.)|^\.envrc$|^\.netrc$|^id_(rsa|dsa|ecdsa|ed25519)|\.(pem|key|p12|pfx|kdbx|jks|keystore)$|^credentials|(^|[._-])secrets?([._-]|$))`)

@@ -8,7 +8,7 @@ Status: design agreed and researched ([RESEARCH.md](RESEARCH.md)); built as a Cl
 ## Principles
 
 - **Every model is a candidate, Claude included.** No preference for Claude; it is chosen when the numbers say so.
-- **Quiet.** Routing is announced in one line ("handing this to mimo-v2.6-flash to summarize the logs") and otherwise stays out of the way.
+- **Quiet.** p0ssess augments Claude Code rather than adding steps. "Watch this video" goes: the user asked for video, p0ssess is set up, the job is under the cap, do it. No plan read aloud, no confirmation, one hand-off to the p0ssess agent; the answer comes back with "(model, cost)" and nothing else.
 - **Claude reviews what comes back.** Nothing a delegated model writes lands without the right level of review.
 - **Local and private by default.** No telemetry. Learning data stays on the user's machine.
 - **Only clean data.** Benchmarks and usage data are used only where their license clearly allows it, and every number carries its source and date.
@@ -32,7 +32,7 @@ Status: design agreed and researched ([RESEARCH.md](RESEARCH.md)); built as a Cl
    - On API-key plans `λ` is 1 and `claude_price` is the list price. On subscriptions `λ(pressure)` follows the projected end-of-window usage (the worse of the 5-hour and weekly windows); its shape is a user preset.
    - The lowest total wins. Delegation that cannot save anything (overhead and review above the work's own cost) is never offered.
 4. **Claude makes the final call** and may override the ranking with a stated reason.
-5. Claude routes on its own when the work needs a capability it lacks (video, audio, image generation) or is cheap and within the per-task budget. It asks first when the cost is above the user's threshold, when the work edits the user's code, or the first time a model is used.
+5. Claude routes on its own when the work needs a capability it lacks (video, audio, image generation) or is cheap and within the per-task budget. For media the p0ssess agent calls the direct tool once without naming a model; the tool asks the engine and picks one. It asks the user first only when the job's **estimate** is above the per-task limit, the monthly cap would be passed, a rule says to ask, or the stakes are 4. Asking before a model's first run or before agent edits is opt-in (`ask.first_use`, `ask.code_edits`); an edit always comes back as a diff Claude reviews.
 
 ## Stakes
 
@@ -49,6 +49,16 @@ Claude rates each task on four levels from signals it can see: how reversible it
 - Stakes 4 stays on Claude unless a global or session `allow` rule names the model with `max_stakes = 4`, and even then Claude reviews the result. The tools enforce it: a call that does not state its stakes takes the use case's catalog stakes, or 3.
 - A cheap model plus a Claude check can take an important task when checking costs much less than doing.
 
+## Generated files
+
+When another model makes a file (an image from the direct tool, or an image or document an agent run writes in its worktree), the tool result carries a short structured list, `files: [{"path", "kind"}]`, with kinds image, video, audio and document. Claude presents them by default:
+
+- It always prints each absolute path in its reply.
+- When the session has Claude Code's `SendUserFile` tool (a Remote Control client such as the Claude mobile app is connected, or it is a cloud session), Claude sends the files with it: rendered for image, video and audio, attached for documents.
+- In a plain terminal session there is no such tool; the path is the presentation. kitty and most terminals let you open it from there. Claude starts no viewer and runs no extra commands.
+
+Agent-run files are listed only when they are regular files inside the run's own worktree; a symlink a model planted to point outside it is left out.
+
 ## Two ways to run delegated work
 
 - **Direct:** a single model call for one-shot jobs (transcribe, summarize, caption, translate, describe a video).
@@ -56,11 +66,15 @@ Claude rates each task on four levels from signals it can see: how reversible it
 
 The engine picks the path per use case. Audio and video always take the direct path.
 
-## Agents
+## Agents: the possession
 
-- One generic `p0ssess` relay agent. Claude spawns it like any subagent and names the model in the task.
-- Named shortcuts (for example `gemini-video`) are created the way Claude would create any helper when usage shows they are worth having, capped at about 12.
-- Relay agents run on a small, cheap Claude model whose only job is to pass the task through and return the answer verbatim.
+Routed work never runs in the main conversation. The `p0ssess` agent (Haiku, background) takes it over for the moment, the way a ghost possesses a body, and hands back only the result. That is where the name comes from.
+
+- Main Claude starts the agent with one Agent call and a one-sentence prompt (the request and absolute file paths). The agent makes every p0ssess call: `direct` for media, `run` and `wait` for sandboxed agent sessions, `recommend` to price a route. It replies with the other model's answer, any `files:` line, a `diff:` path with a one-line summary (never the diff), and one `via:` line with the model, cost and run id.
+- So the main model never reads raw tool results, transcripts, diffs or engine tables. Each routed call costs it one short prompt and one short result; the bulk is billed at Haiku's price, a few tenths of a cent.
+- Enforcement, beyond instructions: a `PreToolUse` hook denies `direct`, `run`, `wait`, `abort`, `answer_permission`, `recommend` and `models` when the call comes from the main conversation (Claude Code sets `agent_id` in hook input only inside a subagent), with a reason that sends Claude to the agent. When the user's latest prompt explicitly asks for p0ssess in the main session ("call direct yourself in the main session"), the prompt hook records that for the session and the next calls pass; the next ordinary prompt clears it. This keeps a habit, not an adversary, out: the spending limits are what stop a misbehaving model.
+- A `PostToolUse` hook on the Agent call tells main Claude to end its turn without writing, and to relay the result with nothing around it but "(model, cost)".
+- Named shortcuts (for example `p0ssess-gemini-3-8-flash-media`) are the same agent with a fixed model, created only when usage shows they are worth having, capped at 12.
 
 ## Review
 
@@ -77,14 +91,14 @@ When Claude has to redo a model's work, that counts against the model's score fo
 `~/.config/p0ssess/budget.toml`:
 
 - monthly OpenRouter cap (default $10)
-- per-task auto-approve limit (default $0.02); above it, Claude asks unless a standing approval covers the task (see Rules)
+- per-task auto-approve limit (default $0.02), compared with each job's estimate; above it, Claude asks unless a standing approval covers the task (see Rules)
 - daily soft limit
 - optional "save Claude" mode that lowers the bar for routing as Claude limits near
 - model and provider allow and deny lists
 
-These are enforced where money is spent, not only advised. Before the direct tool or a relay run sends anything, it applies the rules, the allow and deny lists, the stakes gate, privacy mode, `.p0ssess-private`, and the per-task, daily and monthly limits on its own, whatever `recommend` said, and fails closed when the budget, rules or ledger cannot be read. It then reserves the call's maximum cost in the ledger under a file lock, so concurrent calls cannot each pass the same headroom; the measured cost settles the reservation afterwards. A call above the per-task limit with no standing approval is refused as "needs approval" and Claude asks the user. A cost that is never reported is recorded at the reserved maximum, marked estimated, until OpenRouter reports it.
+These are enforced where money is spent, not only advised. Before the direct tool or a relay run sends anything, it applies the rules, the allow and deny lists, the stakes gate, privacy mode, `.p0ssess-private`, and the per-task, daily and monthly limits on its own, whatever `recommend` said, and fails closed when the budget, rules or ledger cannot be read. It then reserves the call's maximum cost in the ledger under a file lock, so concurrent calls cannot each pass the same headroom; the measured cost settles the reservation afterwards. Whether to ask is decided from the call's estimate; the reserved maximum stays the hard ceiling, enforced at spend time (the direct call is priced against it before sending, and the relay interrupts a run that reaches it). A default ceiling, such as the relay's `max_run_cost_usd`, is lowered to the room left under the daily and monthly limits and to a covering standing approval's per-run limit, when the estimate still fits. A call whose estimate is above the per-task limit, with no standing approval, is refused as "needs approval" and Claude asks the user. A cost that is never reported is recorded at the reserved maximum, marked estimated, until OpenRouter reports it.
 
-`/p0ssess-me` walks through these settings in the terminal and opens a local page (served on `localhost`, works offline) showing spend against each limit, learned tendencies, recent delegations, and editable settings.
+`/p0ssess-me` prints a few lines in the terminal (spend today and this month against the cap, the limits, running jobs, how to change them) and opens a local page in the plugin's design language (served on `localhost`, works offline): the same figures on one screen, recent runs, limits and rules, with the settings one click away.
 
 ## Rules and standing approvals
 
@@ -95,6 +109,7 @@ Rule kinds:
 
 - **Who may run work:** allow or forbid Claude agents, a specific model, a set of models (a mix, with optional weights), or the OpenCode agent path.
 - **Standing approvals:** pre-approve spend for a kind of task up to a per-run price, with an optional count or total ("auto-approve 10-minute video edits up to $0.20 each", "up to $5 today"). Within a standing approval, runs go through without asking and are announced in one line as usual.
+- **Ask first:** always ask before matching work ("always ask before using grok", "ask first for video"), even within every limit. Only a yes for that run (a one-run session approval) lifts it.
 - **Budget overrides:** raise or lower the per-task limit, daily limit, or monthly cap, for the session or permanently.
 
 Scope: each rule applies to the **session**, a **project** (`.p0ssess/rules.toml` in the repository), or **globally** (`~/.config/p0ssess/rules.toml`). A rule that forbids something always beats one that allows it. Session and global rules are the user's own and have full power; between them the session wins. A project file arrives with whatever repository the user clones, so **project scope only tightens**: it may forbid models, providers, Claude agents, OpenCode or all delegation, narrow the user's `only`/`mix` choice, and lower the per-task, daily or monthly limit. Anything that would loosen (allow rules, standing approvals, lifting the stakes-4 gate, raising or turning off a limit) is ignored and reported once per session: "project rules tried to loosen …; ignored — add it yourself if you want it". Rules can expire ("for the next hour").
@@ -103,7 +118,7 @@ Rules are never inferred silently: the engine may *suggest* one from the user's 
 
 ## Learning
 
-A local history file records each delegation: kind of task, model offered and chosen, cost, whether the user accepted, overrode, or declined, and whether Claude had to redo the work.
+A local history file records each delegation: kind of task, model offered and chosen, cost, whether the user accepted, overrode, or declined, and whether Claude had to redo the work. A finished run that nobody reports on counts as accepted, so Claude reports only what it did not use (a redo, a decline, another route) and a successful hand-off costs no extra tool call.
 From it the engine learns tendencies (for example "always accepts Gemini for media", "declines cheap models for Swift edits") and adjusts its offers.
 Planned, not built: reading the user's Claude Code memory files for stated preferences (never writing them), and an opt-in evaluation set (a few real tasks per family of use cases, on a small capped budget) to measure routing quality and publish aggregate results.
 

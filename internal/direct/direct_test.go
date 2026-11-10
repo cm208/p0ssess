@@ -583,8 +583,18 @@ func TestToolArgsAndFormat(t *testing.T) {
 	if text := Format(res); !strings.HasPrefix(text, "<answer>\ntool answer\n</answer>\nmodel: m via Google; cost $0.000420 (usage") {
 		t.Errorf("text = %q", text)
 	}
-	if _, err := ParseArgs(json.RawMessage(`{"model":"x","prompt":"hi"}`)); err == nil {
-		t.Error("missing max_cost_usd accepted")
+	if r, err := ParseArgs(json.RawMessage(`{"prompt":"hi","files":["/tmp/a.mp4"]}`)); err != nil || r.MaxGiven || r.Model != "" {
+		t.Errorf("model and max_cost_usd are optional: %+v %v", r, err)
+	}
+	if !req.MaxGiven {
+		t.Error("a given max_cost_usd is not marked")
+	}
+	if text := Compact(res, " · run d-1"); !strings.HasSuffix(text, "</answer>\ndeepseek-v4.1-flash · $0.0004 · run d-1\n") && !strings.Contains(text, "· run d-1") {
+		t.Errorf("compact = %q", text)
+	}
+	res.Files = []OutFile{{Path: "/tmp/out/image-1.png", MIME: "image/png"}, {Path: "/tmp/out/deck.pptx"}}
+	if text := Compact(res, ""); !strings.Contains(text, `files: [{"path":"/tmp/out/image-1.png","kind":"image"},{"path":"/tmp/out/deck.pptx","kind":"document"}]`) {
+		t.Errorf("files hint = %q", text)
 	}
 	if _, err := ParseArgs(json.RawMessage(`{"model":"x","prompt":"hi","max_cost_usd":1,"bogus":1}`)); err == nil {
 		t.Error("unknown field accepted")

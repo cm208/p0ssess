@@ -91,12 +91,12 @@ func TestToolsRoundTrip(t *testing.T) {
 		call(7, "settings_set", `{"key":"monthly_usd","value":"25"}`),
 		call(8, "rules_add", `{"kind":"forbid","target":"robots"}`),
 	)
-	var rec engine.Recommendation
+	var rec CompactRecommendation
 	if err := json.Unmarshal([]byte(text(t, res[0])), &rec); err != nil {
 		t.Fatal(err)
 	}
-	if rec.OfferID == "" || rec.Pick == nil || rec.ClaudeFeasible {
-		t.Fatalf("recommend = %+v", rec)
+	if rec.OfferID == "" || len(rec.Options) == 0 || !strings.HasPrefix(rec.Options[0], "direct ") || len(text(t, res[0])) > 2000 {
+		t.Fatalf("recommend = %+v (%d bytes)", rec, len(text(t, res[0])))
 	}
 	if dry := text(t, res[1]); !strings.Contains(dry, "never use glm-5.3-flash for media work (project)") || !strings.Contains(dry, "not saved") {
 		t.Errorf("dry run = %s", dry)

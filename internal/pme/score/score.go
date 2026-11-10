@@ -55,29 +55,27 @@ type Breakdown struct {
 }
 
 type Option struct {
-	Rank            int       `json:"rank"`
-	Route           string    `json:"route"`
-	Model           string    `json:"model"`
-	Total           float64   `json:"total_usd"`
-	Breakdown       Breakdown `json:"breakdown"`
-	PFail           float64   `json:"p_fail"`
-	PFailUpper      float64   `json:"p_fail_upper"`
-	Evidence        string    `json:"evidence"`
-	History         string    `json:"history,omitempty"`
-	CashMax         float64   `json:"cash_max_usd"`
-	ClaudeListUSD   float64   `json:"claude_list_usd"`
-	NeedsApproval   bool      `json:"needs_approval"`
-	ApprovalReasons []string  `json:"approval_reasons,omitempty"`
-	ApprovalID      string    `json:"standing_approval,omitempty"`
-	// MaxCostUSD is the spend ceiling already authorized for this option: the standing approval's
-	// per-run limit, or the per-task limit when no approval is needed. Pass it as the direct tool's
-	// max_cost_usd. Zero when the user must approve first; then pass the amount they approve.
-	MaxCostUSD  float64  `json:"max_cost_usd,omitempty"`
-	Review      string   `json:"review"`
-	Reason      string   `json:"reason"`
-	Notes       []string `json:"notes,omitempty"`
-	PriceSource string   `json:"price_source,omitempty"`
-	MixNext     bool     `json:"mix_next,omitempty"`
+	Rank       int       `json:"rank"`
+	Route      string    `json:"route"`
+	Model      string    `json:"model"`
+	Total      float64   `json:"total_usd"`
+	Breakdown  Breakdown `json:"breakdown"`
+	PFail      float64   `json:"p_fail"`
+	PFailUpper float64   `json:"p_fail_upper"`
+	Evidence   string    `json:"evidence"`
+	History    string    `json:"history,omitempty"`
+	CashMax    float64   `json:"cash_max_usd"`
+	// EstimateUSD is the cash the approval check uses: list price, without the ceiling's headroom.
+	EstimateUSD     float64  `json:"estimate_usd,omitempty"`
+	ClaudeListUSD   float64  `json:"claude_list_usd"`
+	NeedsApproval   bool     `json:"needs_approval"`
+	ApprovalReasons []string `json:"approval_reasons,omitempty"`
+	ApprovalID      string   `json:"standing_approval,omitempty"`
+	Review          string   `json:"review"`
+	Reason          string   `json:"reason"`
+	Notes           []string `json:"notes,omitempty"`
+	PriceSource     string   `json:"price_source,omitempty"`
+	MixNext         bool     `json:"mix_next,omitempty"`
 }
 
 type Exclusion struct {
@@ -276,6 +274,23 @@ func (c *ctx) promptTokens() int {
 	n += c.w.Images * md.ImageTokens
 	n += c.w.Pages * md.PageTokens
 	return n
+}
+
+// AgentEstimate is the cash of an agent session of turns on m at list price, with OpenRouter's fee. The
+// guard compares it with the per-task limit for a relay run; ok is false when no price is known.
+func AgentEstimate(m *registry.Model, turns int, cfg Config, zdr bool) (float64, bool) {
+	if m == nil {
+		return 0, false
+	}
+	list, ok := m.Prices(zdr, false)
+	if !ok {
+		return 0, false
+	}
+	v := sessionCost(list, turns, cfg.Agent) * (1 + cfg.CreditFee)
+	if v <= 0 && !m.Free() {
+		return 0, false
+	}
+	return v, true
 }
 
 // sessionCost prices an agent-style session of turns at the given prices.
@@ -670,28 +685,38 @@ func (c *ctx) mediaFallback(m *registry.Model, raw func(*registry.Model) *float6
 	return base * *raw(m) / *raw(rec), "catalog estimate scaled by raw price"
 }
 
+// approval says whether an option needs the user's yes. It follows the guard: the estimate (list price,
+// without the headroom kept for the ceiling) decides, against the per-task limit and the daily room; stakes
+// 4 and ask rules always ask; a first run and code edits ask only when the user turned those on.
 func (c *ctx) approval(o *Option, firstUse bool) {
 	if o.Route == RouteClaude || o.Route == RouteSubagent || o.Route == RouteLocal {
 		return
 	}
 	d := c.in.Rules
 	limit := c.in.Budget.PerTaskUSD
-	var reasons []string
-	if o.CashMax > 0 && c.in.Spend.Today+c.in.Spend.Reserved+o.CashMax > c.in.DailyLimit+1e-9 {
+	est := o.CashMax / math.Max(1, c.cfg.CashHeadroom)
+	o.EstimateUSD = est
+	if est > 0 && c.in.Spend.Today+c.in.Spend.Reserved+est > c.in.DailyLimit+1e-9 {
 		// The tools refuse a call past the daily soft limit; only a session override of daily_usd lifts it.
 		o.NeedsApproval = true
 		o.ApprovalReasons = []string{fmt.Sprintf("would pass the $%.2f daily soft limit; only a session override of daily_usd lifts it", c.in.DailyLimit)}
 		return
 	}
-	if o.CashMax > limit+1e-12 && limit > 0 {
-		reasons = append(reasons, fmt.Sprintf("up to $%.3f, above the $%.2f per-task limit", o.CashMax, limit))
-	} else if o.CashMax > 0 && limit == 0 && len(reasons) == 0 {
-		reasons = append(reasons, "per-task auto-approve is $0")
+	var reasons []string
+	strict := false
+	if est > limit+1e-12 {
+		reasons = append(reasons, fmt.Sprintf("about $%.3f, above the $%.2f auto-approve limit", est, limit))
 	}
-	if c.uc.EditsCode() {
+	if c.stakes >= 4 {
+		reasons, strict = append(reasons, "stakes 4"), true
+	}
+	if r := d.AskFor(o.Model); r != nil {
+		reasons, strict = append(reasons, "rule: "+r.String()), true
+	}
+	if c.uc.EditsCode() && c.in.Budget.Ask.CodeEdits {
 		reasons = append(reasons, "edits your code")
 	}
-	if firstUse && c.in.History != nil && !c.in.History.UsedModels()[o.Model] && d.Allowed[o.Model] == nil {
+	if firstUse && c.in.Budget.Ask.FirstUse && c.in.History != nil && !c.in.History.UsedModels()[o.Model] && d.Allowed[o.Model] == nil {
 		reasons = append(reasons, "first use of this model")
 	}
 	if len(reasons) == 0 {
@@ -701,11 +726,16 @@ func (c *ctx) approval(o *Option, firstUse bool) {
 	if c.in.History != nil {
 		use = c.in.History.ApprovalUse(d.Approvals, nowOf(c.in))
 	}
-	if r, why := d.Approval(o.Model, o.CashMax, use); r != nil {
+	r, why := d.Approval(o.Model, est, use)
+	if r != nil && strict && r.Scope != rules.ScopeSession {
+		r, why = nil, "needs a yes for this run"
+	}
+	if r != nil {
 		o.ApprovalID = r.ID
 		o.Notes = append(o.Notes, "covered by standing approval: "+r.String())
 		return
-	} else if why != "" {
+	}
+	if why != "" {
 		reasons = append(reasons, why)
 	}
 	o.NeedsApproval = true

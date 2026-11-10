@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"p0ssess/internal/pme/catalog"
@@ -19,12 +20,11 @@ import (
 )
 
 // Instructions tell Claude how to use the engine tools.
-const Instructions = `p0ssess routes work to other models through OpenRouter; Claude stays in charge and reviews what comes back.
-- Call recommend before work Claude cannot do (audio, video, image/audio/video generation, embeddings, over 1M tokens), bulk one-shot text jobs, or long agent work. Pass use_case when you know the catalog id, else a profile. Rate stakes 1-4 yourself.
-- Follow the pick unless you have a stated reason. Announce routing in one line (the announce field). Ask the user first when the option says needs_approval.
-- The direct and run tools enforce every limit themselves. When one answers "needs approval", ask the user with the cost; if they agree, save a one-run session approval with approvals_add as the message says (its permission prompt is the user's confirmation) and call again. Never add an approval the user has not agreed to.
-- Spend is measured: the relay and the direct tool record each run's real cost. After delegated work, call history_record_outcome with the offer_id and the run_id from the result (a relay session id or a direct run id): accepted, redo (you had to redo it), overridden or declined. Never include prompt content.
-- To turn a plain-language rule into a structured one, call rules_add or approvals_add with dry_run true, show the user the one-line text, and save only after they confirm. Never create rules on your own.`
+const Instructions = `- Hand every routed task to the p0ssess agent; no recommend first, no confirmation, no narration. Reply with its result plus the model credit in a few words.
+- Only "needs approval" asks the user: one line with the cost; on a yes, call approvals_add exactly as the message says. Never add an approval the user has not agreed to.
+- Generated files: print their absolute paths, and send them with SendUserFile when the session has it.
+- A run you used counts as accepted on its own. Call history_record_outcome only for redo, declined or overridden. Never include prompt content.
+- Rules: rules_add or approvals_add with dry_run true, show the one line, save after the user confirms.`
 
 // Server answers the engine tools; the plugin's one MCP server (internal/server) carries them.
 type Server struct {
@@ -72,11 +72,16 @@ func (s *Server) call(name string, raw json.RawMessage) (any, error) {
 			Stakes  int              `json:"stakes"`
 			Lead    string           `json:"lead_model"`
 			Top     int              `json:"top"`
+			Detail  bool             `json:"detail"`
 		}
 		if err := decode(raw, &a); err != nil {
 			return nil, err
 		}
-		return e.Recommend(engine.Request{UseCase: a.UseCase, Profile: a.Profile, Stakes: a.Stakes, Lead: a.Lead, Top: a.Top, Record: true, Scope: a.scope()})
+		rec, err := e.Recommend(engine.Request{UseCase: a.UseCase, Profile: a.Profile, Stakes: a.Stakes, Lead: a.Lead, Top: a.Top, Record: true, Scope: a.scope()})
+		if err != nil || a.Detail {
+			return rec, err
+		}
+		return Compact(rec), nil
 	case "budget_status":
 		var a scopeArgs
 		if err := decode(raw, &a); err != nil {
@@ -179,7 +184,7 @@ func withScope(p map[string]any) map[string]any {
 
 func ruleProps() map[string]any {
 	return withScope(map[string]any{
-		"kind":   map[string]any{"type": "string", "enum": []string{"forbid", "allow", "only", "mix", "approve", "budget"}},
+		"kind":   map[string]any{"type": "string", "enum": []string{"forbid", "allow", "only", "mix", "approve", "ask", "budget"}, "description": "ask: always ask first for matching work"},
 		"target": map[string]any{"type": "string", "enum": []string{"model", "claude_agents", "opencode", "delegation"}, "description": "For forbid and allow"},
 		"models": strs, "weights": map[string]any{"type": "array", "items": num},
 		"use_cases":       map[string]any{"type": "array", "items": str, "description": "Catalog ids; empty covers all"},
@@ -208,24 +213,25 @@ func tools() []map[string]any {
 		"needs_tools": boo,
 	})
 	return []map[string]any{
-		{"name": "recommend", "description": "Rank every route for a task (Claude included) by expected cost per accepted result, with a cost breakdown, a one-line reason and whether it needs the user's approval. Records the offer.",
+		{"name": "recommend", "description": "For the p0ssess agent. Rank every route for a task (Claude included) by expected cost per accepted result, with a cost breakdown, a one-line reason and whether it needs the user's approval. Records the offer.",
 			"inputSchema": obj(withScope(map[string]any{
 				"use_case":   map[string]any{"type": "string", "description": "Catalog id, e.g. video-understand"},
 				"profile":    profile,
 				"stakes":     map[string]any{"type": "integer", "minimum": 1, "maximum": 4, "description": "1 trivial, 2 routine, 3 important, 4 critical"},
 				"lead_model": map[string]any{"type": "string", "description": "The session's model id if known"},
 				"top":        integ,
+				"detail":     map[string]any{"type": "boolean", "description": "The full breakdown instead of one line per option"},
 			}))},
 		{"name": "budget_status", "description": "Spend against the monthly cap and daily limit, Claude limit pressure and λ, running jobs, and where the config files are.",
 			"inputSchema": obj(withScope(map[string]any{}))},
 		{"name": "settings_set", "description": "Change one budget or engine setting permanently. Keys: " + fmt.Sprint(engine.SettingKeys()) + ". Lists are comma-separated.",
 			"inputSchema": obj(map[string]any{"key": str, "value": str}, "key", "value")},
 		{"name": "rules_list", "description": "Every rule with its scope, expiry and one-line text.", "inputSchema": obj(withScope(map[string]any{}))},
-		{"name": "rules_add", "description": "Add a structured rule (forbid, allow, only, mix, approve, budget). Use dry_run first and show the text to the user.", "inputSchema": obj(ruleProps(), "kind")},
+		{"name": "rules_add", "description": "Add a structured rule (forbid, allow, only, mix, approve, ask, budget). Use dry_run first and show the text to the user.", "inputSchema": obj(ruleProps(), "kind")},
 		{"name": "rules_remove", "description": "Remove a rule by id.", "inputSchema": obj(withScope(map[string]any{"id": str}), "id")},
 		{"name": "approvals_add", "description": "Add a standing approval: auto-approve a kind of task up to a per-run price, with optional count or total limits.", "inputSchema": obj(ruleProps(), "max_per_run_usd")},
 		{"name": "approvals_list", "description": "Standing approvals and how much of each is used.", "inputSchema": obj(withScope(map[string]any{}))},
-		{"name": "history_record_outcome", "description": "Record what happened to an offer: accepted, redo, overridden or declined. Pass run_id so the measured cost is used. No prompt content.",
+		{"name": "history_record_outcome", "description": "Record a delegated result you did not use: redo, overridden or declined (a finished run you used counts as accepted on its own). Pass run_id. No prompt content.",
 			"inputSchema": obj(withScope(map[string]any{
 				"offer_id": str, "model": str,
 				"run_id":   map[string]any{"type": "string", "description": "The run the outcome is about: a relay session_id or a direct run id. Its measured cost becomes the outcome's cash"},
@@ -247,4 +253,39 @@ func BackgroundRefresh(e *engine.Engine) func() {
 			e.Reg.MergeLive(e.Dirs.ModelsCache())
 		}
 	}
+}
+
+// CompactRecommendation is recommend's default answer: the pick and one line per option.
+type CompactRecommendation struct {
+	OfferID  string                `json:"offer_id,omitempty"`
+	UseCase  string                `json:"use_case"`
+	Stakes   int                   `json:"stakes"`
+	Announce string                `json:"announce"`
+	Options  []string              `json:"options"`
+	Second   *engine.SecondOpinion `json:"second_opinion,omitempty"`
+	Notes    []string              `json:"notes,omitempty"`
+}
+
+// Compact shortens a recommendation to what Claude acts on.
+func Compact(r *engine.Recommendation) CompactRecommendation {
+	c := CompactRecommendation{OfferID: r.OfferID, UseCase: r.UseCase.ID, Stakes: r.Stakes, Announce: r.Announce, Second: r.SecondOpinion}
+	for i, o := range r.Options {
+		if i == 3 {
+			break
+		}
+		line := fmt.Sprintf("%s %s · total $%.4f", o.Route, o.Model, o.Total)
+		if o.Breakdown.Cash > 0 {
+			line += fmt.Sprintf(" · about $%.4f cash", o.EstimateUSD)
+		}
+		line += fmt.Sprintf(" · p_fail %.2f", o.PFail)
+		if o.NeedsApproval {
+			line += " · asks: " + strings.Join(o.ApprovalReasons, "; ")
+		}
+		c.Options = append(c.Options, line)
+	}
+	c.Notes = append(c.Notes, r.Notes...)
+	if r.StakesNote != "" {
+		c.Notes = append(c.Notes, r.StakesNote)
+	}
+	return c
 }

@@ -18,8 +18,10 @@ import (
 )
 
 const directUsage = `usage:
-  p0ssess direct run      --model ID --prompt TEXT [--file PATH]... --max-cost USD [options]
-  p0ssess direct estimate --model ID --prompt TEXT [--file PATH]... [options]
+  p0ssess direct run      [--model ID | --use-case ID] --prompt TEXT [--file PATH]... [--max-cost USD] [options]
+  p0ssess direct estimate [--model ID | --use-case ID] --prompt TEXT [--file PATH]... [options]
+      With no --model, the engine picks one for the use case (or the one the files imply).
+      With no --max-cost, the estimate is the ceiling.
   p0ssess direct tool     < args.json          (the MCP tool, for testing)
   p0ssess direct probe    FILE
   p0ssess direct frames   FILE --out DIR [--every S | --scenes [--threshold T]] [--max N]
@@ -66,7 +68,7 @@ func directRun(ctx context.Context, mode string, args []string) error {
 	prompt := fs.String("prompt", "", "prompt text")
 	system := fs.String("system", "", "system prompt")
 	output := fs.String("output", "text", "text, json, image or transcript")
-	maxCost := fs.Float64("max-cost", 0, "refuse when the estimate is above this (USD)")
+	maxCost := fs.Float64("max-cost", 0, "the most the call may spend (USD); default: the estimate")
 	maxTokens := fs.Int("max-tokens", 0, "completion cap")
 	zdr := fs.Bool("zdr", false, "zero-data-retention endpoints only")
 	reasoning := fs.String("reasoning", "", "reasoning effort")
@@ -89,6 +91,11 @@ func directRun(ctx context.Context, mode string, args []string) error {
 		Timestamps: *timestamps, Language: *language, ImageAspect: *aspect, ImageResolution: *resolution,
 		OutDir: *out, DryRun: mode == "estimate",
 	}
+	fs.Visit(func(f *flag.Flag) {
+		if f.Name == "max-cost" {
+			req.MaxGiven = true
+		}
+	})
 	cfg, err := config.Load()
 	if err != nil {
 		return err

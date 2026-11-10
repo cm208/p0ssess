@@ -97,14 +97,14 @@ func (e *Engine) secondOpinion(uc *catalog.UseCase, stakes int, p *catalog.Profi
 	if daily >= 0 && !math.IsInf(daily, 1) && spend.Today+so.CashMaxUSD > daily {
 		return nil, fmt.Sprintf("second opinion skipped: up to $%.2f would pass today's $%.2f limit", so.CashMaxUSD, daily)
 	}
-	per := so.CashMaxUSD / 2
+	per := so.CashUSD / 2
 	if per > bud.PerTaskUSD {
 		use := ledger.ApprovalUse(d.Approvals, now)
 		if r, _ := d.Approval(picked[0], per, use); r != nil {
 			so.ApprovalID = r.ID
 		} else {
 			so.NeedsApproval = true
-			so.ApprovalReasons = []string{fmt.Sprintf("up to $%.3f per review, above the $%.2f per-task limit", per, bud.PerTaskUSD)}
+			so.ApprovalReasons = []string{fmt.Sprintf("about $%.3f per review, above the $%.2f auto-approve limit", per, bud.PerTaskUSD)}
 		}
 	}
 	return so, ""

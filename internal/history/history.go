@@ -4,6 +4,7 @@ package history
 
 import (
 	"bufio"
+	"cmp"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -91,6 +92,8 @@ type Entry struct {
 	Generations []string `json:"generations,omitempty"`
 	// Expires ends a reservation's hold.
 	Expires *time.Time `json:"expires,omitempty"`
+	// Implied marks an outcome the ledger infers (a finished run nobody reported on); it is never written.
+	Implied bool `json:"implied,omitempty"`
 }
 
 func NewOfferID() string {
@@ -268,12 +271,36 @@ func (l *Ledger) Open() []Entry {
 
 func (l *Ledger) Offer(id string) *Entry { return l.offers[id] }
 
+// outcomes are the recorded outcomes plus an implied "accepted" for every finished direct or agent run
+// that no outcome names: Claude reports only what it did not use (redo, declined, overridden). An
+// outcome naming a relay session covers all of its turns.
 func (l *Ledger) outcomes() []Entry {
 	var out []Entry
+	claimed := map[string]bool{}
 	for _, e := range l.Entries {
 		if e.Type == TypeOutcome {
 			out = append(out, e)
+			if e.RunID != "" {
+				claimed[e.RunID] = true
+			}
 		}
+	}
+	for _, e := range l.Entries {
+		if e.Type != TypeRun || e.Status != "done" || e.RunID == "" || (e.Route != "direct" && e.Route != "agent") {
+			continue
+		}
+		session, _, _ := strings.Cut(e.RunID, "/")
+		if claimed[e.RunID] || claimed[session] {
+			continue
+		}
+		o := Entry{TS: e.TS, Type: TypeOutcome, Outcome: Accepted, Implied: true, RunID: e.RunID, OfferID: e.OfferID,
+			Model: e.Model, UseCase: e.UseCase, Kind: e.Kind, Family: e.Family, Stakes: e.Stakes, Session: e.Session,
+			Project: e.Project, CashUSD: l.Cost(e), ApprovalID: e.ApprovalID}
+		if off := l.offers[e.OfferID]; off != nil {
+			o.UseCase, o.Kind, o.Family = cmp.Or(o.UseCase, off.UseCase), cmp.Or(o.Kind, off.Kind), cmp.Or(o.Family, off.Family)
+			o.Stakes = cmp.Or(o.Stakes, off.Stakes)
+		}
+		out = append(out, o)
 	}
 	return out
 }

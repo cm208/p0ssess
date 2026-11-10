@@ -33,8 +33,11 @@ type Request struct {
 
 	MaxTokens  int     // completion cap (reasoning included); 0 means DefaultMaxTokens
 	MaxCostUSD float64 // refuse when the estimate is above this; 0 means no call is made
-	StrictZDR  bool    // provider.zdr = true on top of data_collection = deny
-	Reasoning  string  // optional reasoning effort ("low", "medium", "high", "none")
+	// MaxGiven is true when the caller chose MaxCostUSD. Without it the plugin's guard sets MaxCostUSD to
+	// the estimate before sending.
+	MaxGiven  bool
+	StrictZDR bool   // provider.zdr = true on top of data_collection = deny
+	Reasoning string // optional reasoning effort ("low", "medium", "high", "none")
 
 	PDFEngine       string // "native", "cloudflare-ai" or "mistral-ocr"; empty picks per model
 	VideoProcessing string // Gemini only: "agentic" or "static"

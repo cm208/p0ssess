@@ -81,8 +81,14 @@ func TestAuthorizeRulesListsStakesPrivacy(t *testing.T) {
 	_, err = e.Authorize(c)
 	refused(t, err, false, "stakes 4")
 	addRule(t, e, proj, rules.Rule{Kind: rules.KindAllow, Target: rules.TargetModel, Models: []string{cheap}, MaxStakes: 4})
+	_, err = e.Authorize(c)
+	refused(t, err, true, "stakes 4")
+	addRule(t, e, proj, rules.Rule{Kind: rules.KindApprove, Models: []string{cheap}, MaxPerRunUSD: 1, Scope: rules.ScopeGlobal})
+	_, err = e.Authorize(c)
+	refused(t, err, true, "needs a yes for this run")
+	addRule(t, e, proj, rules.Rule{Kind: rules.KindApprove, Models: []string{cheap}, MaxPerRunUSD: 0.01, MaxCount: 1, Scope: rules.ScopeSession})
 	if _, err := e.Authorize(c); err != nil {
-		t.Errorf("a named allow at stakes 4 refused: %v", err)
+		t.Errorf("a named allow at stakes 4 with a yes for this run refused: %v", err)
 	}
 
 	e.SetSetting("privacy.mode", "zdr")
@@ -201,14 +207,14 @@ field = "per_task_usd"
 value = 0.01
 `), 0o600)
 	g, err := e.Authorize(charge(proj, 0.015))
-	refused(t, err, true, "$0.01 per-task")
+	refused(t, err, true, "$0.01 auto-approve")
 	_ = g
 	c := charge(proj, 0)
 	c.Stakes = 4
 	_, err = e.Authorize(c)
 	refused(t, err, false, "stakes 4")
 	_, err = e.Authorize(charge(proj, 0.4))
-	refused(t, err, true, "per-task")
+	refused(t, err, true, "auto-approve")
 	_, err = e.Authorize(charge(proj, 0.9))
 	refused(t, err, false, "daily soft limit")
 

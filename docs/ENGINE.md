@@ -28,8 +28,9 @@ The plugin wires it in (see [INSTALL.md](INSTALL.md)):
 
 - **MCP tools:** the plugin's one MCP server, `p0ssess mcp`, carries the engine tools next to the relay and direct tools. Inside the plugin they are named `mcp__plugin_p0ssess_p0ssess__<tool>`.
 - **Prompt hint:** the plugin's `UserPromptSubmit` hook runs `p0ssess hook prompt`.
-- **Routing behavior:** the plugin's `routing` skill teaches Claude when to call `recommend`, how to announce, rate stakes, ask for approval, record outcomes and turn plain language into rules.
-- **Status line and allow rules:** a plugin cannot install either, so `/p0ssess:p0ssess-me` offers `p0ssess setup statusline` and `p0ssess setup allow`, each only after you say yes. `p0ssess setup undo` reverts them.
+- **The possession:** routed tools (`direct`, `run`, `wait`, `abort`, `answer_permission`, `recommend`, `models`) are used by the `p0ssess` agent on Haiku. The plugin's `PreToolUse` hook (`p0ssess hook tool`) denies them in the main conversation unless the user's latest prompt asked for that, and its `PostToolUse` hook on the Agent call keeps main Claude quiet until the result arrives (DESIGN.md, Agents).
+- **Routing behavior:** the plugin's `routing` skill teaches Claude to act on media requests with one `direct` call and no questions, rate stakes, ask only on "needs approval", present generated files, report outcomes it did not use and turn plain language into rules.
+- **Status line and allow rules:** a plugin cannot install either, so `/p0ssess:p0ssess-me` offers `p0ssess setup statusline` and `p0ssess setup allow` when they are missing, each only after you say yes. `p0ssess setup undo` reverts them.
 
 ## Defaults decided for the first release
 
@@ -185,13 +186,17 @@ The ceilings were set against the clean agent evidence, which is where RESEARCH.
 
 ### 8. Approval
 
-An option **needs approval** when any of these hold, unless a standing approval covers it:
+Whether to ask is decided from the **estimate**: the run's cash at list price, including retries, without the 1.5× headroom (`estimate_usd` on each option). The headroom and the relay's `max_run_cost_usd` are ceilings, enforced at spend time (see Enforcement), not reasons to ask. An option **needs approval** when any of these hold, unless a standing approval covers it:
 
-- its conservative cash (list price × 1.5 headroom, including retries) is above the per-task auto-approve limit (default $0.02), or the daily soft limit is already reached (then the limit is $0);
-- it edits the user's code;
-- it is the first use of the model (no accepted or redone run in the ledger) and no `allow` rule names it.
+- its estimate is above the per-task auto-approve limit (default $0.02);
+- its estimate would pass the daily soft limit (only a session `daily_usd` override lifts that);
+- the stakes are 4 (possible for another model only with an `allow` rule naming it with `max_stakes = 4`);
+- an `ask` rule covers it ("always ask before using grok");
+- `ask.first_use` is on and the model has never run (no run or accepted or redone outcome in the ledger), or `ask.code_edits` is on and the work edits code. Both are off by default: an edit always comes back as a diff Claude reviews before anything is applied.
 
-A standing approval covers an option when it matches the use case or kind (and model, if it lists models), the per-run limit covers the conservative cash, and its count or total for the period is not used up. Approvals are counted from ledger outcomes that carry their id; outcomes recorded against an offer inherit it automatically.
+A standing approval covers an option when it matches the use case or kind (and model, if it lists models), its per-run limit covers the estimate, and its count or total for the period is not used up. Stakes 4 and `ask` rules need a yes for this run: only a session-scope approval (the one-run approval Claude saves after the user says yes) covers them. Approval use is counted from the runs and reservations the tools tagged with the approval.
+
+A monthly cap the run would pass is not an approval question: the option is excluded, and the tools refuse until the cap is raised.
 
 The daily soft limit defaults to pacing: `(monthly cap - spent before today) / days left in the month`.
 
@@ -239,7 +244,13 @@ allow_safety_retention = false
 
 [sandbox]
 shell_internet = []       # project directories whose sandboxed shell commands may reach the internet
+
+[ask]
+first_use = false         # ask before the first run on a model you have not used
+code_edits = false        # ask before an agent run in edit mode (its diff is reviewed either way)
 ```
+
+`[ask]` is new in 0.5.0. A file without it keeps both off; nothing is rewritten until you change a setting.
 
 `sandbox.shell_internet` is off for every project not listed. It lives only here, in your own file: a repository's `.p0ssess/rules.toml` cannot turn it on. Set it with `settings_set` keys `sandbox.shell_internet.add` and `sandbox.shell_internet.remove` (one project directory each; symlinks are resolved), or `sandbox.shell_internet` to replace the list. A listed directory covers the repositories inside it. [RELAY.md](RELAY.md#shell-internet) describes what it allows.
 
@@ -297,7 +308,7 @@ Rules are structured. Claude turns plain language into one (`rules_add` or `appr
 ```toml
 [[rule]]
 id = "r-1a2b3c4d"
-kind = "forbid"                       # forbid, allow, only, mix, approve, budget
+kind = "forbid"                       # forbid, allow, only, mix, approve, ask, budget
 target = "model"                      # model, claude_agents, opencode, delegation
 models = ["x-ai/grok-4.20"]
 created = 2026-11-08T21:00:00Z
@@ -329,6 +340,7 @@ created = 2026-11-08T21:00:00Z
 | "no OpenCode" | `forbid`, `opencode` | never use the OpenCode agent path |
 | "keep this repo on Claude" | `forbid`, `delegation`, project | keep work on Claude (project) |
 | "auto-approve 10-minute video edits up to $0.20 each" | `approve`, `use_cases`, `max_per_run_usd = 0.2` | auto-approve for video-understand up to $0.20 each |
+| "always ask before using grok" | `ask`, models | ask first for all delegations on grok-4.20 |
 | "raise the per-task limit to a dime for this session" | `budget`, `per_task_usd = 0.10`, session | set the per-task limit to $0.10 (session) |
 | "let Sonnet via OpenRouter do prod config with review" | `allow`, models, `max_stakes = 4` | allow claude-sonnet-5.5 up to stakes 4 |
 
@@ -336,7 +348,7 @@ Kinds: `media` (reads audio, video, images or documents; also covers `generate`)
 
 Precedence: a forbid at any scope beats any allow. Session and global rules are yours and have full power; for rules that pick one value (`only`, `mix`, budget overrides) the session beats global, and the newest wins within a scope. Project rules only tighten, because `.p0ssess/rules.toml` arrives with whatever repository you clone:
 
-- kept: `forbid` (any target); `only` and `mix`, which narrow your own choice (a model must pass yours and the project's) and never bring in a model the use case does not name; `budget` overrides, applied only when lower than your limit (a project `daily_usd` must be above 0).
+- kept: `forbid` (any target); `ask`; `only` and `mix`, which narrow your own choice (a model must pass yours and the project's) and never bring in a model the use case does not name; `budget` overrides, applied only when lower than your limit (a project `daily_usd` must be above 0).
 - ignored and reported once per session ("project rules tried to loosen …; ignored — add it yourself if you want it"): `allow` (including `max_stakes`), `approve`, and any budget override that would raise, pace or turn off a limit. `rules_add` refuses to save them at project scope.
 
 Every rule is validated when it is read; an invalid one is ignored and reported. Budget overrides cannot be limited to use cases or kinds. A call that does not name its use case meets every `forbid`, `only` and `mix` rule whatever it is limited to, and only approvals that cover all work. Expired rules stay in the file, are shown as expired, and do nothing.
@@ -346,7 +358,7 @@ Every rule is validated when it is read; an invalid one is ignored and reported.
 `history.jsonl` holds these kinds of line, and never prompt content:
 
 - **offer**: written by `recommend` from the MCP server (or `--record`): offer id, use case, kind, family, stakes, project, session, the top options with total, cash, p_fail and approval status, λ and the preset.
-- **outcome**: written by `history_record_outcome`: the model, `accepted` (the result was used), `redo` (Claude had to redo it), `overridden` (another route ran instead; `chosen` says which) or `declined` (the user said no), the cash spent, and a reason of at most 160 characters. With an offer id, use case, stakes and the standing approval are filled in from the offer.
+- **outcome**: written by `history_record_outcome` when Claude did not use a result (a finished run nobody reports on counts as `accepted`; the ledger infers that outcome on reading and never writes it): the model, `accepted` (the result was used), `redo` (Claude had to redo it), `overridden` (another route ran instead; `chosen` says which) or `declined` (the user said no), the cash spent, and a reason of at most 160 characters. With an offer id, use case, stakes and the standing approval are filled in from the offer.
 
 From it the engine reads spend (today, this month), first uses, standing-approval use, per-model outcomes for p_fail, and **tendencies** once a model and kind have three or more outcomes: "accepts gemini-3.8-flash for media 9/9", "declines deepseek-v4.1-flash for agent work 4/5", "redoes glm-5.3-flash's code 2/3". **Suggestions** are rules it proposes and never saves: a standing approval after five approved runs of a use case above the per-task limit (at the 90th percentile cost plus 25%), and a forbid rule after repeated declines.
 
@@ -363,13 +375,14 @@ An outcome takes its cash from the run it names (`run_id`), or from the newest u
 1. `.p0ssess-private` in the working directory or above it: refused, even for a prompt-only call.
 2. The budget, rules and ledger must be readable and valid: otherwise refused (fail closed).
 3. Forbid rules (delegation, the model, OpenCode for the agent path), `only`/`mix`/project restrictions, and the model and provider allow and deny lists.
-4. Stakes: the caller's rating, else the use case's catalog stakes, else 3. Stakes 4 is refused for a non-Claude model unless an `allow` rule names it with `max_stakes = 4`.
+4. Stakes: the caller's rating, else the use case's catalog stakes, else 3. Stakes 4 is refused for a non-Claude model unless an `allow` rule names it with `max_stakes = 4`, and even then it needs a yes for the run (step 8).
 5. Price: a model with no known price runs only with an explicit `max_cost_usd` above 0, which is reserved and counted in full. A zero price counts as free only for a `:free` variant or a text model the shipped snapshot lists at zero; a zero from the live list, an endpoint, or a media model billed by the image, second or character means unknown. `recommend` leaves such models out ("price unknown") rather than ranking them as cheap.
 6. Privacy: in `zdr` mode a model whose endpoints are known and include no zero-retention one is refused, and the call goes out with `provider.zdr = true` (the direct client sets it; the relay's key proxy adds it to every request).
-7. The monthly cap and the daily soft limit, counting open reservations. The daily limit is lifted only by a session-scope `daily_usd` override.
-8. The per-task limit: a call whose maximum cost is above it needs a standing approval whose per-run, count and total limits cover it. Otherwise the result is "needs approval", with the exact `approvals_add` call (scope session, one run) that records the user's yes; Claude Code's permission prompt for that tool is the confirmation. Keep `rules_add`, `approvals_add` and `settings_set` out of your allow list; `p0ssess setup show` warns when they are in it.
+7. The ceiling: `max_cost_usd` when the caller set one; otherwise the direct call's own estimate (full output allowance at the highest endpoint price, also sent to OpenRouter as `max_price`), or for a relay run `max_run_cost_usd` from `config.json` ($0.50). A default ceiling is lowered to the room left under the monthly cap and the daily limit, when the estimate still fits; a caller's own is never lowered.
+8. The monthly cap and the daily soft limit, checked against the ceiling and counting open reservations. The daily limit is lifted only by a session-scope `daily_usd` override.
+9. Whether to ask, from the **estimate** (the direct call's estimate; for a relay run, a session of the use case's catalog turns, or 10, at list price): above the per-task limit, stakes 4, an `ask` rule, or the opt-in `ask.first_use` and `ask.code_edits`. A standing approval whose per-run, count and total limits cover the estimate answers it, and then its per-run limit also caps a default ceiling. Stakes 4 and `ask` rules take only a session approval. Otherwise the result is "needs approval", with the exact `approvals_add` arguments (scope session, one run, up to the ceiling) that record the user's yes; Claude Code's permission prompt for that tool is the confirmation. Keep `rules_add`, `approvals_add` and `settings_set` out of your allow list; `p0ssess setup show` warns when they are in it.
 
-Then it reserves the maximum (`max_cost_usd` for `direct`; for `run`, its `max_cost_usd`, default and ceiling `max_run_cost_usd` from `config.json`, which is also the cost at which the relay interrupts the run).
+Then it reserves the ceiling. The direct client refuses a call whose estimate is above it; the relay interrupts a run whose cost reaches it.
 
 The relay also keeps its own run log at `~/.local/state/p0ssess/relay/relay-runs.jsonl` (status, tokens and cost of each OpenCode run).
 
@@ -393,7 +406,7 @@ A reading older than two hours, or none (before the first response in a session,
 
 ## The prompt hint
 
-`p0ssess hook prompt` is a `UserPromptSubmit` hook. It prints one line of context only for: a video or audio file or video link in the prompt; a request to generate an image, audio or video; a Claude window at 80% used or projected past 90%; bulk one-shot work (summarize, translate, classify, caption or extract over many items, or a pasted prompt over 40,000 characters); or, for media and reviews, a route the user reliably accepts. Otherwise it prints nothing. It reads only local files, about 4 ms a call, and stays silent in `.p0ssess-private` repositories.
+`p0ssess hook prompt` is a `UserPromptSubmit` hook. Its line goes into Claude's context only (Claude Code shows hook context to Claude, not in the transcript), and only for: a video (a file, a link, or words like "watch this video"), audio (a file, "listen to", "transcribe the call", a voice memo), a request to make an image; a Claude window at 80% used or projected past 90%; bulk one-shot work (summarize, translate, classify, caption or extract over many items, or a pasted prompt over 40,000 characters); or, for reviews, a route the user reliably accepts. Otherwise it prints nothing. For media the line tells Claude to act now: one `direct` call with the file and the use case, no model, no `recommend`, no confirmation, and to present any generated file. When the OpenRouter key file is missing it says so instead. It reads only local files (it checks that the key file exists, never its contents), takes a few milliseconds, and stays silent in `.p0ssess-private` repositories.
 
 ## MCP tools
 
@@ -401,12 +414,12 @@ A reading older than two hours, or none (before the first response in a session,
 
 | Tool | What it does |
 |---|---|
-| `recommend` | the ranked list for a use case or profile; records the offer. Each paid option has `max_cost_usd`, the ceiling already authorized (the standing approval's per-run limit, or the per-task limit); it is 0 when the user must approve first |
+| `recommend` | the ranked list for a use case or profile; records the offer. By default one line per option (route, model, total, estimated cash, p_fail, why it would ask); `detail: true` returns the full breakdown. Each paid option's `estimate_usd` is what the approval check uses |
 | `budget_status` | spend against limits, plan, λ and pressure, running jobs, file locations |
-| `settings_set` | change one setting (`monthly_usd`, `per_task_usd`, `daily_usd`, `save_claude`, `plan`, `usage_credits`, `privacy.mode`, `privacy.allow_safety_retention`, `models.allow`, `models.deny`, `providers.allow`, `providers.deny`, `sandbox.shell_internet`, `sandbox.shell_internet.add`, `sandbox.shell_internet.remove`, `lambda.preset`, `statusline.command`, `statusline.mark`, `statusline.width`) |
+| `settings_set` | change one setting (`monthly_usd`, `per_task_usd`, `daily_usd`, `save_claude`, `plan`, `usage_credits`, `privacy.mode`, `privacy.allow_safety_retention`, `ask.first_use`, `ask.code_edits`, `models.allow`, `models.deny`, `providers.allow`, `providers.deny`, `sandbox.shell_internet`, `sandbox.shell_internet.add`, `sandbox.shell_internet.remove`, `lambda.preset`, `statusline.command`, `statusline.mark`, `statusline.width`) |
 | `rules_list`, `rules_add`, `rules_remove` | rules with scope; `dry_run` renders without saving |
 | `approvals_add`, `approvals_list` | standing approvals and their use |
-| `history_record_outcome` | accepted, redo, overridden or declined, with the `run_id` whose measured cost it takes |
+| `history_record_outcome` | redo, overridden or declined (or accepted, though a finished run counts as accepted on its own), with the `run_id` whose measured cost it takes |
 | `tendencies` | learned patterns, suggestions and recent delegations |
 | `shortcuts_suggest`, `shortcuts_create`, `shortcuts_remove` | named shortcut agents (below) |
 
@@ -420,7 +433,17 @@ The server finds the session for session-scoped rules from the latest status lin
 
 ## The local page
 
-`p0ssess me` serves a page on 127.0.0.1 at a random port, behind a random token in the path. It shows spend against the cap and daily limit, Claude's two windows with the projected mark and λ, running jobs, tendencies and suggestions (with a button to save one as a rule), recent delegations, every rule with its scope, and the settings form. It loads nothing from the network, sends a strict content security policy, refuses other Host headers, and requires the token in a header for every change. It stops after two hours (`--for`).
+`p0ssess me` serves a page on 127.0.0.1 at a random port, behind a random token in the path: one screen in the site's design language (black ground, violet hairline grid, Obel Mono numbers, IBM Plex Sans text, both fonts bundled). It shows spend today and this month against the cap, running jobs, Claude's windows and λ, recent runs, the limits as pills and every rule with a remove button; the settings form opens in a dialog. The ghost is the shipped `assets/ghost.svg`. It loads nothing from the network, sends a strict content security policy, refuses other Host headers, and requires the token in a header for every change. It stops after two hours (`--for`).
+
+`p0ssess me --brief` prints the summary `/p0ssess:p0ssess-me` shows, three lines plus a `setup` line when something is missing:
+
+```
+ᗣ p0ssess 0.5.0   today $0.04   month $0.04 of $10.00 ▰▱▱▱▱▱▱▱▱▱   nothing running
+limits   asks above $0.10 a task · $0.45 today (paced) · no-training · Claude 5-hour 1%, weekly 89%
+change   tell Claude ("cap OpenRouter at $5", "always ask before grok") · page http://127.0.0.1:…/t/…/
+```
+
+It starts the page in the background when none is running (its address and end time are kept in `~/.cache/p0ssess/me.json`, mode 0600) and reuses a running one.
 
 ## Worked examples
 
@@ -430,19 +453,19 @@ API-key plan, no history:
 $ p0ssess engine recommend --use-case video-understand --top 3
 video-understand (#75, media) · stakes 1 · λ 1.00 (API-key plan: Claude at list price)
    route   model               total    cash     claude   risk     p_fail
-1  direct  glm-5.3-flash       $0.0734  $0.0064  $0.0550  $0.0120  0.18    ask: first use of this model
-2  direct  gemma-4-26b-a4b-it  $0.0773  $0.0058  $0.0550  $0.0165  0.25    ask: first use of this model
-3  direct  mimo-v2.6-flash     $0.0905  $0.0209  $0.0550  $0.0146  0.18    ask: up to $0.039, above the $0.02 per-task limit; first use of this model
+1  direct  glm-5.3-flash       $0.0734  $0.0064  $0.0550  $0.0120  0.18
+2  direct  gemma-4-26b-a4b-it  $0.0773  $0.0058  $0.0550  $0.0165  0.25
+3  direct  mimo-v2.6-flash     $0.0905  $0.0209  $0.0550  $0.0146  0.18    ask: about $0.026, above the $0.02 auto-approve limit
 pick: handing this to glm-5.3-flash: summarize a talk, meeting or lecture video
 ```
 
-Claude cannot watch video, so there is no Claude row. With no clean video benchmark, the catalog's ordering is the prior (Gemini 3.8 Flash 0.15, its alternatives 0.18, others 0.25); GLM-5.3-Flash wins on price at stakes 1.
+Claude cannot watch video, so there is no Claude row. With no clean video benchmark, the catalog's ordering is the prior (Gemini 3.8 Flash 0.15, its alternatives 0.18, others 0.25); GLM-5.3-Flash wins on price at stakes 1 and runs without asking. Mimo's estimate (list price, with retries) is above the default $0.02 limit, so it would ask.
 
 Feature work at stakes 3 on an API plan, then on a subscription with no reading yet:
 
 ```
 code-implement-feature (#8, agent) · stakes 3 · λ 1.00
-1  agent   gpt-6.1-sol        $0.5101  $0.2110  $0.1180  $0.1811  0.30    ask: ...; edits your code; first use of this model
+1  agent   gpt-6.1-sol        $0.5101  $0.2110  $0.1180  $0.1811  0.30    ask: about $0.422, above the $0.02 auto-approve limit
 2  claude  claude-sonnet-5.5  $0.5395  $0.0000  $0.4000  $0.1395  0.23
 
 code-implement-feature (#8, agent) · stakes 3 · λ 0.15
@@ -457,5 +480,5 @@ Sol's row at λ = 1: $0.211 cash, $0.118 of Claude hand-off and full review, and
 - The presets are stances, not measurements. The ledger records λ, the preset and every outcome so they can be calibrated; the opt-in evaluation set in DESIGN.md does not exist yet.
 - Audio, video, speech, embeddings and reranking have no clean benchmark. Their p_fail is the catalog's ordering until outcomes accumulate. Speech-to-text and text-to-speech prices are read as per second and per character, which OpenRouter does not confirm; image and music prices are scaled from the catalog's estimates.
 - Rerank models show 0/0 prices and are never offered until a price appears.
-- Spend is measured per run, but learning still needs outcomes: a forgotten `history_record_outcome` leaves p_fail and tendencies where they were.
+- Spend is measured per run. A run counts as accepted unless Claude reports otherwise, so a redo Claude forgets to report makes the model look better than it is.
 - The classifier is word overlap; an explicit use-case id is always better.

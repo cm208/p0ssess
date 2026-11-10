@@ -182,6 +182,9 @@ func (c *Client) Plan(ctx context.Context, req Request) (*plan, error) {
 	return p, nil
 }
 
+// Estimate is the plan's cost estimate.
+func (p *plan) Estimate() Estimate { return p.est }
+
 func (p *plan) checkModalities() error {
 	need := map[Kind]string{KindImage: "image", KindPDF: "file", KindAudio: "audio", KindVideo: "video"}
 	for _, in := range p.inputs {
