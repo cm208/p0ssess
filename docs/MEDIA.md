@@ -54,7 +54,7 @@ Nothing large is uploaded silently. A video over the limit returns an error nami
 
 - `downscale`: re-encode locally to 360p, 1 fps, mono 32 kbit/s audio. Gemini samples video at 1 fps by default, so little is lost for most questions.
 - `keyframes`: scene-change frames (first frame plus every cut, up to 24) sent as images labeled with their timestamps, plus the audio track as MP3 when the model takes audio. Cheapest; loses motion between cuts.
-- `segment`: split into 300 s parts and run one call per part, each told its place in the full video; answers are joined under `[segment i of n, start to end]` headers. Spending is checked after each part. A part still over the inline size (a long film at full resolution splits into parts of about 200 MB) is downscaled like `downscale` before it is sent, so one call with `segment` is enough.
+- `segment`: split into 300 s parts and run one call per part, each told its place in the full video; answers are joined under `[segment i of n, start to end]` headers. Spending is checked after each part. A part still over the inline size (the 720p film below splits into re-encoded parts of 23.5 and 28.8 MiB) is downscaled like `downscale` before it is sent, so one call with `segment` is enough.
 
 ## Cost guard
 
@@ -171,7 +171,7 @@ The measured board alone was not enough: at stakes 1 a wrong pass-through answer
 
 ## Ten minutes of video: Claude alone and with p0ssess
 
-One real film, described twice by Claude Sonnet 5.5: once on its own, once with p0ssess. Measured on 2026-11-09.
+One real film, described twice by Claude Sonnet 5.5: once on its own, once with p0ssess. Measured on 2026-11-09 with p0ssess 0.5.1. Run B was repeated later the same evening on 0.5.2; that run is [below](#run-b-again-on-052), and this section is left as it was measured.
 
 **Clip.** *Big Buck Bunny* (© Blender Foundation, CC BY 3.0, peach.blender.org), the official 720p H.264 file from download.blender.org/peach/bigbuckbunny_movies/, remuxed to MP4 with stereo AAC (393.8 MB). The film runs 9:56.5, so the "10-minute" clip is the whole film.
 
@@ -222,6 +222,43 @@ Haiku relay turns in run B (input, cache read, cache write): 2, 0, 5,482; 2, 5,4
 - Run B paid for one wasted round because the 48 MiB error does not offer `video_prep`. With that hint p0ssess would downscale on its own and Claude would skip the re-encode.
 - On a short clip the other model's cost is a tenth of a cent (Qwen3.8 Omni Flash averaged $0.0012 per 8–15-second clip above), so nearly all of the cost is Claude's hand-off, $0.04–0.06 on Sonnet in RESEARCH.md's measurement. Short clips save little or nothing; the reason to delegate them is the sound, which Claude cannot hear.
 - Scored by hand by the agent that ran both sessions.
+
+### Run B again, on 0.5.2
+
+Measured on 2026-11-09, about half an hour after the run above, with p0ssess 0.5.2. Three things had changed: the 48 MiB error now names the `video_prep` steps, video is priced at each model's measured token rate, and `video-understand` drops models that invented sounds in the accuracy check (ENGINE.md). The engine's pick for this job was still Qwen3.8 Omni Flash at stakes 1.
+
+**Method.** The same film file, prompt, flags, allowed tools and checklist as run B above. Differences: Claude Code was 2.1.322 (one patch release later), and the scratch `budget.toml` set `monthly_usd = 0.50` as a spending cap for this run (it was 5.0; neither was approached). **Run A was not repeated**: it does not use p0ssess, so the figures below reuse its earlier result ($0.0999, 15 of 25).
+
+**What happened.**
+
+1. The Haiku agent's first `direct` call, with no `video_prep`, got the request-limit error, this time with the three steps named. The agent did not retry with one; it returned the error to Claude, which started a second agent and told it to use `downscale`. So Claude did not re-encode the film itself as it did in the first run, but one extra agent round remained.
+2. The `downscale` call (the full 9:56 at 360p, 1 fps) failed after about two minutes with "openrouter: answer had no choices".
+3. Claude started a third agent with `segment`. Part 1 (0:00–5:00, downscaled locally from 23.5 MiB) was answered and cost $0.00719. Part 2 failed the same way, and p0ssess returned only the error, so part 1's answer was lost.
+4. Claude stopped, told the user it had no description, and offered keyframes, another model or trimming.
+
+**Why the calls failed.** OpenRouter answered with HTTP 200 and a body that held only `{"error": {"message": "A Timeout Occurred", "code": 504, "metadata": {"error_type": "timeout"}}}`; the client reads errors only inside `choices`, so it reported "no choices". Part 2 was then sent again three times outside Claude (twice at 1 fps, once at 360p and 12 fps like the first run's re-encode), and each timed out the same way after about 2.5 minutes. In the first run the same model and provider answered both halves of a 12 fps copy. The timeouts are the provider's, on that evening; they are not caused by the 1-fps downscale. None of the timed-out calls were billed: the key's usage moved only by part 1's $0.00719.
+
+| | Run A: Claude alone (earlier figure, reused) | Run B on 0.5.1 | Run B on 0.5.2 |
+|---|---|---|---|
+| Wall time | 40 s | 321 s | 437 s |
+| Agents started | none | 2 | 3 |
+| Sonnet: input / cache read / cache write / output | 10 / 105,692 / 15,609 / 2,690 | 14 / 158,380 / 17,881 / 2,564 | 16 / 185,080 / 15,204 / 1,686 |
+| Haiku: input / cache read / cache write / output | none | 10 / 23,378 / 14,275 / 5,217 | 12 / 26,448 / 12,177 / 1,729 |
+| Claude cost at list price | $0.0999 | $0.1177 | $0.0989 (Sonnet $0.0962, Haiku $0.0027) |
+| OpenRouter cost | $0 | $0.0264 | $0.0072 (key usage $0.00719135) |
+| **Total** | **$0.0999** | **$0.1441** | **$0.1061** |
+| Main context at the last call | 28,555 tokens | 30,827 tokens | 28,150 tokens |
+| **Score (of 25)** | **15** | **25** | **0** (no description) |
+
+Per turn, main session (input, cache read, cache write): 2, 12,944, 7,805; 2, 20,749, 2,768; 2, 23,517, 179; 2, 23,696, 1,026; 2, 24,722, 941; 2, 25,663, 787; 2, 26,450, 889; 2, 27,339, 809. Haiku turns: 2, 0, 5,494; 2, 5,494, 1,969; 2, 4,943, 580; 2, 5,523, 1,750; 2, 4,943, 602; 2, 5,545, 1,782.
+
+**Result.** Run B on 0.5.2 cost $0.1061, **$0.0062 more than Claude alone**, and returned nothing. It is not a fair measure of the two fixes: the provider timed out, and the 0.5.1 run's 25 of 25 at $0.1441 is still the only completed comparison.
+
+**What it shows.**
+
+- The request-limit fix worked: the first error named the steps, and nobody re-encoded the film by hand. The wasted round did not go away entirely, because the relay agent passed the error up instead of acting on it.
+- Three p0ssess bugs, not fixed in 0.5.2: an error object at the top level of a 200 answer is reported as "no choices" instead of the provider's message; a failed segment discards the parts already answered; and the ledger recorded the failed `downscale` call at its reserved maximum ($0.0556, marked estimated) although OpenRouter did not bill it.
+- There is no fallback: when the picked model's only provider times out, p0ssess does not try the next option (Gemini 3.8 Flash here).
 
 ## Local shortcuts
 
