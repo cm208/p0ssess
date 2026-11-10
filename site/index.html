@@ -30,7 +30,7 @@
       <svg class="wordmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 9" shape-rendering="crispEdges" role="img" aria-label="p0ssess"><path class="wm-ink" d="M0 2h3v1h-3zM0 3h1v1h-1zM3 3h1v1h-1zM0 4h1v1h-1zM3 4h1v1h-1zM0 5h3v1h-3zM0 6h1v1h-1zM0 7h1v1h-1zM0 8h1v1h-1zM11 2h3v1h-3zM10 3h1v1h-1zM11 4h2v1h-2zM13 5h1v1h-1zM10 6h3v1h-3zM16 2h3v1h-3zM15 3h1v1h-1zM16 4h2v1h-2zM18 5h1v1h-1zM15 6h3v1h-3zM21 2h2v1h-2zM20 3h1v1h-1zM23 3h1v1h-1zM20 4h4v1h-4zM20 5h1v1h-1zM21 6h3v1h-3zM26 2h3v1h-3zM25 3h1v1h-1zM26 4h2v1h-2zM28 5h1v1h-1zM25 6h3v1h-3zM31 2h3v1h-3zM30 3h1v1h-1zM31 4h2v1h-2zM33 5h1v1h-1zM30 6h3v1h-3z"/><path class="wm-zero" d="M6 0h2v1h-2zM5 1h1v1h-1zM8 1h1v1h-1zM5 2h1v1h-1zM8 2h1v1h-1zM5 3h1v1h-1zM8 3h1v1h-1zM5 4h1v1h-1zM8 4h1v1h-1zM5 5h1v1h-1zM8 5h1v1h-1zM6 6h2v1h-2z"/></svg>
     </div>
     <h1>Claude stays in charge.</h1>
-    <p class="lede">p0ssess is a Claude Code plugin. Its Predictive Model Engine scores every model for each job, Claude included. When another model is good enough and costs less, or can do what Claude can’t, Claude hands the work over through OpenRouter, tells you in one line, and checks what comes back.</p>
+    <p class="lede">p0ssess is a Claude Code plugin. Its Predictive Model Engine scores every model for each job, Claude included. When another model is good enough and costs less, or can do what Claude can’t, Claude hands the work over through OpenRouter and checks what comes back.</p>
     <div class="install">
       <div class="cmd"><pre><code>claude --plugin-dir /path/to/p0ssess</code></pre><button class="copy-btn" type="button" aria-label="Copy the command" hidden>Copy</button></div>
       <p class="small">Private for now; public releases are coming. <a href="#try">What you need</a></p>
@@ -86,18 +86,24 @@
   </div>
   <details class="scene-wrap"><summary>Show the session<span class="sr-only">: Predictive Model Engine</span></summary>
   <figure class="scene" data-title="claude ~/books" data-st="idle|" aria-labelledby="t-engine">
-    <figcaption class="sr-only" id="t-engine">Transcript: the engine’s ranking for pulling tables from a PDF, and what Claude would cost.</figcaption>
+    <figcaption class="sr-only" id="t-engine">Transcript: the engine’s ranking for pulling tables from a PDF, on an API key and then on a subscription.</figcaption>
     <div class="log">
       <p class="l in bang">p0ssess engine recommend --use-case pdf-table-extract --top 2</p>
       <p class="l out" data-d="700">pdf-table-extract (#93, media) · stakes 2 · λ 1.00 (API-key plan: Claude at list price)</p>
       <p class="l out c">   route            model             total    cash     claude   risk     p_fail</p>
-      <p class="l out c">1  direct           gpt-6-luna        $0.0723  $0.0082  $0.0608  $0.0033  0.01    <span class="nb">ask: up to $0.025, above the $0.02 per-task limit; first use of this model</span></p>
+      <p class="l out c">1  direct           gpt-6-luna        $0.0723  $0.0082  $0.0608  $0.0033  0.01</p>
       <p class="l out c">2  claude-subagent  claude-haiku-5.5  $0.0820  $0.0000  $0.0773  $0.0047  0.02</p>
       <p class="l out c">pick: handing this to gpt-6-luna: tables from PDF reports or statements to CSV</p>
       <p class="l out c">      best: gpt-6-luna via direct, $0.008 cash, a mechanical check decides; p_fail 0.01 (LMArena longer query 1448 vs best 1543)</p>
-      <p class="l in">and if you did it yourself?</p>
-      <p class="l tool" data-d="600"><b>p0ssess - recommend</b> (MCP)(use_case: "pdf-table-extract", stakes: 2, top: 10)</p>
-      <p class="l ai" data-d="800">Doing it myself in this session comes to $0.2959 all in, for a score of 99. That puts me tenth on the list, at about four times Luna’s $0.0723 for 98. A check recomputes the column totals against the printed ones, so a bad CSV gets caught.</p>
+      <p class="l in bang">p0ssess engine set plan subscription</p>
+      <p class="l out" data-d="400">plan = subscription (saved to …/.config/p0ssess/budget.toml)</p>
+      <p class="l in bang">p0ssess engine recommend --use-case pdf-table-extract --top 2</p>
+      <p class="l out" data-d="700">pdf-table-extract (#93, media) · stakes 2 · λ 0.15 (no Claude usage reading yet; using the floor)</p>
+      <p class="l out c">   route            model             total    cash     claude   risk     p_fail</p>
+      <p class="l out c">1  claude-subagent  claude-haiku-5.5  $0.0125  $0.0000  $0.0116  $0.0009  0.02</p>
+      <p class="l out c">2  direct           gpt-6-luna        $0.0179  $0.0082  $0.0091  $0.0006  0.01</p>
+      <p class="l out c">pick: handing this to a claude-haiku-5.5 subagent: tables from PDF reports or statements to CSV</p>
+      <p class="l out c">      best: claude-haiku-5.5 via claude-subagent, $0.002 of Claude subagent usage, a mechanical check decides; p_fail 0.02 (LMArena longer query 1423 vs best 1543)</p>
     </div>
     <p class="foot"><span class="me">~/books  Sonnet 5.5</span></p>
   </figure>
@@ -122,21 +128,13 @@
   </div>
   <details class="scene-wrap"><summary>Show the session<span class="sr-only">: media</span></summary>
   <figure class="scene" data-title="claude ~/shop-web" data-st="idle|" aria-labelledby="t-media">
-    <figcaption class="sr-only" id="t-media">Transcript: a support voicemail goes to Whisper for a timed transcript.</figcaption>
+    <figcaption class="sr-only" id="t-media">Transcript: a support voicemail goes out through the possessed Haiku and comes back as text.</figcaption>
     <div class="log">
-      <p class="l in">transcribe voicemail-0412.m4a with timestamps. what does the customer want?</p>
-      <p class="l tool" data-d="600"><b>p0ssess - recommend</b> (MCP)(use_case: "audio-transcribe", profile: {audio_seconds: 16.2}, stakes: 2)</p>
-      <p class="l ai" data-d="700">This is about $0.0001 on whisper-large-v3-turbo (first use of this model). Go ahead?</p>
-      <p class="l in">yes</p>
-      <p class="l ai ann" data-d="500">handing this to whisper-large-v3-turbo: meetings, memos, interviews to text; no Claude path</p>
-      <p class="l tool" data-d="500"><b>p0ssess - direct</b> (MCP)(model: "openai/whisper-large-v3-turbo", prompt: "Transcribe", files: ["…/voicemail-0412.m4a"], output: "transcript", timestamps: true, use_case: "audio-transcribe", stakes: 2, max_cost_usd: 0.02)</p>
-      <p class="l res" data-d="1500">&lt;answer&gt;[0:00–0:04] Hi, I tried to check out twice this morning.</p>
-      <p class="l res c">[0:04–0:07] The first time, the page just went blank.</p>
-      <p class="l res c">[0:07–0:11] The second time I was charged, but no confirmation came.</p>
-      <p class="l res c">[0:11–0:14] The order number ends in 4471.</p>
-      <p class="l res c">[0:14–0:16] Could someone call me back?&lt;/answer&gt;</p>
-      <p class="l res c dim" data-st="idle|&lt;$0.01 today">openai/whisper-large-v3-turbo  Groq  cost $0.000180  estimate $0.0002</p>
-      <p class="l ai" data-d="800">Whisper’s transcript is above. They were charged for order …4471 with no confirmation after the first try left a blank page, and want a call back. I’ll check the logs for that order.</p>
+      <p class="l in">transcribe voicemail-0412.m4a</p>
+      <p class="l tool ann" data-d="700"><b>Agent</b>(p0ssess:p0ssess, "Transcribe this recording (use case audio-transcribe): …/voicemail-0412.m4a")</p>
+      <p class="l ai" data-d="2200" data-credit="whisper-large-v3-turbo, $0.0002" data-st="idle|&lt;$0.01 today">Hi, I tried to check out twice this morning. The first time, the page just went blank. The second time I was charged, but no confirmation came. The order number ends in 4471. Could someone call me back? <span class="credit">(whisper-large-v3-turbo, $0.0002)</span></p>
+      <p class="l in">what does the customer want?</p>
+      <p class="l ai" data-d="800">A call back. They were charged for order …4471 with no confirmation, after the first try left a blank page.</p>
     </div>
     <p class="foot"><span class="me">~/shop-web  Sonnet 5.5</span><span class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  &lt;$0.01 today</span></p>
   </figure>
@@ -146,7 +144,7 @@
 <section class="sec" id="chores" aria-labelledby="chores-h">
   <div class="copy">
     <h2 id="chores-h">Tedious code, handed to a coding agent</h2>
-    <p>For chores the tests can check, a relay agent runs a cheap coding model in its own sandbox, on a separate git worktree. Claude reads the diff and runs the tests before anything lands. Work that edits your code always asks first.</p>
+    <p>For chores the tests can check, a cheap coding model works in its own sandbox, on a separate git worktree. Its edits come back as a diff, and Claude reads it and runs the tests before anything lands. You can have it ask before any edit run.</p>
     <figure class="chart" aria-labelledby="cmp-chores">
       <ol class="bars">
       <li class="win"><span class="who">DeepSeek V4.1 Flash</span><span class="tag">lowest total</span><span class="tot"><small>$</small>0.148</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="61.46%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span><span class="score">score 78, clears 35</span><span class="call">call $0.0041</span></li>
@@ -159,19 +157,16 @@
   </div>
   <details class="scene-wrap"><summary>Show the session<span class="sr-only">: coding chores</span></summary>
   <figure class="scene" data-title="claude ~/billing-api" data-st="idle|" aria-labelledby="t-chores">
-    <figcaption class="sr-only" id="t-chores">Transcript: a router migration goes to DeepSeek V4.1 Flash, and Claude reviews the diff.</figcaption>
+    <figcaption class="sr-only" id="t-chores">Transcript: a router migration goes to DeepSeek V4.1 Flash, and Claude reviews the diff before applying it.</figcaption>
     <div class="log">
-      <p class="l in">move the handlers in api/ to the v2 router. the tests should still pass</p>
-      <p class="l tool" data-d="600"><b>p0ssess - recommend</b> (MCP)(use_case: "migration-test-gated", stakes: 2)</p>
-      <p class="l ai" data-d="700">About $0.004 on deepseek-v4.1-flash-1017, up to $0.012 with retries. It edits your code in a separate worktree. Go ahead?</p>
-      <p class="l in">go ahead</p>
-      <p class="l ai ann" data-d="500">handing this to deepseek-v4.1-flash-1017: bulk non-mechanical migration gated per file by tests, lint and type checks, with error-fed retries</p>
-      <p class="l tool" data-d="500"><b>p0ssess:p0ssess</b>(Move api/ handlers to the v2 router)</p>
-      <p class="l res" data-st="run|1 running  $0.01">Running in the background</p>
-      <p class="l sys" data-d="2200">Agent “Move api/ handlers to the v2 router” finished</p>
-      <p class="l res">&lt;answer&gt;Moved 9 handlers to router v2. go test ./api/... passes.&lt;/answer&gt;</p>
-      <p class="l res c dim" data-st="idle|&lt;$0.01 today">done  deepseek/deepseek-v4.1-flash-1017  $0.004  diff +212 −187</p>
-      <p class="l ai" data-d="800">Mechanical except orders.go, where it dropped the idempotency-key check. Applying it with that line restored.</p>
+      <p class="l in">use deepseek flash to move the handlers in api/ to the v2 router. the tests should still pass</p>
+      <p class="l tool ann" data-d="700"><b>Agent</b>(p0ssess:p0ssess, "Move the handlers in api/ to the v2 router and keep the tests passing, model deepseek flash, edit mode: …/billing-api")</p>
+      <p class="l tool" data-d="2400" data-credit="deepseek-v4.1-flash-1017, $0.004"><b>Read</b>(…/p0ssess/relay/runs/…/diff.patch)</p>
+      <p class="l tool" data-d="700"><b>Bash</b>(git apply …/p0ssess/relay/runs/…/diff.patch)</p>
+      <p class="l tool" data-d="600"><b>Update</b>(api/orders.go)</p>
+      <p class="l res">Updated api/orders.go with 1 addition</p>
+      <p class="l tool" data-d="600"><b>Bash</b>(go test ./api/...)</p>
+      <p class="l ai" data-d="900" data-st="idle|&lt;$0.01 today">Moved 9 handlers to router v2. It had dropped the idempotency-key check in orders.go, so I put that line back, and go test ./api/... passes. <span class="credit">(deepseek-v4.1-flash-1017, $0.004)</span></p>
     </div>
     <p class="foot"><span class="me">~/billing-api  Sonnet 5.5</span><span class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  &lt;$0.01 today</span></p>
   </figure>
@@ -194,16 +189,15 @@
   </div>
   <details class="scene-wrap"><summary>Show the session<span class="sr-only">: second opinion</span></summary>
   <figure class="scene" data-title="claude ~/retry" data-st="idle|" aria-labelledby="t-review">
-    <figcaption class="sr-only" id="t-review">Transcript: a diff goes to GLM-5.3-Flash for review, and Claude weighs the findings.</figcaption>
+    <figcaption class="sr-only" id="t-review">Transcript: a diff goes out for review by another family, and Claude weighs the findings.</figcaption>
     <div class="log">
       <p class="l in">before I merge this branch, get a review from another model family</p>
-      <p class="l tool" data-d="600"><b>p0ssess - recommend</b> (MCP)(use_case: "code-review-diff", stakes: 2)</p>
-      <p class="l ai ann" data-d="600">handing this to glm-5.3-flash: review a diff or branch with a different family</p>
-      <p class="l tool" data-d="500" data-st="run|1 running  $0.02"><b>p0ssess - direct</b> (MCP)(model: "z-ai/glm-5.3-flash", prompt: "Review this diff for bugs and missing tests", files: ["/tmp/retry.diff"], use_case: "code-review-diff", stakes: 2, max_cost_usd: 0.02)</p>
-      <p class="l res" data-d="1600">&lt;answer&gt;1. retry.go:41  The first retry waits 2s, not the documented 1s.</p>
-      <p class="l res c">2. retry.go:58  Do ignores ctx while sleeping.</p>
-      <p class="l res c">3. retry_test.go  No test for a permanent error.&lt;/answer&gt;</p>
-      <p class="l res c dim" data-st="idle|&lt;$0.01 today">… +2 lines (ctrl+o to expand)</p>
+      <p class="l tool ann" data-d="700"><b>Agent</b>(p0ssess:p0ssess, "Review this diff for bugs and missing tests with a model from another family (use case code-review-diff): /tmp/retry.diff")</p>
+      <p class="l ai" data-d="2200" data-credit="glm-5.3-flash, $0.002" data-st="idle|&lt;$0.01 today">1. retry.go:41  The first retry waits 2s, not the documented 1s.</p>
+      <p class="l ai c">2. retry.go:58  Do ignores ctx while sleeping.</p>
+      <p class="l ai c">3. retry_test.go  No test for a permanent error.</p>
+      <p class="l ai c"><span class="credit">(glm-5.3-flash, $0.002)</span></p>
+      <p class="l in">fix what holds up</p>
       <p class="l ai" data-d="800">The first two hold up. The third is already covered by TestDoStopsOnPermanent. Fixing the backoff and making the sleep watch ctx.Done().</p>
     </div>
     <p class="foot"><span class="me">~/retry  Sonnet 5.5</span><span class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  &lt;$0.01 today</span></p>
@@ -234,15 +228,17 @@
     <figcaption class="sr-only" id="t-usage">Transcript: the same kind of job early in a usage window and near the limit.</figcaption>
     <div class="log">
       <p class="l in" data-me="~/billing-api  Sonnet 5.5  5h 5%">move the billing module to the new ledger API, end to end</p>
-      <p class="l tool" data-d="600"><b>p0ssess - recommend</b> (MCP)(use_case: "long-agent-session", stakes: 3)</p>
-      <p class="l ai" data-d="600">keeping this on Claude</p>
+      <p class="l tool ann" data-d="600"><b>Agent</b>(p0ssess:p0ssess, "Which model for a long agent session at stakes 3 (use case long-agent-session), and what would it cost?")</p>
+      <p class="l ai" data-d="1800">keeping this on Claude</p>
       <p class="l tool" data-d="700"><b>Update</b>(billing/ledger.go)</p>
       <p class="l res">Updated billing/ledger.go with 64 additions and 41 removals</p>
       <p class="l in" data-me="~/billing-api  Sonnet 5.5  5h 78%">now do the same for invoicing</p>
-      <p class="l tool" data-d="600"><b>p0ssess - recommend</b> (MCP)(use_case: "long-agent-session", stakes: 3)</p>
-      <p class="l ai" data-d="800">Your 5-hour window is projected at 89%, so handing this off now costs less than my time. About $0.74 on gpt-6.1-sol, up to $2.22, in a separate worktree. Go ahead?</p>
+      <p class="l tool ann" data-d="600"><b>Agent</b>(p0ssess:p0ssess, "Which model for a long agent session at stakes 3 (use case long-agent-session), and what would it cost?")</p>
+      <p class="l tool ann" data-d="1800"><b>Agent</b>(p0ssess:p0ssess, "Move invoicing to the new ledger API end to end, model gpt-6.1-sol, edit mode, stakes 3: …/billing-api")</p>
+      <p class="l ai" data-d="1600">Your 5-hour window is projected at 89%, so handing this off costs less than my time. gpt-6.1-sol needs about $0.74, which is above your per-task limit. Go ahead?</p>
       <p class="l in">yes</p>
-      <p class="l ai ann" data-d="500">handing this to gpt-6.1-sol: 50+-turn autonomous change that must not drift</p>
+      <p class="l tool" data-d="500"><b>p0ssess - approvals_add</b> (MCP)(…)</p>
+      <p class="l tool ann" data-d="500"><b>SendMessage</b>(p0ssess:p0ssess, "approved, run it again")</p>
     </div>
     <p class="foot"><span class="me">~/billing-api  Sonnet 5.5  5h 78%</span></p>
   </figure>
@@ -288,9 +284,9 @@
       <p class="l in">yes</p>
       <p class="l tool" data-d="400"><b>p0ssess - rules_add</b> (MCP)(…)</p>
       <p class="l tool" data-d="300"><b>p0ssess - approvals_add</b> (MCP)(…)</p>
-      <p class="l in">what changes between take-1.mp4 and take-2.mp4?</p>
-      <p class="l ai ann" data-d="600">handing this to gemini-3.8-flash: compare the two takes</p>
-      <p class="l res" data-d="1500" data-st="idle|$0.01 today">&lt;answer&gt;Take 2 drops the intro slide and starts on the demo.&lt;/answer&gt;</p>
+      <p class="l in">what happens in demo-take.mp4?</p>
+      <p class="l tool ann" data-d="600"><b>Agent</b>(p0ssess:p0ssess, "Describe what happens in this video (use case video-understand): …/demo-take.mp4")</p>
+      <p class="l ai" data-d="2000" data-credit="gemini-3.8-flash, $0.0067" data-st="idle|$0.01 today">A ten-second take: the intro slide for the first four seconds, then the demo. <span class="credit">(gemini-3.8-flash, $0.0067)</span></p>
     </div>
     <p class="foot"><span class="me">~/talks  Sonnet 5.5</span><span class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  $0.01 today</span></p>
   </figure>
@@ -306,19 +302,18 @@
       <li><span class="say">Working</span><code class="seg run"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  2 running  $0.14</code></li>
       <li><span class="say">Near the budget</span><code class="seg amber"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  $8.10 of $10 this month</code></li>
     </ul>
-    <p>It is never red and never animated. <code>/p0ssess:p0ssess-me</code> sets your budget, plan and privacy, then opens a local page with spend, hand-offs, rules and settings.</p>
+    <p>It is never red and never animated. <code>/p0ssess:p0ssess-me</code> prints your spend, your limits and what is running, and opens a local page with recent runs, rules and settings.</p>
   </div>
   <details class="scene-wrap"><summary>Show the session<span class="sr-only">: status line</span></summary>
-  <figure class="scene" data-title="claude ~/talks" data-st="amber|$8.10 of $10 this month" aria-labelledby="t-ghost">
-    <figcaption class="sr-only" id="t-ghost">Transcript: the settings walkthrough near the monthly cap, then the local page.</figcaption>
+  <figure class="scene" data-title="claude ~/talks" data-st="idle|$0.04 today" aria-labelledby="t-ghost">
+    <figcaption class="sr-only" id="t-ghost">Transcript: the summary that /p0ssess:p0ssess-me prints.</figcaption>
     <div class="log">
       <p class="l in">/p0ssess:p0ssess-me</p>
-      <p class="l ai" data-d="800">You’ve spent $8.10 of your $10 cap this month, on a subscription with no-training privacy. Keep the cap?</p>
-      <p class="l in">keep it</p>
-      <p class="l tool" data-d="600"><b>Bash</b>(p0ssess me --open)</p>
-      <p class="l res" data-d="700">http://127.0.0.1:41873/9c2e…/</p>
+      <p class="l ai blk" data-d="800"><span class="mark">ᗣ</span> p0ssess 0.5.1   today $0.04   month $0.04 of $10.00 ▰▱▱▱▱▱▱▱▱▱   nothing running</p>
+      <p class="l ai blk c">limits   asks above $0.10 a task · $0.45 today (paced) · no-training · Claude 5-hour 1%, weekly 89%</p>
+      <p class="l ai blk c">change   tell Claude ("cap OpenRouter at $5", "always ask before grok") · page http://127.0.0.1:…/t/…/</p>
     </div>
-    <p class="foot"><span class="me">~/talks  Sonnet 5.5</span><span class="seg amber"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  $8.10 of $10 this month</span></p>
+    <p class="foot"><span class="me">~/talks  Sonnet 5.5</span><span class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  $0.04 today</span></p>
   </figure>
   </details>
 </section>
@@ -335,14 +330,12 @@
     <figcaption class="sr-only" id="t-sandbox">Transcript: a sandboxed run asks to install a package, and Claude says no.</figcaption>
     <div class="log">
       <p class="l in">use deepseek flash to add property tests for parser.py</p>
-      <p class="l ai ann" data-d="600">handing this to deepseek-v4.1-flash: add property tests for parser.py</p>
-      <p class="l tool" data-d="500"><b>p0ssess:p0ssess</b>(Add property tests for parser.py)</p>
-      <p class="l res" data-st="run|1 running  $0.02">Running in the background</p>
-      <p class="l sys" data-d="1800">Agent “Add property tests for parser.py” paused</p>
-      <p class="l res">needs_permission  bash: pip install hypothesis</p>
-      <p class="l ai" data-d="800">Rejecting it: the sandbox has no network for this project, so the standard library will do.</p>
-      <p class="l sys" data-d="2000">Agent “Add property tests for parser.py” finished</p>
-      <p class="l res c dim" data-st="idle|$0.02 today">done  deepseek/deepseek-v4.1-flash  $0.004  diff +61 −0</p>
+      <p class="l tool ann" data-d="600"><b>Agent</b>(p0ssess:p0ssess, "Add property tests for parser.py, model deepseek flash, edit mode: …/parser")</p>
+      <p class="l ai" data-d="2000">It wants to run pip install hypothesis. The sandbox has no network for this project, so I’m rejecting that; the standard library will do.</p>
+      <p class="l tool ann" data-d="500"><b>SendMessage</b>(p0ssess:p0ssess, "reject")</p>
+      <p class="l tool" data-d="2200" data-credit="deepseek-v4.1-flash-1017, $0.004"><b>Read</b>(…/p0ssess/relay/runs/…/diff.patch)</p>
+      <p class="l tool" data-d="600"><b>Bash</b>(git apply …/p0ssess/relay/runs/…/diff.patch &amp;&amp; python3 -m unittest)</p>
+      <p class="l ai" data-d="800" data-st="idle|$0.02 today">Added property tests for parser.py using only the standard library, and they pass. <span class="credit">(deepseek-v4.1-flash-1017, $0.004)</span></p>
     </div>
     <p class="foot"><span class="me">~/parser  Sonnet 5.5</span><span class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  $0.02 today</span></p>
   </figure>
@@ -364,10 +357,11 @@
   </div>
   <details class="scene-wrap"><summary>Show the session<span class="sr-only">: what it won’t do</span></summary>
   <figure class="scene" data-title="claude ~/standups" data-st="idle|" aria-labelledby="t-wont">
-    <figcaption class="sr-only" id="t-wont">Transcript: a private repository blocks delegation.</figcaption>
+    <figcaption class="sr-only" id="t-wont">Transcript: a private repository blocks the hand-off.</figcaption>
     <div class="log">
       <p class="l in">transcribe standup.m4a and list the action items</p>
-      <p class="l ai" data-d="900">This repository has a .p0ssess-private file, so p0ssess won’t send anything from it, and I can’t listen to audio myself.</p>
+      <p class="l tool ann" data-d="600"><b>Agent</b>(p0ssess:p0ssess, "Transcribe this recording and list the action items (use case audio-transcribe): …/standup.m4a")</p>
+      <p class="l ai" data-d="1400">p0ssess won’t send anything from this repository: it has a .p0ssess-private file. I can’t listen to audio myself.</p>
     </div>
     <p class="foot"><span class="me">~/standups  Sonnet 5.5</span></p>
   </figure>
@@ -392,16 +386,18 @@
   </div>
   <details class="scene-wrap"><summary>Show the session<span class="sr-only">: use cases</span></summary>
   <figure class="scene" data-title="claude ~/talks" data-st="idle|" aria-labelledby="t-data">
-    <figcaption class="sr-only" id="t-data">Transcript: the engine’s ranking for describing a video.</figcaption>
+    <figcaption class="sr-only" id="t-data">Transcript: the engine’s ranking for describing a video, and the size of the catalog.</figcaption>
     <div class="log">
       <p class="l in bang">p0ssess engine recommend --use-case video-understand --top 2</p>
       <p class="l out" data-d="700">video-understand (#75, media) · stakes 1 · λ 1.00 (API-key plan: Claude at list price)</p>
-      <p class="l out c">   route   model               total    cash     claude   risk     p_fail</p>
-      <p class="l out c">1  direct  glm-5.3-flash       $0.0734  $0.0064  $0.0550  $0.0120  0.18    <span class="nb">ask: first use of this model</span></p>
-      <p class="l out c">2  direct  gemma-4-26b-a4b-it  $0.0773  $0.0058  $0.0550  $0.0165  0.25    <span class="nb">ask: first use of this model</span></p>
-      <p class="l out c">pick: handing this to glm-5.3-flash: summarize a talk, meeting or lecture video</p>
-      <p class="l in">why is there no claude row?</p>
-      <p class="l ai" data-d="800">I can’t watch video, so I’m not a candidate. With no clean video benchmark and no history yet, GLM-5.3-Flash wins on price; your outcomes move that.</p>
+      <p class="l out c">catalog default 1 of 1-2; rate the instance</p>
+      <p class="l out c">   route   model                  total    cash     claude   risk     p_fail</p>
+      <p class="l out c">1  direct  qwen3.8-omni-flash     $0.0997  $0.0283  $0.0550  $0.0164  0.19    <span class="nb">ask: about $0.028, above the $0.02 auto-approve limit</span></p>
+      <p class="l out c">2  direct  gemini-3.1-flash-lite  $0.1006  $0.0241  $0.0550  $0.0215  0.26    <span class="nb">ask: about $0.048, above the $0.02 auto-approve limit</span></p>
+      <p class="l out c">pick: handing this to qwen3.8-omni-flash: summarize a talk, meeting or lecture video</p>
+      <p class="l out c">      Claude cannot do this (does not take video input); best: qwen3.8-omni-flash via direct, $0.028 cash, passed through with its label; p_fail 0.19 (p0ssess video check 0.824 vs best 0.882)</p>
+      <p class="l in bang">p0ssess engine usecases | wc -l</p>
+      <p class="l out" data-d="500">104</p>
     </div>
     <p class="foot"><span class="me">~/talks  Sonnet 5.5</span></p>
   </figure>
@@ -421,13 +417,14 @@
   </div>
   <details class="scene-wrap"><summary>Show the session<span class="sr-only">: setup</span></summary>
   <figure class="scene" data-title="claude ~/shop-web" data-st="idle|" aria-labelledby="t-try">
-    <figcaption class="sr-only" id="t-try">Transcript: the first run of the setup command.</figcaption>
+    <figcaption class="sr-only" id="t-try">Transcript: the first run of /p0ssess:p0ssess-me, before the key is in place.</figcaption>
     <div class="log">
       <p class="l in">/p0ssess:p0ssess-me</p>
-      <p class="l tool" data-d="600"><b>p0ssess - budget_status</b> (MCP)</p>
-      <p class="l ai" data-d="800">Nothing spent yet, against a $10 monthly cap. Plan: subscription (Pro, Max or Ultra), api (pay per token), or leave it on auto?</p>
-      <p class="l in">subscription</p>
-      <p class="l tool" data-d="500"><b>p0ssess - settings_set</b> (MCP)(key: "plan", value: "subscription")</p>
+      <p class="l ai blk" data-d="800"><span class="mark">ᗣ</span> p0ssess 0.5.1   today $0.00   month $0.00 of $10.00 ▱▱▱▱▱▱▱▱▱▱   nothing running</p>
+      <p class="l ai blk c">limits   asks above $0.02 a task · $0.45 today (paced) · no-training</p>
+      <p class="l ai blk c">change   tell Claude ("cap OpenRouter at $5", "always ask before grok") · page http://127.0.0.1:42319/t/974fcecf…/</p>
+      <p class="l ai blk c">setup    no OpenRouter key (put it in …/.config/p0ssess/secrets/openrouter_key, mode 0600) · 13 tools still prompt (p0ssess setup allow) · no status line segment (p0ssess setup statusline)</p>
+      <p class="l ai" data-d="700">Your OpenRouter key goes in that file. Tell me when it’s there and I’ll offer the next step.</p>
     </div>
     <p class="foot"><span class="me">~/shop-web  Sonnet 5.5</span></p>
   </figure>

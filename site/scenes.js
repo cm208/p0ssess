@@ -97,17 +97,18 @@
     cap.classList.add("swap");
   }
 
-  // A hand-off grows out of the island for a moment, like a live activity.
+  // While work is out with the possessed Haiku, the island becomes a live activity. It stays
+  // until the next line arrives, then shows that line's credit (the model and its cost) for a moment.
   function setLive(on) {
     island?.classList.toggle("is-live", on);
     stage?.classList.toggle("is-live", on);
   }
-  function live(text) {
+  function live(text, ms) {
     if (!island) return;
     clearTimeout(liveTimer);
     liveText.textContent = " " + text;
     setLive(true);
-    liveTimer = setTimeout(() => setLive(false), 2600);
+    if (ms) liveTimer = setTimeout(() => setLive(false), ms);
   }
 
   function setStatus(v) {
@@ -127,6 +128,7 @@
 
   async function play(fig) {
     const id = ++run;
+    let out = false;
     current = fig;
     markSection(fig);
     caption(fig);
@@ -163,7 +165,13 @@
       log.append(src.cloneNode(true));
       if (src.dataset.st) setStatus(src.dataset.st);
       if (src.dataset.me) me.textContent = src.dataset.me;
-      if (src.classList.contains("ann")) live("handing to " + src.textContent.replace(/^handing this to ([^:]+):.*$/, "$1"));
+      if (src.classList.contains("ann")) {
+        out = true;
+        live("Haiku, possessed");
+      } else if (out && !src.classList.contains("c")) {
+        out = false;
+        if (src.dataset.credit) live(src.dataset.credit, 2600); else setLive(false);
+      }
       screen.scrollTop = screen.scrollHeight;
     }
   }
