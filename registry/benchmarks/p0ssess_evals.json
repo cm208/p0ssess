@@ -1,0 +1,205 @@
+{
+ "source": "p0ssess measurement: three synthetic clips with known ground truth, each run twice per model through p0ssess direct",
+ "license": "MIT",
+ "citation": "p0ssess measurement, 2026-11-09, method in docs/MEDIA.md",
+ "as_of": "2026-11-09",
+ "method": "docs/MEDIA.md, section 'Video accuracy check'",
+ "notes": "value is the share of 17 checklist items x 2 runs answered right, scored by hand against a rubric fixed before the runs. binomial_se_computed treats items as independent, which they are not, so it understates the spread. prompt_tokens_per_video_second is the slope of prompt tokens over clip length (8, 12, 15 s at 640x360); null where the count did not grow with length (a fixed frame sample).",
+ "scope": "The video-capable models the engine ranked for video-understand on 2026-11-09, plus the catalog's recommended model.",
+ "count": 7,
+ "records": [
+  {
+   "source": "p0ssess measurement",
+   "license": "MIT",
+   "citation": "p0ssess measurement, 2026-11-09, method in docs/MEDIA.md",
+   "as_of": "2026-11-09",
+   "retrieved": "2026-11-09",
+   "benchmark": "video_describe_synthetic_v1",
+   "task_families": [
+    "video_understanding"
+   ],
+   "openrouter_id": "google/gemini-3.8-flash",
+   "metric": "accuracy",
+   "value": 0.8824,
+   "total_tasks": 34,
+   "binomial_se_computed": 0.0553,
+   "by_category": {
+    "timestamps": "12/14",
+    "events": "12/12",
+    "audio": "6/8"
+   },
+   "calls": 6,
+   "providers": [
+    "Google AI Studio"
+   ],
+   "prompt_tokens_per_video_second": 91,
+   "cost_usd": 0.045913
+  },
+  {
+   "source": "p0ssess measurement",
+   "license": "MIT",
+   "citation": "p0ssess measurement, 2026-11-09, method in docs/MEDIA.md",
+   "as_of": "2026-11-09",
+   "retrieved": "2026-11-09",
+   "benchmark": "video_describe_synthetic_v1",
+   "task_families": [
+    "video_understanding"
+   ],
+   "openrouter_id": "qwen/qwen3.8-omni-flash",
+   "metric": "accuracy",
+   "value": 0.8235,
+   "total_tasks": 34,
+   "binomial_se_computed": 0.0654,
+   "by_category": {
+    "timestamps": "9/14",
+    "events": "11/12",
+    "audio": "8/8"
+   },
+   "calls": 6,
+   "providers": [
+    "Alibaba"
+   ],
+   "prompt_tokens_per_video_second": 227,
+   "cost_usd": 0.007216
+  },
+  {
+   "source": "p0ssess measurement",
+   "license": "MIT",
+   "citation": "p0ssess measurement, 2026-11-09, method in docs/MEDIA.md",
+   "as_of": "2026-11-09",
+   "retrieved": "2026-11-09",
+   "benchmark": "video_describe_synthetic_v1",
+   "task_families": [
+    "video_understanding"
+   ],
+   "openrouter_id": "google/gemini-3.1-flash-lite",
+   "metric": "accuracy",
+   "value": 0.6765,
+   "total_tasks": 34,
+   "binomial_se_computed": 0.0802,
+   "by_category": {
+    "timestamps": "6/14",
+    "events": "12/12",
+    "audio": "5/8"
+   },
+   "calls": 6,
+   "providers": [
+    "Google AI Studio"
+   ],
+   "prompt_tokens_per_video_second": 91,
+   "cost_usd": 0.00308
+  },
+  {
+   "source": "p0ssess measurement",
+   "license": "MIT",
+   "citation": "p0ssess measurement, 2026-11-09, method in docs/MEDIA.md",
+   "as_of": "2026-11-09",
+   "retrieved": "2026-11-09",
+   "benchmark": "video_describe_synthetic_v1",
+   "task_families": [
+    "video_understanding"
+   ],
+   "openrouter_id": "google/gemma-4-26b-a4b-it",
+   "metric": "accuracy",
+   "value": 0.5588,
+   "total_tasks": 34,
+   "binomial_se_computed": 0.0852,
+   "by_category": {
+    "timestamps": "7/14",
+    "events": "12/12",
+    "audio": "0/8"
+   },
+   "calls": 6,
+   "providers": [
+    "Makora"
+   ],
+   "prompt_tokens_per_video_second": null,
+   "cost_usd": 0.001276
+  },
+  {
+   "source": "p0ssess measurement",
+   "license": "MIT",
+   "citation": "p0ssess measurement, 2026-11-09, method in docs/MEDIA.md",
+   "as_of": "2026-11-09",
+   "retrieved": "2026-11-09",
+   "benchmark": "video_describe_synthetic_v1",
+   "task_families": [
+    "video_understanding"
+   ],
+   "openrouter_id": "xiaomi/mimo-v2.6-flash",
+   "metric": "accuracy",
+   "value": 0.5294,
+   "total_tasks": 34,
+   "binomial_se_computed": 0.0856,
+   "by_category": {
+    "timestamps": "4/14",
+    "events": "11/12",
+    "audio": "3/8"
+   },
+   "calls": 6,
+   "providers": [
+    "Makora",
+    "Xiaomi"
+   ],
+   "prompt_tokens_per_video_second": null,
+   "cost_usd": 0.003709
+  },
+  {
+   "source": "p0ssess measurement",
+   "license": "MIT",
+   "citation": "p0ssess measurement, 2026-11-09, method in docs/MEDIA.md",
+   "as_of": "2026-11-09",
+   "retrieved": "2026-11-09",
+   "benchmark": "video_describe_synthetic_v1",
+   "task_families": [
+    "video_understanding"
+   ],
+   "openrouter_id": "qwen/qwen3.8-flash",
+   "metric": "accuracy",
+   "value": 0.5294,
+   "total_tasks": 34,
+   "binomial_se_computed": 0.0856,
+   "by_category": {
+    "timestamps": "7/14",
+    "events": "11/12",
+    "audio": "0/8"
+   },
+   "calls": 6,
+   "providers": [
+    "Alibaba"
+   ],
+   "prompt_tokens_per_video_second": 229,
+   "cost_usd": 0.004461
+  },
+  {
+   "source": "p0ssess measurement",
+   "license": "MIT",
+   "citation": "p0ssess measurement, 2026-11-09, method in docs/MEDIA.md",
+   "as_of": "2026-11-09",
+   "retrieved": "2026-11-09",
+   "benchmark": "video_describe_synthetic_v1",
+   "task_families": [
+    "video_understanding"
+   ],
+   "openrouter_id": "z-ai/glm-5.3-flash",
+   "metric": "accuracy",
+   "value": 0.3824,
+   "total_tasks": 34,
+   "binomial_se_computed": 0.0833,
+   "by_category": {
+    "timestamps": "6/14",
+    "events": "7/12",
+    "audio": "0/8"
+   },
+   "calls": 6,
+   "providers": [
+    "CoreWeave",
+    "PrimeIntellect",
+    "Reka",
+    "Wafer"
+   ],
+   "prompt_tokens_per_video_second": 287,
+   "cost_usd": 0.003376
+  }
+ ]
+}

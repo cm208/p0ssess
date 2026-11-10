@@ -13,6 +13,7 @@ Snapshot as of **2026-11-09** (UTC). Every file has a `meta` or header block tha
 | `benchmarks/epoch_ai.json` | Epoch AI scores for GPQA Diamond, MATH Level 5, OTIS Mock AIME and FrontierMath only, the four benchmarks Epoch's methodology page lists as run by Epoch (CC BY 4.0). Superseded FrontierMath versions are left out |
 | `benchmarks/openrouter_evals.json` | OpenRouter's own evals (`source=openrouter` only; CC BY 4.0) |
 | `benchmarks/aider_polyglot.json` | Aider polyglot (Apache-2.0). Historical only: the newest entry is from 2025-10-03, so no referenced model appears and the file holds no records |
+| `benchmarks/p0ssess_evals.json` | p0ssess's own measurements (MIT). Today one: a video check on three synthetic clips with known ground truth, written by hand from the runs in [docs/MEDIA.md](../docs/MEDIA.md#video-accuracy-check), not by the scripts here. A rebuild leaves it alone |
 | `scripts/` | Rebuild scripts (Python 3 standard library only) |
 
 ## `models.json` fields
@@ -76,4 +77,4 @@ Artificial Analysis, Design Arena, SWE-bench (every variant), LiveCodeBench, MMM
 - Some media prices (Lyria clips and songs) appear only in description text.
 - Provider retention periods are not in the public API.
 - Latency and throughput need a key and were not collected.
-- Audio, video and long-context understanding, transcription, TTS and embeddings have no clean benchmark.
+- Audio and long-context understanding, transcription, TTS and embeddings have no clean benchmark. Video understanding has only p0ssess's own small check (`p0ssess_evals.json`).

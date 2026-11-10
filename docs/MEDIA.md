@@ -116,6 +116,59 @@ The gated live test set (`P0SSESS_LIVE=1 go test -run TestLive ./internal/direct
 - **Keyframes are the cheapest way to "watch" a video** when motion between cuts does not matter: $0.000105 for two frames plus the audio track on a ZDR endpoint.
 - **Image generation** cost exactly the listed per-image price on the image API ($0.007). The Gemini chat route billed 1,442 completion tokens for one image; the estimate's 2,000-token allowance covered it.
 
+## Video accuracy check
+
+Video understanding has no public benchmark, so until 0.5.0 the engine ranked video models on the catalog's order and price, and GLM-5.3-Flash and MiMo-v2.6-flash came first. In real use MiMo described a 6-second counter clip with timestamps running to 0:21. This check replaced that guess with a measurement. Its results are in [`registry/benchmarks/p0ssess_evals.json`](../registry/benchmarks/p0ssess_evals.json), cited as "p0ssess measurement, 2026-11-09, method in docs/MEDIA.md", and the engine reads them as the board for the video understanding family ([ENGINE.md](ENGINE.md#5-p_fail)).
+
+**Clips.** Three synthetic clips with known ground truth, made with ffmpeg and espeak-ng (640×360 H.264, AAC):
+
+| Clip | Picture | Sound |
+|---|---|---|
+| counter, 8 s | white numerals 1 to 8 on navy, one per second | a 440 Hz tone from 3 s to 5 s only |
+| words, 15 s | APPLE 1–3 s, BICYCLE 6–8 s, CASTLE 11–13 s on gray | espeak-ng says "The meeting moved to Thursday at nine." from 6.5 s to 9.1 s |
+| cut, 12 s | a white square moving left to right on green, a hard cut at 7 s to a still black square on orange | a 1 kHz beep from 7.0 s to 7.3 s |
+
+The ground truth was checked against 1-fps contact sheets and RMS levels of the finished files.
+
+**Runs.** Every model got the same prompt, "Describe what happens in this video with timestamps, including what you can tell about the sound.", through `p0ssess direct run --model <id> --file <clip> --max-cost 0.05` with default settings: three clips, twice each, 42 calls. The models are the six the engine ranked first for `video-understand` on 2026-11-09 (Kimi K3.1 Pro was left out for price), plus Gemini 3.8 Flash, the catalog's recommendation.
+
+**Scoring.** A checklist of 17 items, fixed before the runs: timestamps (7: the counter's tone at 3–5 s, each word's on and off times within 1.5 s, the speech start, the cut and the beep within 1 s, and no timestamp past the clip's end), events (6: the counter, the colors, the three words, the moving square, the cut, the second scene) and sound (4: the tone, the spoken line heard, its words, the beep). Each answer was scored by hand; a sound the model only guessed at ("would typically be a beep") does not count.
+
+| Model | Score (of 34) | Timestamps (of 14) | Events (of 12) | Sound (of 8) | Providers that served it | Cost, 6 calls |
+|---|---|---|---|---|---|---|
+| google/gemini-3.8-flash | **0.88** | 12 | 12 | 6 | Google AI Studio (BYOK) | $0.0459 |
+| qwen/qwen3.8-omni-flash | 0.82 | 9 | 11 | **8** | Alibaba | $0.0072 |
+| google/gemini-3.1-flash-lite | 0.68 | 6 | 12 | 5 | Google AI Studio (BYOK) | $0.0031 |
+| google/gemma-4-26b-a4b-it | 0.56 | 7 | 12 | 0 | Makora | $0.0013 |
+| xiaomi/mimo-v2.6-flash | 0.53 | 4 | 11 | 3 | Makora (4), Xiaomi (2) | $0.0037 |
+| qwen/qwen3.8-flash | 0.53 | 7 | 11 | 0 | Alibaba | $0.0045 |
+| z-ai/glm-5.3-flash | 0.38 | 6 | 7 | 0 | Wafer, CoreWeave, PrimeIntellect, Reka | $0.0034 |
+
+The check cost $0.069: $0.020 in OpenRouter credits and $0.049 billed to the attached Google key. The key's own usage counters moved by exactly the same amounts as the ledger.
+
+### What the check found
+
+- **Gemini 3.8 Flash was the most accurate**, as in the earlier test, with every timestamp in the counter and words clips right. It missed the 0.3-second beep both times and once added a ticking sound that is not there.
+- **Qwen3.8 Omni Flash heard everything**, the beep included, and is about a sixth of Gemini's price on this account. Once it counted to 10 in an 8-second clip and called it a 10-second video.
+- **MiMo's failure is its provider.** On Makora (four calls) every clip cost exactly 3,663 prompt tokens whatever its length, the timestamps ran to 0:30–0:32 for 8- and 15-second clips (the failure seen in real use), and it said it could not hear the audio. On Xiaomi's own endpoint (two calls) it scored 10 of 12, the spoken line included. OpenRouter picked the provider; p0ssess did not.
+- **GLM-5.3-Flash made things up on two providers.** Served by PrimeIntellect, the cut clip became two patterned green squares; served by Reka, a Nigerian flag and a run of brand logos. On Wafer and CoreWeave its visuals were right.
+- **Models without audio input cannot do this job.** Gemma 4, Qwen3.8 Flash and GLM-5.3-Flash scored 0 of 8 on sound; Gemma and GLM said every clip was silent. So `video-understand`, which already listed video and audio as its inputs, now requires a model that takes both.
+- **Gemini 3.1 Flash Lite** read every picture right but described an invented ticking or beat in four of six answers.
+- **Token rates differ by model.** Prompt tokens grew by 91 per second of video on both Gemini models, about 228 on the Qwen models and about 290 on GLM, and not at all on Gemma 4 or on MiMo's Makora endpoint, which take a fixed sample of frames. The engine still prices every model at 290 per second, so it overprices Gemini video about threefold (ENGINE.md, Known limits).
+
+### What changed in the engine (0.5.1)
+
+| Rank | 0.5.0 (catalog prior) | 0.5.1 (measured, audio required) |
+|---|---|---|
+| 1 | glm-5.3-flash | qwen3.8-omni-flash (p_fail 0.19) |
+| 2 | gemma-4-26b-a4b-it | gemini-3.1-flash-lite (0.26) |
+| 3 | mimo-v2.6-flash | mimo-v2.6-flash (0.33) |
+| 4 | qwen3.8-flash | gemini-3.8-flash (0.15) |
+
+The measured board alone was not enough: at stakes 1 a wrong pass-through answer costs a re-run plus $0.01 of harm, so with accuracy only, Gemma 4 (deaf, but cheap and right about pictures) ranked first. Requiring audio input removed it, GLM and Qwen3.8 Flash. Gemini 3.8 Flash ranks fourth on price, partly because of the token rate above.
+
+**Limits.** Three short synthetic clips are not real footage; one person scored them; items within a clip are not independent, so the standard errors in the file understate the spread; and two runs per model cannot separate a model from the providers OpenRouter happened to pick.
+
 ## Local shortcuts
 
 Some jobs need no model at all, or a much smaller one. These run ffmpeg locally and are exported for the engine to choose:

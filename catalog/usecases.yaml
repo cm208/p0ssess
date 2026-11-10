@@ -2833,8 +2833,14 @@ use_cases:
     url: https://aistudio.google.com/docs/tokens
     as_of: '2026-11-08'
     detail: video tokens per second; Google's page is inconsistent on the default rate
+  - source: p0ssess measurement, 2026-11-09, method in docs/MEDIA.md
+    dataset: registry/benchmarks/p0ssess_evals.json
+    as_of: '2026-11-09'
+    detail: 'video_describe_synthetic_v1: three synthetic clips with known timing, text and sound, two runs per model;
+      Gemini 3.8 Flash 0.88, Qwen3.8 Omni Flash 0.82, Gemini 3.1 Flash Lite 0.68, GLM-5.3-Flash 0.38'
   notes:
-  - No clean benchmark covers this task family; quality evidence is a proxy or none.
+  - No public benchmark covers this task family; quality evidence is p0ssess's own small synthetic check.
+  - The audio track matters here; models without audio input are not offered.
   - Claude has no video input.
   - Recommended model has no zero-data-retention endpoint on OpenRouter (registry as_of 2026-11-09); strict-ZDR mode excludes
     it.

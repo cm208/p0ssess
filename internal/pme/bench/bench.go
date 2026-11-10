@@ -8,7 +8,7 @@
 //     Bradley-Terry strength relative to the best model's.
 //   - IPS scores (LMArena agent boards): q = clamp(s / best, 0, 1); a score at or
 //     below zero means no measured lift and gives q = 0.
-//   - Accuracies (Epoch, OpenRouter evals): q = acc / best.
+//   - Accuracies (Epoch, OpenRouter evals, p0ssess's own checks): q = acc / best.
 //
 // Then p_fail = f_best + (f_worst - f_best) * (1 - q), where f_best is the
 // family's failure rate for the best model and f_worst the rate at q = 0.
@@ -105,11 +105,14 @@ var Families = map[string]Family{
 	"tts":                 {Prior: 0.12, Note: "no clean benchmark for speech synthesis"},
 	"music":               {Prior: 0.25, Note: "no clean benchmark for music generation"},
 	"audio_understanding": {Prior: 0.15, Note: "no clean benchmark for audio understanding"},
-	"video_understanding": {Prior: 0.15, Note: "no clean benchmark for video understanding"},
-	"embeddings":          {Prior: 0.05, Note: "no clean benchmark for embeddings"},
-	"rerank":              {Prior: 0.05, Note: "no clean benchmark for reranking"},
-	"safety":              {Prior: 0.15, Note: "no clean benchmark for safety classification"},
-	"local":               {Prior: 0.08, Note: "local tool"},
+	// p0ssess's own measurement (registry/benchmarks/p0ssess_evals.json, docs/MEDIA.md). f_best keeps the
+	// best model at the old family prior; f_worst is the highest any family uses.
+	"video_understanding": {Boards: []Board{{Source: "p0ssess", Benchmark: "video_describe_synthetic_v1", Label: "p0ssess video check"}},
+		FBest: 0.15, FWorst: 0.60},
+	"embeddings": {Prior: 0.05, Note: "no clean benchmark for embeddings"},
+	"rerank":     {Prior: 0.05, Note: "no clean benchmark for reranking"},
+	"safety":     {Prior: 0.15, Note: "no clean benchmark for safety classification"},
+	"local":      {Prior: 0.08, Note: "local tool"},
 }
 
 func init() {
@@ -141,6 +144,7 @@ func Load(fsys fs.FS) (*Set, error) {
 		{"registry/benchmarks/epoch_ai.json", "epoch"},
 		{"registry/benchmarks/openrouter_evals.json", "openrouter"},
 		{"registry/benchmarks/aider_polyglot.json", "aider"},
+		{"registry/benchmarks/p0ssess_evals.json", "p0ssess"},
 	} {
 		b, err := fs.ReadFile(fsys, f.path)
 		if err != nil {

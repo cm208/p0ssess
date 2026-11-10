@@ -450,6 +450,10 @@ func (c *Catalog) Classify(p Profile, n int) []Match {
 		// Media use cases need media; do not match them on words alone.
 		if len(ins) > 0 || len(outs) > 0 {
 			for m := range uin {
+				// A video carries its own soundtrack.
+				if m == "audio" && contains(ins, "video") {
+					continue
+				}
 				if m != "text" && !contains(ins, m) {
 					s -= 2
 				}

@@ -98,6 +98,19 @@ func TestPriorFamilies(t *testing.T) {
 	}
 }
 
+// Video understanding is scored from p0ssess's own measured check, not a catalog prior.
+func TestMeasuredVideoBoard(t *testing.T) {
+	s := load(t)
+	best := s.For("video_understanding", "google/gemini-3.8-flash", false, 0)
+	weak := s.For("video_understanding", "z-ai/glm-5.3-flash", false, 1)
+	if best.Boards != 1 || math.Abs(best.PFail-0.15) > 1e-9 {
+		t.Errorf("the best measured model should sit at f_best on the p0ssess board: %+v", best)
+	}
+	if weak.PFail <= best.PFail+0.1 {
+		t.Errorf("a model that scored far lower should fail more often: %+v vs %+v", weak, best)
+	}
+}
+
 func TestBase(t *testing.T) {
 	for in, want := range map[string]string{
 		"deepseek/deepseek-v4.1-flash-1017": "deepseek/deepseek-v4.1-flash",

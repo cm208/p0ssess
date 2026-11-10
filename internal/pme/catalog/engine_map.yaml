@@ -80,7 +80,7 @@ subtitles-srt: {f: transcription, audio_s: 1800, out_tok: 6000, in: [audio], out
 audio-events: {f: audio_understanding, audio_s: 1800, out_tok: 1000, in: [audio]}
 audio-tone: {f: audio_understanding, audio_s: 180, out_tok: 200, in: [audio]}
 voice-prompt: {f: transcription, audio_s: 30, out_tok: 100, in: [audio], out: [transcript]}
-video-understand: {f: video_understanding, video_s: 600, out_tok: 1500, in: [video]}
+video-understand: {f: video_understanding, video_s: 600, out_tok: 1500, in: [video, audio]}
 video-bug-repro: {f: video_understanding, video_s: 120, out_tok: 1000, in: [video]}
 video-url-digest: {f: video_understanding, video_s: 600, out_tok: 1500, in: [video]}
 video-timestamp-ocr: {f: ocr, images: 1, out_tok: 200, in: [image]}

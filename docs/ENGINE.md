@@ -125,18 +125,21 @@ p_fail starts from clean benchmark evidence for the use case's **task family**. 
 | document | LMArena document, longer query | 0.08 | 0.45 |
 | image_gen, image_edit | LMArena text-to-image, image edit | 0.15 | 0.55 |
 | video_gen | LMArena text-to-video, image-to-video | 0.20 | 0.60 |
+| video_understanding | p0ssess's own video check ([MEDIA.md](MEDIA.md#video-accuracy-check)) | 0.15 | 0.60 |
 
 On a board, a model's score becomes a relative quality `q` against the best model there:
 
 - Bradley-Terry ratings: `q = 10^((r - best) / 400)`, the model's strength relative to the best one's. 50 points behind gives 0.75, 150 behind gives 0.42.
 - IPS agent scores: `q = clamp(s / best, 0, 1)`. A score at or below zero means no measured lift.
-- Accuracies: `q = acc / best`.
+- Accuracies (Epoch, OpenRouter evals, p0ssess's own checks): `q = acc / best`.
 
 Then `p_fail = f_best + (f_worst - f_best) × (1 - q)`, averaged over the family's boards where the model appears. The model's best variant is used (Epoch and LMArena scores at high effort are upper bounds for default-effort calls). Dated snapshots share evidence: `deepseek-v4.1-flash-1017` borrows `deepseek-v4.1-flash`'s coding score.
 
 **Uncertainty.** Each estimate carries a sigma: the board's own interval mapped through the same formula, plus 0.05 for the mapping itself, 0.08 more when the family only approximates the job (`proxy` in the engine map), and 0.03 more for borrowed snapshot evidence. The stakes gate checks `p_fail + sigma`.
 
-**No clean evidence.** A model with no record on an evidenced family sits three quarters of the way to f_worst with sigma 0.20: wide and pessimistic, so it passes at stakes 1, fails at stakes 2 on agent work, and never passes at stakes 3. Families with no clean benchmark at all (speech-to-text 0.10, speech synthesis 0.12, audio understanding 0.15, video understanding 0.15, music 0.25, embeddings 0.05, reranking 0.05, safety classification 0.15) use that prior for the catalog's recommended model, 0.03 more for its alternatives and 0.10 more (sigma 0.20) for models the catalog does not name. RESEARCH.md is explicit that these families have no clean evidence; logged outcomes are the only way to improve them.
+**No clean evidence.** A model with no record on an evidenced family sits three quarters of the way to f_worst with sigma 0.20: wide and pessimistic, so it passes at stakes 1, fails at stakes 2 on agent work, and never passes at stakes 3. Families with no clean benchmark at all (speech-to-text 0.10, speech synthesis 0.12, audio understanding 0.15, music 0.25, embeddings 0.05, reranking 0.05, safety classification 0.15) use that prior for the catalog's recommended model, 0.03 more for its alternatives and 0.10 more (sigma 0.20) for models the catalog does not name. RESEARCH.md is explicit that these families have no clean evidence; logged outcomes are the only way to improve them.
+
+**Measured by p0ssess.** Video understanding had no public benchmark either, and the catalog prior ranked models by price alone: GLM-5.3-Flash came first and MiMo-v2.6-flash third. A small check with known ground truth (three synthetic clips, two runs per model, [MEDIA.md](MEDIA.md#video-accuracy-check)) now stands in for a board: `registry/benchmarks/p0ssess_evals.json`, cited as "p0ssess measurement, 2026-11-09". f_best stays at the old prior (0.15), so the best measured model is unchanged, and f_worst is 0.60, the highest any family uses, so a model with no record still passes at stakes 1 and not at stakes 2, as elsewhere. The same check showed that a video's soundtrack is part of the job: models without audio input scored 0 of 8 on sound and two of them said every clip was silent, so `video-understand` now requires audio input, as its catalog entry already said.
 
 **History.** Outcomes in the ledger update the prior as a beta-binomial: the prior counts as 8 pseudo-observations when it comes from benchmarks and 3 when it is a family prior. Accepted runs are successes and redone runs are failures; outcomes on other use cases in the same family count half. Sigma shrinks with the square root of the added weight. Declines and overrides do not change p_fail (they are preferences, not quality), but add a small friction term (the wasted hand-off times the smoothed decline rate) and a note when the user usually declines that route.
 
@@ -452,14 +455,14 @@ API-key plan, no history:
 ```
 $ p0ssess engine recommend --use-case video-understand --top 3
 video-understand (#75, media) · stakes 1 · λ 1.00 (API-key plan: Claude at list price)
-   route   model               total    cash     claude   risk     p_fail
-1  direct  glm-5.3-flash       $0.0734  $0.0064  $0.0550  $0.0120  0.18
-2  direct  gemma-4-26b-a4b-it  $0.0773  $0.0058  $0.0550  $0.0165  0.25
-3  direct  mimo-v2.6-flash     $0.0905  $0.0209  $0.0550  $0.0146  0.18    ask: about $0.026, above the $0.02 auto-approve limit
-pick: handing this to glm-5.3-flash: summarize a talk, meeting or lecture video
+   route   model                  total    cash     claude   risk     p_fail
+1  direct  qwen3.8-omni-flash     $0.0997  $0.0283  $0.0550  $0.0164  0.19    ask: about $0.028, above the $0.02 auto-approve limit
+2  direct  gemini-3.1-flash-lite  $0.1006  $0.0241  $0.0550  $0.0215  0.26    ask: about $0.048, above the $0.02 auto-approve limit
+3  direct  mimo-v2.6-flash        $0.1026  $0.0209  $0.0550  $0.0267  0.33    ask: about $0.026, above the $0.02 auto-approve limit
+pick: handing this to qwen3.8-omni-flash: summarize a talk, meeting or lecture video
 ```
 
-Claude cannot watch video, so there is no Claude row. With no clean video benchmark, the catalog's ordering is the prior (Gemini 3.8 Flash 0.15, its alternatives 0.18, others 0.25); GLM-5.3-Flash wins on price at stakes 1 and runs without asking. Mimo's estimate (list price, with retries) is above the default $0.02 limit, so it would ask.
+Claude cannot watch video, so there is no Claude row. p_fail comes from p0ssess's video check (Qwen3.8 Omni Flash scored 0.82 against Gemini 3.8 Flash's 0.88, so 0.19 with its single provider's uptime); models without audio input are not offered. At stakes 1 a wrong pass-through answer is priced at a re-run plus $0.01 of harm, so price still decides among the models that pass: Gemini 3.8 Flash, the most accurate, ranks fourth at $0.150 because its 10-minute estimate assumes 290 tokens per second of video, where the check measured 91 (MEDIA.md). All three ask at the default $0.02 limit, because a 10-minute video costs more than that.
 
 Feature work at stakes 3 on an API plan, then on a subscription with no reading yet:
 
@@ -478,7 +481,8 @@ Sol's row at λ = 1: $0.211 cash, $0.118 of Claude hand-off and full review, and
 ## Known limits
 
 - The presets are stances, not measurements. The ledger records λ, the preset and every outcome so they can be calibrated; the opt-in evaluation set in DESIGN.md does not exist yet.
-- Audio, video, speech, embeddings and reranking have no clean benchmark. Their p_fail is the catalog's ordering until outcomes accumulate. Speech-to-text and text-to-speech prices are read as per second and per character, which OpenRouter does not confirm; image and music prices are scaled from the catalog's estimates.
+- Audio, speech, embeddings and reranking have no clean benchmark. Their p_fail is the catalog's ordering until outcomes accumulate. Video understanding rests on p0ssess's own check: three synthetic clips, two runs per model, scored by hand. It is small and its clips are 8 to 15 seconds long. Speech-to-text and text-to-speech prices are read as per second and per character, which OpenRouter does not confirm; image and music prices are scaled from the catalog's estimates.
+- Media token rates are one figure for every model (290 per second of video). The video check measured 91 for both Gemini models, about 228 for the Qwen models, about 290 for GLM-5.3-Flash, and a fixed count regardless of length for Gemma 4 and for MiMo on one provider. The engine does not use per-model rates yet, so it overprices Gemini video about threefold.
 - Rerank models show 0/0 prices and are never offered until a price appears.
 - Spend is measured per run. A run counts as accepted unless Claude reports otherwise, so a redo Claude forgets to report makes the model look better than it is.
 - The classifier is word overlap; an explicit use-case id is always better.

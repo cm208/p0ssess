@@ -58,6 +58,11 @@ func TestRecommendCapabilityAndKeep(t *testing.T) {
 	if r.Pick.NeedsApproval != (r.Pick.EstimateUSD > 0.02) {
 		t.Errorf("asks exactly when the estimate is above the $0.02 per-task limit: %+v", r.Pick)
 	}
+	for _, o := range r.Options {
+		if m := e.Reg.Get(o.Model); m != nil && !m.HasInput("audio") {
+			t.Errorf("video-understand needs the soundtrack; offered %s, which takes no audio", o.Model)
+		}
+	}
 	if !strings.HasPrefix(r.Announce, "handing this to ") {
 		t.Errorf("announce = %q", r.Announce)
 	}
