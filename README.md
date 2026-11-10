@@ -25,10 +25,10 @@ The hand-off runs in a small background agent on Haiku, which makes the calls an
 
 ## Install
 
-You need Claude Code and an [OpenRouter](https://openrouter.ai) API key. The plugin runs one Go binary: a release archive ships it for Linux (amd64, arm64) and macOS (Apple silicon), checked against SHA-256 sums before it runs; from a plain clone the plugin builds it on first use with Go 1.27 or later, offline, in a few seconds. For the sandboxed agent path you also need Linux with rootless podman; without it, media and one-shot jobs still work.
+You need Claude Code and an [OpenRouter](https://openrouter.ai) API key. The plugin runs one Go binary: a release archive ships it for Linux (amd64, arm64) and macOS (Apple silicon), checked against SHA-256 sums before it runs. A plain clone downloads the same binary from the [releases page](https://git.christianmoo.re/cmoore/p0ssess/releases) and checks it the same way, or, when that fails, builds it on first use with Go 1.27 or later in a few seconds. Releases are built reproducibly from the tagged commit, so anyone can rebuild one and compare ([docs/RELEASE.md](docs/RELEASE.md)). For the sandboxed agent path you also need Linux with rootless podman; without it, media and one-shot jobs still work.
 
 ```sh
-claude plugin marketplace add <repository URL>
+claude plugin marketplace add https://git.christianmoo.re/cmoore/p0ssess.git
 claude plugin install p0ssess@p0ssess
 ```
 
@@ -75,7 +75,7 @@ Ask for things the way you normally would:
 
 ## The ghost
 
-The mark is a 15-by-15 pixel ghost, the thing that possesses another model for a moment and hands the work back. In the status line it is `ᗣ`: muted when idle, a little brighter while something runs, amber when you are close to your budget. Never red, never animated.
+The mark is a 16-by-16 pixel ghost, the thing that possesses another model for a moment and hands the work back. In the status line it is `ᗣ`: muted when idle, a little brighter while something runs, amber when you are close to your budget. Never red, never animated.
 
 ## License
 

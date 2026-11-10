@@ -39,7 +39,7 @@ for f in release/<version>/*; do
 done
 ```
 
-While the repository is private, release files need a login to download, so leave `dist/release-url` out: installs use the release archive (which carries the binaries) or build with Go.
+`dist/release-url` holds `https://git.christianmoo.re/cmoore/p0ssess/releases/download`, so a plain clone downloads its binary from the release and checks it against `dist/SHA256SUMS`. A download that fails or does not match falls through to a Go build.
 
 ### On GitHub (later)
 

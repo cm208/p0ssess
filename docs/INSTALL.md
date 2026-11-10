@@ -19,11 +19,11 @@ On macOS the direct path (video, audio, images, PDFs, one-shot jobs), the engine
 From the repository's marketplace:
 
 ```sh
-claude plugin marketplace add <repository URL>
+claude plugin marketplace add https://git.christianmoo.re/cmoore/p0ssess.git
 claude plugin install p0ssess@p0ssess
 ```
 
-The repository URL can be a GitHub `owner/repo`, an `https://…/p0ssess.git` URL, or an SSH `git@host:owner/p0ssess.git` address. For an SSH server on a non-standard port, add a `Host` alias with that `Port` to `~/.ssh/config` and use the alias, because the `ssh://host:port/` form is not accepted.
+The repository is at https://git.christianmoo.re/cmoore/p0ssess. A fork or mirror works the same way: the URL can be a GitHub `owner/repo`, an `https://…/p0ssess.git` URL, or an SSH `git@host:owner/p0ssess.git` address. For an SSH server on a non-standard port, add a `Host` alias with that `Port` to `~/.ssh/config` and use the alias, because the `ssh://host:port/` form is not accepted.
 
 From a local clone (Claude Code loads it in place, so a `git pull` updates it):
 
