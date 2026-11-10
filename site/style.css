@@ -35,9 +35,7 @@
   --st-idle: #808080;       /* Claude Code's 256-color status codes */
   --st-run: #bcbcbc;
   --st-amber: #ffaf00;
-  --ghost-body: #a6adc8;
-  --ghost-mask: #eef1ff;
-  --ghost-eye: #11121a;
+  --ghost-mask: #eef1ff;    /* the mark's mask, for its blinking lids */
   --out: cubic-bezier(0.16, 1, 0.3, 1);
   --spring: cubic-bezier(0.34, 1.5, 0.5, 1);
   --flow: 0.9rem;           /* space between blocks of copy */
@@ -97,13 +95,19 @@ h2 { font-size: clamp(1.5rem, 1.2vw + 1.2rem, 2rem); line-height: 1.12; letter-s
 .copy .lede { font-size: 1.15rem; line-height: 1.55; margin-top: 1.3rem; }
 .small { font-size: 0.9rem; color: var(--ink-2); }
 
-/* The mark: ghost and wordmark share one pixel grid. */
-.lockup { --px: 5px; display: flex; align-items: flex-end; gap: calc(4 * var(--px)); }
-.ghost { width: calc(15 * var(--px)); height: calc(15 * var(--px)); flex: none; }
-.g-body { fill: var(--ghost-body); }
-.g-mask, .g-lid { fill: var(--ghost-mask); }
-.g-eye { fill: var(--ghost-eye); }
-.wordmark { width: calc(34 * var(--px)); height: calc(9 * var(--px)); margin-bottom: calc(-2 * var(--px)); }
+/* The mark. ghost.svg is drawn on a 16-unit grid and the wordmark on the same unit, so both
+   are sized in whole multiples of --u and stay crisp. The lids cover the top of the two slit
+   eyes (columns 6 and 9, rows 5 and 6) in the mask's color; a blink shows them for a moment. */
+.g { --u: 3px; position: relative; display: block; flex: none; width: calc(16 * var(--u)); height: calc(16 * var(--u)); }
+.g img { display: block; width: 100%; height: 100%; }
+.g .lid {
+  position: absolute; left: calc(6 * var(--u)); top: calc(5 * var(--u)); width: calc(4 * var(--u)); height: calc(2 * var(--u));
+  background: linear-gradient(to right, var(--ghost-mask) 25%, transparent 25% 75%, var(--ghost-mask) 75%);
+  opacity: 0;
+}
+.lockup { --u: 4px; display: flex; align-items: flex-end; gap: calc(3 * var(--u)); }
+.lockup .g { --u: inherit; }
+.wordmark { width: calc(34 * var(--u)); height: calc(9 * var(--u)); margin-bottom: calc(-2 * var(--u)); }
 .wm-ink { fill: var(--ink); }
 .wm-zero { fill: var(--violet); }
 
@@ -407,7 +411,7 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
 }
 .site-foot p + p { margin-top: 0.4rem; }
 .site-foot .small { font-size: 0.82rem; max-width: 40rem; }
-.ghost.small { width: 30px; height: 30px; margin-top: 0.15rem; }
+.foot-g { flex: none; width: 32px; height: 32px; }
 
 @media (max-width: 480px) {
   :root { --flow: 0.8rem; --flow-lg: 1.2rem; }
@@ -420,7 +424,7 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
   .bars { row-gap: 0.5rem; }
   .steps li { padding-block: 0.55rem 0.65rem; }
   .steps .cmd { grid-column: 1 / -1; }
-  .lockup { --px: 4px; }
+  .lockup { --u: 3px; }
   .states li { grid-template-columns: 1fr; gap: 0.3rem; }
   .cases tr { grid-template-columns: 1fr; row-gap: 0.1rem; }
   .cases td:nth-child(3) { text-align: left; }
@@ -449,7 +453,7 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
   .sec + .sec { border-top: 0; }
   .sec + .sec::before { content: none; }
   .sec.hero { min-height: 100vh; padding-top: max(24px, calc(50vh - 362px)); padding-bottom: 4vh; justify-content: flex-start; }
-  .lockup { --px: 6px; }
+  .lockup { --u: 5px; }
   h1 { font-size: min(5vw, 4rem); }
   .engine h2 { font-size: min(2.7vw, 2.25rem); white-space: nowrap; }
   .pin {
@@ -471,8 +475,8 @@ html.anim .chart:not(.in) .tag { opacity: 0; translate: -6px 0; }
 html.anim .cap.swap { animation: rise 0.5s var(--out); }
 html.anim .screen .l { animation: rise 0.22s var(--out); }
 @keyframes rise { from { opacity: 0; translate: 0 4px; } }
-html.anim .hero .g-blink { animation: ghost-blink 6.2s steps(1) 2.4s infinite; }
-@keyframes ghost-blink { 0%, 100% { opacity: 1; } 96.5% { opacity: 0; } 98.5% { opacity: 1; } }
+html.anim .g .lid { animation: lids 5.6s steps(1) 1.8s infinite; }
+@keyframes lids { 0%, 100% { opacity: 0; } 96% { opacity: 1; } 98.2% { opacity: 0; } }
 
 @media (prefers-reduced-motion: reduce) {
   .caret { animation: none; }

@@ -1,6 +1,6 @@
 # p0ssess website
 
-A single static page: `index.html`, `style.css`, `scenes.js`, `favicon.svg` and `fonts/`. No build step, no framework, and no requests to anything but its own files.
+A single static page: `index.html`, `style.css`, `scenes.js`, `ghost.svg` and `fonts/`. No build step, no framework, and no requests to anything but its own files.
 
 ## Preview locally
 
@@ -61,7 +61,7 @@ The gate table draws the 0 to 100 score as the rule under each row; the classes 
 
 ## Deploy
 
-Copy `index.html`, `style.css`, `scenes.js`, `favicon.svg` and `fonts/` to any static host. `README.md`, `shoot.py` and `shots/` are not needed there.
+Copy `index.html`, `style.css`, `scenes.js`, `ghost.svg` and `fonts/` to any static host. `README.md`, `shoot.py` and `shots/` are not needed there.
 
 The page carries a strict Content Security Policy in a `<meta>` tag. If the host can set headers, send the same policy as a header and add what a meta tag cannot express:
 
