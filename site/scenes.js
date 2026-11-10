@@ -1,4 +1,4 @@
-// The page's script: the hero's hand-off loop, the copy buttons, the chart
+// The page's script: the hero's hand-off loop, the release links, the copy buttons, the chart
 // bars, and the pinned terminal that replays the scene of the section in view.
 // The scenes themselves are static markup in each section; they double as transcripts.
 (() => {
@@ -18,9 +18,34 @@
   openWrappers();
   wide.addEventListener("change", openWrappers);
 
-  // Copy buttons ship hidden; they only make sense with a script.
+  // Release links. release.js holds the addresses; until it names a repository and a version,
+  // the download controls stay disabled and no outside link shows.
+  const rel = window.P0SSESS || {};
+  const repo = String(rel.repo || "").replace(/\/+$/, ""), version = String(rel.version || "");
+  const link = (a, href) => { a.href = href; a.removeAttribute("aria-disabled"); a.hidden = false; };
+  if (rel.docs) doc.querySelectorAll('[data-link="docs"]').forEach((a) => link(a, rel.docs));
+  if (repo) {
+    doc.querySelectorAll('[data-link="repo"]').forEach((a) => link(a, repo));
+    doc.querySelectorAll("[data-repo-url]").forEach((el) => { el.textContent = repo + ".git"; });
+  }
+  if (repo && version) {
+    const files = `${repo}/releases/download/v${version}/`;
+    doc.querySelectorAll("[data-asset]").forEach((a) => {
+      link(a, files + a.dataset.asset.replace("{version}", version));
+    });
+    doc.querySelectorAll('[data-link="release"]').forEach((a) => link(a, `${repo}/releases/tag/v${version}`));
+    doc.querySelectorAll("[data-archive-name]").forEach((el) => { el.textContent = `p0ssess-${version}.tar.gz`; });
+    doc.querySelectorAll("[data-release-state]").forEach((el) => { el.textContent = `p0ssess ${version}, served from the repository's releases.`; });
+    doc.querySelectorAll("[data-sum]").forEach((el) => {
+      const sum = (rel.sha256 || {})[el.dataset.sum];
+      if (sum) { el.textContent = sum; el.hidden = false; }
+    });
+  }
+
+  // Copy buttons ship hidden; they only make sense with a script, and only for a command that is complete.
   const status = doc.getElementById("copy-status");
   doc.querySelectorAll(".copy-btn").forEach((btn) => {
+    if (!repo && btn.parentElement.querySelector("[data-repo-url]")) return;
     let timer = 0;
     btn.hidden = false;
     btn.addEventListener("click", async () => {

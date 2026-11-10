@@ -16,6 +16,7 @@
 <link rel="preload" href="fonts/obel-mono.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/plex-sans-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="style.css">
+<script src="release.js" defer></script>
 <script src="scenes.js" defer></script>
 </head>
 <body>
@@ -31,6 +32,8 @@
       <a href="#possession">How it works</a>
       <a href="#engine">The engine</a>
       <a href="#try">Install</a>
+      <a data-link="docs" hidden>Docs</a>
+      <a data-link="repo" hidden>Source</a>
     </nav>
   </div>
   <div class="pitch">
@@ -424,40 +427,13 @@
   </details>
 </section>
 
-<section class="sec" id="try" aria-labelledby="try-h">
-  <div class="copy">
-    <h2 id="try-h">Try it</h2>
-    <p>Private for now; releases are coming. You need Claude Code 2.1.319 or later and an OpenRouter key. Release archives carry the binary; a checkout builds it with Go 1.27. The agent sandbox needs Linux with rootless podman.</p>
-    <ol class="steps">
-      <li><p>Start Claude Code with the plugin.</p><div class="cmd"><pre><code>claude --plugin-dir /path/to/p0ssess</code></pre><button class="copy-btn" type="button" aria-label="Copy the command" hidden>Copy</button></div></li>
-      <li><p>Put your OpenRouter key in <code>~/.config/<wbr>p0ssess/<wbr>secrets/<wbr>openrouter_key</code> (mode 0600).</p></li>
-      <li><p>Run <code>/p0ssess:p0ssess-me</code>. Settings changes wait for your yes; <code>p0ssess setup undo</code> reverts them.</p></li>
-    </ol>
-    <p class="small">Usage-aware routing needs the p0ssess status line, which <code>/p0ssess:p0ssess-me</code> offers to install. On other plans, Claude is priced at API rates unless you set your plan. On Team and Enterprise, admins can block plugins loaded with <code>--plugin-dir</code> and restrict which plugins and tool servers you can use; check whether code may go to other providers.</p>
-  </div>
-  <details class="scene-wrap"><summary>Show the session<span class="sr-only">: setup</span></summary>
-  <figure class="scene" data-title="claude ~/shop-web" data-st="idle|" aria-labelledby="t-try">
-    <figcaption class="sr-only" id="t-try">Transcript: the first run of /p0ssess:p0ssess-me, before the key is in place.</figcaption>
-    <div class="log">
-      <p class="l in">/p0ssess:p0ssess-me</p>
-      <p class="l ai blk" data-d="800"><span class="mark">ᗣ</span> p0ssess 0.5.1   today $0.00   month $0.00 of $10.00 ▱▱▱▱▱▱▱▱▱▱   nothing running</p>
-      <p class="l ai blk c">limits   asks above $0.02 a task · $0.45 today (paced) · no-training</p>
-      <p class="l ai blk c">change   tell Claude ("cap OpenRouter at $5", "always ask before grok") · page http://127.0.0.1:42319/t/974fcecf…/</p>
-      <p class="l ai blk c">setup    no OpenRouter key (put it in …/.config/p0ssess/secrets/openrouter_key, mode 0600) · 13 tools still prompt (p0ssess setup allow) · no status line segment (p0ssess setup statusline)</p>
-      <p class="l ai" data-d="700">Your OpenRouter key goes in that file. Tell me when it’s there and I’ll offer the next step.</p>
-    </div>
-    <p class="foot"><span class="me">~/shop-web  Sonnet 5.5</span></p>
-  </figure>
-  </details>
-</section>
-
 </div>
 
 <div class="stage">
 <div class="pin">
   <nav class="island" aria-label="Sections">
     <div class="dots"><svg class="focus" aria-hidden="true" focusable="false"><defs><filter id="goo" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceGraphic" stdDeviation="2.4"/><feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -9"/></filter></defs><g filter="url(#goo)"><circle class="trail" r="3.4"/><circle class="lead" r="4.2"/></g></svg>
-    <ol><li><a href="#possession" aria-label="Possession"></a></li><li><a href="#engine" aria-label="Predictive Model Engine"></a></li><li><a href="#media" aria-label="Media"></a></li><li><a href="#chores" aria-label="Coding chores"></a></li><li><a href="#review" aria-label="Second opinion"></a></li><li><a href="#usage" aria-label="Usage"></a></li><li><a href="#stakes" aria-label="Stays with Claude"></a></li><li><a href="#rules" aria-label="Rules"></a></li><li><a href="#ghost" aria-label="Status line"></a></li><li><a href="#sandbox" aria-label="Sandbox"></a></li><li><a href="#wont" aria-label="What it won’t do"></a></li><li><a href="#data" aria-label="Use cases"></a></li><li><a href="#try" aria-label="Try it"></a></li></ol></div>
+    <ol><li><a href="#possession" aria-label="Possession"></a></li><li><a href="#engine" aria-label="Predictive Model Engine"></a></li><li><a href="#media" aria-label="Media"></a></li><li><a href="#chores" aria-label="Coding chores"></a></li><li><a href="#review" aria-label="Second opinion"></a></li><li><a href="#usage" aria-label="Usage"></a></li><li><a href="#stakes" aria-label="Stays with Claude"></a></li><li><a href="#rules" aria-label="Rules"></a></li><li><a href="#ghost" aria-label="Status line"></a></li><li><a href="#sandbox" aria-label="Sandbox"></a></li><li><a href="#wont" aria-label="What it won’t do"></a></li><li><a href="#data" aria-label="Use cases"></a></li></ol></div>
     <span class="live" aria-hidden="true"><span class="mark">ᗣ</span><span class="live-text"></span></span>
   </nav>
   <div class="term">
@@ -476,6 +452,62 @@
 </div>
 </div>
 
+<section class="get" id="try" aria-labelledby="try-h">
+<div class="get-in">
+  <div class="get-head">
+    <h2 id="try-h">Install</h2>
+    <p>Private for now. The first public release will be served from the project’s own git server, next to the source, so you can see exactly what you run.</p>
+  </div>
+  <div class="get-cols">
+    <div class="get-col">
+      <h3>What you need</h3>
+      <ul class="needs">
+        <li>Claude Code 2.1.319 or later, on any Claude plan (Pro, Max, Team or Enterprise) or an API key.</li>
+        <li>An OpenRouter API key. Other models bill to it.</li>
+        <li>For the agent sandbox, Linux with rootless podman. Without it, media and one-shot jobs still work.</li>
+        <li>Go 1.27 or later, only when a checkout has to build the binary itself.</li>
+      </ul>
+      <h3>Install it</h3>
+      <ol class="steps">
+        <li><p>Add the plugin to Claude Code.</p><div class="cmd"><pre><code>claude plugin marketplace add <span data-repo-url>&lt;repository URL&gt;</span>
+claude plugin install p0ssess@p0ssess</code></pre><button class="copy-btn" type="button" aria-label="Copy the commands" hidden>Copy</button></div></li>
+        <li><p>Put your OpenRouter key where p0ssess reads it.</p><div class="cmd"><pre><code>mkdir -p ~/.config/p0ssess/secrets
+install -m 600 /dev/null ~/.config/p0ssess/secrets/openrouter_key
+"${EDITOR:-vi}" ~/.config/p0ssess/secrets/openrouter_key</code></pre><button class="copy-btn" type="button" aria-label="Copy the commands" hidden>Copy</button></div></li>
+        <li><p>Start Claude Code and run <code>/p0ssess:p0ssess-me</code>. Settings changes wait for your yes, and <code>p0ssess setup undo</code> reverts them.</p>
+        <details class="scene-wrap"><summary>Show the first run</summary>
+  <figure class="scene" data-title="claude ~/shop-web" data-st="idle|" aria-labelledby="t-try">
+    <figcaption class="sr-only" id="t-try">Transcript: the first run of /p0ssess:p0ssess-me, before the key is in place.</figcaption>
+    <div class="log">
+      <p class="l in">/p0ssess:p0ssess-me</p>
+      <p class="l ai blk" data-d="800"><span class="mark">ᗣ</span> p0ssess 0.5.1   today $0.00   month $0.00 of $10.00 ▱▱▱▱▱▱▱▱▱▱   nothing running</p>
+      <p class="l ai blk c">limits   asks above $0.02 a task · $0.45 today (paced) · no-training</p>
+      <p class="l ai blk c">change   tell Claude ("cap OpenRouter at $5", "always ask before grok") · page http://127.0.0.1:42319/t/974fcecf…/</p>
+      <p class="l ai blk c">setup    no OpenRouter key (put it in …/.config/p0ssess/secrets/openrouter_key, mode 0600) · 13 tools still prompt (p0ssess setup allow) · no status line segment (p0ssess setup statusline)</p>
+      <p class="l ai" data-d="700">Your OpenRouter key goes in that file. Tell me when it’s there and I’ll offer the next step.</p>
+    </div>
+    <p class="foot"><span class="me">~/shop-web  Sonnet 5.5</span></p>
+  </figure>
+  </details></li>
+      </ol>
+    </div>
+    <div class="get-col">
+      <h3>Downloads</h3>
+      <p class="release-state" data-release-state>No release is published yet. These buttons turn on with the first one.</p>
+      <ul class="dl">
+        <li><span class="what">Linux, x86-64</span><code class="file">p0ssess-linux-amd64</code><a class="dl-btn" role="link" aria-disabled="true" aria-label="Download p0ssess-linux-amd64" data-asset="p0ssess-linux-amd64">Download</a><code class="sum" data-sum="p0ssess-linux-amd64" hidden></code></li>
+        <li><span class="what">Linux, arm64</span><code class="file">p0ssess-linux-arm64</code><a class="dl-btn" role="link" aria-disabled="true" aria-label="Download p0ssess-linux-arm64" data-asset="p0ssess-linux-arm64">Download</a><code class="sum" data-sum="p0ssess-linux-arm64" hidden></code></li>
+        <li><span class="what">macOS, Apple silicon</span><code class="file">p0ssess-darwin-arm64</code><a class="dl-btn" role="link" aria-disabled="true" aria-label="Download p0ssess-darwin-arm64" data-asset="p0ssess-darwin-arm64">Download</a><code class="sum" data-sum="p0ssess-darwin-arm64" hidden></code></li>
+        <li><span class="what">The plugin with all three binaries</span><code class="file" data-archive-name>p0ssess-&lt;version&gt;.tar.gz</code><a class="dl-btn" role="link" aria-disabled="true" aria-label="Download the plugin archive" data-asset="p0ssess-{version}.tar.gz">Download</a></li>
+      </ul>
+      <p>You rarely need these by hand. The plugin’s launcher fetches the binary for your platform and runs it only if its SHA-256 matches the sums committed in the repository. Builds are reproducible, so anyone can rebuild a release and compare.</p>
+      <div class="cmd"><pre><code>sha256sum -c --ignore-missing SHA256SUMS</code></pre><button class="copy-btn" type="button" aria-label="Copy the command" hidden>Copy</button></div>
+      <p class="get-links"><a role="link" aria-disabled="true" data-asset="SHA256SUMS">SHA256SUMS</a><a role="link" aria-disabled="true" data-link="repo">View the source</a><a role="link" aria-disabled="true" data-link="release">Release notes</a></p>
+    </div>
+  </div>
+  <p class="small">Usage-aware routing needs the p0ssess status line, which <code>/p0ssess:p0ssess-me</code> offers to install. On other plans, Claude is priced at API rates unless you set your plan. On Team and Enterprise, admins can block plugins loaded with <code>--plugin-dir</code> and restrict which plugins and tool servers you can use; check whether code may go to other providers.</p>
+</div>
+</section>
 </main>
 
 <footer class="site-foot">
