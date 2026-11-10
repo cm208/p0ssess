@@ -130,6 +130,19 @@ func TestVideoTokenRates(t *testing.T) {
 	}
 }
 
+func TestInventedSounds(t *testing.T) {
+	s := load(t)
+	for model, want := range map[string][2]int{"google/gemini-3.1-flash-lite": {5, 6}, "google/gemini-3.8-flash": {1, 6}, "qwen/qwen3.8-omni-flash": {0, 6}} {
+		n, calls, ok := s.InventedSounds(model)
+		if !ok || [2]int{n, calls} != want {
+			t.Errorf("%s: %d of %d (%v), want %v", model, n, calls, ok, want)
+		}
+	}
+	if _, _, ok := s.InventedSounds("x/never-checked"); ok {
+		t.Error("an unchecked model has no count")
+	}
+}
+
 func TestBase(t *testing.T) {
 	for in, want := range map[string]string{
 		"deepseek/deepseek-v4.1-flash-1017": "deepseek/deepseek-v4.1-flash",

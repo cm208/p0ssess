@@ -229,6 +229,9 @@ func (c *ctx) fits(m *registry.Model, isLead bool) (bool, string) {
 			return false, "does not take " + mod + " input"
 		}
 	}
+	if why := c.inventsSound(m); why != "" {
+		return false, why
+	}
 	for _, mod := range c.outs {
 		mod = catalog.NormalizeModality(mod)
 		switch mod {
@@ -264,6 +267,24 @@ func (c *ctx) fits(m *registry.Model, isLead bool) (bool, string) {
 }
 
 func (c *ctx) agentPath() bool { return c.w.Turns > 0 }
+
+// MaxInventedSoundShare is the highest share of p0ssess video-check answers that may describe a sound the
+// clip does not have before a model is dropped from a job that reads a video's soundtrack: 1 of 6.
+const MaxInventedSoundShare = 1.0 / 6
+
+// inventsSound rules out a model that the video check caught inventing sounds, for jobs that read a video
+// with its soundtrack. The check's accuracy score does not count an invented sound on its own, so without
+// this a cheap model that hears things would win on price at low stakes.
+func (c *ctx) inventsSound(m *registry.Model) string {
+	if c.uc == nil || c.uc.Family != "video_understanding" || !hasAny(c.ins, "audio") {
+		return ""
+	}
+	n, calls, ok := c.in.Bench.InventedSounds(m.ID)
+	if !ok || float64(n) <= MaxInventedSoundShare*float64(calls)+1e-9 {
+		return ""
+	}
+	return fmt.Sprintf("described a sound that is not there in %d of %d answers in p0ssess's video check", n, calls)
+}
 
 func (c *ctx) videoRate(m *registry.Model) float64 {
 	if m != nil {
@@ -827,14 +848,23 @@ func (c *ctx) reason(o Option, top bool, all []Option) string {
 }
 
 // trimExcluded keeps the exclusions worth showing: catalog-named models and
-// rule-named ones first, at most 12.
+// rule-named ones first, then models p0ssess measured itself, at most 12.
 func (c *ctx) trimExcluded(ex []Exclusion) []Exclusion {
 	named := map[string]bool{}
 	for _, m := range c.uc.Candidates() {
 		named[m] = true
 	}
+	rank := func(id string) int {
+		if named[id] {
+			return 0
+		}
+		if _, _, ok := c.in.Bench.InventedSounds(id); ok {
+			return 1
+		}
+		return 2
+	}
 	sort.SliceStable(ex, func(i, j int) bool {
-		return named[ex[i].Model] && !named[ex[j].Model]
+		return rank(ex[i].Model) < rank(ex[j].Model)
 	})
 	if len(ex) > 12 {
 		ex = ex[:12]

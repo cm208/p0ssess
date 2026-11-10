@@ -43,6 +43,9 @@ type Record struct {
 	// VideoTokensPerSec is the measured growth of prompt tokens per second of video (p0ssess's video
 	// check); nil when the count did not grow with length.
 	VideoTokensPerSec *float64 `json:"prompt_tokens_per_video_second"`
+	// InventedSounds is how many of Calls answers described hearing a sound the clip does not have.
+	InventedSounds *int `json:"invented_sound_answers"`
+	Calls          int  `json:"calls"`
 }
 
 // Board identifies one leaderboard slice.
@@ -140,10 +143,12 @@ type Set struct {
 	best   map[string]float64
 	// videoRates holds measured prompt tokens per second of video, by Base(model).
 	videoRates map[string]float64
+	// invented holds {answers with an invented sound, calls} from the video check, by Base(model).
+	invented map[string][2]int
 }
 
 func Load(fsys fs.FS) (*Set, error) {
-	s := &Set{boards: map[string][]Record{}, best: map[string]float64{}, videoRates: map[string]float64{}}
+	s := &Set{boards: map[string][]Record{}, best: map[string]float64{}, videoRates: map[string]float64{}, invented: map[string][2]int{}}
 	for _, f := range []struct{ path, src string }{
 		{"registry/benchmarks/lmarena.json", "lmarena"},
 		{"registry/benchmarks/epoch_ai.json", "epoch"},
@@ -164,6 +169,9 @@ func Load(fsys fs.FS) (*Set, error) {
 		for _, r := range file.Records {
 			if f.src == "p0ssess" && r.OpenRouterID != "" && r.VideoTokensPerSec != nil && *r.VideoTokensPerSec > 0 {
 				s.videoRates[Base(r.OpenRouterID)] = *r.VideoTokensPerSec
+			}
+			if f.src == "p0ssess" && r.OpenRouterID != "" && r.InventedSounds != nil && r.Calls > 0 {
+				s.invented[Base(r.OpenRouterID)] = [2]int{*r.InventedSounds, r.Calls}
 			}
 			if r.Value == nil || r.OpenRouterID == "" {
 				continue
@@ -196,6 +204,16 @@ func (s *Set) VideoTokensPerSec(model string) (float64, bool) {
 	}
 	v, ok := s.videoRates[Base(model)]
 	return v, ok
+}
+
+// InventedSounds is how many of the video check's answers for model described hearing a sound the clip
+// does not have, out of calls. ok is false when the model was not checked.
+func (s *Set) InventedSounds(model string) (n, calls int, ok bool) {
+	if s == nil {
+		return 0, 0, false
+	}
+	v, ok := s.invented[Base(model)]
+	return v[0], v[1], ok
 }
 
 var dated = regexp.MustCompile(`-\d{4}$`)

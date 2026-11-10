@@ -297,6 +297,33 @@ func TestVideoTokenRate(t *testing.T) {
 	}
 }
 
+// A model the video check caught inventing sounds in more than 1 of 6 answers is dropped from jobs that
+// read a video's soundtrack, and only from those.
+func TestInventedSoundExcluded(t *testing.T) {
+	mods := []string{"text", "video", "audio"}
+	lite := model("google/gemini-3.1-flash-lite", 0.1, 0.4, mods, []string{"text"}) // 5 of 6
+	flash := model("google/gemini-3.8-flash", 1, 4, mods, []string{"text"})         // 1 of 6
+	unchecked := model("x/unchecked-video", 1, 4, mods, []string{"text"})
+	uc := useCase("none", flash.ID)
+	uc.Family, uc.In = "video_understanding", []string{"video", "audio"}
+	in := baseInput(t, uc, lite, flash, unchecked)
+	in.Work = catalog.Work{VideoSec: 600, OutTokens: 1500}
+	in.Stakes = 1 // an unchecked model's pessimistic prior passes only at stakes 1
+	r := Score(in)
+	if why := excluded(r, lite.ID); !strings.Contains(why, "5 of 6 answers") {
+		t.Errorf("flash lite should be excluded, got %q", why)
+	}
+	for _, m := range []*registry.Model{flash, unchecked} {
+		if find(r, m.ID) == nil {
+			t.Errorf("%s should be offered: %q", m.ID, excluded(r, m.ID))
+		}
+	}
+	uc.In = []string{"video"} // picture only, like video-bug-repro
+	if r := Score(in); find(r, lite.ID) == nil {
+		t.Errorf("a picture-only job should keep flash lite: %q", excluded(r, lite.ID))
+	}
+}
+
 func TestFitAndPrivacy(t *testing.T) {
 	text := model("x/text", 1, 2, []string{"text"}, []string{"text"})
 	small := model("x/small", 1, 2, []string{"text"}, []string{"text"})
