@@ -169,6 +169,60 @@ The measured board alone was not enough: at stakes 1 a wrong pass-through answer
 
 **Limits.** Three short synthetic clips are not real footage; one person scored them; items within a clip are not independent, so the standard errors in the file understate the spread; and two runs per model cannot separate a model from the providers OpenRouter happened to pick.
 
+## Ten minutes of video: Claude alone and with p0ssess
+
+One real film, described twice by Claude Sonnet 5.5: once on its own, once with p0ssess. Measured on 2026-11-09.
+
+**Clip.** *Big Buck Bunny* (© Blender Foundation, CC BY 3.0, peach.blender.org), the official 720p H.264 file from download.blender.org/peach/bigbuckbunny_movies/, remuxed to MP4 with stereo AAC (393.8 MB). The film runs 9:56.5, so the "10-minute" clip is the whole film.
+
+**Ground truth.** Built before either run from ffmpeg contact sheets (a frame every 10 s, then every 2 to 5 s around the key scenes) and 10-second RMS levels: ten events with time windows (opening and title cards; the bunny wakes; his morning with flowers, butterflies and an apple; three rodents appear; they pelt him with fruit and nuts; they kill the butterflies; he makes weapons and traps; the ambush; the flying squirrel's glide ends over a field of stakes, caught, then flown as a kite; credits and a post-credits gag) and five sound cues (orchestral score, birdsong and nature ambience, sound effects, no dialogue, music that follows the mood at the right times). An event scores 1 if described and 1 more if its time falls within 30 s of its window; each sound cue scores 1. Maximum 25. A sound the model only guessed at ("probably") does not count.
+
+**Runs.** Claude Code 2.1.321 in an empty directory: `claude -p "<prompt>" --model claude-sonnet-5-5 --output-format stream-json --verbose --max-turns 40 --setting-sources project,local --allowedTools Bash Read Glob Grep`, without the user's settings or plugins. Prompt: "Describe what happens in <path>/bbb-10min.mp4 with timestamps, including what you can tell about the sound." Run B adds `--plugin-dir` with p0ssess 0.5.1, a scratch `P0SSESS_HOME` (`per_task_usd = 0.50`, `plan = "api"`) and the Agent tool plus the read-only p0ssess tools. The first launch of run A failed before any turn (the prompt was placed after `--allowedTools`, which swallowed it); it was rerun once with the prompt first.
+
+**Prices.** Sonnet 5.5 at list: $2 per million input tokens, $10 output, $0.10 cache read, $4 for a one-hour cache write (Claude Code writes the main session with a one-hour TTL). Haiku 5.5: $0.10, $0.50, $0.01, and $0.125 for a five-minute write. Totals come from each session's final `modelUsage`; its cache counts match the per-message usage in the stream, whose output counts are partial.
+
+### What happened
+
+- **Run A** took 5 turns and 40 s. Claude probed the file, made one 4×5 contact sheet (a frame every 30 s), measured loudness and silences with ffmpeg, and answered with a 20-row table and a loudness-based sound section. It said plainly that it could not hear and that the timestamps were approximate.
+- **Run B.** The prompt hint sent Claude to the p0ssess agent. The first `direct` call failed with "attachments total 375.6 MiB, over the 48.0 MiB request limit". That error, unlike the per-video one, does not offer the `video_prep` steps, so Claude re-encoded the film itself (360p, 12 fps, 13.4 MB) and started a second agent. That call hit the 300-second limit, whose error does name the steps, and the Haiku agent chose `segment` on its own: two 300-second calls to Qwen3.8 Omni Flash, the engine's pick. 7 main turns, 5 Haiku turns, 321 s. The provider billed 13,016 completion tokens against a `max_tokens` of 8,192; the client flagged it.
+
+| | Run A: Claude alone | Run B: Claude with p0ssess |
+|---|---|---|
+| Wall time | 40 s | 321 s |
+| Turns | 5 | 7, plus 5 Haiku relay turns |
+| Sonnet: input / cache read / cache write / output | 10 / 105,692 / 15,609 / 2,690 | 14 / 158,380 / 17,881 / 2,564 |
+| Haiku: input / cache read / cache write / output | none | 10 / 23,378 / 14,275 / 5,217 |
+| Claude cost at list price | $0.0999 | $0.1177 (Sonnet $0.1130, Haiku $0.0046) |
+| OpenRouter cost | $0 | $0.0264 (ledger and key usage both $0.026449) |
+| **Total** | **$0.0999** | **$0.1441** |
+| Main context at the last call | 28,555 tokens | 30,827 tokens |
+| **Score (of 25)** | **15** (events 12 of 20, sound 3 of 5) | **25** (events 20 of 20, sound 5 of 5) |
+
+Per turn, main session (input, cache read, cache write):
+
+| Turn | Run A | Run B |
+|---|---|---|
+| 1 | 2, 12,944, 6,022 | 2, 12,944, 7,805 (plugin hint and agent definitions) |
+| 2 | 2, 18,966, 2,782 | 2, 20,749, 2,774 |
+| 3 | 2, 21,748, 2,478 | 2, 23,523, 934 |
+| 4 | 2, 24,226, 3,582 (the contact sheet) | 2, 24,457, 523 |
+| 5 | 2, 27,808, 745 | 2, 24,980, 771 |
+| 6 | | 2, 25,751, 225 |
+| 7 | | 2, 25,976, 4,849 (the model's answer) |
+
+Haiku relay turns in run B (input, cache read, cache write): 2, 0, 5,482; 2, 5,482, 1,729; 2, 4,943, 556; 2, 5,499, 1,955; 2, 7,454, 4,553.
+
+**Scores.** Run A found the opening, the wake-up, the morning, the rodents, the weapon-making and the credits with the post-credits gag, all at the right times. The fruit-throwing, the butterflies' deaths, the ambush and the flying squirrel's capture fell between its 30-second frames. On sound it inferred the orchestral score from the credits, said there is no dialogue, and placed the loud stretches correctly from measured loudness; birds and impacts were guesses. Run B described every event within its window and every sound cue, with a few details wrong (it called the stakes the rodents' trap; they are the bunny's).
+
+### Caveats
+
+- One run each. Claude chooses its own method; a finer frame grid would catch more and cost more.
+- The film is famous. Run A named the three rodents from memory, and either model may lean on what it knows of the film. A private recording would be a fairer test.
+- **In this run p0ssess did not save Claude usage.** The hand-off turns, the failed first attempt and the model's 4,800-token answer in the main context cost more than run A's single contact sheet. What it bought was coverage and the soundtrack: 25 of 25 against 15, for $0.044 more in total and about 4.5 minutes more wall time.
+- Run B paid for one wasted round because the 48 MiB error does not offer `video_prep`. With that hint p0ssess would downscale on its own and Claude would skip the re-encode.
+- On a short clip the other model's cost is a tenth of a cent (Qwen3.8 Omni Flash averaged $0.0012 per 8–15-second clip above), so nearly all of the cost is Claude's hand-off, $0.04–0.06 on Sonnet in RESEARCH.md's measurement. Short clips save little or nothing; the reason to delegate them is the sound, which Claude cannot hear.
+- Scored by hand by the agent that ran both sessions.
+
 ## Local shortcuts
 
 Some jobs need no model at all, or a much smaller one. These run ffmpeg locally and are exported for the engine to choose:
