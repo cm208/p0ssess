@@ -38,8 +38,8 @@ main { display: flex; flex-direction: column; gap: 28px; flex: 1; }
 
 /* Header: the mark, a quiet status, one pill. */
 .top { display: flex; align-items: center; gap: 20px; }
-.lockup { display: flex; align-items: flex-end; gap: 12px; margin-right: auto; }
-.ghost { width: 45px; height: 45px; image-rendering: pixelated; }
+.lockup { display: flex; align-items: flex-end; gap: 4px; margin-right: auto; }  /* the mark has 3 empty units on its right */
+.ghost { width: 48px; height: 48px; image-rendering: pixelated; }  /* the mark is a 16-unit grid: 3 px a unit */
 .wordmark { width: 102px; height: 27px; margin-bottom: -6px; }
 .wm-ink { fill: var(--ink); }
 .wm-zero { fill: var(--violet); }
