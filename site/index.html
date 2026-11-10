@@ -6,7 +6,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>p0ssess: Claude stays in charge</title>
-<meta name="description" content="p0ssess is a Claude Code plugin. Claude stays in charge and hands video, audio and bulk work to other models through OpenRouter, within your budget and rules.">
+<meta name="description" content="p0ssess is a Claude Code plugin. Claude stays in charge while a possessed Haiku hands video, audio and bulk work to other models through OpenRouter, within your budget and rules.">
 <meta property="og:title" content="p0ssess: Claude stays in charge">
 <meta property="og:description" content="A Claude Code plugin. Its Predictive Model Engine scores every model for each job, Claude included, and Claude hands off the work another model can do for less.">
 <meta property="og:type" content="website">
@@ -20,28 +20,48 @@
 </head>
 <body>
 
-<main class="story">
-<div class="track">
-
-<header class="sec hero" id="top">
-  <div class="copy">
+<header class="hero" id="top">
+<div class="hero-in">
+  <div class="topbar">
     <div class="lockup">
-      <span class="g"><img src="ghost.svg" alt="" width="80" height="80"><i class="lid"></i></span>
+      <span class="g"><img src="ghost.svg" alt="" width="64" height="64"><i class="lid"></i></span>
       <svg class="wordmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 9" shape-rendering="crispEdges" role="img" aria-label="p0ssess"><path class="wm-ink" d="M0 2h3v1h-3zM0 3h1v1h-1zM3 3h1v1h-1zM0 4h1v1h-1zM3 4h1v1h-1zM0 5h3v1h-3zM0 6h1v1h-1zM0 7h1v1h-1zM0 8h1v1h-1zM11 2h3v1h-3zM10 3h1v1h-1zM11 4h2v1h-2zM13 5h1v1h-1zM10 6h3v1h-3zM16 2h3v1h-3zM15 3h1v1h-1zM16 4h2v1h-2zM18 5h1v1h-1zM15 6h3v1h-3zM21 2h2v1h-2zM20 3h1v1h-1zM23 3h1v1h-1zM20 4h4v1h-4zM20 5h1v1h-1zM21 6h3v1h-3zM26 2h3v1h-3zM25 3h1v1h-1zM26 4h2v1h-2zM28 5h1v1h-1zM25 6h3v1h-3zM31 2h3v1h-3zM30 3h1v1h-1zM31 4h2v1h-2zM33 5h1v1h-1zM30 6h3v1h-3z"/><path class="wm-zero" d="M6 0h2v1h-2zM5 1h1v1h-1zM8 1h1v1h-1zM5 2h1v1h-1zM8 2h1v1h-1zM5 3h1v1h-1zM8 3h1v1h-1zM5 4h1v1h-1zM8 4h1v1h-1zM5 5h1v1h-1zM8 5h1v1h-1zM6 6h2v1h-2z"/></svg>
     </div>
-    <h1>Claude stays in charge.</h1>
-    <p class="lede">p0ssess is a Claude Code plugin. Its Predictive Model Engine scores every model for each job, Claude included. When another model is good enough and costs less, or can do what Claude can’t, Claude hands the work over through OpenRouter and checks what comes back.</p>
-    <div class="install">
-      <div class="cmd"><pre><code>claude --plugin-dir /path/to/p0ssess</code></pre><button class="copy-btn" type="button" aria-label="Copy the command" hidden>Copy</button></div>
-      <p class="small">Private for now; public releases are coming. <a href="#try">What you need</a></p>
-    </div>
-    <ul class="facts">
-      <li>On Pro, Max and Ultra it watches your Claude usage and hands off more as you near your limit, so you can keep going.</li>
-      <li>It works with any Claude plan (Pro, Max, Team or Enterprise) or an API key. Other models bill to your own OpenRouter key.</li>
-      <li>Version 0.4.0, MIT licensed, no telemetry.</li>
-    </ul>
+    <nav class="topnav" aria-label="Page">
+      <a href="#possession">How it works</a>
+      <a href="#engine">The engine</a>
+      <a href="#try">Install</a>
+    </nav>
   </div>
-  <details class="scene-wrap"><summary>Show the session<span class="sr-only">: the opening</span></summary>
+  <div class="pitch">
+    <h1>Claude stays in charge.</h1>
+    <p class="lede">p0ssess is a Claude Code plugin. Its Predictive Model Engine scores every model for each job, Claude included, and hands off the work another model can do for less, or that Claude can’t do at all. On Pro, Max and Ultra it watches your usage and hands off more as you near your limit.</p>
+    <p class="cta"><a class="btn" href="#try">Install p0ssess</a><a class="more" href="#possession">How <span class="wide">a hand-off</span><span class="narrow">it</span> works</a><span class="small">Private for now; the first public release is coming.</span></p>
+  </div>
+  <figure class="relay" aria-labelledby="relay-cap" data-jobs='[["gemini-3.8-flash","Described a ten-second clip for $0.0067."],["whisper-large-v3-turbo","Transcribed 16 seconds of speech for $0.0002."],["recraft-v4.1-flash","Drew a 1024-pixel image for $0.0070."]]'>
+    <figcaption class="sr-only" id="relay-cap">How a hand-off travels: Claude asks, a possessed Haiku drives another model, and a short result comes back. On measured calls, gemini-3.8-flash described a ten-second clip for $0.0067, whisper-large-v3-turbo transcribed 16 seconds of speech for $0.0002 and recraft-v4.1-flash drew a 1024-pixel image for $0.0070.</figcaption>
+    <ol class="hops">
+      <li class="hop claude"><div class="at"><span class="pill"><span class="pip"></span>Claude</span><span class="g rider" aria-hidden="true"><img src="ghost.svg" alt="" width="48" height="48"><i class="lid"></i></span></div><span class="wire" aria-hidden="true"><i></i></span><p>Plans, reviews and answers. It never reads the media or the raw output.</p></li>
+      <li class="hop haiku"><div class="at"><span class="pill"><img class="seat" src="ghost.svg" alt="" width="32" height="32">Haiku</span></div><span class="wire" aria-hidden="true"><i></i></span><p>A small helper, possessed. It makes the call and hands back a short result.</p></li>
+      <li class="hop model"><div class="at"><span class="pill"><span class="swap"><span class="idle">another model</span><span class="live name" aria-hidden="true">gemini-3.8-flash</span></span></span></div><p class="swap"><span class="idle">Does the one job, for less or because Claude can’t.</span><span class="live job" aria-hidden="true">Described a ten-second clip for $0.0067.</span></p></li>
+    </ol>
+    <button class="pause" type="button" aria-pressed="false" hidden>Pause</button>
+  </figure>
+</div>
+</header>
+
+<main>
+<div class="story">
+<div class="track">
+
+<section class="sec" id="possession" aria-labelledby="possession-h">
+  <div class="copy">
+    <h2 id="possession-h">Where the name comes from</h2>
+    <p>Routed work never runs in the main conversation. A small Haiku subagent takes it over for the moment, the way a ghost possesses a body: it drives the other model and hands back only a short result.</p>
+    <p>The main Claude never reads the media, the other model’s transcript or its raw output. On a measured run of “what’s in this video?”, the Haiku made one call and cost $0.001, and the model that watched cost $0.0003. The main session added 10 input tokens and 791 output tokens on top of its fixed system prompt. In 0.4 the same question took it six turns and about 155,000 cached tokens, tiling frames with ffmpeg.</p>
+    <p>Claude does no routed work in the main session unless you ask for that, and ordinary work stays where it is. Ask a plain question and p0ssess adds nothing.</p>
+  </div>
+  <details class="scene-wrap"><summary>Show the session<span class="sr-only">: an ordinary question</span></summary>
   <figure class="scene" data-title="claude ~/shop-web" data-st="idle|" data-ph="scroll to continue" aria-labelledby="t-hero">
     <figcaption class="sr-only" id="t-hero">Transcript: an ordinary question. p0ssess stays silent.</figcaption>
     <div class="log">
@@ -51,7 +71,7 @@
     <p class="foot"><span class="me">~/shop-web  Sonnet 5.5</span></p>
   </figure>
   </details>
-</header>
+</section>
 
 <section class="sec engine" id="engine" aria-labelledby="engine-h">
   <div class="copy">
@@ -437,7 +457,7 @@
 <div class="pin">
   <nav class="island" aria-label="Sections">
     <div class="dots"><svg class="focus" aria-hidden="true" focusable="false"><defs><filter id="goo" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceGraphic" stdDeviation="2.4"/><feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -9"/></filter></defs><g filter="url(#goo)"><circle class="trail" r="3.4"/><circle class="lead" r="4.2"/></g></svg>
-    <ol><li><a href="#top" aria-label="Top"></a></li><li><a href="#engine" aria-label="Predictive Model Engine"></a></li><li><a href="#media" aria-label="Media"></a></li><li><a href="#chores" aria-label="Coding chores"></a></li><li><a href="#review" aria-label="Second opinion"></a></li><li><a href="#usage" aria-label="Usage"></a></li><li><a href="#stakes" aria-label="Stays with Claude"></a></li><li><a href="#rules" aria-label="Rules"></a></li><li><a href="#ghost" aria-label="Status line"></a></li><li><a href="#sandbox" aria-label="Sandbox"></a></li><li><a href="#wont" aria-label="What it won’t do"></a></li><li><a href="#data" aria-label="Use cases"></a></li><li><a href="#try" aria-label="Try it"></a></li></ol></div>
+    <ol><li><a href="#possession" aria-label="Possession"></a></li><li><a href="#engine" aria-label="Predictive Model Engine"></a></li><li><a href="#media" aria-label="Media"></a></li><li><a href="#chores" aria-label="Coding chores"></a></li><li><a href="#review" aria-label="Second opinion"></a></li><li><a href="#usage" aria-label="Usage"></a></li><li><a href="#stakes" aria-label="Stays with Claude"></a></li><li><a href="#rules" aria-label="Rules"></a></li><li><a href="#ghost" aria-label="Status line"></a></li><li><a href="#sandbox" aria-label="Sandbox"></a></li><li><a href="#wont" aria-label="What it won’t do"></a></li><li><a href="#data" aria-label="Use cases"></a></li><li><a href="#try" aria-label="Try it"></a></li></ol></div>
     <span class="live" aria-hidden="true"><span class="mark">ᗣ</span><span class="live-text"></span></span>
   </nav>
   <div class="term">
@@ -454,12 +474,14 @@
   <p class="cap" aria-hidden="true"></p>
 </div>
 </div>
+</div>
+
 </main>
 
 <footer class="site-foot">
   <img class="foot-g" src="ghost.svg" alt="" width="32" height="32">
   <div>
-    <p>p0ssess 0.4.0 is MIT licensed. Made by Christian Moore.</p>
+    <p>p0ssess is MIT licensed. Made by Christian Moore.</p>
     <p class="small">The terminal sessions are reconstructed from how the plugin behaves. Costs are from measured runs or the engine’s own output. Set in Obel Mono and IBM Plex Sans, with one glyph from Noto Sans Canadian Aboriginal, all under the <a href="fonts/OFL-obel-mono.txt">SIL Open Font License</a>.</p>
   </div>
 </footer>

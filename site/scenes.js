@@ -1,4 +1,5 @@
-// Replays the scene of the section in view in the pinned terminal.
+// The page's script: the hero's hand-off loop, the copy buttons, the chart
+// bars, and the pinned terminal that replays the scene of the section in view.
 // The scenes themselves are static markup in each section; they double as transcripts.
 (() => {
   const doc = document, root = doc.documentElement;
@@ -7,8 +8,13 @@
   const reduce = matchMedia("(prefers-reduced-motion: reduce)");
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-  // Sessions sit in closed disclosures on narrow screens; wide screens keep them open (visually hidden) as transcripts.
-  const openWrappers = () => { if (wide.matches) doc.querySelectorAll("details.scene-wrap").forEach((d) => { d.open = true; }); };
+  // Motion only runs under html.anim, which follows the reader's setting.
+  const syncMotion = () => root.classList.toggle("anim", !reduce.matches);
+  syncMotion();
+  reduce.addEventListener("change", syncMotion);
+
+  // Sessions sit in closed disclosures on narrow screens; wide screens keep the story's open (visually hidden) as transcripts.
+  const openWrappers = () => { if (wide.matches) doc.querySelectorAll(".story details.scene-wrap").forEach((d) => { d.open = true; }); };
   openWrappers();
   wide.addEventListener("change", openWrappers);
 
@@ -32,16 +38,53 @@
         sel.addRange(range);
       }
       btn.textContent = copied ? "Copied" : "Selected";
-      if (status) status.textContent = copied ? "Command copied." : "Command selected. Copy it with your keyboard.";
+      if (status) status.textContent = copied ? "Copied." : "Selected. Copy it with your keyboard.";
       clearTimeout(timer);
       timer = setTimeout(() => { btn.textContent = "Copy"; if (status) status.textContent = ""; }, 1800);
     });
   });
 
+  // The hero's hand-off. The loop itself is CSS; this finds where the riding ghost lands (the
+  // seat in the Haiku pill), names the next measured job each time round, and pauses the loop
+  // on request or while it is off screen.
+  const hero = doc.querySelector(".hero"), relay = doc.querySelector(".relay");
+  if (relay) {
+    const rider = relay.querySelector(".rider"), seat = relay.querySelector(".seat");
+    const name = relay.querySelector(".name"), job = relay.querySelector(".job"), pause = relay.querySelector(".pause");
+    let jobs = [], n = 0;
+    try { jobs = JSON.parse(relay.dataset.jobs); } catch { /* keeps the job in the markup */ }
+    const center = (el) => {
+      let x = el.offsetWidth / 2, y = el.offsetHeight / 2;
+      for (let e = el; e && e !== relay; e = e.offsetParent) { x += e.offsetLeft; y += e.offsetTop; }
+      return [x, y];
+    };
+    const place = () => {
+      if (!rider.offsetParent) return;
+      const [rx, ry] = center(rider), [sx, sy] = center(seat);
+      relay.style.setProperty("--rx", sx - rx + "px");
+      relay.style.setProperty("--ry", sy - ry + "px");
+      relay.style.setProperty("--rs", (seat.offsetWidth / rider.offsetWidth).toFixed(4));
+    };
+    const syncRelay = () => { pause.hidden = reduce.matches; place(); };
+    syncRelay();
+    reduce.addEventListener("change", syncRelay);
+    doc.fonts?.ready.then(place);
+    if ("ResizeObserver" in window) new ResizeObserver(place).observe(relay);
+    rider.addEventListener("animationiteration", (e) => {
+      if (e.animationName !== "ride" || !jobs.length) return;
+      n = (n + 1) % jobs.length;
+      [name.textContent, job.textContent] = jobs[n];
+    });
+    pause.addEventListener("click", () => {
+      const paused = hero.classList.toggle("is-paused");
+      pause.textContent = paused ? "Play" : "Pause";
+    });
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(([e]) => hero.classList.toggle("is-off", !e.isIntersecting)).observe(relay);
+    }
+  }
+
   // Chart bars grow from the baseline once, at one speed, so the shortest lands first and then says it won.
-  const syncMotion = () => root.classList.toggle("anim", !reduce.matches);
-  syncMotion();
-  reduce.addEventListener("change", syncMotion);
   const charts = [...doc.querySelectorAll(".chart")];
   if ("IntersectionObserver" in window) {
     const seen = new IntersectionObserver((entries) => {
@@ -67,7 +110,7 @@
   const screen = $(".screen"), log = $(".log"), title = $(".title");
   const gt = $(".gt"), typed = $(".typed"), ph = $(".ph"), me = $(".foot .me");
   const seg = $(".foot .seg"), segText = $(".seg-text"), replay = $(".replay");
-  const scenes = [...doc.querySelectorAll("figure.scene")];
+  const scenes = [...doc.querySelectorAll(".story figure.scene")];
   const stage = doc.querySelector(".stage"), cap = doc.querySelector(".cap");
   const island = doc.querySelector(".island");
   const focus = island?.querySelector(".focus");
@@ -189,11 +232,16 @@
     }
   }, { rootMargin: "-48% 0px -48% 0px" });
   scenes.forEach((f) => io.observe(f.closest(".sec")));
+  // The first scene starts as soon as the terminal scrolls into view below the hero, before its section reaches the middle.
+  const first = new IntersectionObserver(([e]) => {
+    if (!e.isIntersecting) return;
+    first.disconnect();
+    if (!current) activate(scenes[0]);
+  }, { threshold: 0.25 });
+  first.observe(term);
 
   replay.addEventListener("click", () => current && play(current));
   const syncReplay = () => { replay.hidden = reduce.matches; };
   reduce.addEventListener("change", () => { syncReplay(); current && play(current); });
-  wide.addEventListener("change", () => { if (wide.matches && !current) activate(scenes[0]); });
   syncReplay();
-  if (wide.matches) activate(scenes[0]);
 })();

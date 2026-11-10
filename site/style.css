@@ -36,6 +36,7 @@
   --st-run: #bcbcbc;
   --st-amber: #ffaf00;
   --ghost-mask: #eef1ff;    /* the mark's mask, for its blinking lids */
+  --gutter: clamp(20px, 4vw, 56px);
   --out: cubic-bezier(0.16, 1, 0.3, 1);
   --spring: cubic-bezier(0.34, 1.5, 0.5, 1);
   --flow: 0.9rem;           /* space between blocks of copy */
@@ -72,27 +73,26 @@ small { font-size: inherit; }
 
 /* Layout: one column; two with a pinned terminal on wide screens when scripts run. */
 .story { max-width: 44rem; margin: 0 auto; padding: 0 20px; }
+.hero-in, .site-foot { max-width: 1320px; margin: 0 auto; padding-inline: var(--gutter); }
 .stage { display: none; }
 .sec { padding-block: 2.5rem 2rem; scroll-margin-top: 1rem; }
 
 /* The frameless grid: a hairline with a 24 px violet start. Borders snap to device pixels. */
-.sec + .sec, .facts li, .wont li, .chart, .cases tr, .steps li { position: relative; border-top: 1px solid var(--line); }
-.sec + .sec::before, .facts li::after, .wont li::after, .chart::after, .cases tr::after, .steps li::after {
+.sec + .sec, .wont li, .chart, .cases tr, .steps li { position: relative; border-top: 1px solid var(--line); }
+.sec + .sec::before, .wont li::after, .chart::after, .cases tr::after, .steps li::after {
   content: ""; position: absolute; top: -1px; left: 0; width: 24px; height: 1px; background: var(--violet);
 }
-.sec.hero { padding-top: 2.2rem; }
 .copy { max-width: 34rem; }
 /* Zero specificity, so any block can set its own space above without fighting this. */
 :where(.copy) > * + * { margin-top: var(--flow); }
 :where(.copy) > h2 + * { margin-top: calc(var(--flow) + 0.15rem); }
 
-h1, h2 { font-family: var(--mono); font-weight: 700; color: var(--ink); text-wrap: balance; }
+h1, h2, h3 { font-family: var(--mono); font-weight: 700; color: var(--ink); text-wrap: balance; }
 h1 { font-size: clamp(2.2rem, 11.5vw, 3.6rem); line-height: 1.02; letter-spacing: -0.035em; }
 h2 { font-size: clamp(1.5rem, 1.2vw + 1.2rem, 2rem); line-height: 1.12; letter-spacing: -0.025em; }
 .engine h2 { font-size: clamp(1.55rem, 6.6vw, 2.25rem); }
-.copy > .lockup + h1 { margin-top: 1.9rem; }
-.copy p { text-wrap: pretty; }
-.copy .lede { font-size: 1.15rem; line-height: 1.55; margin-top: 1.3rem; }
+h3 { font-size: 1.05rem; line-height: 1.3; letter-spacing: -0.01em; }
+.copy p, .hero p { text-wrap: pretty; }
 .small { font-size: 0.9rem; color: var(--ink-2); }
 
 /* The mark. ghost.svg is drawn on a 16-unit grid and the wordmark on the same unit, so both
@@ -105,15 +105,78 @@ h2 { font-size: clamp(1.5rem, 1.2vw + 1.2rem, 2rem); line-height: 1.12; letter-s
   background: linear-gradient(to right, var(--ghost-mask) 25%, transparent 25% 75%, var(--ghost-mask) 75%);
   opacity: 0;
 }
-.lockup { --u: 4px; display: flex; align-items: flex-end; gap: calc(3 * var(--u)); }
+.lockup { --u: 3px; display: flex; align-items: flex-end; gap: calc(3 * var(--u)); }
 .lockup .g { --u: inherit; }
 .wordmark { width: calc(34 * var(--u)); height: calc(9 * var(--u)); margin-bottom: calc(-2 * var(--u)); }
 .wm-ink { fill: var(--ink); }
 .wm-zero { fill: var(--violet); }
 
+/* The hero: a full first screen. The promise, then the hand-off drawn as three stops on one line. */
+.hero { border-bottom: 1px solid var(--line); }
+.hero-in { display: flex; flex-direction: column; gap: 2.4rem; min-height: 100svh; padding-block: 1.3rem 2rem; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-bottom: 6px; }
+.topnav { display: flex; gap: clamp(1rem, 2.4vw, 1.9rem); font: 400 0.84rem/1.2 var(--mono); }
+.topnav a { padding: 0.8rem 0; color: var(--ink-2); text-decoration: none; }
+.topnav a:hover { color: var(--ink); }
+.topnav a[hidden] { display: none; }
+.pitch { margin-block: auto; }
+h1 { font-size: clamp(2.2rem, 11.5vw, 3.6rem); line-height: 1.02; letter-spacing: -0.035em; }
+.lede { max-width: 45rem; margin-top: 1.3rem; font-size: 1.18rem; line-height: 1.52; }
+.cta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.9rem 1.7rem; margin-top: 1.7rem; }
+.btn {
+  display: inline-flex; align-items: center; min-height: 46px; padding: 0 1.5rem;
+  background: var(--violet); color: var(--ink); border-radius: 999px;
+  font: 400 0.92rem/1 var(--mono); text-decoration: none;
+  transition: scale 0.35s var(--spring), background 0.2s var(--out);
+}
+.btn:hover { background: #6346d4; color: var(--ink); }
+.btn:active { scale: 0.965; }
+.more { font: 400 0.92rem/1 var(--mono); }
+.more .narrow { display: none; }
+
+/* The hand-off: Claude, the possessed Haiku, the other model. One hairline runs through the
+   three pills; the violet wires, the reply and the riding ghost are the moving parts. The
+   default state is the still frame: the Haiku possessed, both wires lit, one measured job named. */
+.relay { position: relative; }
+.hops { --pill: 44px; --gap: 1.1rem; position: relative; list-style: none; margin: 0; padding: 0; display: grid; row-gap: var(--gap); }
+.hop { position: relative; }
+.at { position: relative; z-index: 2; display: flex; align-items: center; gap: 0.7rem; height: var(--pill); }
+.pill {
+  display: inline-flex; align-items: center; gap: 0.55rem; height: var(--pill); padding: 0 1.15rem;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+  font: 400 0.94rem/1 var(--mono); color: var(--ink); white-space: nowrap;
+}
+.pip { width: 8px; height: 8px; border-radius: 50%; background: var(--ink); }
+.haiku .pill { padding-left: 0.4rem; background: var(--violet-deep); border-color: var(--violet); }
+/* Wide enough for the longest model name, so the pill does not jump when the job changes. */
+.model .pill { justify-content: center; min-width: calc(22ch + 2.4rem); border-color: var(--violet); }
+.seat { display: block; width: 32px; height: 32px; }
+.claude .at { z-index: 3; }  /* the rider leaves from here and passes over the Haiku pill */
+.rider { display: none; }
+.swap { display: grid; }
+.swap > * { grid-area: 1 / 1; }
+.swap .idle { opacity: 0; color: var(--ink-2); }
+p.swap .idle { color: inherit; }
+.hop p { margin: 0.45rem 0 0 calc(var(--pill) / 2 + 0.95rem); font-size: 0.93rem; line-height: 1.48; }
+/* The line, drawn hop by hop from one pill's middle to the next, and the lit wire on top of it. */
+.hop:not(:last-child)::before, .wire {
+  content: ""; position: absolute; left: calc(var(--pill) / 2); top: calc(var(--pill) / 2);
+  width: 1px; height: calc(100% + var(--gap)); background: var(--line);
+}
+.wire { z-index: 1; width: 2px; margin-left: -0.5px; background: var(--violet); transform-origin: 0 0; }
+.wire i { --far: 0 100%; position: absolute; inset: 0; opacity: 0; }
+.wire i::after { content: ""; position: absolute; left: -3px; top: -4px; width: 8px; height: 8px; border-radius: 50%; background: var(--ink); }
+.pause {
+  position: absolute; right: -12px; bottom: -2.1rem; padding: 4px 12px;
+  font: 400 12px/1.6 var(--mono); color: var(--ink-2); background: none; border: 0; border-radius: 999px; cursor: pointer;
+  transition: color 0.2s var(--out), background 0.2s var(--out);
+}
+.pause:hover { color: var(--ink); background: var(--surface-hi); }
+.pause[hidden] { display: none; }
+
 /* A command with its copy button */
 .cmd {
-  display: flex; align-items: center;
+  display: flex; align-items: center; min-width: 0;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 4px;
@@ -136,13 +199,10 @@ h2 { font-size: clamp(1.5rem, 1.2vw + 1.2rem, 2rem); line-height: 1.12; letter-s
 .copy-btn:active { transform: scale(0.965); }
 .copy-btn::after { content: ""; position: absolute; inset: -9px -7px; }  /* a 44 px touch target */
 .copy-btn[hidden] { display: none; }
-.install { margin-top: var(--flow-lg); }
-.install .small { margin-top: 0.55rem; }
 
 /* Plain rows on the frameless grid */
-.facts, .wont { list-style: none; padding: 0; }
-.facts li, .wont li { padding: 0.5rem 0; }
-.facts { margin-top: calc(var(--flow-lg) - 0.2rem); font-size: 0.93rem; line-height: 1.5; }
+.wont { list-style: none; padding: 0; }
+.wont li { padding: 0.5rem 0; }
 .wont, .gates, .cases, .states, .steps { margin-top: calc(var(--flow) + 0.2rem); }
 .wont code { white-space: nowrap; }
 
@@ -408,9 +468,7 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
 /* Footer */
 .site-foot {
   display: flex; gap: 1.2rem; align-items: flex-start;
-  max-width: 1320px; margin: 0 auto;
-  padding: 2.6rem 20px 3rem;
-  box-shadow: 0 -1px 0 var(--line);
+  padding-block: 2.6rem 3rem;
   color: var(--ink-2);
   font-size: 0.92rem;
 }
@@ -422,14 +480,17 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
   :root { --flow: 0.8rem; --flow-lg: 1.2rem; }
   body { font-size: 1rem; line-height: 1.56; }
   .sec { padding-block: 2rem 1.55rem; }
-  .sec.hero { padding-top: 1.7rem; }
-  .copy .lede { font-size: 1.1rem; }
+  .hero-in { gap: 1.4rem; padding-block: 1rem 1.6rem; }
+  .lede { margin-top: 1rem; font-size: 1.05rem; }
+  .cta { gap: 0.7rem 1.3rem; margin-top: 1.2rem; }
+  .more .wide { display: none; }
+  .more .narrow { display: inline; }
+  .topnav a:not([href="#try"]) { display: none; }
   .scene-wrap { margin-top: 0.85rem; }
   .chart { padding-top: 0.8rem; }
   .bars { row-gap: 0.5rem; }
   .steps li { padding-block: 0.55rem 0.65rem; }
   .steps .cmd { grid-column: 1 / -1; }
-  .lockup { --u: 3px; }
   .states li { grid-template-columns: 1fr; gap: 0.3rem; }
   .cases tr { grid-template-columns: 1fr; row-gap: 0.1rem; }
   .cases td:nth-child(3) { text-align: left; }
@@ -442,24 +503,42 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
   .states code { padding-inline: 0.7rem; font-size: 12px; }
 }
 
+@media (min-width: 860px) {
+  /* The hand-off laid out left to right. */
+  .lockup { --u: 4px; }
+  .hops { --pill: 52px; --gap: clamp(1.5rem, 4vw, 3.5rem); grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: var(--gap); row-gap: 0; }
+  .pill { padding: 0 1.3rem; font-size: 1rem; }
+  .haiku .pill { padding-left: 0.55rem; }
+  .haiku .at { justify-content: center; }
+  .model .at { justify-content: flex-end; }
+  .hop p { max-width: 19.5rem; margin: 0.85rem 0 0; }
+  .haiku p { margin-inline: auto; text-align: center; }
+  .model p { margin-left: auto; text-align: right; }
+  .hop:not(:last-child)::before, .wire { left: 0; width: calc(150% + var(--gap)); height: 1px; }
+  .haiku::before, .haiku .wire { left: 50%; }
+  .wire { height: 2px; margin: -0.5px 0 0; }
+  .wire i { --far: 100% 0; }
+  .wire i::after { left: -4px; top: -3px; }
+  .rider { --u: 4px; }
+}
+
 @media (min-width: 1024px) and (scripting: enabled) {
   .story {
     max-width: 1320px;
-    padding: 0 clamp(32px, 4vw, 56px);
+    padding: 0 var(--gutter);
     display: grid;
     grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
     column-gap: clamp(48px, 5.5vw, 96px);
   }
   .stage { display: block; }
-  .scene-wrap { margin: 0; }
-  .scene-wrap > summary { display: none; }
-  .scene { position: absolute !important; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); border: 0; padding: 0; }
+  .story .scene-wrap { margin: 0; }
+  .story .scene-wrap > summary { display: none; }
+  .story .scene { position: absolute !important; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); border: 0; padding: 0; }
   .sec { min-height: 58vh; padding-block: 6vh; display: flex; flex-direction: column; justify-content: center; }
   .sec + .sec { border-top: 0; }
   .sec + .sec::before { content: none; }
-  .sec.hero { min-height: 100vh; padding-top: max(24px, calc(50vh - 362px)); padding-bottom: 4vh; justify-content: flex-start; }
-  .lockup { --u: 5px; }
-  h1 { font-size: min(5vw, 4rem); }
+  h1 { font-size: min(6.6vw, 5.6rem); white-space: nowrap; }
+  .hero-in { padding-block: 1.8rem 2.6rem; }
   .engine h2 { font-size: min(2.7vw, 2.25rem); white-space: nowrap; }
   .pin {
     --term-h: min(640px, calc(100vh - 124px));
@@ -468,7 +547,6 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
     margin-top: max(16px, calc(50vh - 362px));
   }
   .term { height: var(--term-h); display: flex; flex-direction: column; }
-  .site-foot { padding-inline: clamp(32px, 4vw, 56px); }
 }
 
 /* Motion that only runs when the script has checked the reader allows it (html.anim). */
@@ -480,8 +558,69 @@ html.anim .chart:not(.in) .tag { opacity: 0; translate: -6px 0; }
 html.anim .cap.swap { animation: rise 0.5s var(--out); }
 html.anim .screen .l { animation: rise 0.22s var(--out); }
 @keyframes rise { from { opacity: 0; translate: 0 4px; } }
+
+/* The hero's loop: one hand-off every eight seconds, each part on the same clock.
+   0-6% rest · 6-20% the ghost rides to the Haiku and the first wire follows it · 22-33% the second
+   wire reaches the other model · 37-56% it works · 58-77% the reply comes back through the Haiku ·
+   82-94% the ghost lets go. --rx, --ry and --rs (set by scenes.js) say where the Haiku's seat is. */
+html.anim .relay { --loop: 8s; }
 html.anim .g .lid { animation: lids 5.6s steps(1) 1.8s infinite; }
 @keyframes lids { 0%, 100% { opacity: 0; } 96% { opacity: 1; } 98.2% { opacity: 0; } }
+html.anim .rider { display: block; animation: ride var(--loop) linear infinite, bob 3.2s ease-in-out infinite; }
+@keyframes ride {
+  0%, 6% { translate: 0 0; scale: 1; opacity: 1; animation-timing-function: cubic-bezier(0.6, 0, 0.2, 1); }
+  20% { translate: var(--rx, 0px) var(--ry, 0px); scale: var(--rs, 0.667); opacity: 1; animation-timing-function: linear; }
+  22%, 80% { translate: var(--rx, 0px) var(--ry, 0px); scale: var(--rs, 0.667); opacity: 0; }
+  82% { translate: var(--rx, 0px) var(--ry, 0px); scale: var(--rs, 0.667); opacity: 1; animation-timing-function: cubic-bezier(0.6, 0, 0.2, 1); }
+  94%, 100% { translate: 0 0; scale: 1; opacity: 1; }
+}
+@keyframes bob { 50% { transform: translateY(-4px); } }
+html.anim .seat { animation: seat var(--loop) linear infinite; }
+@keyframes seat { 0%, 19.5% { opacity: 0; } 22%, 80% { opacity: 1; } 82.5%, 100% { opacity: 0; } }
+html.anim .haiku .pill { animation: possess var(--loop) linear infinite; }
+@keyframes possess {
+  0%, 18% { background-color: var(--surface); border-color: var(--line); }
+  22%, 82% { background-color: var(--violet-deep); border-color: var(--violet); }
+  88%, 100% { background-color: var(--surface); border-color: var(--line); }
+}
+html.anim .claude .wire { animation: wire-a var(--loop) linear infinite; }
+@keyframes wire-a {
+  0%, 6% { scale: 0; background-color: var(--violet); animation-timing-function: cubic-bezier(0.6, 0, 0.2, 1); }
+  20%, 70% { scale: 1; background-color: var(--violet); }
+  79% { scale: 1; background-color: transparent; }
+  79.1%, 100% { scale: 0; background-color: transparent; }
+}
+html.anim .haiku .wire { animation: wire-b var(--loop) linear infinite; }
+@keyframes wire-b {
+  0%, 22% { scale: 0; background-color: var(--violet); animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+  33%, 60% { scale: 1; background-color: var(--violet); }
+  69% { scale: 1; background-color: transparent; }
+  69.1%, 100% { scale: 0; background-color: transparent; }
+}
+html.anim .haiku .wire i { animation: reply-b var(--loop) linear infinite; }
+@keyframes reply-b {
+  0%, 57% { opacity: 0; translate: var(--far); }
+  58% { opacity: 1; translate: var(--far); animation-timing-function: cubic-bezier(0.5, 0, 0.5, 1); }
+  67% { opacity: 1; translate: 0 0; }
+  68%, 100% { opacity: 0; translate: 0 0; }
+}
+html.anim .claude .wire i { animation: reply-a var(--loop) linear infinite; }
+@keyframes reply-a {
+  0%, 67% { opacity: 0; translate: var(--far); }
+  68% { opacity: 1; translate: var(--far); animation-timing-function: cubic-bezier(0.5, 0, 0.5, 1); }
+  77% { opacity: 1; translate: 0 0; }
+  78%, 100% { opacity: 0; translate: 0 0; }
+}
+html.anim .model .pill { animation: wake var(--loop) linear infinite; }
+@keyframes wake { 0%, 31% { border-color: var(--line); } 35%, 70% { border-color: var(--violet); } 76%, 100% { border-color: var(--line); } }
+html.anim .swap .live { animation: live var(--loop) linear infinite; }
+@keyframes live { 0%, 32% { opacity: 0; } 37%, 86% { opacity: 1; } 91%, 100% { opacity: 0; } }
+html.anim .swap .idle { animation: idle var(--loop) linear infinite; }
+@keyframes idle { 0%, 31% { opacity: 1; } 35%, 88% { opacity: 0; } 93%, 100% { opacity: 1; } }
+html.anim .pip { animation: got var(--loop) linear infinite; }
+@keyframes got { 0%, 76% { scale: 1; } 79% { scale: 1.9; } 84%, 100% { scale: 1; } }
+/* Paused by the reader, or while the hero is off screen. */
+.hero.is-paused *, .hero.is-off * { animation-play-state: paused !important; }
 
 @media (prefers-reduced-motion: reduce) {
   .caret { animation: none; }
@@ -496,7 +635,8 @@ html.anim .g .lid { animation: lids 5.6s steps(1) 1.8s infinite; }
   .bars .win rect, .focus circle { fill: Highlight; }
   .bars .brk { stroke: Canvas; }
   .island a::before { background: CanvasText; }
-  .tag, .copy-btn { border: 1px solid ButtonText; }
+  .tag, .copy-btn, .btn { border: 1px solid ButtonText; }
+  .wire { background: Highlight; }
 }
 
 @media print {
