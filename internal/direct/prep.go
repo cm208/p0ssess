@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func (c *Client) prepDownscale(ctx context.Context, p *plan, lim Limits, outDir string, res *Result) ([]Input, error) {
@@ -101,8 +102,23 @@ func (c *Client) runSegments(ctx context.Context, p *plan, lim Limits, outDir st
 		if err != nil {
 			return err
 		}
-		if why := VideoOverLimit(si, Limits{VideoBytes: lim.VideoBytes, VideoSeconds: 1e9}); why != "" {
-			return fmt.Errorf("segment %d is still too large (%s); lower segment_seconds or downscale first", i+1, why)
+		sizeOnly := Limits{VideoBytes: lim.VideoBytes, VideoSeconds: 1e9}
+		if VideoOverLimit(si, sizeOnly) != "" {
+			// A long, large source splits into parts that are each still over the inline size; shrink them
+			// here rather than fail, so one call with video_prep "segment" is enough.
+			small := strings.TrimSuffix(s.Path, filepath.Ext(s.Path)) + "-small.mp4"
+			if err := Downscale(ctx, s.Path, small, lim.DownscaleHeight, 1); err != nil {
+				return fmt.Errorf("segment %d: %w", i+1, err)
+			}
+			from := si.Bytes
+			if si, err = Inspect(small, lim); err != nil {
+				return err
+			}
+			if why := VideoOverLimit(si, sizeOnly); why != "" {
+				return fmt.Errorf("segment %d is still too large after downscaling (%s); lower segment_seconds", i+1, why)
+			}
+			res.Warnings = append(res.Warnings, fmt.Sprintf("segment %d downscaled locally to %dp at 1 fps (%s to %s)",
+				i+1, lim.DownscaleHeight, human(from), human(si.Bytes)))
 		}
 		head := fmt.Sprintf("[segment %d of %d, %s to %s]", i+1, len(segs), clock(s.Start), clock(s.End))
 		prompt := p.req.Prompt + fmt.Sprintf("\n\nThis is segment %d of %d of a longer video, covering %s to %s. Give times relative to the full video.",

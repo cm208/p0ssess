@@ -50,11 +50,11 @@ PDF engine, unless the caller picks one: `native` when the model takes files, `m
 | Video | 20 MiB inline or 300 s | refused unless the caller opts into a local ffmpeg step |
 | All attachments | 48 MiB per request | refused |
 
-Nothing large is uploaded silently. A video over the limit returns an error naming three opt-in steps (`--video-prep`):
+Nothing large is uploaded silently. A video over the limit returns an error naming three opt-in steps (`--video-prep`). So does a request over the 48 MiB total when one of its files is a video (after 0.5.1; in 0.5.1 that error named no steps, and in the Big Buck Bunny run below Claude re-encoded the film itself on a wasted round):
 
 - `downscale`: re-encode locally to 360p, 1 fps, mono 32 kbit/s audio. Gemini samples video at 1 fps by default, so little is lost for most questions.
 - `keyframes`: scene-change frames (first frame plus every cut, up to 24) sent as images labeled with their timestamps, plus the audio track as MP3 when the model takes audio. Cheapest; loses motion between cuts.
-- `segment`: split into 300 s parts and run one call per part, each told its place in the full video; answers are joined under `[segment i of n, start to end]` headers. Spending is checked after each part.
+- `segment`: split into 300 s parts and run one call per part, each told its place in the full video; answers are joined under `[segment i of n, start to end]` headers. Spending is checked after each part. A part still over the inline size (a long film at full resolution splits into parts of about 200 MB) is downscaled like `downscale` before it is sent, so one call with `segment` is enough.
 
 ## Cost guard
 

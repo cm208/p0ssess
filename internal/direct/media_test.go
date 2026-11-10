@@ -136,6 +136,23 @@ func TestVideoPrepThroughClient(t *testing.T) {
 		}
 	})
 
+	t.Run("segment over the inline size", func(t *testing.T) {
+		// Each 2 s part of the clip is about 21 KB; at 60p and 1 fps it is about 11 KB.
+		f, c := newFake(t)
+		c.Limits = Limits{VideoSeconds: 2, SegmentSeconds: 2, VideoBytes: 15000, DownscaleHeight: 60}
+		f.answer["/chat/completions"] = chatOK("part", "")
+		res, err := c.Run(context.Background(), Request{Model: "google/gemini-3.8-flash", Prompt: "describe", Files: []string{v}, VideoPrep: PrepSegment, MaxTokens: 200, MaxCostUSD: 0.1})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if f.count() != 2 {
+			t.Errorf("requests %d", f.count())
+		}
+		if len(res.Warnings) == 0 || !strings.Contains(strings.Join(res.Warnings, "|"), "segment 1 downscaled locally to 60p") {
+			t.Errorf("warnings = %v", res.Warnings)
+		}
+	})
+
 	t.Run("downscale", func(t *testing.T) {
 		f, c := newFake(t)
 		c.Limits = Limits{VideoSeconds: 2, DownscaleHeight: 60}

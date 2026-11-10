@@ -320,6 +320,34 @@ func TestVideoOverLimitNotUploaded(t *testing.T) {
 	}
 }
 
+// A video over the whole-request limit gets the same video_prep options as one over the per-video limit,
+// so the caller retries with one instead of re-encoding the file itself (MEDIA.md, run B).
+func TestRequestLimitOffersVideoPrep(t *testing.T) {
+	f, c := newFake(t)
+	c.Limits = Limits{TotalBytes: 1000, VideoBytes: 1 << 20, VideoSeconds: 1e9}
+	v := fakeVideo(t, t.TempDir(), 5000)
+	_, err := c.Run(context.Background(), Request{Model: "google/gemini-3.8-flash", Prompt: "describe", Files: []string{v}, MaxCostUSD: 1})
+	if err == nil {
+		t.Fatal("no error")
+	}
+	for _, want := range []string{"over the 1000 B request limit", "clip.mp4", "Nothing was uploaded", "set video_prep", "\"downscale\"", "\"keyframes\"", "\"segment\""} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("err lacks %q: %v", want, err)
+		}
+	}
+	if f.count() != 0 {
+		t.Error("a request was sent")
+	}
+
+	// Without a video there is nothing to prepare, so no video_prep hint.
+	img := filepath.Join(t.TempDir(), "big.png")
+	os.WriteFile(img, append([]byte("\x89PNG\r\n\x1a\n"), bytes.Repeat([]byte{0}, 5000)...), 0o600)
+	_, err = c.Run(context.Background(), Request{Model: "google/gemini-3.8-flash", Prompt: "describe", Files: []string{img}, MaxCostUSD: 1})
+	if err == nil || !strings.Contains(err.Error(), "request limit") || strings.Contains(err.Error(), "video_prep") {
+		t.Errorf("err = %v", err)
+	}
+}
+
 func TestImageGenerationChat(t *testing.T) {
 	f, c := newFake(t)
 	var b bytes.Buffer

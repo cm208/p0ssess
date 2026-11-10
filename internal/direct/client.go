@@ -103,7 +103,17 @@ func (c *Client) Plan(ctx context.Context, req Request) (*plan, error) {
 	}
 	lim := c.Limits.withDefaults()
 	if total > lim.TotalBytes && req.VideoPrep == PrepNone {
-		return nil, fmt.Errorf("attachments total %s, over the %s request limit", human(total), human(lim.TotalBytes))
+		msg := fmt.Sprintf("attachments total %s, over the %s request limit", human(total), human(lim.TotalBytes))
+		var videos []string
+		for _, in := range p.inputs {
+			if in.Kind == KindVideo {
+				videos = append(videos, fmt.Sprintf("%s (%s)", in.Path, human(in.Bytes)))
+			}
+		}
+		if len(videos) > 0 {
+			return nil, fmt.Errorf("%s; video: %s. Nothing was uploaded. %s", msg, strings.Join(videos, ", "), videoPrepOptions(lim))
+		}
+		return nil, errors.New(msg)
 	}
 
 	switch {
@@ -217,14 +227,20 @@ func (p *plan) checkVideo(lim Limits) error {
 		if why == "" || p.req.VideoPrep != PrepNone {
 			continue
 		}
-		return fmt.Errorf("%s: %s. Nothing was uploaded. Options (set video_prep): "+
-			"\"downscale\" re-encodes to a %dp, 1 fps copy with mono audio; "+
-			"\"keyframes\" sends up to %d scene-change frames as images (plus the audio track when the model takes audio); "+
-			"\"segment\" splits it into %.0f s parts and runs one call per part. "+
-			"Or trim it yourself (ffmpeg -ss START -t LENGTH -i in.mp4 out.mp4)",
-			in.Path, why, lim.DownscaleHeight, lim.MaxKeyframes, lim.SegmentSeconds)
+		return fmt.Errorf("%s: %s. Nothing was uploaded. %s", in.Path, why, videoPrepOptions(lim))
 	}
 	return nil
+}
+
+// videoPrepOptions names the opt-in steps for a video over a limit, so the caller can retry with one
+// instead of re-encoding the file itself.
+func videoPrepOptions(lim Limits) string {
+	return fmt.Sprintf("Options (set video_prep): "+
+		"\"downscale\" re-encodes to a %dp, 1 fps copy with mono audio; "+
+		"\"keyframes\" sends up to %d scene-change frames as images (plus the audio track when the model takes audio); "+
+		"\"segment\" splits it into %.0f s parts and runs one call per part. "+
+		"Or trim it yourself (ffmpeg -ss START -t LENGTH -i in.mp4 out.mp4)",
+		lim.DownscaleHeight, lim.MaxKeyframes, lim.SegmentSeconds)
 }
 
 func (p *plan) segmentEstimate(lim Limits) Estimate {
