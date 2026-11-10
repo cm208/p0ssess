@@ -40,6 +40,9 @@ type Record struct {
 	Stderr       *float64 `json:"stderr"`
 	BinomialSE   *float64 `json:"binomial_se_computed"`
 	Families     []string `json:"task_families"`
+	// VideoTokensPerSec is the measured growth of prompt tokens per second of video (p0ssess's video
+	// check); nil when the count did not grow with length.
+	VideoTokensPerSec *float64 `json:"prompt_tokens_per_video_second"`
 }
 
 // Board identifies one leaderboard slice.
@@ -135,10 +138,12 @@ const (
 type Set struct {
 	boards map[string][]Record // board key -> records
 	best   map[string]float64
+	// videoRates holds measured prompt tokens per second of video, by Base(model).
+	videoRates map[string]float64
 }
 
 func Load(fsys fs.FS) (*Set, error) {
-	s := &Set{boards: map[string][]Record{}, best: map[string]float64{}}
+	s := &Set{boards: map[string][]Record{}, best: map[string]float64{}, videoRates: map[string]float64{}}
 	for _, f := range []struct{ path, src string }{
 		{"registry/benchmarks/lmarena.json", "lmarena"},
 		{"registry/benchmarks/epoch_ai.json", "epoch"},
@@ -157,6 +162,9 @@ func Load(fsys fs.FS) (*Set, error) {
 			return nil, fmt.Errorf("%s: %w", f.path, err)
 		}
 		for _, r := range file.Records {
+			if f.src == "p0ssess" && r.OpenRouterID != "" && r.VideoTokensPerSec != nil && *r.VideoTokensPerSec > 0 {
+				s.videoRates[Base(r.OpenRouterID)] = *r.VideoTokensPerSec
+			}
 			if r.Value == nil || r.OpenRouterID == "" {
 				continue
 			}
@@ -177,6 +185,17 @@ func Load(fsys fs.FS) (*Set, error) {
 		s.best[k] = best
 	}
 	return s, nil
+}
+
+// VideoTokensPerSec is the measured prompt tokens per second of video for model, from p0ssess's video
+// check. ok is false when the model was not measured or its count did not grow with length (a fixed
+// frame sample, which the measurement cannot turn into a rate).
+func (s *Set) VideoTokensPerSec(model string) (float64, bool) {
+	if s == nil {
+		return 0, false
+	}
+	v, ok := s.videoRates[Base(model)]
+	return v, ok
 }
 
 var dated = regexp.MustCompile(`-\d{4}$`)
