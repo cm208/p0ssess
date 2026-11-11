@@ -5,7 +5,8 @@
 // are printed.
 // --full adds a full-page capture at each size.
 // --live also captures the motion: the hero's sweep at fixed moments after it starts (desktop
-// and phone), the hand-off figure part-way through, and the island over a later section.
+// and phone), the two answers under the abilities and the hand-off figure part-way through,
+// and the island over a later section.
 // --og writes the share image: the top of the hero at 1200x630, reduced motion, device scale 1.
 // Needs playwright-core: `npm i playwright-core`, or set PLAYWRIGHT_CORE to a copy of it
 // (Playwright for Python ships one as playwright/driver/package, next to its own node).
@@ -96,6 +97,12 @@ srv.listen(0, "127.0.0.1", async () => {
       await ctx.close();
     }
     const { ctx, pg } = await open(sizes[0][1], "no-preference", "live");
+    if (want("can")) {
+      // The two answers under the abilities, part-way through coming back.
+      await scrollTo(pg, "#can .grid", "center");
+      await pg.waitForTimeout(1300);
+      await shot(pg, "live-can.png");
+    }
     if (want("how")) {
       await scrollTo(pg, ".relay", "center");
       await pg.waitForTimeout(2200);
