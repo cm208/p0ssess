@@ -1,0 +1,20 @@
+# Addresses. Each is used everywhere it appears in the output.
+base_url = "https://docs.p0ssess.me"     # this docs site: canonical links, sitemap, robots.txt
+site_url = "https://p0ssess.me"          # the landing page, linked from the header
+repo_url = "https://git.christianmoo.re/cmoore/p0ssess"
+branch = "main"                          # links into the repo go to <repo_url>/src/branch/<branch>/<path>
+
+# Pages in reading order. source is relative to the repository root; slug "" is the home page.
+# A Markdown link to a file that is not listed here goes to the repository instead.
+pages = [
+  { source = "README.md",             slug = "",              nav = "Overview",      group = "Start" },
+  { source = "docs/INSTALL.md",       slug = "install",       nav = "Install",       group = "Start" },
+  { source = "docs/INSTALL-NOTES.md", slug = "install-notes", nav = "Install notes", group = "Start" },
+  { source = "docs/DESIGN.md",        slug = "design",        nav = "Design",        group = "How it works" },
+  { source = "docs/ENGINE.md",        slug = "engine",        nav = "The engine",    group = "How it works" },
+  { source = "docs/RELAY.md",         slug = "relay",         nav = "The agent path", group = "How it works" },
+  { source = "docs/MEDIA.md",         slug = "media",         nav = "Media",         group = "How it works" },
+  { source = "docs/RELEASE.md",       slug = "release",       nav = "Releases",      group = "Project" },
+  { source = "docs/RESEARCH.md",      slug = "research",      nav = "Research",      group = "Project" },
+  # { source = "docs/REVIEW-2026-11-09.md", slug = "review-2026-11-09", nav = "Review, 2026-11-09", group = "Project" },
+]
