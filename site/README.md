@@ -1,6 +1,6 @@
 # p0ssess website
 
-A single static page: `index.html`, `style.css`, `scenes.js`, `release.js`, `ghost.svg` and `fonts/`. No build step, no framework, and no requests to anything but its own files.
+A single static page: `index.html`, `style.css`, `scenes.js`, `release.js`, `ghost.svg`, `og.png` (the share image) and `fonts/`. No build step, no framework, and no requests to anything but its own files.
 
 The page has three parts: a full-width hero with the hand-off drawn as a looping animation, the story (a column of sections beside a pinned terminal), and an ordinary install section.
 
@@ -38,13 +38,14 @@ The jobs it names are in `data-jobs` on the figure, and the same three are in it
 
 ## Going live
 
-`release.js` is the one place the page reads addresses from. As committed, `repo` and `version` are empty: the download buttons are disabled, the install command shows `<repository URL>`, and the Source, Docs and release links are hidden or inert. To switch them on:
+`release.js` is the one place the page reads addresses from: `repo` (the repository's page on the git server, without a trailing slash), `docs` (the documentation site) and `version` (the published release, without the `v`). With `repo` and `version` set, the four download buttons, `SHA256SUMS` and "Release notes" point at `<repo>/releases/download/v<version>/<file>` and `<repo>/releases/tag/v<version>`, which is where Gitea serves a release, and the install command shows `<repo>.git`. With either one empty the download controls stay disabled and no outside link is shown; with `docs` empty the Docs link is hidden.
 
-1. Set `repo` to the repository's page on the git server, without a trailing slash (`https://<host>/<owner>/p0ssess`). The plan is the project's Gitea at git.christianmoo.re. This turns on "Source", "View the source", and the real address in the install command (`<repo>.git`).
-2. Publish the release there (see `../docs/RELEASE.md`), then set `version` to it, without the `v`. The four download buttons, `SHA256SUMS` and "Release notes" then point at `<repo>/releases/download/v<version>/<file>` and `<repo>/releases/tag/v<version>`, which is where Gitea serves a release. The files are `p0ssess-linux-amd64`, `p0ssess-linux-arm64`, `p0ssess-darwin-arm64`, `p0ssess-<version>.tar.gz` and `SHA256SUMS`.
-3. Optionally paste that release's three sums into `sha256` (from its `SHA256SUMS`, which is `../dist/SHA256SUMS` at the tag) to print each under its file. Never type one from memory.
-4. Set `docs` when the documentation site is up (planned at docs.p0ssess.me) to show the Docs link.
-5. In `index.html`, change "Private for now" in the hero and the install section, and add a canonical link and `og:url` for the site's address (planned at p0ssess.me).
+For each release:
+
+1. Publish it (see `../docs/RELEASE.md`), then set `version` to it. Set it only once the files are up, since the buttons link straight to them. The files are `p0ssess-linux-amd64`, `p0ssess-linux-arm64`, `p0ssess-darwin-arm64`, `p0ssess-<version>.tar.gz` and `SHA256SUMS`.
+2. Optionally paste that release's three sums into `sha256` (from its `SHA256SUMS`, which is `../dist/SHA256SUMS` at the tag) to print each under its file. Never type one from memory.
+
+The site's own address, https://p0ssess.me, is only in `index.html`: the canonical link, `og:url` and `og:image`. `og.png` is the share image for link previews: the hero at 1200×630, taken with reduced motion (the still frame) at a device scale of 1. Retake it when the hero changes.
 
 With scripts off the buttons stay disabled, because the addresses live in the script.
 
@@ -95,7 +96,7 @@ The gate table draws the 0 to 100 score as the rule under each row; the classes 
 
 ## Deploy
 
-Copy `index.html`, `style.css`, `scenes.js`, `release.js`, `ghost.svg` and `fonts/` to any static host. `README.md`, `shoot.js` and `shots/` are not needed there.
+Copy `index.html`, `style.css`, `scenes.js`, `release.js`, `ghost.svg`, `og.png` and `fonts/` to any static host. `README.md`, `shoot.js` and `shots/` are not needed there.
 
 The page carries a strict Content Security Policy in a `<meta>` tag. If the host can set headers, send the same policy as a header and add what a meta tag cannot express:
 
