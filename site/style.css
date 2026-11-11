@@ -77,6 +77,7 @@ a:hover { color: var(--ink); }
 :focus-visible { outline: 2px solid var(--violet-ink); outline-offset: 3px; border-radius: 4px; }
 code, pre { font-family: var(--mono); font-size: 0.88em; }
 code { color: var(--ink); overflow-wrap: anywhere; }
+pre code { font-size: 1em; }
 small { font-size: inherit; }
 cite { font-style: normal; color: var(--ink); }
 q { quotes: "“" "”"; }
@@ -147,7 +148,7 @@ p { text-wrap: pretty; }
 }
 .btn:hover { background: #6346d4; color: var(--ink); }
 .btn:active { scale: 0.965; }
-.more { font: 400 0.92rem/1 var(--mono); }
+.more { padding-block: 0.55rem; font: 400 0.92rem/1 var(--mono); }
 .replay {
   padding: 6px 12px; font: 400 12px/1.6 var(--mono); color: var(--ink-2); background: none; border: 0; border-radius: 999px; cursor: pointer;
   transition: color 0.2s var(--out), background 0.2s var(--out);
@@ -183,13 +184,20 @@ p { text-wrap: pretty; }
 .cta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.9rem 1.7rem; margin-top: 1.7rem; }
 .terms { margin-top: 0.9rem; font-size: 0.9rem; color: var(--ink-2); }
 
-.film { --p: 100; --h: 75.11; transition: --p 1.6s var(--io), --h 0.6s var(--io); }
+.film { --p: 100; --h: 75.11; }
 .film:has(#mode-alone:checked) { --p: 0; }
-.film.js { transition: --h 0.6s var(--io); }
-.film.live { transition: none; }
+.tracks { transition: --p 1.6s var(--io), --h 0.6s var(--io); }
+.film.js .tracks { transition: --h 0.6s var(--io); }
+.film.live .tracks { transition: none; }
 .film:has(#mode-alone:checked) .v-poss, .film:not(:has(#mode-alone:checked)) .v-alone { display: none; }
 
-.screen { align-self: start; width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; scroll-margin-top: 80px; }
+.screen { position: relative; align-self: start; width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; scroll-margin-top: 80px; transition: --p 1.6s var(--io); }
+.film.js .screen { transition: none; }
+/* The grid's violet start on the screen's top edge; it runs the full width once the film has been watched. */
+.screen::after {
+  content: ""; position: absolute; z-index: 1; left: -1px; top: -1px; height: 1px; width: calc(24px + (100% - 22px) * var(--p) / 100);
+  background: var(--violet);
+}
 .frame { position: relative; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 3px 3px 0 0; background: #000; }
 .frame img, .frame canvas {
   position: absolute; inset: 0; width: 100%; height: 100%;
@@ -217,6 +225,7 @@ p { text-wrap: pretty; }
 .said-by dd { font-size: 0.95rem; line-height: 1.5; }
 .said-by .by-poss dt { color: var(--violet-ink); }
 .said-by q { color: var(--ink); }
+.qt { margin-left: 0.6em; color: var(--ink-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .credit { font: 400 0.76rem/1.5 var(--mono); color: var(--ink-2); white-space: nowrap; }
 .said-note { margin-top: 0.6rem; font-size: 0.84rem; line-height: 1.45; color: var(--ink-2); }
 
@@ -238,14 +247,15 @@ p { text-wrap: pretty; }
 .parts li { display: flex; align-items: baseline; justify-content: space-between; gap: 1.1rem; }
 .parts .k { font-size: 0.8rem; color: var(--ink-2); }
 .parts .v { font: 400 0.84rem/1.3 var(--mono); color: var(--ink-body); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.parts .v b { font-weight: 700; color: var(--ink); }
+.parts [data-k] { font-weight: 700; color: var(--ink); }
+.parts .v b { font-weight: inherit; }
 
 /* The timeline: the film's picture, its measured loudness and the ten scored events on one
    scale. Each lane has a dim layer (what Claude alone had) and a lit layer clipped to --p. */
 .lanes { position: relative; container-type: inline-size; margin-top: 40px; touch-action: pan-y; }
 .lane { position: relative; }
 .lane + .lane { margin-top: 8px; }
-.tl { display: block; margin-bottom: 4px; font: 400 0.72rem/1.2 var(--mono); color: var(--ink-2); }
+.tl { display: block; margin-bottom: 4px; font: 400 0.75rem/1.2 var(--mono); color: var(--ink-2); }
 .lane-in { position: relative; }
 .strip .lane-in { height: 46px; overflow: hidden; border-radius: 4px; background: var(--surface); }
 .strip i { position: absolute; inset: 0; background: url("film-strip.webp") 0 0 / 100% 100% no-repeat; }
@@ -260,6 +270,8 @@ p { text-wrap: pretty; }
 .wave svg { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke-width: 0.56; }
 .w-dim { stroke: var(--bar); }
 .w-lit { stroke: var(--violet); }
+/* A few of the sounds the answer names, at the times it gives them. Wide screens only. */
+.cues { display: none; }
 .evs .lane-in { height: 28px; }
 .moments, .evs-lit { position: absolute; inset: 0; display: flex; gap: 3px; margin: 0; padding: 0; list-style: none; }
 .ev, .evs-lit i { position: relative; min-width: 0; }
@@ -278,7 +290,7 @@ p { text-wrap: pretty; }
 .ev button { position: absolute; inset: 0; width: 100%; padding: 0; background: none; border: 0; border-radius: 3px; cursor: pointer; }
 .axis { display: block; overflow: visible; margin-top: 6px; }
 .axis .tk { fill: var(--dot); }
-.axis text { font: 400 11px var(--mono); fill: var(--ink-2); }
+.axis text { font: 400 12px var(--mono); fill: var(--ink-2); }
 /* The playhead: the ghost rides it. */
 .head { position: absolute; z-index: 3; left: 0; top: -40px; bottom: 26px; width: 0; translate: calc(var(--h) * 1cqw) 0; pointer-events: none; }
 .head-line { position: absolute; left: -1px; top: 35px; bottom: 0; width: 2px; background: var(--ink); border-radius: 1px; }
@@ -326,7 +338,8 @@ p { text-wrap: pretty; }
 /* A big number with its unit beside it */
 .fig { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.75rem; }
 .fig b { font: 700 2.15rem/1 var(--mono); letter-spacing: -0.045em; color: var(--ink); font-variant-numeric: tabular-nums; }
-.fig b small, .amt small { font-size: 0.56em; font-weight: 400; color: var(--ink-2); margin-right: 0.1em; }
+.fig b small { font-size: 0.56em; font-weight: 400; color: var(--ink-2); margin-right: 0.1em; }
+.amt small { font-size: 0.62em; font-weight: 400; color: var(--ink-2); margin-right: 0.1em; }
 .fig span { flex-basis: 100%; font: 400 0.76rem/1.4 var(--mono); color: var(--ink-2); }
 
 /* The hand-off: Claude, the possessed Haiku, the other model. One hairline runs through the
@@ -337,7 +350,7 @@ p { text-wrap: pretty; }
 .hop { position: relative; }
 .at { position: relative; z-index: 2; display: flex; align-items: center; gap: 0.7rem; height: var(--pill); }
 .pill {
-  display: inline-flex; align-items: center; gap: 0.55rem; height: var(--pill); padding: 0 1.15rem;
+  display: inline-flex; flex: none; align-items: center; gap: 0.55rem; height: var(--pill); padding: 0 1.15rem;
   background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
   font: 400 0.94rem/1 var(--mono); color: var(--ink); white-space: nowrap;
 }
@@ -347,13 +360,13 @@ p { text-wrap: pretty; }
 .model .pill { justify-content: center; min-width: calc(22ch + 2.4rem); border-color: var(--violet); }
 .seat { display: block; width: 32px; height: 32px; }
 .claude .at { z-index: 3; }  /* the rider leaves from here and passes over the Haiku pill */
-.after { position: relative; display: grid; align-items: center; }
+.after { position: relative; display: grid; align-items: center; min-width: 0; }
 .after > * { grid-area: 1 / 1; }
 .relay .rider { display: none; }
 /* What Claude gets back: the answer's credit, as p0ssess prints it. */
 .back {
-  justify-self: start; padding: 0.3rem 0.7rem; background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
-  font: 400 0.76rem/1.3 var(--mono); color: var(--ink-body); white-space: nowrap;
+  justify-self: start; max-width: 100%; padding: 0.3rem 0.7rem; background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+  font: 400 0.76rem/1.3 var(--mono); color: var(--ink-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .swap { display: grid; }
 .swap > * { grid-area: 1 / 1; }
@@ -395,7 +408,7 @@ p.swap .idle { color: inherit; }
   border-radius: 4px;
 }
 .cmd pre {
-  flex: 1; min-width: 0; padding: 0.8rem 0.6rem 0.8rem 1rem; color: var(--ink); font-size: 0.92rem;
+  flex: 1; min-width: 0; padding: 0.8rem 0.6rem 0.8rem 1rem; color: var(--ink); font-size: 0.86rem;
   overflow-x: auto; scrollbar-width: none;
   /* A command too long for a narrow screen scrolls sideways and fades out before the button. */
   -webkit-mask-image: linear-gradient(to left, transparent 0, #000 14px);
@@ -436,9 +449,10 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
 .gates tbody th { grid-column: 1; grid-row: 1; font-size: 1.02rem; }
 .gates .gate { grid-column: 2; grid-row: 1; font-size: 1.45rem; line-height: 1; }
 .gates .harm { grid-column: 3; grid-row: 1; font-size: 1.05rem; }
-.gates .harm small, .bars .tot small { font-size: 0.62em; font-weight: 400; color: var(--ink-2); margin-right: 0.1em; }
+.gates .harm small { font-size: 0.74em; font-weight: 400; color: var(--ink-2); margin-right: 0.1em; }
+.bars .tot small { font-size: 0.62em; font-weight: 400; color: var(--ink-2); margin-right: 0.1em; }
 .gates .eg { grid-column: 1 / -1; grid-row: 2; font-size: 0.93rem; line-height: 1.4; }
-.scale { display: flex; justify-content: space-between; margin-top: 0.35rem; font: 400 0.72rem/1.3 var(--mono); color: var(--ink-2); }
+.scale { display: flex; justify-content: space-between; margin-top: 0.35rem; font: 400 0.75rem/1.3 var(--mono); color: var(--ink-2); }
 
 /* Cost charts: rows sorted by total, the bar is the total, the shortest bar wins.
    Bars grow from one baseline; the winner is violet and says so, the rest are one gray. */
@@ -446,7 +460,7 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
 .est {
   display: inline-block; padding: 0.14rem 0.62rem 0.18rem; margin-bottom: 0.85rem;
   background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
-  font: 400 0.72rem/1.4 var(--mono); color: var(--ink);
+  font: 400 0.75rem/1.4 var(--mono); color: var(--ink);
 }
 .chart .task { color: var(--ink); font-size: 1rem; }
 .chart .def { font-size: 0.86rem; line-height: 1.5; color: var(--ink-2); margin-top: 0.35rem; }
@@ -465,13 +479,13 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
 .bars svg { display: block; overflow: visible; }
 .bars rect { fill: var(--bar); }
 .bars .win rect { fill: var(--violet); }
-.bars .score, .bars .call { font: 400 0.72rem/1.3 var(--mono); color: var(--ink-2); }
+.bars .score, .bars .call { font: 400 0.75rem/1.3 var(--mono); color: var(--ink-2); }
 .bars .score { grid-area: score; }
 .bars .call { grid-area: call; text-align: right; }
 .tag {
   grid-area: tag; align-self: center; padding: 0.08rem 0.5rem 0.12rem;
   background: var(--violet-deep); border: 1px solid var(--violet); border-radius: 999px;
-  font: 400 0.7rem/1.3 var(--mono); color: var(--ink); white-space: nowrap;
+  font: 400 0.75rem/1.3 var(--mono); color: var(--ink); white-space: nowrap;
 }
 .usage .mode { align-self: flex-start; margin-top: 1.1rem; }
 .usage .bars { margin-top: 1.1rem; min-height: 7.4rem; align-content: start; }
@@ -520,7 +534,7 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
 .dl .what { color: var(--ink); line-height: 1.3; }
 .dl .file { grid-column: 1; font-size: 0.8rem; color: var(--ink-2); overflow-wrap: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dl .dl-btn { grid-column: 2; grid-row: 1 / span 2; }
-.dl .sum { grid-column: 1 / -1; margin-top: 0.3rem; font-size: 0.7rem; color: var(--ink-2); }
+.dl .sum { grid-column: 1 / -1; margin-top: 0.3rem; font-size: 0.75rem; color: var(--ink-2); }
 .dl-btn {
   display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 1.1rem;
   background: var(--violet); color: var(--ink); border: 1px solid var(--violet); border-radius: 999px;
@@ -530,9 +544,10 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
 .dl-btn:hover { background: #6346d4; color: var(--ink); }
 .dl-btn:active { scale: 0.965; }
 .dl-btn[aria-disabled="true"], .dl-btn[aria-disabled="true"]:hover { background: none; border-color: var(--line); color: var(--ink-2); cursor: default; scale: 1; }
-.get-links { display: flex; flex-wrap: wrap; gap: 0.3rem 1.6rem; font: 400 0.84rem/1.6 var(--mono); }
+.get-links { display: flex; flex-wrap: wrap; gap: 0.1rem 1.6rem; font: 400 0.84rem/1.6 var(--mono); }
+.get-links a { padding-block: 0.2rem; }
 .get-links a[aria-disabled="true"] { color: var(--ink-2); text-decoration: none; cursor: default; }
-.get .cmd pre { font-size: 0.84rem; line-height: 1.7; }
+.get .cmd pre { font-size: 0.8rem; line-height: 1.7; }
 .get .wrap > .small { max-width: 46rem; margin-top: 2.4rem; }
 .first-run { margin-top: 0.7rem; }
 .first-run > summary {
@@ -550,7 +565,7 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
 .out { margin-top: 0.8rem; }
 .out pre {
   padding: 0.9rem 1rem; background: var(--ground); border: 1px solid var(--line); border-radius: 4px;
-  font-size: 0.74rem; line-height: 1.65; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere;
+  font-size: 0.76rem; line-height: 1.65; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere;
 }
 
 /* The island: a pill dock fixed to the top once the page scrolls. Section dots with a liquid
@@ -567,7 +582,7 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
 .isl-home img { display: block; width: 20px; height: 20px; }
 .island .dots { position: relative; margin-inline: 2px; }
 .island ol { display: flex; list-style: none; margin: 0; padding: 0; }
-.island ol a { position: relative; display: grid; place-items: center; width: 22px; height: 44px; }
+.island ol a { position: relative; display: grid; place-items: center; width: 24px; height: 44px; }
 .island ol a::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--dot); transition: background 0.2s var(--out), transform 0.3s var(--spring); }
 .island ol a:hover::before { background: var(--ink); transform: scale(1.3); }
 .island ol a:focus-visible { outline-offset: -8px; border-radius: 999px; }
@@ -603,12 +618,15 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
 .site-foot cite { color: inherit; }
 .foot-g { flex: none; width: 32px; height: 32px; }
 
+@media (max-width: 760px) {
+  .topnav a:not(.nav-cta) { display: none; }
+}
+
 @media (max-width: 480px) {
   :root { --flow: 0.8rem; }
   body { font-size: 1rem; line-height: 1.56; }
   .lede { margin-top: 1rem; font-size: 1.05rem; }
   .cta { gap: 0.7rem 1.3rem; margin-top: 1.3rem; }
-  .topnav a:not(.nav-cta) { display: none; }
   .get .cmd pre { font-size: 0.76rem; }
   .dl-btn { padding: 0 0.95rem; }
   .steps .cmd, .steps .first-run { grid-column: 1 / -1; }
@@ -627,11 +645,21 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
 @media (min-width: 620px) {
   .said-by > div { grid-template-columns: 6.6rem minmax(0, 1fr); gap: 0.9rem; }
   .said-by dt { padding-top: 0.2em; }
+  .qt { display: block; margin-left: 0; }
   .said { min-height: 10.9rem; }
   .readout { grid-template-areas: "ctl score" "say parts"; column-gap: clamp(1.4rem, 3vw, 2.8rem); }
   .tally { justify-self: end; }
   .tally .num { font-size: clamp(3.4rem, 5.4vw, 4.2rem); }
   .isl-label { display: block; }
+}
+
+/* Between a phone and the two-column hero, the frame and what was said sit side by side. */
+@media (min-width: 620px) and (max-width: 1023.98px) {
+  .screen { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .frame { align-self: start; border-radius: 3px 0 0 3px; }
+  .said-by > div { grid-template-columns: minmax(0, 1fr); gap: 0.1rem; }
+  .said-by dt { padding-top: 0; }
+  .qt { display: inline; margin-left: 0.6em; }
 }
 
 @media (min-width: 860px) {
@@ -674,6 +702,13 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
   .readout { grid-area: readout; }
   .tracks { grid-area: tracks; }
   .film-note { grid-area: note; }
+  .cues { display: block; position: absolute; inset: 0; pointer-events: none; clip-path: inset(-6px calc((100 - var(--p)) * 1%) -6px 0); }
+  .cues span {
+    position: absolute; top: 50%; translate: 0 -50%; padding: 0.08rem 0.5rem 0.14rem;
+    background: var(--ground); border: 1px solid var(--violet); border-radius: 999px;
+    font: 400 0.75rem/1.3 var(--mono); color: var(--ink); white-space: nowrap;
+  }
+  .c1 { left: 6.04%; } .c2 { left: 20.96%; } .c3 { left: 58.35%; } .c4 { right: 0; }
   .readout { grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "ctl say score parts"; }
   h1 { font-size: min(4.5vw, 4.1rem); }
   .sec-head { grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); column-gap: clamp(48px, 5.5vw, 96px); align-items: end; }
@@ -704,12 +739,12 @@ html.anim .g.blink .lid { animation: lids 0.3s steps(1); }
 }
 @keyframes arrive { from { opacity: 0; translate: 0 10px; } }
 
-/* The hand-off plays once when it scrolls into view, and again on Replay: five seconds, every
+/* The hand-off plays once when it scrolls into view, and again on Replay: under five seconds, every
    part on one clock. 0-8% rest · 8-24% the ghost rides to the Haiku and the first wire follows
    it · 26-40% the second wire reaches the other model · 40-64% it works · 64-84% the reply comes
    back through the Haiku · then it holds the still frame. --rx, --ry and --rs (set by page.js)
    say where the Haiku's seat is. */
-html.anim .relay { --loop: 5s; }
+html.anim .relay { --loop: 4.8s; }
 html.anim .relay.play .rider { display: block; animation: ride var(--loop) linear both; }
 @keyframes ride {
   0%, 8% { translate: 0 0; scale: 1; opacity: 1; animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); }
@@ -768,7 +803,7 @@ html.anim .relay:not(.play):not(.done) .rider { display: block; }
 html.anim .relay:not(.play):not(.done) .back { opacity: 0; }
 
 @media (prefers-reduced-motion: reduce) {
-  .film, .mode-thumb, .island, .isl-label, .focus circle, .ev::before, .evs-lit i::before,
+  .tracks, .film.js .tracks, .screen, .mode-thumb, .island, .isl-label, .focus circle, .ev::before, .evs-lit i::before,
   .btn, .dl-btn, .copy-btn, .isl-cta, .step-btn, .topnav .nav-cta, .island ol a::before, .island ol a::after { transition: none; }
   .frame img, .frame canvas, .unseen { transition: none; }
   .tally .num.tick { animation: none; }

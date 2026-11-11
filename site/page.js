@@ -195,7 +195,7 @@
   if (!film) return;
   const DUR = 596.46, COLS = 8, FW = 96, FH = 54, STEP = 15, FIRST = 7.5, UNIFORM = 40;
   const alone = $("#mode-alone", film), poss = $("#mode-poss", film);
-  const lanes = $(".lanes", film), panel = $(".said", film), tc = $(".tc", film);
+  const tracks = $(".tracks", film), screen = $(".screen", film), lanes = $(".lanes", film), panel = $(".said", film), tc = $(".tc", film);
   const canvas = $(".reel", film), still = $(".still", film), ghost = $(".head .g", film);
   const replayFilm = $(".readout .replay", film), statusLine = $("#film-status", film);
   const evs = $$(".moments > .ev", film), lit = $$(".evs-lit > i", film);
@@ -256,8 +256,9 @@
   const frameAt = (t) => Math.max(0, Math.min(UNIFORM - 1, Math.round((t - FIRST) / STEP)));
 
   let sel = Math.max(0, items.findIndex((it) => it.featured)), run = 0, sweeping = false, scrubbing = false;
-  const setHead = (pct) => film.style.setProperty("--h", pct.toFixed(3));
-  const setP = (pct) => film.style.setProperty("--p", pct.toFixed(3));
+  // The numbers are set on the parts that draw with them, not on the whole hero.
+  const setHead = (pct) => tracks.style.setProperty("--h", pct.toFixed(3));
+  const setP = (pct) => { for (const el of [tracks, screen]) el.style.setProperty("--p", pct.toFixed(3)); };
   const blink = () => { if (reduce.matches) return; ghost.classList.remove("blink"); void ghost.offsetWidth; ghost.classList.add("blink"); };
 
   function fill(i) {
@@ -268,6 +269,7 @@
     a.classList.toggle("miss", it.miss);
     $("dd", a).textContent = it.alone;
     $(".by-poss q", panel).textContent = it.quote;
+    $(".qt", panel).textContent = it.qt;
     const note = $(".said-note", panel);
     note.textContent = it.note;
     note.hidden = !it.note;
@@ -298,7 +300,6 @@
   list.setAttribute("role", "tablist");
   list.setAttribute("aria-orientation", "horizontal");
   panel.setAttribute("role", "tabpanel");
-  panel.tabIndex = 0;
   items.forEach((it, i) => {
     it.li.setAttribute("role", "presentation");
     $$(":scope > span, :scope > q", it.li).forEach((el) => { el.hidden = true; });
