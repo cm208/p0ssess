@@ -7,7 +7,7 @@ window.P0SSESS = {
   // <repo>/releases/download/v<version>/<file>, which is where GitHub and Gitea serve them.
   repo: "https://github.com/cm208/p0ssess",
   // The published release, without the "v": "<major>.<minor>.<patch>".
-  version: "0.5.5",
+  version: "0.6.0",
   // The documentation site, or "" to keep the Docs link hidden.
   docs: "https://docs.p0ssess.me",
   // Optional: the lines of that release's SHA256SUMS, to print each sum under its file.
@@ -16,5 +16,6 @@ window.P0SSESS = {
     "p0ssess-linux-amd64": "",
     "p0ssess-linux-arm64": "",
     "p0ssess-darwin-arm64": "",
+    "p0ssess-windows-amd64.exe": "",
   },
 };

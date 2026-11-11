@@ -384,7 +384,7 @@ setup    no OpenRouter key (put it in …/.config/p0ssess/secrets/openrouter_key
       <ul class="needs">
         <li class="hl">Claude Code 2.1.319 or later, on any Claude plan (Pro, Max, Team or Enterprise) or an API key.</li>
         <li class="hl">An OpenRouter API key. Other models bill to it.</li>
-        <li class="hl">For the agent sandbox, Linux with rootless podman. Without it, media and one-shot jobs still work.</li>
+        <li class="hl">For the agent sandbox, Linux with rootless podman. Without it (on macOS and Windows), media and one-shot jobs still work.</li>
         <li class="hl">Go 1.27 or later, only when a checkout has to build the binary itself.</li>
       </ul>
     </div>
@@ -395,6 +395,7 @@ setup    no OpenRouter key (put it in …/.config/p0ssess/secrets/openrouter_key
         <li class="hl"><span class="what">Linux, x86-64</span><code class="file">p0ssess-linux-amd64</code><a class="dl-btn" role="link" aria-disabled="true" aria-label="Download p0ssess-linux-amd64" data-asset="p0ssess-linux-amd64">Download</a><code class="sum" data-sum="p0ssess-linux-amd64" hidden></code></li>
         <li class="hl"><span class="what">Linux, arm64</span><code class="file">p0ssess-linux-arm64</code><a class="dl-btn" role="link" aria-disabled="true" aria-label="Download p0ssess-linux-arm64" data-asset="p0ssess-linux-arm64">Download</a><code class="sum" data-sum="p0ssess-linux-arm64" hidden></code></li>
         <li class="hl"><span class="what">macOS, Apple silicon</span><code class="file">p0ssess-darwin-arm64</code><a class="dl-btn" role="link" aria-disabled="true" aria-label="Download p0ssess-darwin-arm64" data-asset="p0ssess-darwin-arm64">Download</a><code class="sum" data-sum="p0ssess-darwin-arm64" hidden></code></li>
+        <li class="hl"><span class="what">Windows, x64</span><code class="file">p0ssess-windows-amd64.exe</code><a class="dl-btn" role="link" aria-disabled="true" aria-label="Download p0ssess-windows-amd64.exe" data-asset="p0ssess-windows-amd64.exe">Download</a><code class="sum" data-sum="p0ssess-windows-amd64.exe" hidden></code></li>
         <li class="hl"><span class="what">The plugin with all three binaries</span><code class="file" data-archive-name>p0ssess-&lt;version&gt;.tar.gz</code><a class="dl-btn" role="link" aria-disabled="true" aria-label="Download the plugin archive" data-asset="p0ssess-{version}.tar.gz">Download</a></li>
       </ul>
       <p>You rarely need these by hand. The plugin’s launcher fetches the binary for your platform and runs it only if its SHA-256 matches the sums committed in the repository. Builds are reproducible, so anyone can rebuild a release and compare.</p>
