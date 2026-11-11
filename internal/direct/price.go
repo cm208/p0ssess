@@ -8,6 +8,7 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -183,6 +184,55 @@ func (c *Catalog) Lookup(ctx context.Context, id string) (ModelInfo, error) {
 	c.live[id] = live
 	c.mu.Unlock()
 	return live, nil
+}
+
+// Resolve turns a bare model name such as "recraft-v4.1-flash" into its full OpenRouter id
+// ("recraft/recraft-v4.1-flash"). An id that already names its provider is returned as it is. A bare name
+// must match exactly one model, from the registry snapshot and, unless live lookups are off, OpenRouter's
+// public chat and image model lists.
+func (c *Catalog) Resolve(ctx context.Context, id string) (string, error) {
+	id = strings.TrimSpace(id)
+	if id == "" || strings.Contains(id, "/") {
+		return id, nil
+	}
+	seen := map[string]bool{}
+	var found []string
+	match := func(full string) {
+		if seen[full] {
+			return
+		}
+		if _, name, ok := strings.Cut(full, "/"); ok && strings.EqualFold(name, id) {
+			seen[full] = true
+			found = append(found, full)
+		}
+	}
+	c.mu.Lock()
+	for full := range c.reg {
+		match(full)
+	}
+	c.mu.Unlock()
+	if len(found) == 0 && !c.NoLive {
+		for _, path := range []string{"/models", "/images/models"} {
+			var list struct {
+				Data []struct {
+					ID string `json:"id"`
+				} `json:"data"`
+			}
+			if c.get(ctx, path, &list) == nil {
+				for _, m := range list.Data {
+					match(m.ID)
+				}
+			}
+		}
+	}
+	sort.Strings(found)
+	switch len(found) {
+	case 1:
+		return found[0], nil
+	case 0:
+		return "", fmt.Errorf("model %s: no OpenRouter model has that name; give the full id, provider/name", id)
+	}
+	return "", fmt.Errorf("model %s is ambiguous: %s; give the full id", id, strings.Join(found, ", "))
 }
 
 func (c *Catalog) get(ctx context.Context, path string, v any) error {

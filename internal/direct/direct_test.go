@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"image"
 	"image/color"
 	"image/png"
@@ -766,5 +767,110 @@ func TestTopLevelErrorInA200Answer(t *testing.T) {
 		if !ProviderFailed(e) {
 			t.Errorf("%v not counted as a provider failure", e)
 		}
+	}
+}
+
+// A bare model name resolves when exactly one provider has it: the image run in the 0.5.4 launch failed on
+// "recraft-v4.1-flash" with "not in the registry and not found on OpenRouter".
+func TestBareModelName(t *testing.T) {
+	f, c := newFake(t)
+	jpeg := []byte{0xFF, 0xD8, 0xFF, 0xE0, 0, 0x10, 'J', 'F', 'I', 'F', 0}
+	f.answer["/images"] = func(map[string]any) (int, string) {
+		return 200, `{"data":[{"b64_json":"` + base64.StdEncoding.EncodeToString(jpeg) + `","media_type":"image/jpeg"}],"usage":{"cost":0.007}}`
+	}
+	res, err := c.Run(context.Background(), Request{Model: "recraft-v4.1-flash", Prompt: "a ghost", Output: OutImage, MaxCostUSD: 0.01})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f.last("/images")["model"] != "recraft/recraft-v4.1-flash" || !strings.Contains(Format(res), "model recraft-v4.1-flash is recraft/recraft-v4.1-flash") {
+		t.Errorf("model sent %v\n%s", f.last("/images")["model"], Format(res))
+	}
+	c.Catalog.Add(ModelInfo{ID: "other/recraft-v4.1-flash", Input: []string{"text"}, Output: []string{"image"}, Routes: []string{"/api/v1/images"}})
+	if _, err := c.Run(context.Background(), Request{Model: "recraft-v4.1-flash", Prompt: "x", Output: OutImage, MaxCostUSD: 0.01}); err == nil || !strings.Contains(err.Error(), "ambiguous") {
+		t.Errorf("two providers: err = %v", err)
+	}
+	if _, err := c.Run(context.Background(), Request{Model: "no-such-model", Prompt: "x", MaxCostUSD: 0.01}); err == nil || !strings.Contains(err.Error(), "provider/name") {
+		t.Errorf("unknown: err = %v", err)
+	}
+}
+
+func TestBareModelNameLive(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/models", func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, `{"data":[{"id":"acme/omni"},{"id":"acme/omni-pro"}]}`)
+	})
+	mux.HandleFunc("/images/models", func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, `{"data":[{"id":"paint/brush-2"}]}`)
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+	cat := NewCatalog(srv.URL, srv.Client())
+	for in, want := range map[string]string{"omni": "acme/omni", "brush-2": "paint/brush-2", "acme/anything": "acme/anything"} {
+		if got, err := cat.Resolve(context.Background(), in); err != nil || got != want {
+			t.Errorf("Resolve(%q) = %q, %v; want %q", in, got, err, want)
+		}
+	}
+}
+
+// OpenRouter's image API takes 512, 768, 1K, 1.5K, 2K or 4K; "1024" was passed through and refused.
+func TestImageResolution(t *testing.T) {
+	for _, c := range []struct{ in, route, want string }{
+		{"1024", "images", "1K"}, {"1024px", "images", "1K"}, {"1024x1024", "images", "1K"}, {"1k", "images", "1K"},
+		{"1.5K", "images", "1.5K"}, {"1200", "images", "1.5K"}, {"512", "images", "512"}, {"832x1280", "images", "1.5K"},
+		{"9000", "images", "4K"}, {"512", "chat", "1K"}, {"2048", "chat", "2K"}, {"2K", "chat", "2K"},
+	} {
+		got, err := imageResolution(c.in, c.route)
+		if err != nil || got != c.want {
+			t.Errorf("imageResolution(%q, %s) = %q, %v; want %q", c.in, c.route, got, err, c.want)
+		}
+	}
+	if _, err := imageResolution("huge", "images"); err == nil {
+		t.Error("an unknown size was accepted")
+	}
+	f, c := newFake(t)
+	jpeg := []byte{0xFF, 0xD8, 0xFF, 0xE0, 0, 0x10, 'J', 'F', 'I', 'F', 0}
+	f.answer["/images"] = func(map[string]any) (int, string) {
+		return 200, `{"data":[{"b64_json":"` + base64.StdEncoding.EncodeToString(jpeg) + `","media_type":"image/jpeg"}],"usage":{"cost":0.007}}`
+	}
+	if _, err := c.Run(context.Background(), Request{Model: "recraft/recraft-v4.1-flash", Prompt: "x", Output: OutImage, ImageResolution: "1024", MaxCostUSD: 0.01}); err != nil {
+		t.Fatal(err)
+	}
+	if got := f.last("/images")["resolution"]; got != "1K" {
+		t.Errorf("resolution sent = %v, want 1K", got)
+	}
+}
+
+// A transcript asked of a chat model that hears audio goes through chat instead of being refused.
+func TestTranscriptOnChatModel(t *testing.T) {
+	f, c := newFake(t)
+	f.answer["/chat/completions"] = chatOK("00:00 - 00:02 hello", "")
+	wav := writeWAV(t, t.TempDir(), 2)
+	res, err := c.Run(context.Background(), Request{Model: "google/gemini-3.8-flash", Output: OutTranscript, Files: []string{wav}, Timestamps: true, MaxCostUSD: 0.05})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Route != "chat" || f.count() != 1 || !strings.Contains(fmt.Sprint(f.last("/chat/completions")["messages"]), "Transcribe this audio word for word. Start each line with its time range") {
+		t.Errorf("route %s, requests %d, body %v", res.Route, f.count(), f.last("/chat/completions"))
+	}
+	if _, err := c.Run(context.Background(), Request{Model: "deepseek/deepseek-v4.1-flash", Output: OutTranscript, Files: []string{wav}, MaxCostUSD: 0.05}); err == nil {
+		t.Error("a model that cannot hear audio was given a transcript job")
+	}
+}
+
+// The estimate prices the whole default answer cap; when that alone breaks the limit, the cap is lowered
+// to fit instead of refusing (a 5 s clip estimated $0.028 against a $0.02 limit and billed $0.0013).
+func TestAnswerCapFitsLimit(t *testing.T) {
+	f, c := newFake(t)
+	f.answer["/chat/completions"] = chatOK("ok", "")
+	res, err := c.Run(context.Background(), Request{Model: "google/gemini-3.8-flash", Prompt: "x", MaxCostUSD: 0.01})
+	if err != nil {
+		t.Fatal(err)
+	}
+	n, _ := f.last("/chat/completions")["max_tokens"].(float64)
+	if n < minFitTokens || n >= DefaultMaxTokens || res.Estimate.CostUSD > 0.01 || !strings.Contains(Format(res), "answer capped at") {
+		t.Errorf("max_tokens %v, estimate %v\n%s", n, res.Estimate.CostUSD, Format(res))
+	}
+	if _, err := c.Run(context.Background(), Request{Model: "google/gemini-3.8-flash", Prompt: "x", MaxCostUSD: 0.001}); !errors.Is(err, ErrOverBudget) {
+		t.Errorf("a cap under %d tokens: err = %v", minFitTokens, err)
 	}
 }

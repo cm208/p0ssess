@@ -87,17 +87,27 @@ func (c *Client) Plan(ctx context.Context, req Request) (*plan, error) {
 	if req.Model == "" {
 		return nil, errors.New("model is required")
 	}
-	if req.MaxTokens <= 0 {
+	tokensDefaulted := req.MaxTokens <= 0
+	if tokensDefaulted {
 		req.MaxTokens = DefaultMaxTokens
 	}
 	if req.Output == "" {
 		req.Output = OutText
 	}
+	asked := req.Model
+	id, err := c.Catalog.Resolve(ctx, req.Model)
+	if err != nil {
+		return nil, err
+	}
+	req.Model = id
 	m, err := c.Catalog.Lookup(ctx, req.Model)
 	if err != nil {
 		return nil, err
 	}
 	p := &plan{req: req, model: m}
+	if asked != id {
+		p.warn = append(p.warn, fmt.Sprintf("model %s is %s", asked, id))
+	}
 	var total int64
 	for _, f := range req.Files {
 		in, err := Inspect(f, c.Limits)
@@ -125,6 +135,16 @@ func (c *Client) Plan(ctx context.Context, req Request) (*plan, error) {
 	}
 
 	switch {
+	case req.Output == OutTranscript && !m.Makes("transcription") && m.Makes("text") && m.Takes("audio"):
+		// A chat model that hears audio transcribes through chat; only speech-to-text models use the
+		// transcription route.
+		p.route = "chat"
+		req.Output = OutText
+		if strings.TrimSpace(req.Prompt) == "" {
+			req.Prompt = transcribePrompt(req)
+		}
+		p.req = req
+		p.warn = append(p.warn, m.ID+" is not a speech-to-text model, so it transcribes through chat")
 	case req.Output == OutTranscript || (m.Makes("transcription") && !m.Makes("text")):
 		p.route = "stt"
 	case req.Output == OutImage:
@@ -186,6 +206,21 @@ func (c *Client) Plan(ctx context.Context, req Request) (*plan, error) {
 			p.est = p.keyframeEstimate(lim)
 		}
 	}
+	if req.ImageResolution != "" && req.Output == OutImage {
+		res, err := imageResolution(req.ImageResolution, p.route)
+		if err != nil {
+			return nil, err
+		}
+		if res != req.ImageResolution {
+			p.warn = append(p.warn, fmt.Sprintf("resolution %s sent as %s", req.ImageResolution, res))
+		}
+		req.ImageResolution, p.req.ImageResolution = res, res
+	}
+	if tokensDefaulted && !req.DryRun && p.route == "chat" && req.VideoPrep == PrepNone &&
+		req.MaxCostUSD > 0 && p.est.CostUSD > req.MaxCostUSD && m.priceGap(p.route, req.Output) == "" {
+		p.fitTokens(req)
+		req = p.req
+	}
 	if gap := m.priceGap(p.route, req.Output); gap != "" {
 		p.est.CostUnknown = true
 		p.est.Notes = append(p.est.Notes, gap+": the estimate is not a bound, and OpenRouter is sent no price cap")
@@ -198,6 +233,42 @@ func (c *Client) Plan(ctx context.Context, req Request) (*plan, error) {
 		return p, fmt.Errorf("%w: about $%.4f for %s, limit $%.4f", ErrOverBudget, p.est.CostUSD, m.ID, req.MaxCostUSD)
 	}
 	return p, nil
+}
+
+// minFitTokens is the smallest answer cap fitTokens will set. Below it a reasoning model can spend the
+// whole cap thinking, so the call is refused instead.
+const minFitTokens = 1024
+
+// fitTokens lowers the default answer cap so the estimate fits the cost limit. The estimate prices the
+// whole cap, so for a short answer it is far above the bill (a 5 s clip estimated $0.028 and billed
+// $0.0013); OpenRouter stops at max_tokens, so the lower cap keeps the bound true.
+func (p *plan) fitTokens(req Request) {
+	base := req
+	base.MaxTokens = 0
+	fixed := estimateChat(p.model, base, p.inputs, p.engine).CostUSD
+	perToken := (p.est.CostUSD - fixed) / float64(req.MaxTokens)
+	if !(perToken > 0) {
+		return
+	}
+	n := int((req.MaxCostUSD - fixed) / perToken)
+	if n < minFitTokens || n >= req.MaxTokens {
+		return
+	}
+	req.MaxTokens = n
+	p.req = req
+	p.est = estimateChat(p.model, req, p.inputs, p.engine)
+	p.warn = append(p.warn, fmt.Sprintf("answer capped at %d tokens to stay within the $%.4f limit", n, req.MaxCostUSD))
+}
+
+func transcribePrompt(req Request) string {
+	s := "Transcribe this audio word for word."
+	if req.Timestamps {
+		s += " Start each line with its time range, mm:ss - mm:ss."
+	}
+	if req.Language != "" {
+		s += " The language is " + req.Language + "."
+	}
+	return s
 }
 
 // Estimate is the plan's cost estimate.

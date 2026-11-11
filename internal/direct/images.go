@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"math"
+	"strconv"
 	"strings"
 )
 
@@ -85,4 +87,52 @@ func (c *Client) runImages(ctx context.Context, p *plan, res *Result, outDir str
 	res.Usage.unmeasured()
 	res.Warnings = append(res.Warnings, "the image API reported no cost")
 	return nil
+}
+
+// imageResolution turns what a caller may say ("1024", "1024px", "1024x1024", "2k") into a value the
+// route accepts. The image API takes 512, 768, 1K, 1.5K, 2K or 4K; Gemini on chat takes 1K, 2K or 4K. A
+// pixel size picks the smallest value at least that large.
+func imageResolution(v, route string) (string, error) {
+	type opt struct {
+		name string
+		px   float64
+	}
+	opts := []opt{{"512", 512}, {"768", 768}, {"1K", 1024}, {"1.5K", 1536}, {"2K", 2048}, {"4K", 4096}}
+	if route == "chat" {
+		opts = []opt{{"1K", 1024}, {"2K", 2048}, {"4K", 4096}}
+	}
+	s := strings.ToLower(strings.TrimSpace(v))
+	for _, o := range opts {
+		if s == strings.ToLower(o.name) {
+			return o.name, nil
+		}
+	}
+	s = strings.TrimSuffix(s, "px")
+	px := 0.0
+	for _, part := range strings.FieldsFunc(s, func(r rune) bool { return r == 'x' || r == '*' || r == '×' }) {
+		part = strings.TrimSpace(part)
+		mult := 1.0
+		if strings.HasSuffix(part, "k") {
+			part, mult = strings.TrimSuffix(part, "k"), 1024
+		}
+		f, err := strconv.ParseFloat(part, 64)
+		if err != nil || f <= 0 {
+			px = 0
+			break
+		}
+		px = math.Max(px, f*mult)
+	}
+	if px == 0 {
+		names := make([]string, len(opts))
+		for i, o := range opts {
+			names[i] = o.name
+		}
+		return "", fmt.Errorf("resolution %q: use one of %s, or a size in pixels", v, strings.Join(names, ", "))
+	}
+	for _, o := range opts {
+		if px <= o.px {
+			return o.name, nil
+		}
+	}
+	return opts[len(opts)-1].name, nil
 }
