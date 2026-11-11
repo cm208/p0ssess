@@ -77,6 +77,10 @@ Ask for things the way you normally would:
 
 The mark is a 16-by-16 pixel ghost, the thing that possesses another model for a moment and hands the work back. In the status line it is `ᗣ`: muted when idle, a little brighter while something runs, amber when you are close to your budget. Never red, never animated.
 
+## Questions or bugs
+
+Open an issue if this repo takes them, or write to [me@christianmoo.re](mailto:me@christianmoo.re).
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
