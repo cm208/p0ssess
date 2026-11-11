@@ -91,6 +91,16 @@
   } else {
     lines.forEach((el) => el.classList.add("in"));
   }
+  // The two answers under the abilities play once their box is mostly on screen.
+  const results = $$(".result");
+  if (hasIO) {
+    const back = new IntersectionObserver((entries) => {
+      for (const e of entries) if (e.isIntersecting) { back.unobserve(e.target); e.target.classList.add("in"); }
+    }, { threshold: 0.6 });
+    results.forEach((el) => back.observe(el));
+  } else {
+    results.forEach((el) => el.classList.add("in"));
+  }
   // The usage chart has two readings; the bars of the one just chosen grow again.
   const usage = $(".usage");
   if (usage) {
