@@ -79,7 +79,7 @@ The mark is a 16-by-16 pixel ghost, the thing that possesses another model for a
 
 ## Questions or bugs
 
-Open an issue if this repo takes them, or write to [me@christianmoo.re](mailto:me@christianmoo.re).
+Write to [me@christianmoo.re](mailto:me@christianmoo.re).
 
 ## License
 
