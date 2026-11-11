@@ -3,6 +3,7 @@ package engine
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -48,6 +49,9 @@ func TestConcurrentSettingsAreAllKept(t *testing.T) {
 }
 
 func TestShellInternetSetting(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("shell internet is a setting of the Linux sandbox, and the test needs symlinks")
+	}
 	e, _ := setup(t, "")
 	dir := t.TempDir()
 	link := filepath.Join(t.TempDir(), "link")

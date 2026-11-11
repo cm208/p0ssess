@@ -82,6 +82,9 @@ func directEnv(t *testing.T, budgetTOML string) (config.Config, *engine.Engine, 
 	os.WriteFile(filepath.Join(home, "budget.toml"), []byte(budgetTOML), 0o600)
 	proj := filepath.Join(t.TempDir(), "proj")
 	os.MkdirAll(proj, 0o755)
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("needs git")
+	}
 	if out, err := exec.Command("git", "-C", proj, "init", "-q").CombinedOutput(); err != nil {
 		t.Fatalf("git init: %v %s", err, out)
 	}

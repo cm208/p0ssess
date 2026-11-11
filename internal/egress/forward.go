@@ -5,7 +5,8 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"syscall"
+
+	"p0ssess/internal/proc"
 )
 
 // ProxyEnv is what a jailed command needs to use the proxy. Tools that resolve names themselves and
@@ -38,8 +39,7 @@ func StartForwarder(exe, serveArg, socket string) error {
 	defer f.Close()
 	cmd := exec.Command(exe, serveArg, socket)
 	cmd.ExtraFiles = []*os.File{f}
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
-	return cmd.Start()
+	return proc.StartDetached(cmd)
 }
 
 // ServeForwarder is the background copy: it accepts on the inherited listener (fd 3) and relays each

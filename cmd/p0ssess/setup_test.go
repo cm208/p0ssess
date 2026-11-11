@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,7 +23,7 @@ func TestSetupRoundTrip(t *testing.T) {
 	}
 	b, _ := os.ReadFile(p)
 	s := string(b)
-	if strings.Count(s, toolPrefix+"run\"") != 1 || !strings.Contains(s, "p0ssess\\\" statusline") || !strings.Contains(s, summariesEnv) {
+	if strings.Count(s, toolPrefix+"run\"") != 1 || !strings.Contains(s, jsonString(statusCommand(stablePath()))) || !strings.Contains(s, summariesEnv) {
 		t.Fatalf("after setup:\n%s", s)
 	}
 	if strings.Index(s, "\"model\"") > strings.Index(s, "\"permissions\"") {
@@ -38,4 +39,10 @@ func TestSetupRoundTrip(t *testing.T) {
 	if len(bks) != 4 {
 		t.Errorf("backups = %d, want 4", len(bks))
 	}
+}
+
+// jsonString is s as it appears inside a JSON string in the settings file.
+func jsonString(s string) string {
+	b, _ := json.Marshal(s)
+	return strings.Trim(string(b), `"`)
 }

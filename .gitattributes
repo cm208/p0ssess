@@ -1,0 +1,7 @@
+# Windows checkouts: keep the launchers and checksum files byte-exact.
+*.exe binary
+bin/p0ssess text eol=lf
+*.sh text eol=lf
+dist/SHA256SUMS -text
+dist/VERSION -text
+dist/release-url -text

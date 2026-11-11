@@ -22,6 +22,7 @@ import (
 	"p0ssess/internal/budget"
 	"p0ssess/internal/history"
 	"p0ssess/internal/pme/paths"
+	"p0ssess/internal/proc"
 	"p0ssess/internal/usage"
 )
 
@@ -210,7 +211,8 @@ func runUser(st Settings, input []byte) string {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "sh", "-c", st.Command)
+	name, args := proc.Shell(st.Command)
+	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.Stdin = bytes.NewReader(input)
 	cmd.Env = append(os.Environ(), "P0SSESS_WRAPPED=1")
 	var out bytes.Buffer

@@ -145,6 +145,9 @@ func TestStale(t *testing.T) {
 func gitInit(t *testing.T, dir string) {
 	t.Helper()
 	os.MkdirAll(dir, 0o755)
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("needs git")
+	}
 	if out, err := exec.Command("git", "-C", dir, "init", "-q").CombinedOutput(); err != nil {
 		t.Fatalf("git init: %v %s", err, out)
 	}

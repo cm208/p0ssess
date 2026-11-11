@@ -8,13 +8,15 @@
 #   scripts/build-release.sh          build release/<version>/: the binaries, SHA256SUMS, the licenses
 #                                     and p0ssess-<version>.tar.gz (the plugin with checked binaries in
 #                                     dist/); refuses unless HEAD's dist/SHA256SUMS matches the build
-#   scripts/build-release.sh --check  build twice and compare
+#   scripts/build-release.sh --check  build twice and compare, and check bin/p0ssess.exe against its source
+#   scripts/build-release.sh launcher build the Windows launcher (cmd/launcher) into bin/p0ssess.exe,
+#                                     to be committed when cmd/launcher changes
 #
 # Needs Go 1.27 or later, git, GNU tar, gzip and sha256sum.
 set -eu
 cd "$(dirname "$0")/.."
 version=$(sed -n 's/^version=//p' bin/p0ssess)
-targets="linux/amd64 linux/arm64 darwin/arm64"
+targets="linux/amd64 linux/arm64 darwin/arm64 windows/amd64"
 
 die() { echo "build-release: $*" >&2; exit 1; }
 
@@ -38,16 +40,39 @@ export_head() {
 binaries() {
   mkdir -p "$2"
   for t in $targets; do
-    goos=${t%/*} goarch=${t#*/}
+    goos=${t%/*} goarch=${t#*/} ext=""
+    [ "$goos" = windows ] && ext=.exe
     (cd "$1" && CGO_ENABLED=0 GOOS=$goos GOARCH=$goarch go build -trimpath -buildvcs=false -mod=vendor \
-      -ldflags "-s -w -buildid= -X main.version=$version" -o "$2/p0ssess-$goos-$goarch" ./cmd/p0ssess)
+      -ldflags "-s -w -buildid= -X main.version=$version" -o "$2/p0ssess-$goos-$goarch$ext" ./cmd/p0ssess)
   done
   (cd "$2" && sha256sum p0ssess-* > SHA256SUMS)
 }
 
+# launcher SRC OUT: the Windows launcher, bin/p0ssess.exe. It reads the version from plugin.json, so
+# it changes only when cmd/launcher does.
+launcher() {
+  (cd "$1" && CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -buildvcs=false -mod=vendor \
+    -ldflags "-s -w -buildid=" -o "$2" ./cmd/launcher)
+}
+
+# check_launcher SRC: HEAD's bin/p0ssess.exe must be the build of HEAD's cmd/launcher.
+check_launcher() {
+  launcher "$1" "$work/p0ssess.exe"
+  cmp -s "$work/p0ssess.exe" "$1/bin/p0ssess.exe" ||
+    die "bin/p0ssess.exe is not the build of cmd/launcher (run \`scripts/build-release.sh launcher\` and commit it)"
+  echo "bin/p0ssess.exe matches cmd/launcher: $(sha256sum "$1/bin/p0ssess.exe" | cut -c1-64)"
+}
+
 case "${1:-}" in
+launcher)
+  export_head "$work/src"
+  launcher "$work/src" "$PWD/bin/p0ssess.exe"
+  echo "bin/p0ssess.exe: $(sha256sum bin/p0ssess.exe | cut -c1-64); commit it"
+  exit 0
+  ;;
 --check)
   export_head "$work/src"
+  check_launcher "$work/src"
   binaries "$work/src" "$work/a"
   go clean -cache
   binaries "$work/src" "$work/b"
@@ -65,12 +90,13 @@ sums)
   exit 0
   ;;
 "") ;;
-*) die "unknown argument $1 (sums, --check, or nothing)" ;;
+*) die "unknown argument $1 (sums, launcher, --check, or nothing)" ;;
 esac
 
 export_head "$work/src"
 [ "$(head -n 1 "$work/src/dist/VERSION" 2>/dev/null)" = "$version" ] ||
   die "HEAD has no dist/VERSION for $version; run \`scripts/build-release.sh sums\` and commit dist/ first"
+check_launcher "$work/src"
 binaries "$work/src" "$work/bin"
 cmp -s "$work/bin/SHA256SUMS" "$work/src/dist/SHA256SUMS" ||
   die "HEAD's dist/SHA256SUMS does not match this build (other source or Go version?); rerun \`sums\` and commit"

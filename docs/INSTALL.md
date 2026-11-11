@@ -14,6 +14,17 @@ p0ssess is a Claude Code plugin with one Go binary behind it. This page covers i
 
 On macOS the direct path (video, audio, images, PDFs, one-shot jobs), the engine, the status line and the local page work. The agent path reports itself unavailable.
 
+### Windows
+
+The same parts work on Windows 10 and 11 (x64; Arm64 runs the x64 build), new in 0.6.0. Install the plugin from Claude Code as below; there is nothing else to set up. Notes:
+
+- Claude Code cannot run the shell launcher `bin/p0ssess` on Windows, so it runs `bin/p0ssess.exe`, a small launcher that does the same thing (see [The binary](#the-binary)). It downloads with the `curl.exe` that ships with Windows.
+- `~` below is your profile folder, `%USERPROFILE%`. The key goes in `%USERPROFILE%\.config\p0ssess\secrets\openrouter_key`. "Mode 0600" does not apply; your profile folder is private to your account by default.
+- For video, install ffmpeg (`winget install Gyan.FFmpeg`) and open a new terminal so it is on `PATH`.
+- The status line runs the way Claude Code runs it: through Git Bash when Git for Windows is installed, else PowerShell. `p0ssess setup statusline` writes the command for whichever you have; if you install or remove Git for Windows later, run it again.
+- From your own shell, run `<plugin directory>\bin\p0ssess.exe`.
+- The agent path needs Linux. To use it from a Windows PC, run Claude Code inside WSL2, where p0ssess runs as on Linux.
+
 ## Install the plugin
 
 From the repository's marketplace:
@@ -60,7 +71,7 @@ The same commands work from a shell. Inside Claude Code the plugin puts `p0ssess
 
 ## The binary
 
-`bin/p0ssess` in the plugin is a small launcher script. It runs only a binary it built from the plugin's own source, or one whose SHA-256 matches `dist/SHA256SUMS` for this exact version (`dist/VERSION`). It looks in this order:
+`bin/p0ssess` in the plugin is a small launcher script (on Windows, `bin/p0ssess.exe`; below). It runs only a binary it built from the plugin's own source, or one whose SHA-256 matches `dist/SHA256SUMS` for this exact version (`dist/VERSION`). It looks in this order:
 
 1. `$P0SSESS_BIN`, if set: your own binary, not checked (development);
 2. the cached copy in `~/.cache/p0ssess/bin/<version>/`, which the launcher writes only after a check or a build;
@@ -82,7 +93,9 @@ Fix one of these, then start a new Claude Code session:
 
 The checksums come with the plugin's source (they are committed in `dist/`), and the build is reproducible: the same commit and Go version produce byte-identical binaries, so anyone can rebuild a release and compare. [RELEASE.md](RELEASE.md) describes how releases are built and published.
 
-Which way you get the binary depends on how you installed the plugin. A release archive (unpacked into a directory and added with `claude plugin marketplace add /path/to/p0ssess-<version>`) carries checked binaries and needs no Go. A clone of the repository carries the checksums but not the binaries, so it downloads them when the repository names its release URL and otherwise builds with Go. Claude Code installs marketplace plugins by cloning, and plugin conventions keep binaries out of git (they bloat every clone and cannot be reviewed), which is why the binaries live in release archives rather than in the repository.
+On Windows the launcher is `bin/p0ssess.exe`, built from `cmd/launcher`. It follows the same five steps with `p0ssess-windows-amd64.exe`, reads the version from `.claude-plugin/plugin.json`, downloads with `curl.exe`, and keeps the real binary as its child process in a Windows job, so stopping the launcher stops p0ssess too. It is the one binary committed to the repository, because without it a Windows clone could not start at all. It changes only when `cmd/launcher` does, and it is reproducible like the release binaries: `scripts/build-release.sh --check` rebuilds it and refuses unless the committed file matches byte for byte.
+
+Which way you get the binary depends on how you installed the plugin. A release archive (unpacked into a directory and added with `claude plugin marketplace add /path/to/p0ssess-<version>`) carries checked binaries and needs no Go. A clone of the repository carries the checksums but not the binaries, so it downloads them when the repository names its release URL and otherwise builds with Go. Claude Code installs marketplace plugins by cloning, and plugin conventions keep binaries out of git (they bloat every clone and cannot be reviewed), which is why the binaries live in release archives rather than in the repository. The Windows launcher is the exception above.
 
 ## Updating
 

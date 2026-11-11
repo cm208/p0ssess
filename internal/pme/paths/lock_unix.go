@@ -25,3 +25,6 @@ func flock(f *os.File) (func(), error) {
 		f.Close()
 	}, nil
 }
+
+// openDirLock opens the directory itself, which flock can lock.
+func openDirLock(dir string) (*os.File, error) { return os.Open(dir) }

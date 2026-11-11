@@ -202,6 +202,9 @@ func TestRunRefusesHomeAndNonRepositories(t *testing.T) {
 	t.Setenv("CLAUDE_PROJECT_DIR", home)
 	repo := filepath.Join(home, "proj")
 	os.MkdirAll(repo, 0o755)
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("needs git")
+	}
 	if out, err := exec.Command("git", "-C", repo, "init", "-q").CombinedOutput(); err != nil {
 		t.Fatalf("git init: %v %s", err, out)
 	}

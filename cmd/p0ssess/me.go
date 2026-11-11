@@ -10,12 +10,12 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"time"
 
 	"p0ssess/internal/config"
 	"p0ssess/internal/pme/engine"
 	"p0ssess/internal/pme/paths"
+	"p0ssess/internal/proc"
 )
 
 // pageState is what a running page server writes so the next /p0ssess-me reuses it.
@@ -184,9 +184,8 @@ func ensurePage() (string, error) {
 		return "", err
 	}
 	cmd := exec.Command(exe, "me", "--for", "2h", "--state", f)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = nil, nil, nil
-	if err := cmd.Start(); err != nil {
+	if err := proc.StartDetached(cmd); err != nil {
 		return "", err
 	}
 	cmd.Process.Release()

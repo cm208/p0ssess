@@ -440,11 +440,14 @@ func serveMe(e *engine.Engine, args []string, s IO) error {
 		defer os.Remove(*state)
 	}
 	if *open {
-		opener := "xdg-open"
-		if runtime.GOOS == "darwin" {
-			opener = "open"
+		switch runtime.GOOS {
+		case "darwin":
+			exec.Command("open", srv.URL()).Start()
+		case "windows":
+			exec.Command("rundll32", "url.dll,FileProtocolHandler", srv.URL()).Start()
+		default:
+			exec.Command("xdg-open", srv.URL()).Start()
 		}
-		exec.Command(opener, srv.URL()).Start()
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()

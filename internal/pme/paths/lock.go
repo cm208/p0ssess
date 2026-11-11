@@ -53,7 +53,7 @@ func WithLock(path string, fn func() error) error {
 	m := procLock(key)
 	m.Lock()
 	defer m.Unlock()
-	f, err := os.Open(dir)
+	f, err := openDirLock(dir)
 	if err != nil {
 		return err
 	}

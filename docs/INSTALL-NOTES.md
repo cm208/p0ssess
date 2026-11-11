@@ -10,16 +10,17 @@ What a p0ssess install puts on a machine, and how to remove each piece. Everythi
 |---|---|---|
 | the plugin (a clone of the repository) | `$CLAUDE_CONFIG_DIR/plugins/cache/p0ssess/p0ssess/<version>/`, plus the marketplace clone in `$CLAUDE_CONFIG_DIR/plugins/marketplaces/` | `claude plugin install` |
 | marketplace and enabled-plugin entries | `extraKnownMarketplaces` and `enabledPlugins` in `$CLAUDE_CONFIG_DIR/settings.json` | `claude plugin marketplace add`, `claude plugin install` |
-| the p0ssess binary | `~/.cache/p0ssess/bin/<version>/p0ssess-<os>-<arch>` | the launcher, on first use (checked against `dist/SHA256SUMS`, or built from source) |
+| the p0ssess binary | `~/.cache/p0ssess/bin/<version>/p0ssess-<os>-<arch>` (`.exe` on Windows) | the launcher, on first use (checked against `dist/SHA256SUMS`, or built from source) |
 | the OpenRouter key | `~/.config/p0ssess/secrets/openrouter_key` | you |
 | settings | `~/.config/p0ssess/budget.toml` (including the shell internet projects), `engine.toml`, `rules.toml`, optional `config.json` | `/p0ssess:p0ssess-me`, `settings_set`, the local page, rules you confirm |
 | project rules | `<repo>/.p0ssess/rules.toml` | project-scoped rules you confirm |
 | the ledger | `~/.local/state/p0ssess/history.jsonl` (offers, outcomes, measured runs; never prompt content), session rules in `~/.local/state/p0ssess/sessions/` | the engine, the relay, the direct path |
 | caches | `~/.cache/p0ssess/usage.json` (Claude usage readings), `openrouter-models.json` (public model list), `running/` (running jobs), `registry-*.json` (when the binary runs outside the plugin) | the status line, the engine, the relay and direct path |
 | allow rules | 13 `mcp__plugin_p0ssess_p0ssess__…` entries in `permissions.allow` of `$CLAUDE_CONFIG_DIR/settings.json` | `p0ssess setup allow`, with your consent |
-| status line wrapper | `statusLine` in `$CLAUDE_CONFIG_DIR/settings.json` points at `~/.config/p0ssess/bin/p0ssess`; your previous command is kept in `engine.toml` as `statusline.command` | `p0ssess setup statusline`, with your consent |
+| status line wrapper | `statusLine` in `$CLAUDE_CONFIG_DIR/settings.json` points at `~/.config/p0ssess/bin/p0ssess` (`p0ssess.exe` on Windows); your previous command is kept in `engine.toml` as `statusline.command` | `p0ssess setup statusline`, with your consent |
 | progress-summary switch | `env.CLAUDE_CODE_DISABLE_AGENT_PROGRESS_SUMMARIES` in `$CLAUDE_CONFIG_DIR/settings.json` | `p0ssess setup summaries`, only if you ask |
 | setup record and backups | `~/.config/p0ssess/setup.json`; the settings file as it was before each change in `~/.config/p0ssess/backups/` | `p0ssess setup` |
+| file locks (Windows only) | `%TEMP%\p0ssess-locks\`: empty lock files, because Windows cannot lock a directory | the binary, while it rewrites a shared file |
 | shortcut agents | `$CLAUDE_CONFIG_DIR/agents/p0ssess-<name>.md` (at most 12, each marked as made by p0ssess) | `shortcuts_create`, after you agree |
 | the agent path (Linux): | | |
 | jail image | `localhost/p0ssess-opencode:2.2.5-1` (about 1.1 GB: Fedora 44 base, git, Python, ripgrep, OpenCode) and the pinned `registry.fedoraproject.org/fedora:44` base | `p0ssess jail build` |

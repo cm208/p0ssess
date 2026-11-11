@@ -9,7 +9,7 @@
 #   5. a local build with Go (the source is the plugin; dependencies are vendored, so no network)
 set -eu
 
-version=0.5.5
+version=0.6.0
 root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 
 if [ -n "${P0SSESS_BIN:-}" ]; then exec "$P0SSESS_BIN" "$@"; fi
@@ -21,6 +21,10 @@ case $(uname -m) in
   *) arch=$(uname -m) ;;
 esac
 name=p0ssess-$os-$arch
+case $os in
+  # Git Bash on Windows; Claude Code itself starts bin/p0ssess.exe there.
+  mingw* | msys* | cygwin*) os=windows name=p0ssess-windows-$arch.exe ;;
+esac
 
 if [ -n "${P0SSESS_HOME:-}" ]; then cache=$P0SSESS_HOME/cache; else cache=${XDG_CACHE_HOME:-$HOME/.cache}/p0ssess; fi
 bin=$cache/bin/$version/$name

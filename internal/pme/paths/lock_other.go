@@ -1,4 +1,4 @@
-//go:build !unix
+//go:build !unix && !windows
 
 package paths
 
@@ -12,3 +12,5 @@ func flock(f *os.File) (func(), error) {
 	f.Close()
 	return nil, errors.New("file locking needs a Unix system")
 }
+
+func openDirLock(dir string) (*os.File, error) { return os.Open(dir) }

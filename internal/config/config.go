@@ -151,7 +151,7 @@ func (c Config) RegistryPath() (string, error) {
 	if err := os.WriteFile(tmp, b, 0o600); err != nil {
 		return "", err
 	}
-	return p, os.Rename(tmp, p)
+	return p, paths.Rename(tmp, p)
 }
 
 // CacheDir is ~/.cache/p0ssess ($XDG_CACHE_HOME honored), or $P0SSESS_HOME/cache.

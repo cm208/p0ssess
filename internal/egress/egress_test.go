@@ -11,6 +11,7 @@ import (
 	"net/netip"
 	"net/url"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -78,6 +79,9 @@ func testDial(public string) func(ctx context.Context, network, addr string) (ne
 }
 
 func serveUnix(t *testing.T, h http.Handler) string {
+	if runtime.GOOS != "linux" {
+		t.Skip("the egress proxy is part of the Linux sandbox")
+	}
 	sock := filepath.Join(t.TempDir(), "e.sock")
 	l, err := net.Listen("unix", sock)
 	if err != nil {

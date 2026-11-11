@@ -3,14 +3,14 @@ package jail
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
+
+	"p0ssess/internal/proc"
 )
 
 // Owner names a process by pid and start time, so a reused pid is not taken for the owner.
@@ -50,7 +50,7 @@ func (o Owner) Alive() bool {
 	if o.PID <= 0 {
 		return false
 	}
-	if err := syscall.Kill(o.PID, 0); err != nil && !errors.Is(err, syscall.EPERM) {
+	if !proc.Alive(o.PID) {
 		return false
 	}
 	return o.Start == 0 || procStart(o.PID) == o.Start

@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -22,6 +23,7 @@ import (
 	"p0ssess/internal/jail"
 	"p0ssess/internal/pme/engine"
 	"p0ssess/internal/pme/paths"
+	"p0ssess/internal/proc"
 	"p0ssess/internal/server"
 )
 
@@ -235,7 +237,7 @@ func setupStatusLine(st setupState, dry bool) error {
 				return err
 			}
 		}
-		next := map[string]any{"type": "command", "command": fmt.Sprintf("%q statusline", bin)}
+		next := map[string]any{"type": "command", "command": statusCommand(bin)}
 		if prev.Padding != nil {
 			next["padding"] = *prev.Padding
 		}
@@ -337,11 +339,32 @@ func (st *setupState) edit(dry bool, what string, change func(o *object) error) 
 // installStableCopy copies this binary to ~/.config/p0ssess/bin/p0ssess, which the status line points
 // at: the plugin's own path changes with every update.
 func installStableCopy(dry bool) (string, error) {
-	dst := config.Path("bin", "p0ssess")
+	dst := stablePath()
 	if dry {
 		return dst, nil
 	}
 	return dst, copySelf(dst)
+}
+
+// stablePath is where the status line's copy of the binary lives.
+func stablePath() string {
+	if runtime.GOOS == "windows" {
+		return config.Path("bin", "p0ssess.exe")
+	}
+	return config.Path("bin", "p0ssess")
+}
+
+// statusCommand is the status line command that runs bin. Claude Code runs it with sh on Unix and, on
+// Windows, with Git Bash when it is installed, else PowerShell; both take forward slashes.
+func statusCommand(bin string) string {
+	if runtime.GOOS != "windows" {
+		return fmt.Sprintf("%q statusline", bin)
+	}
+	b := filepath.ToSlash(bin)
+	if proc.GitBash() != "" {
+		return `"` + b + `" statusline`
+	}
+	return "& '" + strings.ReplaceAll(b, "'", "''") + "' statusline"
 }
 
 func copySelf(dst string) error {
@@ -374,17 +397,26 @@ func copySelf(dst string) error {
 	}
 	tmp.Close()
 	os.Chmod(tmp.Name(), 0o755)
-	// Rename over the old file: a running jail proxy keeps the old one open.
-	if err := os.Rename(tmp.Name(), dst); err != nil {
-		os.Remove(tmp.Name())
-		return err
+	// Rename over the old file: a running jail proxy keeps the old one open. Windows cannot replace a
+	// running program, but it can move one aside, so a copy the status line is running moves to .old.
+	if err := paths.Rename(tmp.Name(), dst); err != nil {
+		if runtime.GOOS == "windows" {
+			os.Remove(dst + ".old")
+			if os.Rename(dst, dst+".old") == nil {
+				err = os.Rename(tmp.Name(), dst)
+			}
+		}
+		if err != nil {
+			os.Remove(tmp.Name())
+			return err
+		}
 	}
 	return os.WriteFile(dst+".version", []byte(version+"\n"), 0o600)
 }
 
 // refreshStableCopy updates the status line's copy after a plugin update.
 func refreshStableCopy() {
-	dst := config.Path("bin", "p0ssess")
+	dst := stablePath()
 	if _, err := os.Stat(dst); err != nil {
 		return
 	}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -51,7 +52,7 @@ func TestCLI(t *testing.T) {
 	if code, out, _ := run(t, "", "status", "--cwd", proj); code != 0 || !strings.Contains(out, "spent $0.04 today") {
 		t.Errorf("status: %s", out)
 	}
-	if code, out, _ := run(t, `{"session_id":"s","cwd":"`+proj+`","prompt":"what does bug.mp4 show?"}`, "hook"); code != 0 || !strings.Contains(out, "Claude cannot watch video") {
+	if code, out, _ := run(t, `{"session_id":"s","cwd":`+strconv.Quote(proj)+`,"prompt":"what does bug.mp4 show?"}`, "hook"); code != 0 || !strings.Contains(out, "Claude cannot watch video") {
 		t.Errorf("hook: %s", out)
 	}
 	t.Setenv("NO_COLOR", "1")

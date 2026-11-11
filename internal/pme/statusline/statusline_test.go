@@ -2,6 +2,7 @@ package statusline
 
 import (
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -9,6 +10,7 @@ import (
 
 	"p0ssess/internal/history"
 	"p0ssess/internal/pme/paths"
+	"p0ssess/internal/proc"
 	"p0ssess/internal/usage"
 )
 
@@ -54,6 +56,9 @@ const input = `{"session_id":"s1","cwd":"/tmp","model":{"id":"claude-opus-5-5","
  "rate_limits":{"five_hour":{"used_percentage":40,"resets_at":%d},"seven_day":{"used_percentage":10,"resets_at":%d}}}`
 
 func TestRunWrapsUserCommand(t *testing.T) {
+	if runtime.GOOS == "windows" && proc.GitBash() == "" {
+		t.Skip("the wrapped command is a Unix shell line; on Windows it needs Git Bash")
+	}
 	home := t.TempDir()
 	t.Setenv("P0SSESS_HOME", home)
 	t.Setenv("COLUMNS", "200")

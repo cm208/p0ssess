@@ -13,6 +13,7 @@ import (
 
 	"p0ssess/internal/config"
 	"p0ssess/internal/opencode"
+	"p0ssess/internal/pme/paths"
 )
 
 // SessionRecord is what the relay remembers about an OpenCode session it created.
@@ -83,7 +84,7 @@ func (r *SessionRecord) save() error {
 	if err := os.WriteFile(tmp, b, 0o600); err != nil {
 		return err
 	}
-	return os.Rename(tmp, recordFile(r.SessionID))
+	return paths.Rename(tmp, recordFile(r.SessionID))
 }
 
 // HistoryEntry is one line of the relay log, relay-runs.jsonl in the relay state directory. It never holds prompt text, only a hash.

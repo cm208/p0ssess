@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"syscall"
 	"time"
 
 	"p0ssess/internal/pme/paths"
+	"p0ssess/internal/proc"
 )
 
 // Job is one running delegation, as a file under the running directory. The
@@ -71,11 +71,4 @@ func Running(dir string, now time.Time) []Job {
 	return out
 }
 
-func alive(pid int) bool {
-	p, err := os.FindProcess(pid)
-	if err != nil {
-		return false
-	}
-	err = p.Signal(syscall.Signal(0))
-	return err == nil || err == syscall.EPERM
-}
+func alive(pid int) bool { return proc.Alive(pid) }

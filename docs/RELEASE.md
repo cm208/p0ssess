@@ -8,10 +8,10 @@ A p0ssess release is a tagged commit plus files built from it: one static binary
 
 | File | What it is |
 |---|---|
-| `p0ssess-linux-amd64`, `p0ssess-linux-arm64`, `p0ssess-darwin-arm64` | the static binaries |
+| `p0ssess-linux-amd64`, `p0ssess-linux-arm64`, `p0ssess-darwin-arm64`, `p0ssess-windows-amd64.exe` | the static binaries |
 | `SHA256SUMS` | sums of the binaries and the archive |
 | `LICENSE`, `NOTICE`, `LICENSE.BurntSushi-toml`, `LICENSE.yaml.v3` | p0ssess's license and the notices of the vendored code the binaries carry |
-| `p0ssess-<version>.tar.gz` | the plugin at the tagged commit, with the three binaries in `dist/` next to `dist/SHA256SUMS` and `dist/VERSION`. Unpacked, it is a plugin that needs no Go: `claude plugin marketplace add /path/to/p0ssess-<version>` |
+| `p0ssess-<version>.tar.gz` | the plugin at the tagged commit, with the four binaries in `dist/` next to `dist/SHA256SUMS` and `dist/VERSION`. Unpacked, it is a plugin that needs no Go: `claude plugin marketplace add /path/to/p0ssess-<version>` |
 
 In the repository, `dist/SHA256SUMS` (the binaries only) and `dist/VERSION` (the version, then the Go version that built it) are committed for each release, so a clone carries the checksums its launcher checks against. `dist/release-url`, when present, holds the base URL the launcher downloads from: `<url>/v<version>/p0ssess-<os>-<arch>`. Gitea and GitHub both serve release files at `https://<host>/<owner>/<repo>/releases/download/<tag>/<file>`, so the base URL is `https://<host>/<owner>/p0ssess/releases/download`.
 
@@ -20,7 +20,8 @@ In the repository, `dist/SHA256SUMS` (the binaries only) and `dist/VERSION` (the
 Needs Go 1.27 or later, git, GNU tar, gzip and sha256sum. Use the same Go version for every step.
 
 1. Bump the version in `bin/p0ssess` (`version=`), `.claude-plugin/plugin.json` and `cmd/p0ssess/main.go`; update the docs; commit. `go test ./...` checks that the three agree.
-2. Check reproducibility: `scripts/build-release.sh --check` builds twice (with a clean build cache in between) and compares.
+   If `cmd/launcher` changed, commit it, then run `scripts/build-release.sh launcher` and commit the `bin/p0ssess.exe` it writes. The Windows launcher reads the version from `.claude-plugin/plugin.json`, so a release that does not touch `cmd/launcher` leaves it alone.
+2. Check reproducibility: `scripts/build-release.sh --check` builds twice (with a clean build cache in between) and compares, and checks that `bin/p0ssess.exe` is the build of `cmd/launcher`.
 3. Write the checksums: `scripts/build-release.sh sums` builds from `HEAD` and writes `dist/SHA256SUMS` and `dist/VERSION`. Commit them (`git add dist/SHA256SUMS dist/VERSION`). The binaries do not depend on `dist/`, so this commit does not change them.
 4. Tag: `git tag -a v<version> -m "p0ssess <version>"`, then push `main` and the tag.
 5. Build the release: `scripts/build-release.sh` builds from the tagged `HEAD` into `release/<version>/` and refuses unless the binaries match the committed `dist/SHA256SUMS`.
