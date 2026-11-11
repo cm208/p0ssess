@@ -341,11 +341,11 @@
   <div class="get-cols">
     <div class="get-col">
       <ol class="steps">
-        <li class="hl"><p>Add the plugin to Claude Code.</p><div class="cmd"><pre><code>claude plugin marketplace add <span data-repo-url>&lt;repository URL&gt;</span>
-claude plugin install p0ssess@p0ssess</code></pre><button class="copy-btn" type="button" aria-label="Copy the commands" hidden>Copy</button></div></li>
-        <li class="hl"><p>Put your OpenRouter key where p0ssess reads it.</p><div class="cmd"><pre><code>mkdir -p ~/.config/p0ssess/secrets
-install -m 600 /dev/null ~/.config/p0ssess/secrets/openrouter_key
-"${EDITOR:-vi}" ~/.config/p0ssess/secrets/openrouter_key</code></pre><button class="copy-btn" type="button" aria-label="Copy the commands" hidden>Copy</button></div></li>
+        <li class="hl"><p>Add the plugin to Claude Code.</p><div class="cmd"><pre><code><span class="ln">claude plugin marketplace add <span data-repo-url>&lt;repository URL&gt;</span></span>
+<span class="ln">claude plugin install p0ssess@p0ssess</span></code></pre><button class="copy-btn" type="button" aria-label="Copy the commands" hidden>Copy</button></div></li>
+        <li class="hl"><p>Put your OpenRouter key where p0ssess reads it.</p><div class="cmd"><pre><code><span class="ln">mkdir -p ~/.config/p0ssess/secrets</span>
+<span class="ln">install -m 600 /dev/null ~/.config/p0ssess/secrets/openrouter_key</span>
+<span class="ln">"${EDITOR:-vi}" ~/.config/p0ssess/secrets/openrouter_key</span></code></pre><button class="copy-btn" type="button" aria-label="Copy the commands" hidden>Copy</button></div></li>
         <li class="hl"><p>Start Claude Code and run <code>/p0ssess:p0ssess-me</code>. Then ask it to watch something. Settings changes wait for your yes, and <code>p0ssess setup undo</code> reverts them.</p>
         <details class="first-run"><summary>Show the first run</summary>
           <figure class="out" aria-labelledby="t-try">
@@ -375,7 +375,7 @@ setup    no OpenRouter key (put it in …/.config/p0ssess/secrets/openrouter_key
         <li class="hl"><span class="what">The plugin with all three binaries</span><code class="file" data-archive-name>p0ssess-&lt;version&gt;.tar.gz</code><a class="dl-btn" role="link" aria-disabled="true" aria-label="Download the plugin archive" data-asset="p0ssess-{version}.tar.gz">Download</a></li>
       </ul>
       <p>You rarely need these by hand. The plugin’s launcher fetches the binary for your platform and runs it only if its SHA-256 matches the sums committed in the repository. Builds are reproducible, so anyone can rebuild a release and compare.</p>
-      <div class="cmd"><pre><code>sha256sum -c --ignore-missing SHA256SUMS</code></pre><button class="copy-btn" type="button" aria-label="Copy the command" hidden>Copy</button></div>
+      <div class="cmd"><pre><code><span class="ln">sha256sum -c --ignore-missing SHA256SUMS</span></code></pre><button class="copy-btn" type="button" aria-label="Copy the command" hidden>Copy</button></div>
       <p class="get-links"><a role="link" aria-disabled="true" data-asset="SHA256SUMS">SHA256SUMS</a><a role="link" aria-disabled="true" data-link="repo">View the source</a><a role="link" aria-disabled="true" data-link="release">Release notes</a></p>
     </div>
   </div>

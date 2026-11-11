@@ -112,6 +112,7 @@
       dots.forEach((d) => d.setAttribute("aria-current", d === a ? "true" : "false"));
       focus.style.setProperty("--x", a.offsetLeft + a.offsetWidth / 2 + "px");
       island.classList.add("ready");
+      island.classList.toggle("end", a.getAttribute("href") === "#try");
       if (text.textContent !== a.getAttribute("aria-label")) {
         text.textContent = a.getAttribute("aria-label");
         label.style.setProperty("--lw", text.offsetWidth + "px");

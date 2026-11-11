@@ -407,13 +407,9 @@ p.swap .idle { color: inherit; }
   border: 1px solid var(--line);
   border-radius: 4px;
 }
-.cmd pre {
-  flex: 1; min-width: 0; padding: 0.8rem 0.6rem 0.8rem 1rem; color: var(--ink); font-size: 0.86rem;
-  overflow-x: auto; scrollbar-width: none;
-  /* A command too long for a narrow screen scrolls sideways and fades out before the button. */
-  -webkit-mask-image: linear-gradient(to left, transparent 0, #000 14px);
-  mask-image: linear-gradient(to left, transparent 0, #000 14px);
-}
+.cmd pre { flex: 1; min-width: 0; padding: 0.8rem 0.6rem 0.8rem 1rem; color: var(--ink); font-size: 0.86rem; }
+/* One command a line. A long one wraps and its continuation hangs, so it still reads as one command. */
+.cmd .ln { display: inline-block; width: 100%; padding-left: 2ch; text-indent: -2ch; white-space: pre-wrap; overflow-wrap: anywhere; }
 .copy-btn {
   position: relative; flex: none; min-width: 4.2rem; margin-right: 7px; padding: 0.42rem 0.8rem;
   background: var(--violet); color: var(--ink);
@@ -609,6 +605,9 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
 }
 .isl-cta:hover { background: #6346d4; color: var(--ink); }
 .isl-cta:active { scale: 0.965; }
+/* At the install steps the dock's own name says it. */
+.island.end .isl-cta { display: none; }
+.island.end .isl-label span { padding-right: 14px; }
 
 /* Footer */
 .site-foot { border-top: 1px solid var(--line); color: var(--ink-2); font-size: 0.92rem; }
@@ -631,8 +630,10 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
   .dl-btn { padding: 0 0.95rem; }
   .steps .cmd, .steps .first-run { grid-column: 1 / -1; }
   .states li { grid-template-columns: 1fr; gap: 0.3rem; }
-  .cmd pre { padding-inline: 0.75rem; font-size: 0.78rem; }
-  .copy-btn { min-width: 3.9rem; padding-inline: 0.7rem; }
+  .cmd pre { padding: 0.7rem 0.75rem 0.5rem; font-size: 0.78rem; }
+  /* On a phone the command gets the full width and its button sits under it. */
+  .cmd { flex-direction: column; align-items: stretch; }
+  .copy-btn { align-self: flex-end; min-width: 3.9rem; margin: 0 7px 7px 0; padding-inline: 0.7rem; }
   .axis .odd { display: none; }
   .mode label { padding: 0 0.85rem; }
 }
