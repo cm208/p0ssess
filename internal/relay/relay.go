@@ -16,7 +16,7 @@ var runSchema = json.RawMessage(`{
     "task": {"type": "string", "description": "The task, exactly as the caller wrote it."},
     "model": {"type": "string", "description": "OpenRouter model id, e.g. deepseek/deepseek-v4.1-flash. Optional when continuing a session."},
     "mode": {"type": "string", "enum": ["read", "edit"], "description": "read (default): no file changes. edit: works in a new git worktree and returns a diff."},
-    "cwd": {"type": "string", "description": "Working directory. Defaults to the Claude Code project directory."},
+    "cwd": {"type": "string", "description": "Working directory, inside the project's git repository. Defaults to the Claude Code session's working directory. Runs outside a git repository, or in the home directory, are refused."},
     "attachments": {"type": "array", "items": {"type": "string"}, "description": "Absolute paths of text, PDF or image files to attach."},
     "session": {"type": "string", "description": "A session id from an earlier result, to continue that session."},
     "kind": {"type": "string", "description": "Optional short task kind for the local history, e.g. tests, summary, refactor."},

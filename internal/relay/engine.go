@@ -16,6 +16,7 @@ import (
 	"p0ssess/internal/jail"
 	"p0ssess/internal/opencode"
 	"p0ssess/internal/pme/paths"
+	"p0ssess/internal/usage"
 )
 
 const rejectFeedback = "Not allowed in this delegated read-only task, and nobody is available to approve it. " +
@@ -81,7 +82,19 @@ func ParseModel(s string) (opencode.ModelRef, error) {
 	return m, nil
 }
 
+// defaultCwd is the directory a run without cwd works in: the Claude Code session's own working directory
+// as its status line and hooks recorded it, else the project directory, else this process's directory.
+// newRecord still refuses any of them that is not a repository.
 func defaultCwd() string {
+	if sid := os.Getenv("CLAUDE_CODE_SESSION_ID"); sid != "" {
+		if st, err := usage.Load(paths.Default().UsageFile()); err == nil {
+			for _, se := range st.Sessions {
+				if se.ID == sid && se.Cwd != "" {
+					return se.Cwd
+				}
+			}
+		}
+	}
 	if d := os.Getenv("CLAUDE_PROJECT_DIR"); d != "" {
 		return d
 	}
@@ -117,7 +130,7 @@ func (e *Engine) Run(ctx context.Context, req RunRequest, progress func(float64,
 		if rec, err = loadRecord(req.Session); err != nil {
 			return nil, fmt.Errorf("unknown session %s (only sessions started by this relay can be continued)", req.Session)
 		}
-		if err := continuable(rec); err != nil {
+		if err := e.continuable(rec); err != nil {
 			return nil, err
 		}
 		if w := e.watch(rec.SessionID); w != nil && !w.finished() {
@@ -197,6 +210,12 @@ func (e *Engine) Run(ctx context.Context, req RunRequest, progress func(float64,
 	w, err := e.prompt(ctx, c, rec, req.Task, files, &sent)
 	if err != nil {
 		e.idleAfter(rec.SessionID)
+		var ae *opencode.APIError
+		if errors.As(err, &ae) && ae.Status >= 500 {
+			if tail := j.LogTail(ctx); tail != "" {
+				err = fmt.Errorf("%w; server log: %s", err, tail)
+			}
+		}
 		return nil, err
 	}
 	res, err := e.block(ctx, w, waitDuration(req.WaitS), progress)
@@ -210,7 +229,10 @@ func (e *Engine) Run(ctx context.Context, req RunRequest, progress func(float64,
 }
 
 // continuable reports why a recorded session cannot take another run.
-func continuable(rec *SessionRecord) error {
+func (e *Engine) continuable(rec *SessionRecord) error {
+	if err := jail.CheckMountable(rec.Repo, e.cfg.OpenRouterKeyFile); err != nil {
+		return fmt.Errorf("session %s cannot continue: %w", rec.SessionID, err)
+	}
 	if rec.Jail == "" {
 		return fmt.Errorf("session %s was started by p0ssess 0.3 in a shared jail, which this version no longer runs; start a new run", rec.SessionID)
 	}
@@ -278,7 +300,7 @@ func (e *Engine) startSession(ctx context.Context, rec *SessionRecord, req RunRe
 // jailFor returns a running session's jail and a client for it. A jail whose owner is gone, or that was
 // detached, is adopted by this process.
 func (e *Engine) jailFor(ctx context.Context, rec *SessionRecord) (*jail.Jail, *opencode.Client, error) {
-	if err := continuable(rec); err != nil {
+	if err := e.continuable(rec); err != nil {
 		return nil, nil, err
 	}
 	e.mu.Lock()
@@ -475,6 +497,9 @@ func (e *Engine) newRecord(cwd string, req RunRequest) (*SessionRecord, error) {
 	}
 	repo, err := jail.RepoRoot(cwd)
 	if err != nil {
+		return nil, err
+	}
+	if err := jail.CheckMountable(repo, e.cfg.OpenRouterKeyFile); err != nil {
 		return nil, err
 	}
 	if paths.Private(cwd) || paths.Private(repo) {

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -40,11 +41,14 @@ type APIError struct {
 }
 
 func (e *APIError) Error() string {
-	b := e.Body
-	if len(b) > 300 {
+	b := strings.TrimSpace(e.Body)
+	switch {
+	case b == "":
+		b = "(empty body)"
+	case len(b) > 300:
 		b = b[:300] + "…"
 	}
-	return fmt.Sprintf("opencode %s %s: HTTP %d: %s", e.Method, e.Path, e.Status, b)
+	return fmt.Sprintf("opencode %s %s: HTTP %d %s: %s", e.Method, e.Path, e.Status, http.StatusText(e.Status), b)
 }
 
 func (c *Client) req(ctx context.Context, method, path string, q url.Values, body any) (*http.Request, error) {

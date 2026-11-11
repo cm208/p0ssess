@@ -2,12 +2,19 @@ package relay
 
 import (
 	"context"
+	"errors"
+	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"p0ssess/internal/config"
+	"p0ssess/internal/jail"
 	"p0ssess/internal/opencode"
+	"p0ssess/internal/pme/paths"
+	"p0ssess/internal/usage"
 )
 
 func lastMatch(rules []opencode.Rule, action, resource string) string {
@@ -179,5 +186,60 @@ func TestWatchReplaysRecordedRun(t *testing.T) {
 	})
 	if !w.finished() || w.outcome != "succeeded" || w.steps != 4 || len(w.tools) != 5 {
 		t.Errorf("finished=%v outcome=%q steps=%d tools=%v", w.finished(), w.outcome, w.steps, w.tools)
+	}
+}
+
+// Claude Code started in the home directory made the home directory the jail's repository (0.5.3 and
+// earlier). The session's recorded directory is used when known, and a run is refused before any jail
+// exists unless that directory is inside a git repository other than the home directory.
+func TestRunRefusesHomeAndNonRepositories(t *testing.T) {
+	tmp, _ := filepath.EvalSymlinks(t.TempDir())
+	home := filepath.Join(tmp, "home")
+	os.MkdirAll(filepath.Join(home, ".ssh"), 0o700)
+	t.Setenv("HOME", home)
+	t.Setenv("P0SSESS_HOME", filepath.Join(tmp, "p0"))
+	t.Setenv("GIT_CEILING_DIRECTORIES", tmp)
+	t.Setenv("CLAUDE_PROJECT_DIR", home)
+	repo := filepath.Join(home, "proj")
+	os.MkdirAll(repo, 0o755)
+	if out, err := exec.Command("git", "-C", repo, "init", "-q").CombinedOutput(); err != nil {
+		t.Fatalf("git init: %v %s", err, out)
+	}
+
+	const sid = "ed59eeff-0000-4000-8000-000000000002"
+	t.Setenv("CLAUDE_CODE_SESSION_ID", sid)
+	if got := defaultCwd(); got != home {
+		t.Errorf("no session record: cwd %s, want the project directory", got)
+	}
+	usage.Update(paths.Default().UsageFile(), func(s *usage.State) {
+		s.TouchSession(usage.Session{ID: "other", Cwd: filepath.Join(tmp, "elsewhere")})
+		s.TouchSession(usage.Session{ID: sid, Cwd: repo, Project: home})
+	})
+	if got := defaultCwd(); got != repo {
+		t.Errorf("cwd %s, want the session's recorded %s", got, repo)
+	}
+
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	e := NewEngine(cfg, "test", io.Discard)
+	e.Unguarded = true
+	plain := filepath.Join(tmp, "plain")
+	os.MkdirAll(plain, 0o755)
+	for _, cwd := range []string{home, plain, "/"} {
+		_, err := e.Run(context.Background(), RunRequest{Task: "list the files", Cwd: cwd}, nil)
+		var nm *jail.NotMountable
+		if !errors.As(err, &nm) || !strings.Contains(err.Error(), "use the direct tool") {
+			t.Errorf("cwd %s: %v", cwd, err)
+		}
+	}
+	if ents, _ := os.ReadDir(jail.Dir()); len(ents) != 0 {
+		t.Errorf("a jail was started: %v", ents)
+	}
+	// A session recorded with the home directory as its repository cannot continue either.
+	rec := &SessionRecord{SessionID: "ses_old", Repo: home, Cwd: home, Jail: "p0ssess-000000000000"}
+	if err := e.continuable(rec); err == nil || !strings.Contains(err.Error(), "home directory") {
+		t.Errorf("old session: %v", err)
 	}
 }

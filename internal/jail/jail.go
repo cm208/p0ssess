@@ -24,12 +24,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	"p0ssess/internal/config"
 	"p0ssess/internal/opencode"
+	"p0ssess/internal/pme/paths"
 )
 
 const (
@@ -112,19 +114,92 @@ func Canonical(dir string) (string, error) {
 	return real, nil
 }
 
-// RepoRoot returns the git top level of dir, or dir itself outside git.
+// NotMountable is a directory the agent path refuses to mount into a jail.
+type NotMountable struct {
+	Dir, Why string
+}
+
+func (e *NotMountable) Error() string {
+	return fmt.Sprintf("refused: the agent path mounts only a project's git repository, and %s %s. "+
+		"Pass cwd with the project's directory (inside its git repository), or use the direct tool", e.Dir, e.Why)
+}
+
+// RepoRoot returns the git top level of dir. Outside a git work tree it refuses: the jail never mounts
+// an arbitrary directory.
 func RepoRoot(dir string) (string, error) {
 	c, err := Canonical(dir)
 	if err != nil {
 		return "", err
 	}
-	out, err := exec.Command("git", "-C", c, "rev-parse", "--show-toplevel").Output()
-	if err == nil {
-		if top := strings.TrimSpace(string(out)); top != "" {
-			return Canonical(top)
+	cmd := exec.Command("git", "-C", c, "rev-parse", "--show-toplevel")
+	for _, kv := range os.Environ() {
+		if !strings.HasPrefix(kv, "GIT_DIR=") && !strings.HasPrefix(kv, "GIT_WORK_TREE=") {
+			cmd.Env = append(cmd.Env, kv)
 		}
 	}
-	return c, nil
+	out, err := cmd.Output()
+	top := strings.TrimSpace(string(out))
+	if err != nil || top == "" {
+		return "", &NotMountable{c, "is not inside a git work tree"}
+	}
+	return Canonical(top)
+}
+
+// secretNames at the top of a directory mark a home directory or a credential store.
+var secretNames = []string{".ssh", ".gnupg", ".config", ".aws", ".azure", ".kube", ".docker", ".password-store",
+	".netrc", ".git-credentials", ".pgpass"}
+
+// CheckMountable refuses a repository the jail must not mount: one that is or holds the home directory or
+// the root, is not the top of a git work tree, has credential directories at its top, or holds p0ssess's
+// own config, cache, state or key file.
+func CheckMountable(dir, keyFile string) error {
+	c, err := Canonical(dir)
+	if err != nil {
+		return err
+	}
+	if c == "/" {
+		return &NotMountable{c, "is the root directory"}
+	}
+	if h, err := os.UserHomeDir(); err == nil {
+		if home, err := Canonical(h); err == nil && (c == home || inside(c, home)) {
+			return &NotMountable{c, "is or contains your home directory"}
+		}
+	}
+	top, err := RepoRoot(c)
+	if err != nil {
+		return err
+	}
+	if top != c {
+		return &NotMountable{c, "is not the top of its git repository (" + top + ")"}
+	}
+	for _, n := range secretNames {
+		if _, err := os.Lstat(filepath.Join(c, n)); err == nil {
+			return &NotMountable{c, "has " + n + " at its top, like a home directory or a credential store"}
+		}
+	}
+	d := paths.Default()
+	for _, p := range []string{d.Config, d.Cache, d.State, keyFile} {
+		if p == "" {
+			continue
+		}
+		abs, err := filepath.Abs(p)
+		if err != nil {
+			continue
+		}
+		if r, err := filepath.EvalSymlinks(abs); err == nil {
+			abs = r
+		}
+		if abs == c || inside(c, abs) || inside(abs, c) {
+			return &NotMountable{c, "holds or is inside p0ssess's own files (" + abs + ")"}
+		}
+	}
+	return nil
+}
+
+// inside reports whether p is strictly below dir.
+func inside(dir, p string) bool {
+	rel, err := filepath.Rel(dir, p)
+	return err == nil && rel != "." && rel != ".." && !strings.HasPrefix(rel, "../")
 }
 
 func newName() string {
@@ -347,6 +422,9 @@ func Start(ctx context.Context, spec Spec, cfg config.Config, log io.Writer) (*J
 	if err != nil {
 		return nil, err
 	}
+	if err := CheckMountable(repo, cfg.OpenRouterKeyFile); err != nil {
+		return nil, err
+	}
 	key, err := cfg.OpenRouterKey()
 	if err != nil {
 		return nil, err
@@ -531,6 +609,30 @@ func (j *Jail) waitReady(ctx context.Context, d time.Duration) error {
 		}
 	}
 	return fmt.Errorf("server did not come up: %v", last)
+}
+
+// LogTail is the end of the OpenCode server's log, on one line, for an error the server answered without a
+// body. The server's password and anything shaped like an OpenRouter key are masked.
+func (j *Jail) LogTail(ctx context.Context) string {
+	cctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	out, _ := exec.CommandContext(cctx, "podman", "logs", "--tail", "15", j.Name+"-server").CombinedOutput()
+	pw, _ := os.ReadFile(passwordPath(j.Name))
+	return cleanLog(string(out), strings.TrimSpace(string(pw)))
+}
+
+var orKey = regexp.MustCompile(`sk-or-[A-Za-z0-9_-]+`)
+
+func cleanLog(s, pw string) string {
+	if pw != "" {
+		s = strings.ReplaceAll(s, pw, "[password]")
+	}
+	s = orKey.ReplaceAllString(s, "[key]")
+	s = strings.Join(strings.Fields(strings.ReplaceAll(s, "\n", " | ")), " ")
+	if len(s) > 600 {
+		s = "…" + s[len(s)-600:]
+	}
+	return s
 }
 
 // Containers are the pod's containers.

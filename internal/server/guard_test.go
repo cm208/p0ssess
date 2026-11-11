@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -79,8 +80,11 @@ func directEnv(t *testing.T, budgetTOML string) (config.Config, *engine.Engine, 
 	t.Setenv("P0SSESS_OPENROUTER_KEY_FILE", filepath.Join(home, "key"))
 	os.WriteFile(filepath.Join(home, "key"), []byte("test-key\n"), 0o600)
 	os.WriteFile(filepath.Join(home, "budget.toml"), []byte(budgetTOML), 0o600)
-	proj := filepath.Join(home, "proj")
-	os.MkdirAll(filepath.Join(proj, ".git"), 0o755)
+	proj := filepath.Join(t.TempDir(), "proj")
+	os.MkdirAll(proj, 0o755)
+	if out, err := exec.Command("git", "-C", proj, "init", "-q").CombinedOutput(); err != nil {
+		t.Fatalf("git init: %v %s", err, out)
+	}
 	t.Setenv("CLAUDE_PROJECT_DIR", proj)
 	t.Setenv("CLAUDE_CODE_SESSION_ID", "")
 	cfg, err := config.Load()
