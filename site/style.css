@@ -17,6 +17,12 @@
   font-display: block;
 }
 
+/* The film widget's two numbers. --p is how much of the film has been watched through p0ssess
+   (0 is Claude alone, 100 is the whole film); --h is where the playhead stands. Both are
+   percentages of the film's length, registered so they can be transitioned. */
+@property --p { syntax: "<number>"; inherits: true; initial-value: 100; }
+@property --h { syntax: "<number>"; inherits: true; initial-value: 75.11; }
+
 /* Dark only: black ground, one violet. */
 :root {
   color-scheme: dark;
@@ -28,28 +34,32 @@
   --ink-body: #c9c9c9;
   --ink-2: #8a8a8a;
   --dot: #6e6e6e;           /* idle island dots and ticks; 3.5:1 on the surface */
-  --violet: #7457e0;        /* lines, dots, bars, the one filled button; never small text */
+  --violet: #7457e0;        /* lines, dots, bars, filled buttons; never small text */
   --violet-deep: #2a1b4e;   /* fills, selection */
   --violet-ink: #a593f2;    /* text and links on dark */
-  --bar: #626262;           /* chart bars that lose; 3.2:1 on the ground */
+  --bar: #626262;           /* chart bars that lose, unheard sound; 3.2:1 on the ground */
   --st-idle: #808080;       /* Claude Code's 256-color status codes */
   --st-run: #bcbcbc;
   --st-amber: #ffaf00;
   --ghost-mask: #eef1ff;    /* the mark's mask, for its blinking lids */
   --gutter: clamp(20px, 4vw, 56px);
-  --out: cubic-bezier(0.16, 1, 0.3, 1);
-  --spring: cubic-bezier(0.34, 1.5, 0.5, 1);
+  --sec-pad: clamp(3.4rem, 7vw, 6rem);
+  --out: cubic-bezier(0.16, 1, 0.3, 1);      /* arrivals */
+  --io: cubic-bezier(0.65, 0, 0.35, 1);      /* travel that stays on screen */
+  --spring: cubic-bezier(0.34, 1.5, 0.5, 1); /* the island and a press, nothing else */
   --flow: 0.9rem;           /* space between blocks of copy */
-  --flow-lg: 1.5rem;        /* space above a figure or the install command */
   --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
   --mono: "Obel Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html {
   -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
   scrollbar-color: var(--dot) var(--ground);
   accent-color: var(--violet);
+  caret-color: var(--violet-ink);
+  scroll-padding-top: 76px;
 }
 ::selection { background: var(--violet-deep); color: var(--ink); }
 body {
@@ -58,42 +68,47 @@ body {
   color: var(--ink-body);
   font: 400 1.0625rem/1.62 var(--sans);
   -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
 }
-:where(p, ul, ol, dl, pre, figure, h1, h2, h3, table) { margin: 0; }
+:where(p, ul, ol, dl, dd, pre, figure, h1, h2, h3, table, fieldset) { margin: 0; }
+:where(fieldset) { padding: 0; border: 0; min-inline-size: 0; }
 a { color: var(--violet-ink); text-underline-offset: 0.2em; text-decoration-thickness: 1px; transition: color 0.2s var(--out); }
 a:hover { color: var(--ink); }
 :focus-visible { outline: 2px solid var(--violet-ink); outline-offset: 3px; border-radius: 4px; }
 code, pre { font-family: var(--mono); font-size: 0.88em; }
 code { color: var(--ink); overflow-wrap: anywhere; }
 small { font-size: inherit; }
+cite { font-style: normal; color: var(--ink); }
+q { quotes: "“" "”"; }
+button { font: inherit; color: inherit; }
 .sr-only {
   position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0;
 }
-
-/* Layout: one column; two with a pinned terminal on wide screens when scripts run. */
-.story { max-width: 44rem; margin: 0 auto; padding: 0 20px; }
-.hero-in, .get-in, .site-foot { max-width: 1320px; margin: 0 auto; padding-inline: var(--gutter); }
-.stage { display: none; }
-.sec { padding-block: 2.5rem 2rem; scroll-margin-top: 1rem; }
-
-/* The frameless grid: a hairline with a 24 px violet start. Borders snap to device pixels. */
-.sec + .sec, .wont li, .needs li, .dl li, .chart, .cases tr, .steps li { position: relative; border-top: 1px solid var(--line); }
-.sec + .sec::before, .wont li::after, .needs li::after, .dl li::after, .chart::after, .cases tr::after, .steps li::after {
-  content: ""; position: absolute; top: -1px; left: 0; width: 24px; height: 1px; background: var(--violet);
+.skip {
+  position: absolute; z-index: 30; left: 12px; top: -80px; padding: 0.6rem 1rem;
+  background: var(--violet); color: var(--ink); border-radius: 999px; font: 400 0.84rem/1 var(--mono); text-decoration: none;
 }
-.copy { max-width: 34rem; }
-/* Zero specificity, so any block can set its own space above without fighting this. */
-:where(.copy) > * + * { margin-top: var(--flow); }
-:where(.copy) > h2 + * { margin-top: calc(var(--flow) + 0.15rem); }
+.skip:focus { top: 12px; }
+
+.wrap { position: relative; max-width: 1320px; margin: 0 auto; padding-inline: var(--gutter); }
 
 h1, h2, h3 { font-family: var(--mono); font-weight: 700; color: var(--ink); text-wrap: balance; }
 h1 { font-size: clamp(2.2rem, 11.5vw, 3.6rem); line-height: 1.02; letter-spacing: -0.035em; }
-h2 { font-size: clamp(1.5rem, 1.2vw + 1.2rem, 2rem); line-height: 1.12; letter-spacing: -0.025em; }
-.engine h2 { font-size: clamp(1.55rem, 6.6vw, 2.25rem); }
-h3 { font-size: 1.05rem; line-height: 1.3; letter-spacing: -0.01em; }
-.copy p, .hero p, .get p { text-wrap: pretty; }
+h2 { font-size: clamp(1.75rem, 3.1vw + 0.95rem, 3.1rem); line-height: 1.06; letter-spacing: -0.035em; }
+h3 { font-size: 1.14rem; line-height: 1.3; letter-spacing: -0.015em; }
+p { text-wrap: pretty; }
 .small { font-size: 0.9rem; color: var(--ink-2); }
+
+/* The frameless grid: a hairline with a 24 px violet start, drawn as one line so both parts
+   land on the same pixel row. With motion allowed the line draws out of its violet start when
+   it scrolls into view (html.anim, below). */
+.hl, .sec > .wrap { position: relative; }
+.hl::before, .sec > .wrap::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px;
+  background: linear-gradient(to right, var(--violet) 0 24px, var(--line) 24px);
+}
+.sec > .wrap::before { top: calc(-1 * var(--sec-pad)); left: var(--gutter); right: var(--gutter); }
 
 /* The mark. ghost.svg is drawn on a 16-unit grid and the wordmark on the same unit, so both
    are sized in whole multiples of --u and stay crisp. The lids cover the top of the two slit
@@ -105,39 +120,219 @@ h3 { font-size: 1.05rem; line-height: 1.3; letter-spacing: -0.01em; }
   background: linear-gradient(to right, var(--ghost-mask) 25%, transparent 25% 75%, var(--ghost-mask) 75%);
   opacity: 0;
 }
-.lockup { --u: 3px; display: flex; align-items: flex-end; gap: calc(3 * var(--u)); }
+.lockup { --u: 3px; display: flex; align-items: flex-end; gap: calc(3 * var(--u)); text-decoration: none; border-radius: 4px; }
 .lockup .g { --u: inherit; }
 .wordmark { width: calc(34 * var(--u)); height: calc(9 * var(--u)); margin-bottom: calc(-2 * var(--u)); }
 .wm-ink { fill: var(--ink); }
 .wm-zero { fill: var(--violet); }
 
-/* The hero: a full first screen. The promise, then the hand-off drawn as three stops on one line. */
-.hero { border-bottom: 1px solid var(--line); }
-.hero-in { display: flex; flex-direction: column; gap: 2.4rem; min-height: 100svh; padding-block: 1.3rem 2rem; }
-.topbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-bottom: 6px; }
-.topnav { display: flex; gap: clamp(1rem, 2.4vw, 1.9rem); font: 400 0.84rem/1.2 var(--mono); }
+/* Top bar */
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 1.1rem 0.4rem; }
+.topnav { display: flex; align-items: center; gap: clamp(1rem, 2.2vw, 1.8rem); font: 400 0.84rem/1.2 var(--mono); }
 .topnav a { padding: 0.8rem 0; color: var(--ink-2); text-decoration: none; }
 .topnav a:hover { color: var(--ink); }
-.topnav a[hidden] { display: none; }
-.pitch { margin-block: auto; }
-h1 { font-size: clamp(2.2rem, 11.5vw, 3.6rem); line-height: 1.02; letter-spacing: -0.035em; }
-.lede { max-width: 45rem; margin-top: 1.3rem; font-size: 1.18rem; line-height: 1.52; }
-.cta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.9rem 1.7rem; margin-top: 1.7rem; }
+.topnav .nav-cta {
+  padding: 0.62rem 1.05rem; color: var(--ink); border: 1px solid var(--line); border-radius: 999px; background: var(--surface);
+  transition: border-color 0.2s var(--out), background 0.2s var(--out), scale 0.35s var(--spring);
+}
+.topnav .nav-cta:hover { border-color: var(--violet); background: var(--violet-deep); }
+.topnav .nav-cta:active { scale: 0.965; }
+
+/* Buttons */
 .btn {
-  display: inline-flex; align-items: center; min-height: 46px; padding: 0 1.5rem;
+  display: inline-flex; align-items: center; min-height: 48px; padding: 0 1.6rem;
   background: var(--violet); color: var(--ink); border-radius: 999px;
-  font: 400 0.92rem/1 var(--mono); text-decoration: none;
+  font: 400 0.95rem/1 var(--mono); text-decoration: none;
   transition: scale 0.35s var(--spring), background 0.2s var(--out);
 }
 .btn:hover { background: #6346d4; color: var(--ink); }
 .btn:active { scale: 0.965; }
 .more { font: 400 0.92rem/1 var(--mono); }
-.more .narrow { display: none; }
+.replay {
+  padding: 6px 12px; font: 400 12px/1.6 var(--mono); color: var(--ink-2); background: none; border: 0; border-radius: 999px; cursor: pointer;
+  transition: color 0.2s var(--out), background 0.2s var(--out);
+}
+.replay:hover { color: var(--ink); background: var(--surface-hi); }
+
+/* A two-way switch drawn as an island: the violet pill slides under the choice, with a little spring. */
+.mode {
+  position: relative; display: inline-grid; grid-template-columns: 1fr 1fr; padding: 4px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+}
+.mode label {
+  position: relative; z-index: 1; display: grid; place-items: center; min-height: 38px; padding: 0 1.05rem;
+  border-radius: 999px; font: 400 0.82rem/1 var(--mono); color: var(--ink-2); white-space: nowrap; cursor: pointer;
+  transition: color 0.2s var(--out);
+}
+.mode label:hover { color: var(--ink); }
+.mode input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.mode label:has(:checked) { color: var(--ink); }
+.mode label:has(:focus-visible) { outline: 2px solid var(--violet-ink); outline-offset: 2px; }
+.mode-thumb {
+  position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 4px);
+  background: var(--violet-deep); border: 1px solid var(--violet); border-radius: 999px;
+  transition: translate 0.5s var(--spring);
+}
+.mode:has(label:nth-of-type(2) :checked) .mode-thumb { translate: 100% 0; }
+
+/* The hero: the promise on the left, the proof beside and under it. One prompt was run twice
+   on a ten-minute film; the widget shows what each run caught. */
+.hero { padding-block: clamp(1rem, 2vw, 1.5rem) clamp(2.6rem, 5vw, 4rem); }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1fr); row-gap: 1.6rem; }
+.lede { max-width: 38rem; margin-top: 1.25rem; font-size: 1.12rem; line-height: 1.55; }
+.cta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.9rem 1.7rem; margin-top: 1.7rem; }
+.terms { margin-top: 0.9rem; font-size: 0.9rem; color: var(--ink-2); }
+
+.film { --p: 100; --h: 75.11; transition: --p 1.6s var(--io), --h 0.6s var(--io); }
+.film:has(#mode-alone:checked) { --p: 0; }
+.film.js { transition: --h 0.6s var(--io); }
+.film.live { transition: none; }
+.film:has(#mode-alone:checked) .v-poss, .film:not(:has(#mode-alone:checked)) .v-alone { display: none; }
+
+.screen { align-self: start; width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; scroll-margin-top: 80px; }
+.frame { position: relative; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 3px 3px 0 0; background: #000; }
+.frame img, .frame canvas {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  image-rendering: pixelated; image-rendering: crisp-edges; image-rendering: pixelated;
+  transition: filter 0.5s var(--out);
+}
+.tc {
+  position: absolute; left: 10px; bottom: 10px; padding: 0.22rem 0.6rem;
+  background: rgb(11 11 11 / 0.84); border-radius: 999px; font: 400 0.78rem/1.3 var(--mono); color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.unseen {
+  position: absolute; inset: 0; display: grid; place-items: center; padding: 1rem; text-align: center;
+  font: 400 0.92rem/1.4 var(--mono); color: var(--ink-body); opacity: 0; transition: opacity 0.3s var(--out);
+}
+.film[data-miss]:has(#mode-alone:checked) .frame :is(img, canvas) { filter: grayscale(1) brightness(0.2); }
+.film[data-miss]:has(#mode-alone:checked) .unseen { opacity: 1; }
+
+.said { display: flow-root; min-height: 13.6rem; padding: 0.85rem 1.1rem 1rem; }
+.said-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.1rem 0.8rem; }
+.said .when { font: 400 0.78rem/1.4 var(--mono); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.said .what { font: 700 1.02rem/1.3 var(--mono); letter-spacing: -0.015em; color: var(--ink); }
+.said-by > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.1rem; margin-top: 0.55rem; }
+.said-by dt { font: 400 0.76rem/1.5 var(--mono); color: var(--ink-2); }
+.said-by dd { font-size: 0.95rem; line-height: 1.5; }
+.said-by .by-poss dt { color: var(--violet-ink); }
+.said-by q { color: var(--ink); }
+.credit { font: 400 0.76rem/1.5 var(--mono); color: var(--ink-2); white-space: nowrap; }
+.said-note { margin-top: 0.6rem; font-size: 0.84rem; line-height: 1.45; color: var(--ink-2); }
+
+.readout {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 1rem 1.4rem;
+  grid-template-areas: "ctl ctl" "say say" "score parts";
+}
+.ctl { grid-area: ctl; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.8rem; }
+.mode-say { grid-area: say; max-width: 34rem; font-size: 0.95rem; line-height: 1.5; min-height: 3em; }
+.tally { grid-area: score; }
+.parts { grid-area: parts; }
+.tally { display: flex; align-items: baseline; gap: 0.5rem; }
+.tally .num { font: 700 clamp(3.4rem, 15vw, 4.4rem)/0.86 var(--mono); letter-spacing: -0.055em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.tally .num b { font-weight: inherit; }
+.tally small { font: 400 1rem/1 var(--mono); color: var(--ink-2); white-space: nowrap; }
+.tally .num.tick { animation: tick 0.32s var(--out); }
+@keyframes tick { from { translate: 0 -0.08em; color: var(--violet-ink); } }
+.parts { list-style: none; padding: 0; display: grid; gap: 0.3rem; justify-self: end; min-width: 11.5rem; }
+.parts li { display: flex; align-items: baseline; justify-content: space-between; gap: 1.1rem; }
+.parts .k { font-size: 0.8rem; color: var(--ink-2); }
+.parts .v { font: 400 0.84rem/1.3 var(--mono); color: var(--ink-body); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.parts .v b { font-weight: 700; color: var(--ink); }
+
+/* The timeline: the film's picture, its measured loudness and the ten scored events on one
+   scale. Each lane has a dim layer (what Claude alone had) and a lit layer clipped to --p. */
+.lanes { position: relative; container-type: inline-size; margin-top: 40px; touch-action: pan-y; }
+.lane { position: relative; }
+.lane + .lane { margin-top: 8px; }
+.tl { display: block; margin-bottom: 4px; font: 400 0.72rem/1.2 var(--mono); color: var(--ink-2); }
+.lane-in { position: relative; }
+.strip .lane-in { height: 46px; overflow: hidden; border-radius: 4px; background: var(--surface); }
+.strip i { position: absolute; inset: 0; background: url("film-strip.webp") 0 0 / 100% 100% no-repeat; }
+.s-dim { filter: grayscale(1) brightness(0.3); }
+/* Twenty stills, one every 30 seconds of 596.46: all that Claude alone looked at. */
+.s-slits {
+  -webkit-mask-image: repeating-linear-gradient(to right, #000 0 3px, transparent 3px 5.0297%);
+  mask-image: repeating-linear-gradient(to right, #000 0 3px, transparent 3px 5.0297%);
+}
+.s-lit, .w-lit { clip-path: inset(0 calc((100 - var(--p)) * 1%) 0 0); }
+.wave .lane-in { height: 34px; }
+.wave svg { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke-width: 0.56; }
+.w-dim { stroke: var(--bar); }
+.w-lit { stroke: var(--violet); }
+.evs .lane-in { height: 28px; }
+.moments, .evs-lit { position: absolute; inset: 0; display: flex; gap: 3px; margin: 0; padding: 0; list-style: none; }
+.ev, .evs-lit i { position: relative; min-width: 0; }
+.e1 { flex: 30 1 0; } .e2 { flex: 25 1 0; } .e3 { flex: 60 1 0; } .e4 { flex: 35 1 0; } .e5 { flex: 35 1 0; }
+.e6 { flex: 40 1 0; } .e7 { flex: 75 1 0; } .e8 { flex: 70 1 0; } .e9 { flex: 115 1 0; } .e10 { flex: 111.5 1 0; }
+.ev > span, .ev > q { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.ev::before, .evs-lit i::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 8px; translate: 0 -50%; border-radius: 2px;
+  transition: height 0.35s var(--spring);
+}
+.ev.hit::before { background: var(--ink-2); }
+.ev.miss::before { border: 1px dashed var(--bar); }
+.evs-lit { pointer-events: none; clip-path: inset(-8px calc((100 - var(--p)) * 1%) -8px 0); }
+.evs-lit i::before { background: var(--violet); }
+.ev.sel::before, .evs-lit i.sel::before { height: 16px; }
+.ev button { position: absolute; inset: 0; width: 100%; padding: 0; background: none; border: 0; border-radius: 3px; cursor: pointer; }
+.axis { display: block; overflow: visible; margin-top: 6px; }
+.axis .tk { fill: var(--dot); }
+.axis text { font: 400 11px var(--mono); fill: var(--ink-2); }
+/* The playhead: the ghost rides it. */
+.head { position: absolute; z-index: 3; left: 0; top: -40px; bottom: 26px; width: 0; translate: calc(var(--h) * 1cqw) 0; pointer-events: none; }
+.head-line { position: absolute; left: -1px; top: 35px; bottom: 0; width: 2px; background: var(--ink); border-radius: 1px; }
+.head .rider { --u: 2px; position: absolute; left: -16px; top: 0; }
+.step { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.step-btn {
+  display: grid; place-items: center; width: 44px; height: 44px; padding: 0;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 999px; color: var(--ink); cursor: pointer;
+  transition: border-color 0.2s var(--out), scale 0.35s var(--spring);
+}
+.step-btn:hover { border-color: var(--violet); }
+.step-btn:active { scale: 0.94; }
+.step-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.film-note { max-width: 62rem; font-size: 0.84rem; line-height: 1.55; color: var(--ink-2); }
+.film-note a { white-space: nowrap; }
+
+/* Sections */
+.sec { padding-block: var(--sec-pad); }
+.sec-head { display: grid; gap: 1.1rem; margin-bottom: clamp(2rem, 4.5vw, 3.6rem); padding-top: 1.6rem; }
+.sec-head h2 { max-width: 19ch; }
+.sec-head p { max-width: 36rem; font-size: 1.1rem; line-height: 1.58; }
+.copy { max-width: 36rem; }
+:where(.copy) > * + * { margin-top: var(--flow); }
+:where(.copy) > h3 { margin-top: 2.2rem; }
+:where(.copy) > h3:first-child { margin-top: 0; }
+:where(.copy) > h3 + * { margin-top: 0.7rem; }
+.split { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2.6rem; }
+.aside { max-width: 44rem; margin-top: 2.4rem; font-size: 0.95rem; color: var(--ink-2); }
+
+/* Cells on the frameless grid */
+.grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2.4rem clamp(28px, 4vw, 64px); margin: 0; padding: 0; list-style: none; }
+.cell { display: flex; flex-direction: column; padding-top: 1.5rem; }
+.cell > * + * { margin-top: 0.85rem; }
+.cell > .fig { margin-top: auto; padding-top: 1.2rem; }
+.px { display: block; width: 48px; height: 48px; }
+.px + h3 { margin-top: 1.1rem; }
+/* What you say to Claude, set as a prompt line */
+.ask {
+  position: relative; padding: 0.55rem 0.8rem 0.6rem 2rem;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 4px;
+  font: 400 0.84rem/1.5 var(--mono); color: var(--ink);
+}
+.ask::before { content: ">"; position: absolute; left: 0.8rem; color: var(--violet-ink); }
+.says { list-style: none; padding: 0; display: grid; gap: 0.45rem; }
+/* A big number with its unit beside it */
+.fig { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.75rem; }
+.fig b { font: 700 2.15rem/1 var(--mono); letter-spacing: -0.045em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.fig b small, .amt small { font-size: 0.56em; font-weight: 400; color: var(--ink-2); margin-right: 0.1em; }
+.fig span { flex-basis: 100%; font: 400 0.76rem/1.4 var(--mono); color: var(--ink-2); }
 
 /* The hand-off: Claude, the possessed Haiku, the other model. One hairline runs through the
    three pills; the violet wires, the reply and the riding ghost are the moving parts. The
    default state is the still frame: the Haiku possessed, both wires lit, one measured job named. */
-.relay { position: relative; }
+.relay { position: relative; margin-bottom: clamp(2.4rem, 5vw, 3.6rem); padding-bottom: 2rem; }
 .hops { --pill: 44px; --gap: 1.1rem; position: relative; list-style: none; margin: 0; padding: 0; display: grid; row-gap: var(--gap); }
 .hop { position: relative; }
 .at { position: relative; z-index: 2; display: flex; align-items: center; gap: 0.7rem; height: var(--pill); }
@@ -152,7 +347,14 @@ h1 { font-size: clamp(2.2rem, 11.5vw, 3.6rem); line-height: 1.02; letter-spacing
 .model .pill { justify-content: center; min-width: calc(22ch + 2.4rem); border-color: var(--violet); }
 .seat { display: block; width: 32px; height: 32px; }
 .claude .at { z-index: 3; }  /* the rider leaves from here and passes over the Haiku pill */
-.rider { display: none; }
+.after { position: relative; display: grid; align-items: center; }
+.after > * { grid-area: 1 / 1; }
+.relay .rider { display: none; }
+/* What Claude gets back: the answer's credit, as p0ssess prints it. */
+.back {
+  justify-self: start; padding: 0.3rem 0.7rem; background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+  font: 400 0.76rem/1.3 var(--mono); color: var(--ink-body); white-space: nowrap;
+}
 .swap { display: grid; }
 .swap > * { grid-area: 1 / 1; }
 .swap .idle { opacity: 0; color: var(--ink-2); }
@@ -166,13 +368,24 @@ p.swap .idle { color: inherit; }
 .wire { z-index: 1; width: 2px; margin-left: -0.5px; background: var(--violet); transform-origin: 0 0; }
 .wire i { --far: 0 100%; position: absolute; inset: 0; opacity: 0; }
 .wire i::after { content: ""; position: absolute; left: -3px; top: -4px; width: 8px; height: 8px; border-radius: 50%; background: var(--ink); }
-.pause {
-  position: absolute; right: -12px; bottom: -2.1rem; padding: 4px 12px;
-  font: 400 12px/1.6 var(--mono); color: var(--ink-2); background: none; border: 0; border-radius: 999px; cursor: pointer;
-  transition: color 0.2s var(--out), background 0.2s var(--out);
-}
-.pause:hover { color: var(--ink); background: var(--surface-hi); }
-.pause[hidden] { display: none; }
+.relay .replay { position: absolute; right: -12px; bottom: 0; }
+
+/* Where one run's money went: one bar, three parts */
+.bill { align-self: start; padding-top: 1.3rem; }
+.bill figcaption { font: 700 1.02rem/1.3 var(--mono); letter-spacing: -0.015em; color: var(--ink); }
+.bill-bar { display: block; margin-top: 1.1rem; border-radius: 3px; }
+.bill-bar .b1 { fill: var(--bar); }
+.bill-bar .b2 { fill: var(--ink); }
+.bill-bar .b3 { fill: var(--violet); }
+.bill-bar .gap { fill: var(--ground); }
+.bill-rows { list-style: none; padding: 0; margin-top: 0.9rem; }
+.bill-rows li { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding: 0.5rem 0; border-top: 1px solid var(--line); }
+.bill-rows li:first-child { border-top: 0; }
+.bill-rows .who { position: relative; padding-left: 1.2rem; font-size: 0.95rem; }
+.bill-rows .who::before { content: ""; position: absolute; left: 0; top: 0.55em; width: 8px; height: 8px; border-radius: 2px; background: var(--bar); }
+.bill-rows .r2 .who::before { background: var(--ink); }
+.bill-rows .r3 .who::before { background: var(--violet); }
+.amt { font: 700 1.25rem/1 var(--mono); letter-spacing: -0.03em; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 /* A command with its copy button */
 .cmd {
@@ -198,19 +411,17 @@ p.swap .idle { color: inherit; }
 .copy-btn:hover { background: #6346d4; }
 .copy-btn:active { transform: scale(0.965); }
 .copy-btn::after { content: ""; position: absolute; inset: -9px -7px; }  /* a 44 px touch target */
-.copy-btn[hidden] { display: none; }
 
 /* Plain rows on the frameless grid */
 .wont, .needs { list-style: none; padding: 0; }
-.wont li, .needs li { padding: 0.5rem 0; }
-.wont, .gates, .cases, .states, .steps { margin-top: calc(var(--flow) + 0.2rem); }
+.wont li, .needs li { padding: 0.62rem 0; }
 .wont code { white-space: nowrap; }
 
-/* Gates: one row per severity. The rule under each row is the 0 to 100 score,
+/* Gates: one row per level of stakes. The rule under each row is the 0 to 100 score,
    and its violet part is the scores that clear that gate. */
 table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
 th, td { text-align: left; font-weight: 400; padding: 0; }
-.gates { display: block; }
+.gates { display: block; margin-top: 1.2rem; }
 .gates thead, .gates tbody { display: block; }
 .gates tr { display: grid; grid-template-columns: minmax(0, 1fr) 3.2rem 7.4rem; column-gap: 0.6rem; align-items: baseline; }
 .gates thead tr { padding-bottom: 0.4rem; border-bottom: 1px solid var(--line); }
@@ -231,55 +442,41 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
 
 /* Cost charts: rows sorted by total, the bar is the total, the shortest bar wins.
    Bars grow from one baseline; the winner is violet and says so, the rest are one gray. */
-.chart { margin-top: var(--flow-lg); padding-top: 0.9rem; }
-.chart .task { color: var(--ink); font-size: 0.98rem; }
-.chart .def, .chart .origin { font-size: 0.86rem; line-height: 1.5; color: var(--ink-2); margin-top: 0.35rem; }
-.chart .origin { color: var(--ink-body); margin-top: 0.5rem; }
-.chart .when { font-size: 0.86rem; color: var(--ink-body); }
-.chart .note { margin-top: 0.85rem; font-size: 0.93rem; }
-.chart figcaption { margin-top: 0.65rem; font-size: 0.8rem; line-height: 1.5; color: var(--ink-2); }
-.bars { list-style: none; padding: 0; margin: 0; display: grid; row-gap: 0.6rem; }
-.def + .bars { margin-top: 0.9rem; }
-.when + .bars { margin-top: 0.5rem; }
-.bars + .when { margin-top: 0.95rem; }
+.chart { align-self: start; padding-top: 1.3rem; }
+.est {
+  display: inline-block; padding: 0.14rem 0.62rem 0.18rem; margin-bottom: 0.85rem;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+  font: 400 0.72rem/1.4 var(--mono); color: var(--ink);
+}
+.chart .task { color: var(--ink); font-size: 1rem; }
+.chart .def { font-size: 0.86rem; line-height: 1.5; color: var(--ink-2); margin-top: 0.35rem; }
+.chart figcaption { margin-top: 0.9rem; font-size: 0.8rem; line-height: 1.5; color: var(--ink-2); }
+.bars { list-style: none; padding: 0; margin: 0; display: grid; row-gap: 0.7rem; }
+.def + .bars { margin-top: 1.1rem; }
 .bars li {
   display: grid; grid-template-columns: minmax(0, 1fr) auto auto; column-gap: 0.6rem; align-items: baseline;
   grid-template-areas: "who tag tot" "len len len" "score score call";
 }
 .bars .who { grid-area: who; color: var(--ink); font-size: 0.95rem; line-height: 1.25; }
 .bars .who small { margin-left: 0.2em; font-size: 0.84em; color: var(--ink-2); white-space: nowrap; }
-.bars .tot { grid-area: tot; text-align: right; font: 700 1.25rem/1 var(--mono); letter-spacing: -0.03em; color: var(--ink-body); }
+.bars .tot { grid-area: tot; text-align: right; font: 700 1.25rem/1 var(--mono); letter-spacing: -0.03em; color: var(--ink-body); font-variant-numeric: tabular-nums; }
 .bars .win .tot { color: var(--ink); }
 .bars .len { grid-area: len; display: block; height: 8px; margin: 0.32rem 0 0.26rem; }
 .bars svg { display: block; overflow: visible; }
 .bars rect { fill: var(--bar); }
 .bars .win rect { fill: var(--violet); }
-.bars .brk { fill: none; stroke: var(--ground); stroke-width: 2.5; }
-.bars .score, .bars .call, .bars .cant { font: 400 0.72rem/1.3 var(--mono); color: var(--ink-2); }
+.bars .score, .bars .call { font: 400 0.72rem/1.3 var(--mono); color: var(--ink-2); }
 .bars .score { grid-area: score; }
 .bars .call { grid-area: call; text-align: right; }
-.bars .none { grid-template-areas: "who cant cant"; }
-.bars .none .who { color: var(--ink-2); }
-.bars .cant { grid-area: cant; text-align: right; }
 .tag {
   grid-area: tag; align-self: center; padding: 0.08rem 0.5rem 0.12rem;
   background: var(--violet-deep); border: 1px solid var(--violet); border-radius: 999px;
   font: 400 0.7rem/1.3 var(--mono); color: var(--ink); white-space: nowrap;
 }
-.axis { display: block; overflow: visible; margin-top: 0.6rem; }
-.axis .ax { fill: var(--line); }
-.axis .tk { fill: var(--dot); }
-.axis text { font: 400 11px var(--mono); fill: var(--ink-2); }
-.axis text.o { fill: var(--ink); }
-
-/* Use cases */
-.cases { display: block; font-size: 0.93rem; }
-.cases thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-.cases tbody { display: block; }
-.cases tr { display: grid; grid-template-columns: 1fr auto; column-gap: 1rem; padding: 0.55rem 0; }
-.cases td:first-child { grid-column: 1 / -1; color: var(--ink); }
-.cases td:nth-child(3) { text-align: right; font-family: var(--mono); font-size: 0.86rem; color: var(--ink-2); }
-.cite { margin-top: 1.2rem; font-size: 0.78rem; line-height: 1.5; color: var(--ink-2); }
+.usage .mode { align-self: flex-start; margin-top: 1.1rem; }
+.usage .bars { margin-top: 1.1rem; min-height: 7.4rem; align-content: start; }
+.usage:has(#when-late:checked) .u-early, .usage:not(:has(#when-late:checked)) .u-late { display: none; }
+.usage figcaption { margin-top: 0.6rem; }
 
 /* Status line states, as pills */
 .states { list-style: none; padding: 0; display: grid; gap: 0.5rem; }
@@ -294,28 +491,27 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
   font-size: 0.84rem;
   white-space: pre;
 }
+.mark { font-family: "Ghost Mark", var(--mono); }
+.seg { color: var(--st-idle); }
+.seg.run { color: var(--st-run); }
+.seg.amber .mark { color: var(--st-amber); }
 
-/* Setup, in order */
+/* Install. Steps and requirements on one side, the release files on the other. Download
+   controls stay off until release.js names a release. */
 .steps { list-style: none; padding: 0; counter-reset: step; }
 .steps li {
   counter-increment: step;
   display: grid; grid-template-columns: 2.1rem minmax(0, 1fr);
-  padding: 0.65rem 0 0.75rem;
+  padding: 0.8rem 0 0.9rem;
 }
-.steps li::before { content: counter(step); font: 700 1.15rem/1.45 var(--mono); color: var(--ink); }
+.steps li::marker { content: none; }
+.steps li > p:first-child::before { content: counter(step); float: left; width: 2.1rem; margin-left: -2.1rem; font: 700 1.15rem/1.45 var(--mono); color: var(--ink); }
 .steps li > * { grid-column: 2; }
 .steps .cmd { margin-top: 0.5rem; }
-
-/* Install: an ordinary page section, outside the terminal split. Requirements and steps on one
-   side, the release files on the other. Download controls stay off until release.js names a release. */
-.get { border-top: 1px solid var(--line); }
-.get-in { padding-block: 3rem 2.4rem; }
-.get-head { max-width: 42rem; }
-.get-head p { margin-top: 0.9rem; font-size: 1.08rem; }
-.get-cols { display: grid; gap: 2.2rem; margin-top: 2rem; }
+.get-cols { display: grid; gap: 2.4rem; }
 .get-col { min-width: 0; }
 :where(.get-col) > * + * { margin-top: var(--flow); }
-.get-col > h3:not(:first-child) { margin-top: 2rem; }
+.get-col > h3:not(:first-child) { margin-top: 2.2rem; }
 .get-col > h3 + * { margin-top: 0.7rem; }
 .needs { font-size: 0.95rem; }
 .release-state { font-size: 0.9rem; color: var(--ink-2); }
@@ -325,7 +521,6 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
 .dl .file { grid-column: 1; font-size: 0.8rem; color: var(--ink-2); overflow-wrap: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dl .dl-btn { grid-column: 2; grid-row: 1 / span 2; }
 .dl .sum { grid-column: 1 / -1; margin-top: 0.3rem; font-size: 0.7rem; color: var(--ink-2); }
-.dl .sum[hidden] { display: none; }
 .dl-btn {
   display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 1.1rem;
   background: var(--violet); color: var(--ink); border: 1px solid var(--violet); border-radius: 999px;
@@ -337,112 +532,10 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
 .dl-btn[aria-disabled="true"], .dl-btn[aria-disabled="true"]:hover { background: none; border-color: var(--line); color: var(--ink-2); cursor: default; scale: 1; }
 .get-links { display: flex; flex-wrap: wrap; gap: 0.3rem 1.6rem; font: 400 0.84rem/1.6 var(--mono); }
 .get-links a[aria-disabled="true"] { color: var(--ink-2); text-decoration: none; cursor: default; }
-.get .scene-wrap { margin-top: 0.7rem; }
 .get .cmd pre { font-size: 0.84rem; line-height: 1.7; }
-.get-in > .small { max-width: 46rem; margin-top: 2rem; }
-
-/* Terminal, shared by the pinned panel and the inline scenes */
-.term, .scene {
-  position: relative;
-  background: var(--ground);
-  color: var(--ink);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  font: 400 12.5px/1.6 var(--mono);
-}
-.bar, .scene::before {
-  display: flex; align-items: center; justify-content: space-between;
-  height: 36px; padding: 0 8px 0 14px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--line);
-  border-radius: 3px 3px 0 0;
-  color: var(--ink-2);
-  font-size: 12px;
-}
-.scene::before { content: attr(data-title); }
-/* The grid's violet start on the terminal's top edge; it runs the full width while work is handed off. */
-.term::after {
-  content: ""; position: absolute; top: -1px; left: -1px; width: 24px; height: 1px;
-  background: var(--violet); transition: width 0.7s var(--out);
-}
-.stage.is-live .term::after { width: calc(100% + 2px); }
-.replay {
-  font: inherit; color: var(--ink-2); background: none; border: 0;
-  padding: 4px 12px; border-radius: 999px; cursor: pointer;
-  transition: color 0.2s var(--out), background 0.2s var(--out);
-}
-.replay:hover { color: var(--ink); background: var(--surface-hi); }
-
-.screen {
-  container-type: inline-size;
-  flex: 1; min-height: 0; overflow: hidden; padding: 16px 16px 6px;
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 20px);
-  mask-image: linear-gradient(to bottom, transparent 0, #000 20px);
-}
-.scene .log { padding: 16px 14px 6px; }
-.log .l { position: relative; margin: 0; padding-left: 2.2ch; white-space: pre-wrap; overflow-wrap: anywhere; }
-.log .l:not(.c) { margin-top: 0.8em; }
-.log .l:first-child { margin-top: 0; }
-.l.in { padding: 0.3em 1ch 0.3em 2.2ch; background: var(--surface-hi); color: var(--ink-body); border-radius: 4px; }
-.l.in::before { content: ">"; position: absolute; left: 0.6ch; color: var(--ink-2); }
-.l.in.bang::before { content: "!"; }
-.l.ai::before, .l.tool::before, .l.sys::before {
-  content: ""; position: absolute; left: 0.25ch; top: 0.55em;
-  width: 0.55em; height: 0.55em; border-radius: 50%; background: var(--ink);
-}
-.l.tool::before { background: var(--violet); }
-.l.sys { color: var(--ink-2); }
-.l.sys::before { background: var(--ink-2); }
-.l.tool b { font-weight: 700; color: var(--ink); }
-.l.tool { color: var(--ink-2); }
-.l.res, .l.res.c { padding-left: 5.2ch; color: var(--ink); }
-.l.res:not(.c)::before {
-  content: ""; position: absolute; left: 2.4ch; top: 0.05em;
-  width: 1.1ch; height: 0.8em; border-left: 1px solid var(--ink-2); border-bottom: 1px solid var(--ink-2);
-}
-/* Raw command output: sized so the engine's 88-column table keeps its columns in the pinned
-   terminal at any width; wrapped lines hang. */
-.log .l.out { padding-left: 3ch; text-indent: -3ch; color: var(--ink); font-size: 0.88em; }
-.screen .l.out { font-size: min(0.88em, 1.86cqw); }
-.l .nb { display: inline-block; max-width: 100%; text-indent: 0; vertical-align: top; }
-.l.dim { color: var(--ink-2) !important; }
-/* A code block in Claude's reply (the /p0ssess-me summary): output-sized, hanging, no dot on its later lines. */
-.log .l.blk { padding-left: calc(2.2ch + 3ch); text-indent: -3ch; font-size: 0.88em; }
-.screen .l.blk { font-size: min(0.88em, 1.86cqw); }
-.l.ai.c::before { content: none; }
-.l .credit { color: var(--ink-2); }
-.mark { font-family: "Ghost Mark", var(--mono); }
-
-.input {
-  margin: 6px 12px 4px;
-  padding: 7px 12px;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  min-height: 2.4em;
-  color: var(--ink);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-.input .gt { color: var(--ink-2); }
-.caret { display: inline-block; width: 0.6em; height: 1.15em; margin-left: 1px; vertical-align: -0.2em; background: var(--violet); animation: blink 1.1s steps(1) infinite; }
-.ph { color: var(--ink-2); margin-left: 0.6ch; }
-@keyframes blink { 50% { opacity: 0; } }
-
-.foot {
-  display: flex; flex-wrap: wrap; column-gap: 3ch;
-  padding: 4px 14px 10px;
-  color: var(--st-idle);
-  font-size: 12px;
-  white-space: pre;
-}
-.scene .foot { padding-top: 10px; }
-.foot .me { color: var(--ink-2); }
-.seg { color: var(--st-idle); }
-.seg.run { color: var(--st-run); }
-.seg.amber .mark { color: var(--st-amber); }
-.seg[hidden] { display: none; }
-.scene-wrap { margin-top: 1.1rem; }
-.scene-wrap > summary {
+.get .wrap > .small { max-width: 46rem; margin-top: 2.4rem; }
+.first-run { margin-top: 0.7rem; }
+.first-run > summary {
   display: inline-flex; align-items: center; gap: 0.6ch;
   min-height: 44px; padding: 0 1.1rem;
   background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
@@ -450,100 +543,106 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
   cursor: pointer; list-style: none;
   transition: background 0.2s var(--out), border-color 0.2s var(--out);
 }
-.scene-wrap > summary::-webkit-details-marker { display: none; }
-.scene-wrap > summary::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--violet); }
-.scene-wrap > summary:hover { background: var(--surface-hi); }
-.scene-wrap[open] > summary { border-color: var(--violet); }
-.scene { margin-top: 0.8rem; }
-
-/* The island: section dots with a liquid focus dot, and a live activity that grows out of the pill on a hand-off. */
-.island {
-  position: relative;
-  display: flex; align-items: center; justify-content: center;
-  height: 32px; margin: 0 auto 10px; width: max-content; min-width: 9rem; max-width: 100%;
-  padding: 0 8px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  transition: min-width 0.62s var(--spring), background 0.3s var(--out), border-color 0.3s var(--out);
+.first-run > summary::-webkit-details-marker { display: none; }
+.first-run > summary::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--violet); }
+.first-run > summary:hover { background: var(--surface-hi); }
+.first-run[open] > summary { border-color: var(--violet); }
+.out { margin-top: 0.8rem; }
+.out pre {
+  padding: 0.9rem 1rem; background: var(--ground); border: 1px solid var(--line); border-radius: 4px;
+  font-size: 0.74rem; line-height: 1.65; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere;
 }
-.island .dots { position: relative; transition: opacity 0.18s var(--out); }
+
+/* The island: a pill dock fixed to the top once the page scrolls. Section dots with a liquid
+   focus dot, the section's name, and the way to the install steps. */
+.island {
+  position: fixed; z-index: 20; top: 12px; left: 50%; translate: -50% 0;
+  display: flex; align-items: center; height: 46px; max-width: calc(100vw - 24px); padding: 0 5px 0 6px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.55);
+  transition: opacity 0.25s var(--out), translate 0.5s var(--spring), visibility 0s;
+}
+.island:not(.on) { opacity: 0; translate: -50% -14px; visibility: hidden; transition: opacity 0.2s var(--out), translate 0.3s var(--out), visibility 0s linear 0.3s; }
+.isl-home { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 999px; }
+.isl-home img { display: block; width: 20px; height: 20px; }
+.island .dots { position: relative; margin-inline: 2px; }
 .island ol { display: flex; list-style: none; margin: 0; padding: 0; }
-.island a { position: relative; display: grid; place-items: center; width: 24px; height: 30px; }
-.island a::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--dot); transition: background 0.2s var(--out), transform 0.3s var(--spring); }
-.island a:hover::before { background: var(--ink); transform: scale(1.3); }
-.island a:focus-visible { outline-offset: -4px; border-radius: 999px; }
-.island a::after {
+.island ol a { position: relative; display: grid; place-items: center; width: 22px; height: 44px; }
+.island ol a::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--dot); transition: background 0.2s var(--out), transform 0.3s var(--spring); }
+.island ol a:hover::before { background: var(--ink); transform: scale(1.3); }
+.island ol a:focus-visible { outline-offset: -8px; border-radius: 999px; }
+.island ol a::after {
   content: attr(aria-label);
-  position: absolute; z-index: 2; top: calc(100% + 7px); left: 50%; translate: -50% -3px;
+  position: absolute; z-index: 2; top: calc(100% + 6px); left: 50%; translate: -50% -3px;
   padding: 0.28rem 0.7rem;
   background: var(--surface-hi); border: 1px solid var(--line); border-radius: 999px;
   font: 400 12px/1.2 var(--mono); color: var(--ink); white-space: nowrap;
   opacity: 0; pointer-events: none;
   transition: opacity 0.15s var(--out), translate 0.25s var(--out);
 }
-.island a:hover::after, .island a:focus-visible::after { opacity: 1; translate: -50% 0; }
+.island ol a:hover::after, .island ol a:focus-visible::after { opacity: 1; translate: -50% 0; }
 .island .focus { position: absolute; z-index: 1; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; opacity: 0; transition: opacity 0.18s var(--out); }
 .island.ready .focus { opacity: 1; }
-.focus circle { fill: var(--violet); transform: translate(var(--x, 0px), 15px); transition: transform 0.42s var(--out); }
+.focus circle { fill: var(--violet); transform: translate(var(--x, 0px), 22px); transition: transform 0.42s var(--out); }
 .focus .trail { transition-duration: 0.78s; }
-.island .live {
-  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 0.6ch;
-  font: 400 12px/1 var(--mono); color: var(--ink); white-space: nowrap;
-  opacity: 0; pointer-events: none; transition: opacity 0.2s var(--out);
+.isl-label { display: none; overflow: hidden; width: var(--lw, 0px); white-space: nowrap; font: 400 12px/1 var(--mono); color: var(--ink); transition: width 0.5s var(--spring); }
+.isl-label span { display: inline-block; padding: 0 12px 0 6px; }
+.isl-cta {
+  display: inline-flex; align-items: center; height: 34px; padding: 0 14px;
+  background: var(--violet); color: var(--ink); border-radius: 999px; font: 400 0.8rem/1 var(--mono); text-decoration: none;
+  transition: background 0.2s var(--out), scale 0.35s var(--spring);
 }
-.island .live .mark { color: var(--violet-ink); }
-.island.is-live { min-width: 24rem; background: var(--violet-deep); border-color: var(--violet); }
-.island.is-live .dots { opacity: 0; }
-.island.is-live .live { opacity: 1; transition-delay: 0.26s; }
-
-/* What the scene in the pinned terminal shows, in a line */
-.cap { margin: 10px 2px 0; min-height: 2.9em; font-size: 0.84rem; line-height: 1.45; color: var(--ink-2); }
+.isl-cta:hover { background: #6346d4; color: var(--ink); }
+.isl-cta:active { scale: 0.965; }
 
 /* Footer */
-.site-foot {
-  display: flex; gap: 1.2rem; align-items: flex-start;
-  padding-block: 2.6rem 3rem;
-  color: var(--ink-2);
-  font-size: 0.92rem;
-}
+.site-foot { border-top: 1px solid var(--line); color: var(--ink-2); font-size: 0.92rem; }
+.foot-in { display: flex; gap: 1.2rem; align-items: flex-start; padding-block: 2.6rem 3rem; }
 .site-foot p + p { margin-top: 0.4rem; }
-.site-foot .small { font-size: 0.82rem; max-width: 40rem; }
+.site-foot .small { font-size: 0.82rem; max-width: 44rem; }
+.site-foot cite { color: inherit; }
 .foot-g { flex: none; width: 32px; height: 32px; }
 
 @media (max-width: 480px) {
-  :root { --flow: 0.8rem; --flow-lg: 1.2rem; }
+  :root { --flow: 0.8rem; }
   body { font-size: 1rem; line-height: 1.56; }
-  .sec { padding-block: 2rem 1.55rem; }
-  .hero-in { gap: 1.4rem; padding-block: 1rem 1.6rem; }
   .lede { margin-top: 1rem; font-size: 1.05rem; }
-  .cta { gap: 0.7rem 1.3rem; margin-top: 1.2rem; }
-  .more .wide { display: none; }
-  .more .narrow { display: inline; }
-  .topnav a:not([href="#try"]) { display: none; }
-  .get-in { padding-block: 2.2rem 1.8rem; }
+  .cta { gap: 0.7rem 1.3rem; margin-top: 1.3rem; }
+  .topnav a:not(.nav-cta) { display: none; }
   .get .cmd pre { font-size: 0.76rem; }
   .dl-btn { padding: 0 0.95rem; }
-  .scene-wrap { margin-top: 0.85rem; }
-  .chart { padding-top: 0.8rem; }
-  .bars { row-gap: 0.5rem; }
-  .steps li { padding-block: 0.55rem 0.65rem; }
-  .steps .cmd { grid-column: 1 / -1; }
+  .steps .cmd, .steps .first-run { grid-column: 1 / -1; }
   .states li { grid-template-columns: 1fr; gap: 0.3rem; }
-  .cases tr { grid-template-columns: 1fr; row-gap: 0.1rem; }
-  .cases td:nth-child(3) { text-align: left; }
-  .term, .scene { font-size: 11.5px; }
   .cmd pre { padding-inline: 0.75rem; font-size: 0.78rem; }
   .copy-btn { min-width: 3.9rem; padding-inline: 0.7rem; }
+  .axis .odd { display: none; }
+  .mode label { padding: 0 0.85rem; }
 }
 
 @media (max-width: 360px) {
   .states code { padding-inline: 0.7rem; font-size: 12px; }
+  .mode label { padding: 0 0.6rem; font-size: 0.76rem; }
+}
+
+@media (min-width: 620px) {
+  .said-by > div { grid-template-columns: 6.6rem minmax(0, 1fr); gap: 0.9rem; }
+  .said-by dt { padding-top: 0.2em; }
+  .said { min-height: 10.9rem; }
+  .readout { grid-template-areas: "ctl score" "say parts"; column-gap: clamp(1.4rem, 3vw, 2.8rem); }
+  .tally { justify-self: end; }
+  .tally .num { font-size: clamp(3.4rem, 5.4vw, 4.2rem); }
+  .isl-label { display: block; }
 }
 
 @media (min-width: 860px) {
-  /* The hand-off laid out left to right. */
   .lockup { --u: 4px; }
+  .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: clamp(48px, 5.5vw, 96px); }
+  .tracks { padding-left: 4.6rem; }
+  .tl { position: absolute; right: calc(100% + 14px); top: 50%; translate: 0 -50%; margin: 0; white-space: nowrap; }
+  .strip .lane-in { height: 52px; }
+  .wave .lane-in { height: 36px; }
+  /* The hand-off laid out left to right. */
   .hops { --pill: 52px; --gap: clamp(1.5rem, 4vw, 3.5rem); grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: var(--gap); row-gap: 0; }
   .pill { padding: 0 1.3rem; font-size: 1rem; }
   .haiku .pill { padding-left: 0.55rem; }
@@ -557,129 +656,140 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
   .wire { height: 2px; margin: -0.5px 0 0; }
   .wire i { --far: 100% 0; }
   .wire i::after { left: -4px; top: -3px; }
-  .rider { --u: 4px; }
+  .relay .rider { --u: 4px; }
   .get-cols { grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr); column-gap: clamp(48px, 5.5vw, 96px); }
-  .get-in { padding-block: 4.2rem 3.2rem; }
 }
 
-@media (min-width: 1024px) and (scripting: enabled) {
-  .story {
-    max-width: 1320px;
-    padding: 0 var(--gutter);
-    display: grid;
-    grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
-    column-gap: clamp(48px, 5.5vw, 96px);
+@media (min-width: 860px) and (pointer: fine) {
+  .step { display: none; }
+}
+
+@media (min-width: 1024px) {
+  .hero-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 480px); column-gap: clamp(40px, 5vw, 88px); row-gap: 1rem;
+    grid-template-areas: "pitch screen" "readout readout" "tracks tracks" "note note";
   }
-  .stage { display: block; }
-  .story .scene-wrap { margin: 0; }
-  .story .scene-wrap > summary { display: none; }
-  .story .scene { position: absolute !important; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); border: 0; padding: 0; }
-  .sec { min-height: 58vh; padding-block: 6vh; display: flex; flex-direction: column; justify-content: center; }
-  .sec + .sec { border-top: 0; }
-  .sec + .sec::before { content: none; }
-  h1 { font-size: min(4.6vw, 4.4rem); max-width: 28ch; }
-  .hero-in { padding-block: 1.8rem 2.6rem; }
-  .engine h2 { font-size: min(2.7vw, 2.25rem); white-space: nowrap; }
-  .pin {
-    --term-h: min(640px, calc(100vh - 124px));
-    position: sticky;
-    top: max(16px, calc(50vh - 362px));
-    margin-top: max(16px, calc(50vh - 362px));
-  }
-  .term { height: var(--term-h); display: flex; flex-direction: column; }
+  .pitch { grid-area: pitch; align-self: center; }
+  .screen { grid-area: screen; }
+  .readout { grid-area: readout; }
+  .tracks { grid-area: tracks; }
+  .film-note { grid-area: note; }
+  .readout { grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "ctl say score parts"; }
+  h1 { font-size: min(4.5vw, 4.1rem); }
+  .sec-head { grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); column-gap: clamp(48px, 5.5vw, 96px); align-items: end; }
 }
 
 /* Motion that only runs when the script has checked the reader allows it (html.anim). */
 html.anim { scroll-behavior: smooth; }
+html.anim :is(.hl, .sec > .wrap)::before { transition: clip-path 1.1s var(--out); clip-path: inset(0 0 0 0); }
+html.anim :is(.hl, .sec > .wrap):not(.in)::before { clip-path: inset(0 calc(100% - 24px) 0 0); }
+html.anim .grid > :nth-child(2)::before, html.anim .wont > :nth-child(2)::before, html.anim .steps > :nth-child(2)::before { transition-delay: 0.07s; }
+html.anim .grid > :nth-child(3)::before, html.anim .wont > :nth-child(3)::before, html.anim .steps > :nth-child(3)::before { transition-delay: 0.14s; }
+html.anim .wont > :nth-child(n + 4)::before { transition-delay: 0.2s; }
 html.anim .bars rect.b { transform-box: fill-box; transform-origin: 0 50%; transition: transform 0.9s cubic-bezier(0.3, 0.6, 0.3, 1); }
 html.anim .chart:not(.in) rect.b { transform: scaleX(0); }
 html.anim .tag { transition: opacity 0.35s var(--out) var(--tag-delay, 0.5s), translate 0.5s var(--spring) var(--tag-delay, 0.5s); }
 html.anim .chart:not(.in) .tag { opacity: 0; translate: -6px 0; }
-html.anim .cap.swap { animation: rise 0.5s var(--out); }
-html.anim .screen .l { animation: rise 0.22s var(--out); }
-@keyframes rise { from { opacity: 0; translate: 0 4px; } }
+html.anim .g.blink .lid { animation: lids 0.3s steps(1); }
+@keyframes lids { 0%, 100% { opacity: 0; } 20%, 60% { opacity: 1; } }
 
-/* The hero's loop: one hand-off every eight seconds, each part on the same clock.
-   0-6% rest · 6-20% the ghost rides to the Haiku and the first wire follows it · 22-33% the second
-   wire reaches the other model · 37-56% it works · 58-77% the reply comes back through the Haiku ·
-   82-94% the ghost lets go. --rx, --ry and --rs (set by scenes.js) say where the Haiku's seat is. */
-html.anim .relay { --loop: 8s; }
-html.anim .g .lid { animation: lids 5.6s steps(1) 1.8s infinite; }
-@keyframes lids { 0%, 100% { opacity: 0; } 96% { opacity: 1; } 98.2% { opacity: 0; } }
-html.anim .rider { display: block; animation: ride var(--loop) linear infinite, bob 3.2s ease-in-out infinite; }
+/* The film arrives once the script has set it to "Claude alone", so the first thing it does is
+   the sweep. If the script never runs, it shows itself after a moment, complete. */
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  html:not(.film-ready) .film :is(.screen, .readout, .tracks, .film-note) { animation: arrive 0.6s var(--out) 2.5s both; }
+  html.film-ready .film :is(.screen, .readout, .tracks, .film-note) { animation: arrive 0.7s var(--out) both; }
+  html.film-ready .film .readout { animation-delay: 0.08s; }
+  html.film-ready .film .tracks { animation-delay: 0.16s; }
+  html.film-ready .film .film-note { animation-delay: 0.24s; }
+}
+@keyframes arrive { from { opacity: 0; translate: 0 10px; } }
+
+/* The hand-off plays once when it scrolls into view, and again on Replay: five seconds, every
+   part on one clock. 0-8% rest · 8-24% the ghost rides to the Haiku and the first wire follows
+   it · 26-40% the second wire reaches the other model · 40-64% it works · 64-84% the reply comes
+   back through the Haiku · then it holds the still frame. --rx, --ry and --rs (set by page.js)
+   say where the Haiku's seat is. */
+html.anim .relay { --loop: 5s; }
+html.anim .relay.play .rider { display: block; animation: ride var(--loop) linear both; }
 @keyframes ride {
-  0%, 6% { translate: 0 0; scale: 1; opacity: 1; animation-timing-function: cubic-bezier(0.6, 0, 0.2, 1); }
-  20% { translate: var(--rx, 0px) var(--ry, 0px); scale: var(--rs, 0.667); opacity: 1; animation-timing-function: linear; }
-  22%, 80% { translate: var(--rx, 0px) var(--ry, 0px); scale: var(--rs, 0.667); opacity: 0; }
-  82% { translate: var(--rx, 0px) var(--ry, 0px); scale: var(--rs, 0.667); opacity: 1; animation-timing-function: cubic-bezier(0.6, 0, 0.2, 1); }
-  94%, 100% { translate: 0 0; scale: 1; opacity: 1; }
+  0%, 8% { translate: 0 0; scale: 1; opacity: 1; animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); }
+  24% { translate: var(--rx, 0px) var(--ry, 0px); scale: var(--rs, 0.667); opacity: 1; animation-timing-function: linear; }
+  27%, 100% { translate: var(--rx, 0px) var(--ry, 0px); scale: var(--rs, 0.667); opacity: 0; }
 }
-@keyframes bob { 50% { transform: translateY(-4px); } }
-html.anim .seat { animation: seat var(--loop) linear infinite; }
-@keyframes seat { 0%, 19.5% { opacity: 0; } 22%, 80% { opacity: 1; } 82.5%, 100% { opacity: 0; } }
-html.anim .haiku .pill { animation: possess var(--loop) linear infinite; }
+html.anim .relay.play .seat { animation: seat var(--loop) linear both; }
+@keyframes seat { 0%, 23.5% { opacity: 0; } 27%, 100% { opacity: 1; } }
+html.anim .relay.play .haiku .pill { animation: possess var(--loop) linear both; }
 @keyframes possess {
-  0%, 18% { background-color: var(--surface); border-color: var(--line); }
-  22%, 82% { background-color: var(--violet-deep); border-color: var(--violet); }
-  88%, 100% { background-color: var(--surface); border-color: var(--line); }
+  0%, 22% { background-color: var(--surface); border-color: var(--line); }
+  27%, 100% { background-color: var(--violet-deep); border-color: var(--violet); }
 }
-html.anim .claude .wire { animation: wire-a var(--loop) linear infinite; }
+html.anim .relay.play .claude .wire { animation: wire-a var(--loop) linear both; }
 @keyframes wire-a {
-  0%, 6% { scale: 0; background-color: var(--violet); animation-timing-function: cubic-bezier(0.6, 0, 0.2, 1); }
-  20%, 70% { scale: 1; background-color: var(--violet); }
-  79% { scale: 1; background-color: transparent; }
-  79.1%, 100% { scale: 0; background-color: transparent; }
+  0%, 8% { scale: 0; animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); }
+  24%, 100% { scale: 1; }
 }
-html.anim .haiku .wire { animation: wire-b var(--loop) linear infinite; }
+html.anim .relay.play .haiku .wire { animation: wire-b var(--loop) linear both; }
 @keyframes wire-b {
-  0%, 22% { scale: 0; background-color: var(--violet); animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
-  33%, 60% { scale: 1; background-color: var(--violet); }
-  69% { scale: 1; background-color: transparent; }
-  69.1%, 100% { scale: 0; background-color: transparent; }
+  0%, 26% { scale: 0; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+  40%, 100% { scale: 1; }
 }
-html.anim .haiku .wire i { animation: reply-b var(--loop) linear infinite; }
+html.anim .relay.play .haiku .wire i { animation: reply-b var(--loop) linear both; }
 @keyframes reply-b {
-  0%, 57% { opacity: 0; translate: var(--far); }
-  58% { opacity: 1; translate: var(--far); animation-timing-function: cubic-bezier(0.5, 0, 0.5, 1); }
-  67% { opacity: 1; translate: 0 0; }
-  68%, 100% { opacity: 0; translate: 0 0; }
+  0%, 63% { opacity: 0; translate: var(--far); }
+  64% { opacity: 1; translate: var(--far); animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); }
+  73% { opacity: 1; translate: 0 0; }
+  74%, 100% { opacity: 0; translate: 0 0; }
 }
-html.anim .claude .wire i { animation: reply-a var(--loop) linear infinite; }
+html.anim .relay.play .claude .wire i { animation: reply-a var(--loop) linear both; }
 @keyframes reply-a {
-  0%, 67% { opacity: 0; translate: var(--far); }
-  68% { opacity: 1; translate: var(--far); animation-timing-function: cubic-bezier(0.5, 0, 0.5, 1); }
-  77% { opacity: 1; translate: 0 0; }
-  78%, 100% { opacity: 0; translate: 0 0; }
+  0%, 73% { opacity: 0; translate: var(--far); }
+  74% { opacity: 1; translate: var(--far); animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); }
+  83% { opacity: 1; translate: 0 0; }
+  84%, 100% { opacity: 0; translate: 0 0; }
 }
-html.anim .model .pill { animation: wake var(--loop) linear infinite; }
-@keyframes wake { 0%, 31% { border-color: var(--line); } 35%, 70% { border-color: var(--violet); } 76%, 100% { border-color: var(--line); } }
-html.anim .swap .live { animation: live var(--loop) linear infinite; }
-@keyframes live { 0%, 32% { opacity: 0; } 37%, 86% { opacity: 1; } 91%, 100% { opacity: 0; } }
-html.anim .swap .idle { animation: idle var(--loop) linear infinite; }
-@keyframes idle { 0%, 31% { opacity: 1; } 35%, 88% { opacity: 0; } 93%, 100% { opacity: 1; } }
-html.anim .pip { animation: got var(--loop) linear infinite; }
-@keyframes got { 0%, 76% { scale: 1; } 79% { scale: 1.9; } 84%, 100% { scale: 1; } }
-/* Paused by the reader, or while the hero is off screen. */
-.hero.is-paused *, .hero.is-off * { animation-play-state: paused !important; }
+html.anim .relay.play .model .pill { animation: wake var(--loop) linear both; }
+@keyframes wake { 0%, 37% { border-color: var(--line); } 41%, 100% { border-color: var(--violet); } }
+html.anim .relay.play .swap .live { animation: live var(--loop) linear both; }
+@keyframes live { 0%, 38% { opacity: 0; } 43%, 100% { opacity: 1; } }
+html.anim .relay.play .swap .idle { animation: idle var(--loop) linear both; }
+@keyframes idle { 0%, 37% { opacity: 1; } 41%, 100% { opacity: 0; } }
+html.anim .relay.play .back { animation: back var(--loop) linear both; }
+@keyframes back { 0%, 83% { opacity: 0; translate: -8px 0; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); } 92%, 100% { opacity: 1; translate: 0 0; } }
+html.anim .relay.play .pip { animation: got var(--loop) linear both; }
+@keyframes got { 0%, 82% { scale: 1; } 85% { scale: 1.9; } 90%, 100% { scale: 1; } }
+/* Before its first play, with motion allowed, the hand-off waits at rest. */
+html.anim .relay:not(.play):not(.done) .seat { opacity: 0; }
+html.anim .relay:not(.play):not(.done) .haiku .pill { background-color: var(--surface); border-color: var(--line); }
+html.anim .relay:not(.play):not(.done) .model .pill { border-color: var(--line); }
+html.anim .relay:not(.play):not(.done) .wire { scale: 0; }
+html.anim .relay:not(.play):not(.done) .swap .live { opacity: 0; }
+html.anim .relay:not(.play):not(.done) .swap .idle { opacity: 1; }
+html.anim .relay:not(.play):not(.done) .rider { display: block; }
+html.anim .relay:not(.play):not(.done) .back { opacity: 0; }
 
 @media (prefers-reduced-motion: reduce) {
-  .caret { animation: none; }
-  .island, .island .dots, .island .live, .island a::before, .island a::after, .focus circle, .term::after, .copy-btn { transition: opacity 0.2s linear; }
-  .island.is-live .live { transition-delay: 0s; }
+  .film, .mode-thumb, .island, .isl-label, .focus circle, .ev::before, .evs-lit i::before,
+  .btn, .dl-btn, .copy-btn, .isl-cta, .step-btn, .topnav .nav-cta, .island ol a::before, .island ol a::after { transition: none; }
+  .frame img, .frame canvas, .unseen { transition: none; }
+  .tally .num.tick { animation: none; }
 }
 
 /* Forced colors drop backgrounds; keep the marks that carry data. */
 @media (forced-colors: active) {
-  .gates tbody tr::before, .gates tbody tr::after, .term::after { background: Highlight; }
-  .bars rect { fill: CanvasText; }
-  .bars .win rect, .focus circle { fill: Highlight; }
-  .bars .brk { stroke: Canvas; }
-  .island a::before { background: CanvasText; }
-  .tag, .copy-btn, .btn, .dl-btn { border: 1px solid ButtonText; }
+  .gates tbody tr::before, .gates tbody tr::after, .head-line { background: Highlight; }
+  .bars rect, .bill-bar .b1 { fill: CanvasText; }
+  .bars .win rect, .focus circle, .bill-bar .b3 { fill: Highlight; }
+  .island ol a::before { background: CanvasText; }
+  .tag, .copy-btn, .btn, .dl-btn, .isl-cta, .mode-thumb { border: 1px solid ButtonText; }
   .wire { background: Highlight; }
+  .ev.hit::before { background: CanvasText; }
+  .evs-lit i::before { background: Highlight; }
+  .w-dim { stroke: CanvasText; }
+  .w-lit { stroke: Highlight; }
 }
 
 @media print {
   html.anim .bars rect.b { transform: none !important; }
   html.anim .tag { opacity: 1 !important; }
+  .island { display: none; }
 }

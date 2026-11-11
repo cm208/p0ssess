@@ -6,9 +6,9 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>p0ssess: Claude, now with everything it can’t do</title>
-<meta name="description" content="p0ssess is a Claude Code plugin. Claude stays in charge while a possessed Haiku hands video, audio and bulk work to other models through OpenRouter, within your budget and rules.">
+<meta name="description" content="p0ssess is an open-source Claude Code plugin. Claude hands video, audio, images and bulk work to other models as subagents, through a possessed Haiku agent and OpenRouter, within your budget and rules.">
 <meta property="og:title" content="p0ssess: Claude, now with everything it can’t do">
-<meta property="og:description" content="A Claude Code plugin. Its Predictive Model Engine scores every model for each job, Claude included, and Claude hands off the work another model can do for less.">
+<meta property="og:description" content="A Claude Code plugin that turns other models into Claude’s subagents. On a measured ten-minute film, Claude alone scored 15 of 25. With p0ssess it scored 25 of 25.">
 <meta property="og:type" content="website">
 <link rel="canonical" href="https://p0ssess.me/">
 <meta property="og:url" content="https://p0ssess.me/">
@@ -16,7 +16,7 @@
 <meta property="og:image" content="https://p0ssess.me/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="The p0ssess hero: Claude, now with everything it can’t do, with the hand-off from Claude through a possessed Haiku to another model.">
+<meta property="og:image:alt" content="The p0ssess hero: Claude, now with everything it can’t do, beside a frame from a ten-minute film that Claude described with p0ssess, scoring 25 of 25.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#0b0b0b">
@@ -25,488 +25,354 @@
 <link rel="preload" href="fonts/plex-sans-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="style.css">
 <script src="release.js" defer></script>
-<script src="scenes.js" defer></script>
+<script src="page.js" defer></script>
 </head>
 <body>
+<a class="skip" href="#main">Skip to the page</a>
 
-<header class="hero" id="top">
-<div class="hero-in">
-  <div class="topbar">
-    <div class="lockup">
+<header class="top" id="top">
+  <div class="wrap topbar">
+    <a class="lockup" href="#top" aria-label="p0ssess, top of the page">
       <span class="g"><img src="ghost.svg" alt="" width="64" height="64"><i class="lid"></i></span>
-      <svg class="wordmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 9" shape-rendering="crispEdges" role="img" aria-label="p0ssess"><path class="wm-ink" d="M0 2h3v1h-3zM0 3h1v1h-1zM3 3h1v1h-1zM0 4h1v1h-1zM3 4h1v1h-1zM0 5h3v1h-3zM0 6h1v1h-1zM0 7h1v1h-1zM0 8h1v1h-1zM11 2h3v1h-3zM10 3h1v1h-1zM11 4h2v1h-2zM13 5h1v1h-1zM10 6h3v1h-3zM16 2h3v1h-3zM15 3h1v1h-1zM16 4h2v1h-2zM18 5h1v1h-1zM15 6h3v1h-3zM21 2h2v1h-2zM20 3h1v1h-1zM23 3h1v1h-1zM20 4h4v1h-4zM20 5h1v1h-1zM21 6h3v1h-3zM26 2h3v1h-3zM25 3h1v1h-1zM26 4h2v1h-2zM28 5h1v1h-1zM25 6h3v1h-3zM31 2h3v1h-3zM30 3h1v1h-1zM31 4h2v1h-2zM33 5h1v1h-1zM30 6h3v1h-3z"/><path class="wm-zero" d="M6 0h2v1h-2zM5 1h1v1h-1zM8 1h1v1h-1zM5 2h1v1h-1zM8 2h1v1h-1zM5 3h1v1h-1zM8 3h1v1h-1zM5 4h1v1h-1zM8 4h1v1h-1zM5 5h1v1h-1zM8 5h1v1h-1zM6 6h2v1h-2z"/></svg>
-    </div>
+      <svg class="wordmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 9" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path class="wm-ink" d="M0 2h3v1h-3zM0 3h1v1h-1zM3 3h1v1h-1zM0 4h1v1h-1zM3 4h1v1h-1zM0 5h3v1h-3zM0 6h1v1h-1zM0 7h1v1h-1zM0 8h1v1h-1zM11 2h3v1h-3zM10 3h1v1h-1zM11 4h2v1h-2zM13 5h1v1h-1zM10 6h3v1h-3zM16 2h3v1h-3zM15 3h1v1h-1zM16 4h2v1h-2zM18 5h1v1h-1zM15 6h3v1h-3zM21 2h2v1h-2zM20 3h1v1h-1zM23 3h1v1h-1zM20 4h4v1h-4zM20 5h1v1h-1zM21 6h3v1h-3zM26 2h3v1h-3zM25 3h1v1h-1zM26 4h2v1h-2zM28 5h1v1h-1zM25 6h3v1h-3zM31 2h3v1h-3zM30 3h1v1h-1zM31 4h2v1h-2zM33 5h1v1h-1zM30 6h3v1h-3z"/><path class="wm-zero" d="M6 0h2v1h-2zM5 1h1v1h-1zM8 1h1v1h-1zM5 2h1v1h-1zM8 2h1v1h-1zM5 3h1v1h-1zM8 3h1v1h-1zM5 4h1v1h-1zM8 4h1v1h-1zM5 5h1v1h-1zM8 5h1v1h-1zM6 6h2v1h-2z"/></svg>
+    </a>
     <nav class="topnav" aria-label="Page">
-      <a href="#possession">How it works</a>
+      <a href="#can">What it adds</a>
+      <a href="#how">How it works</a>
       <a href="#engine">The engine</a>
-      <a href="#try">Install</a>
       <a data-link="docs" hidden>Docs</a>
       <a data-link="repo" hidden>Source</a>
+      <a class="nav-cta" href="#try">Install</a>
     </nav>
   </div>
-  <div class="pitch">
-    <h1>Claude, now with everything it can’t do.</h1>
-    <p class="lede">p0ssess is a Claude Code plugin. Its Predictive Model Engine scores every model for each job, Claude included, and hands off the work another model can do for less, or that Claude can’t do at all. On Pro, Max and Ultra it watches your usage and hands off more as you near your limit.</p>
-    <p class="cta"><a class="btn" href="#try">Install p0ssess</a><a class="more" href="#possession">How <span class="wide">a hand-off</span><span class="narrow">it</span> works</a><span class="small">Open source, MIT licensed.</span></p>
-  </div>
-  <figure class="relay" aria-labelledby="relay-cap" data-jobs='[["gemini-3.8-flash","Described a ten-second clip for $0.0067."],["whisper-large-v3-turbo","Transcribed 16 seconds of speech for $0.0002."],["recraft-v4.1-flash","Drew a 1024-pixel image for $0.0070."]]'>
-    <figcaption class="sr-only" id="relay-cap">How a hand-off travels: Claude asks, a possessed Haiku drives another model, and a short result comes back. On measured calls, gemini-3.8-flash described a ten-second clip for $0.0067, whisper-large-v3-turbo transcribed 16 seconds of speech for $0.0002 and recraft-v4.1-flash drew a 1024-pixel image for $0.0070.</figcaption>
-    <ol class="hops">
-      <li class="hop claude"><div class="at"><span class="pill"><span class="pip"></span>Claude</span><span class="g rider" aria-hidden="true"><img src="ghost.svg" alt="" width="48" height="48"><i class="lid"></i></span></div><span class="wire" aria-hidden="true"><i></i></span><p>Plans, reviews and answers. It never reads the media or the raw output.</p></li>
-      <li class="hop haiku"><div class="at"><span class="pill"><img class="seat" src="ghost.svg" alt="" width="32" height="32">Haiku</span></div><span class="wire" aria-hidden="true"><i></i></span><p>A small helper, possessed. It makes the call and hands back a short result.</p></li>
-      <li class="hop model"><div class="at"><span class="pill"><span class="swap"><span class="idle">another model</span><span class="live name" aria-hidden="true">gemini-3.8-flash</span></span></span></div><p class="swap"><span class="idle">Does the one job, for less or because Claude can’t.</span><span class="live job" aria-hidden="true">Described a ten-second clip for $0.0067.</span></p></li>
-    </ol>
-    <button class="pause" type="button" aria-pressed="false" hidden>Pause</button>
-  </figure>
-</div>
 </header>
 
-<main>
-<div class="story">
-<div class="track">
+<nav class="island" aria-label="Sections" hidden>
+  <a class="isl-home" href="#top" aria-label="Top of the page"><img src="ghost.svg" alt="" width="20" height="20"></a>
+  <div class="dots"><svg class="focus" aria-hidden="true" focusable="false"><defs><filter id="goo" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceGraphic" stdDeviation="2.4"/><feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -9"/></filter></defs><g filter="url(#goo)"><circle class="trail" r="3.4"/><circle class="lead" r="4.2"/></g></svg>
+  <ol><li><a href="#film" aria-label="The film test"></a></li><li><a href="#can" aria-label="What it adds"></a></li><li><a href="#how" aria-label="How it works"></a></li><li><a href="#engine" aria-label="The engine"></a></li><li><a href="#more" aria-label="More hand-offs"></a></li><li><a href="#limits" aria-label="Your limits"></a></li><li><a href="#try" aria-label="Install"></a></li></ol></div>
+  <span class="isl-label" aria-hidden="true"><span></span></span>
+  <a class="isl-cta" href="#try">Install</a>
+</nav>
 
-<section class="sec" id="possession" aria-labelledby="possession-h">
-  <div class="copy">
-    <h2 id="possession-h">Where the name comes from</h2>
-    <p>Routed work never runs in the main conversation. A small Haiku subagent takes it over for the moment, the way a ghost possesses a body: it drives the other model and hands back only a short result.</p>
-    <p>The main Claude never reads the media, the other model’s transcript or its raw output. On a measured run of “what’s in this video?”, the Haiku made one call and cost $0.001, and the model that watched cost $0.0003. The main session added 10 input tokens and 791 output tokens on top of its fixed system prompt. In 0.4 the same question took it six turns and about 155,000 cached tokens, tiling frames with ffmpeg.</p>
-    <p>Claude does no routed work in the main session unless you ask for that, and ordinary work stays where it is. Ask a plain question and p0ssess adds nothing.</p>
+<main id="main">
+
+<section class="hero film" data-miss aria-labelledby="hero-h">
+<div class="wrap hero-grid">
+  <div class="pitch">
+    <h1 id="hero-h">Claude, now with everything it can’t do.</h1>
+    <p class="lede">p0ssess is a Claude Code plugin that turns other models into Claude’s subagents. Claude hands them work the way it hands work to its own subagents: a possessed Haiku agent carries the job through OpenRouter to a model that can watch video, hear audio or make images, and returns only the answer. Claude stays in charge, within your budget and rules.</p>
+    <p class="cta"><a class="btn" href="#try">Install p0ssess</a><a class="more" href="#how">How a hand-off works</a></p>
+    <p class="terms">Free and open source under MIT. You bring an OpenRouter key.</p>
   </div>
-  <details class="scene-wrap"><summary>Show the session<span class="sr-only">: an ordinary question</span></summary>
-  <figure class="scene" data-title="claude ~/shop-web" data-st="idle|" data-ph="scroll to continue" aria-labelledby="t-hero">
-    <figcaption class="sr-only" id="t-hero">Transcript: an ordinary question. p0ssess stays silent.</figcaption>
-    <div class="log">
-      <p class="l in">why does parseRange("") return [0, 0]?</p>
-      <p class="l ai" data-d="900">The early return on line 14 treats an empty string as “no range” and falls through to the default. Returning null there would let callers tell the two apart. Want me to change it?</p>
+
+  <h2 class="sr-only" id="film-h">The film test: one prompt, run twice</h2>
+
+  <figure class="screen" id="film" aria-labelledby="film-h">
+    <div class="frame" aria-hidden="true">
+      <img class="still" src="film-still.png" alt="" width="96" height="54" decoding="async">
+      <canvas class="reel" width="96" height="54" hidden></canvas>
+      <span class="unseen">Claude alone never saw this</span>
+      <span class="tc">7:28</span>
     </div>
-    <p class="foot"><span class="me">~/shop-web  Sonnet 5.5</span></p>
+    <div class="said" id="said">
+      <p class="said-head"><span class="when">6:10 to 8:05</span><span class="what">The flying squirrel is caught</span></p>
+      <dl class="said-by">
+        <div class="by-alone miss"><dt>Claude alone</dt><dd>Missed it. The scene fell between two of its stills.</dd></div>
+        <div class="by-poss"><dt>With p0ssess</dt><dd><q>The apple triggers a stake pit. The music cuts out for comic effect while he tumbles and is caught by a vine loop above the spikes, squealing.</q> <span class="credit">(qwen3.8-omni-flash, $0.0162)</span></dd></div>
+      </dl>
+      <p class="said-note" hidden></p>
+    </div>
   </figure>
-  </details>
+
+  <div class="readout">
+    <div class="ctl">
+      <fieldset class="mode">
+        <legend class="sr-only">Who described the film</legend>
+        <span class="mode-thumb" aria-hidden="true"></span>
+        <label><input type="radio" name="mode" id="mode-alone" value="alone"><span>Claude alone</span></label>
+        <label><input type="radio" name="mode" id="mode-poss" value="poss" checked><span>With p0ssess</span></label>
+      </fieldset>
+      <button class="replay" type="button" hidden>Replay</button>
+    </div>
+    <p class="mode-say">
+      <span class="v-alone">Claude pulled 20 stills with ffmpeg, one every 30 seconds, and measured the loudness. It can’t hear.</span>
+      <span class="v-poss">Through p0ssess, qwen3.8-omni-flash watched the whole film at one frame a second and listened to it.</span>
+    </p>
+    <p class="tally"><span class="num" data-k="score"><b class="v-alone">15</b><b class="v-poss">25</b></span><small>of 25</small></p>
+    <ul class="parts">
+      <li><span class="k">Events</span><span class="v"><span data-k="ev"><b class="v-alone">12</b><b class="v-poss">20</b></span> of 20</span></li>
+      <li><span class="k">Sound cues</span><span class="v"><span data-k="snd"><b class="v-alone">3</b><b class="v-poss">5</b></span> of 5</span></li>
+      <li><span class="k">Total cost</span><span class="v"><span data-k="cost"><b class="v-alone">$0.0999</b><b class="v-poss">$0.1140</b></span></span></li>
+    </ul>
+  </div>
+
+  <div class="tracks">
+    <div class="lanes">
+      <div class="lane strip"><span class="tl">Picture</span><div class="lane-in"><i class="s-dim"></i><i class="s-slits"></i><i class="s-lit"></i></div></div>
+      <div class="lane wave"><span class="tl">Sound</span><div class="lane-in"><svg class="w-dim" viewBox="0 0 120 40" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path id="wave-d" d="M0.5 17v6M1.5 11.6v16.8M2.5 5.9v28.2M3.5 7v26M4.5 6.5v27M5.5 15.3v9.3M6.5 11.1v17.9M7.5 9.1v21.8M8.5 17.1v5.9M9.5 13v14M10.5 12.6v14.8M11.5 11.8v16.5M12.5 9.9v20.1M13.5 10.7v18.6M14.5 10.8v18.5M15.5 10.8v18.4M16.5 9.1v21.9M17.5 18.9v2.2M18.5 18.2v3.6M19.5 14.8v10.4M20.5 8.5v23M21.5 13.4v13.1M22.5 10.1v19.8M23.5 10.6v18.8M24.5 13.3v13.4M25.5 13v14M26.5 15.5v9M27.5 15.3v9.4M28.5 9.5v21M29.5 9v22M30.5 12.4v15.2M31.5 12.4v15.1M32.5 15.5v9M33.5 12.3v15.4M34.5 9.8v20.4M35.5 6v28M36.5 5.8v28.3M37.5 10.4v19.1M38.5 8.8v22.3M39.5 3v34M40.5 15v10M41.5 12.8v14.3M42.5 7.8v24.4M43.5 12.8v14.3M44.5 10.7v18.6M45.5 6.4v27.1M46.5 17.2v5.5M47.5 8.7v22.6M48.5 6.6v26.8M49.5 6.7v26.7M50.5 3.6v32.7M51.5 2.5v35M52.5 2.4v35.1M53.5 2.2v35.6M54.5 4.8v30.3M55.5 4.6v30.9M56.5 4.2v31.5M57.5 6.9v26.1M58.5 2.9v34.3M59.5 4v32M60.5 13.1v13.9M61.5 13.1v13.8M62.5 11.5v17M63.5 16.5v7M64.5 9.3v21.3M65.5 11.2v17.5M66.5 6.3v27.3M67.5 4.4v31.2M68.5 14.2v11.7M69.5 4.1v31.9M70.5 4.1v31.8M71.5 13.4v13.2M72.5 13.3v13.4M73.5 18.9v2.2M74.5 11.2v17.6M75.5 11.8v16.4M76.5 12.2v15.5M77.5 7.7v24.7M78.5 13.5v13M79.5 8v24M80.5 4.4v31.2M81.5 5.8v28.3M82.5 7.3v25.3M83.5 3.1v33.8M84.5 3.5v33M85.5 7.1v25.9M86.5 4v32M87.5 4.7v30.6M88.5 4.1v31.9M89.5 11.6v16.8M90.5 18.9v2.2M91.5 9.8v20.3M92.5 16.2v7.5M93.5 11.6v16.8M94.5 12.2v15.7M95.5 9.1v21.8M96.5 7.7v24.6M97.5 8.4v23.2M98.5 4.3v31.3M99.5 4v32M100.5 3.8v32.4M101.5 2.1v35.8M102.5 2.6v34.9M103.5 2.9v34.3M104.5 2.4v35.2M105.5 2.1v35.8M106.5 5v30M107.5 12.2v15.7M108.5 11.1v17.8M109.5 10.4v19.1M110.5 9.8v20.5M111.5 9.8v20.5M112.5 7.8v24.4M113.5 8.8v22.4M114.5 2.9v34.3M115.5 2.6v34.9M116.5 5.8v28.4M117.5 11.1v17.8M118.5 11.6v16.9M119.5 10.6v18.9"/></svg><svg class="w-lit" viewBox="0 0 120 40" preserveAspectRatio="none" aria-hidden="true" focusable="false"><use href="#wave-d"/></svg></div></div>
+      <div class="lane evs"><span class="tl" id="evs-l">Events</span><div class="lane-in">
+        <ol class="moments" aria-labelledby="evs-l">
+          <li class="ev e1 hit" data-at="17" data-f="40" data-qt="0:16 to 0:23"><span class="ev-when">0:00 to 0:30</span> <span class="ev-what">Opening and title cards</span> <span class="ev-alone">Found it, at the right time.</span> <q class="ev-poss">A plump purple-gray bird chirps, flaps and zips off with a whoosh.</q></li>
+          <li class="ev e2 hit" data-at="48" data-f="41" data-qt="0:32 to 0:57"><span class="ev-when">0:30 to 0:55</span> <span class="ev-what">The bunny wakes</span> <span class="ev-alone">Found it, at the right time.</span> <q class="ev-poss">A burrow with loud snoring. A huge, fat rabbit yawns, stretches and waddles out with heavy thuds.</q></li>
+          <li class="ev e3 hit" data-at="78" data-f="42" data-qt="0:57 to 1:38"><span class="ev-when">0:55 to 1:55</span> <span class="ev-what">His morning: flowers, butterflies, an apple</span> <span class="ev-alone">Found it, at the right time.</span> <q class="ev-poss">A butterfly lands on his face and he crosses his eyes.</q></li>
+          <li class="ev e4 hit" data-at="120" data-f="43" data-qt="1:52 to 2:26"><span class="ev-when">1:55 to 2:30</span> <span class="ev-what">Three rodents appear</span> <span class="ev-alone">Found it, at the right time.</span> <q class="ev-poss">Three small animals appear, a chinchilla, a lanky reddish creature and a squirrel. They sneak up while he’s distracted, to playful pizzicato music.</q></li>
+          <li class="ev e5 miss" data-at="176" data-f="44" data-qt="2:26 to 3:01"><span class="ev-when">2:30 to 3:10</span> <span class="ev-what">They pelt him with fruit and nuts</span> <span class="ev-alone">Missed it. The scene fell between two of its stills.</span> <q class="ev-poss">They posture and growl at him, and he doesn’t notice. A nut bonks him on the head and they cackle.</q></li>
+          <li class="ev e6 miss" data-at="204" data-f="45" data-qt="3:01 to 3:51"><span class="ev-when">3:05 to 3:45</span> <span class="ev-what">They kill the butterflies</span> <span class="ev-alone">Missed it. The scene fell between two of its stills.</span> <q class="ev-poss">They grab his butterfly. The slapstick that follows ends with the red creature holding a spiky chestnut burr.</q> <span class="ev-note">The closest call of the run: it never says the butterflies die. Scored strictly, the total is 23.</span></li>
+          <li class="ev e7 hit" data-at="262.5" data-f="17" data-qt="4:02 to 4:45"><span class="ev-when">3:45 to 5:00</span> <span class="ev-what">He makes weapons and traps</span> <span class="ev-alone">Found it, at the right time.</span> <q class="ev-poss">A percussive trap-building montage with snapping, scraping and tying sounds. He makes a vine snare, a stake and a camouflaged trigger, then grins.</q></li>
+          <li class="ev e8 miss" data-at="347" data-f="46" data-qt="5:40 to 5:56"><span class="ev-when">5:00 to 6:10</span> <span class="ev-what">The ambush</span> <span class="ev-alone">Missed it. The scene fell between two of its stills.</span> <q class="ev-poss">The mouse drops his acorn and the trap springs. A net and boulder thud down, then a log crashes with a loud bang and a dust cloud.</q> <span class="ev-note">One detail is wrong: the “mouse” is a chinchilla.</span></li>
+          <li class="ev e9 miss" data-at="448" data-f="47" data-qt="6:44 to 7:26" data-featured><span class="ev-when">6:10 to 8:05</span> <span class="ev-what">The flying squirrel is caught</span> <span class="ev-alone">Missed it. The scene fell between two of its stills.</span> <q class="ev-poss">The apple triggers a stake pit. The music cuts out for comic effect while he tumbles and is caught by a vine loop above the spikes, squealing.</q></li>
+          <li class="ev e10 hit" data-at="592.5" data-f="39" data-qt="9:46 to 9:56"><span class="ev-when">8:08 to 9:56</span> <span class="ev-what">Credits and a post-credits gag</span> <span class="ev-alone">Found it, at the right time.</span> <q class="ev-poss">The squirrel glides with his eyes closed and the purple bird swoops in and hovers over him. They stare at each other, the bird caws, and the video cuts out.</q></li>
+        </ol>
+        <div class="evs-lit" aria-hidden="true"><i class="e1"></i><i class="e2"></i><i class="e3"></i><i class="e4"></i><i class="e5"></i><i class="e6"></i><i class="e7"></i><i class="e8"></i><i class="e9"></i><i class="e10"></i></div>
+      </div></div>
+      <svg class="axis" width="100%" height="22" aria-hidden="true" focusable="false"><rect class="tk" x="0" width="1" height="5"/><rect class="tk" x="10.06%" width="1" height="5"/><rect class="tk" x="20.12%" width="1" height="5"/><rect class="tk" x="30.18%" width="1" height="5"/><rect class="tk" x="40.24%" width="1" height="5"/><rect class="tk" x="50.30%" width="1" height="5"/><rect class="tk" x="60.36%" width="1" height="5"/><rect class="tk" x="70.42%" width="1" height="5"/><rect class="tk" x="80.47%" width="1" height="5"/><rect class="tk" x="90.53%" width="1" height="5"/><text x="0" y="18" text-anchor="start">0:00</text><text class="odd" x="10.06%" y="18" text-anchor="middle">1:00</text><text x="20.12%" y="18" text-anchor="middle">2:00</text><text class="odd" x="30.18%" y="18" text-anchor="middle">3:00</text><text x="40.24%" y="18" text-anchor="middle">4:00</text><text class="odd" x="50.30%" y="18" text-anchor="middle">5:00</text><text x="60.36%" y="18" text-anchor="middle">6:00</text><text class="odd" x="70.42%" y="18" text-anchor="middle">7:00</text><text x="80.47%" y="18" text-anchor="middle">8:00</text><text class="odd" x="90.53%" y="18" text-anchor="middle">9:00</text><text x="100%" y="18" text-anchor="end">9:56</text></svg>
+      <span class="head" aria-hidden="true"><i class="head-line"></i><span class="g rider"><img src="ghost.svg" alt="" width="32" height="32"><i class="lid"></i></span></span>
+    </div>
+    <div class="step" hidden>
+      <button type="button" class="step-btn" data-step="-1" aria-label="Previous event"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M10 3 5 8l5 5"/></svg></button>
+      <button type="button" class="step-btn" data-step="1" aria-label="Next event"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="m6 3 5 5-5 5"/></svg></button>
+    </div>
+  </div>
+
+  <p class="film-note">One prompt, run twice on Claude Sonnet 5.5: “Describe what happens in bbb-10min.mp4 with timestamps, including what you can tell about the sound.” The film is <cite>Big Buck Bunny</cite>, 9:56 long. One run each, scored by hand against a checklist written before either run: two points an event, one a sound cue. With p0ssess 0.5.4 the job took 262 seconds and cost $0.0141 more than Claude alone, which took 40. <a data-doc="media/#ten-minutes-of-video-claude-alone-and-with-p0ssess" hidden>Read the method and its caveats</a></p>
+  <p class="sr-only" role="status" id="film-status"></p>
+</div>
 </section>
 
-<section class="sec engine" id="engine" aria-labelledby="engine-h">
-  <div class="copy">
-    <h2 id="engine-h">Predictive Model Engine</h2>
-    <p>Every model that could do a job, Claude included, gets a score out of 100: a cautious estimate that its result will be accepted, from licensed benchmarks, the use-case research and your own history.</p>
-    <p>Each severity has a gate, and a model that scores below it isn’t considered. The violet line marks the scores that clear. Critical work stays with Claude unless your rule names a model.</p>
-    <table class="gates" role="table">
-      <caption class="sr-only">The gate for each severity</caption>
-      <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Severity</th><th scope="col" role="columnheader" class="sr-only">For example</th><th scope="col" role="columnheader">Gate</th><th scope="col" role="columnheader">A mistake costs</th></tr></thead>
-      <tbody role="rowgroup">
-        <tr role="row" class="g20"><th scope="row" role="rowheader">Trivial</th><td role="cell" class="eg">Renames, log summaries, captions</td><td role="cell" class="gate">20</td><td role="cell" class="harm"><small>$</small>0.01</td></tr>
-        <tr role="row" class="g35"><th scope="row" role="rowheader">Routine</th><td role="cell" class="eg">Test drafts, transcripts, bulk edits</td><td role="cell" class="gate">35</td><td role="cell" class="harm"><small>$</small>0.10</td></tr>
-        <tr role="row" class="g60"><th scope="row" role="rowheader">Important</th><td role="cell" class="eg">Features that ship, migration plans</td><td role="cell" class="gate">60</td><td role="cell" class="harm"><small>$</small>1</td></tr>
-        <tr role="row" class="g80"><th scope="row" role="rowheader">Critical</th><td role="cell" class="eg">Auth, firewalls, production, money</td><td role="cell" class="gate">80</td><td role="cell" class="harm"><small>$</small>10</td></tr>
-      </tbody>
-    </table>
-    <p class="scale" aria-hidden="true"><span>0</span><span>score</span><span>100</span></p>
-    <p>Above the gate, the lowest total wins. The total adds the call, the Claude time it uses or saves, and the risk of a redo.</p>
-    <figure class="chart" aria-labelledby="cmp-engine">
+<section class="sec" id="can" aria-labelledby="can-h">
+<div class="wrap">
+  <div class="sec-head">
+    <h2 id="can-h">Three things Claude couldn’t do before</h2>
+    <p>Ask the way you normally would. When a job needs video, audio or an image, Claude hands it to a model that can do it and answers from what comes back, with the model and its price in a few words. It asks first only when the estimate is above your limit.</p>
+  </div>
+  <ul class="grid three">
+    <li class="cell hl">
+      <svg class="px" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path fill="#7457e0" d="M5 3h6v1h-6zM3 4h2v1h-2zM11 4h2v1h-2zM2 5h1v1h-1zM13 5h1v1h-1zM1 6h1v1h-1zM14 6h1v1h-1zM1 7h1v1h-1zM14 7h1v1h-1zM1 8h1v1h-1zM14 8h1v1h-1zM2 9h1v1h-1zM13 9h1v1h-1zM3 10h2v1h-2zM11 10h2v1h-2zM5 11h6v1h-6z"/><path fill="#2a1b4e" d="M5 4h6v1h-6zM3 5h2v1h-2zM11 5h2v1h-2zM2 6h2v1h-2zM12 6h2v1h-2zM2 7h1v1h-1zM13 7h1v1h-1zM2 8h2v1h-2zM12 8h2v1h-2zM3 9h2v1h-2zM11 9h2v1h-2zM5 10h6v1h-6z"/><path fill="#eef1ff" d="M5 5h6v1h-6zM4 6h3v1h-3zM9 6h3v1h-3zM3 7h4v1h-4zM9 7h4v1h-4zM4 8h3v1h-3zM9 8h3v1h-3zM5 9h6v1h-6z"/><path fill="#0b0b0b" d="M7 6h2v1h-2zM7 7h2v1h-2zM7 8h2v1h-2z"/></svg>
+      <h3>Watch video</h3>
+      <p class="ask"><span class="sr-only">You say: </span>Watch bug-repro.mp4 and tell me where it breaks.</p>
+      <p>Screen recordings, talks, whole films. On a measured call, a ten-second test clip came back described correctly, down to the tone on its soundtrack.</p>
+      <p class="fig"><b><small>$</small>0.0067</b><span>measured, on gemini-3.8-flash</span></p>
+    </li>
+    <li class="cell hl">
+      <svg class="px" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path fill="#7457e0" d="M7 2h2v1h-2zM4 4h2v1h-2zM10 4h2v1h-2zM1 6h2v1h-2zM13 6h2v1h-2zM1 9h2v1h-2zM13 9h2v1h-2zM4 11h2v1h-2zM10 11h2v1h-2zM7 13h2v1h-2z"/><path fill="#eef1ff" d="M7 3h2v1h-2zM7 4h2v1h-2zM4 5h2v1h-2zM7 5h2v1h-2zM10 5h2v1h-2zM4 6h2v1h-2zM7 6h2v1h-2zM10 6h2v1h-2zM1 7h2v1h-2zM4 7h2v1h-2zM7 7h2v1h-2zM10 7h2v1h-2zM13 7h2v1h-2zM1 8h2v1h-2zM4 8h2v1h-2zM7 8h2v1h-2zM10 8h2v1h-2zM13 8h2v1h-2zM4 9h2v1h-2zM7 9h2v1h-2zM10 9h2v1h-2zM4 10h2v1h-2zM7 10h2v1h-2zM10 10h2v1h-2zM7 11h2v1h-2zM7 12h2v1h-2z"/></svg>
+      <h3>Hear audio</h3>
+      <p class="ask"><span class="sr-only">You say: </span>Transcribe standup.m4a and list the action items.</p>
+      <p>Meetings and voice memos, or the soundtrack of a video. On a measured call, 16 seconds of speech came back word for word, with timestamps.</p>
+      <p class="fig"><b><small>$</small>0.0002</b><span>measured, on whisper-large-v3-turbo</span></p>
+    </li>
+    <li class="cell hl">
+      <svg class="px" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path fill="#7457e0" d="M1 2h14v1h-14zM1 3h1v1h-1zM14 3h1v1h-1zM1 4h1v1h-1zM14 4h1v1h-1zM1 5h1v1h-1zM14 5h1v1h-1zM1 6h1v1h-1zM14 6h1v1h-1zM1 7h1v1h-1zM14 7h1v1h-1zM1 8h1v1h-1zM14 8h1v1h-1zM1 9h1v1h-1zM14 9h1v1h-1zM1 10h1v1h-1zM14 10h1v1h-1zM1 11h1v1h-1zM14 11h1v1h-1zM1 12h14v1h-14z"/><path fill="#2a1b4e" d="M2 3h12v1h-12zM2 4h9v1h-9zM13 4h1v1h-1zM2 5h9v1h-9zM13 5h1v1h-1zM2 6h12v1h-12zM2 7h4v1h-4zM7 7h7v1h-7zM2 8h3v1h-3zM8 8h3v1h-3zM12 8h2v1h-2zM2 9h2v1h-2zM9 9h1v1h-1zM13 9h1v1h-1zM2 10h1v1h-1z"/><path fill="#eef1ff" d="M11 4h2v1h-2zM11 5h2v1h-2zM6 7h1v1h-1zM5 8h3v1h-3zM11 8h1v1h-1zM4 9h5v1h-5zM10 9h3v1h-3zM3 10h11v1h-11zM2 11h12v1h-12z"/></svg>
+      <h3>Make and edit images</h3>
+      <p class="ask"><span class="sr-only">You say: </span>Make an image of a ghost holding a lantern.</p>
+      <p>Icons and illustrations, or a retouched screenshot. On a measured call, a 1024-pixel image matched its prompt. It lands as a file and Claude prints the path.</p>
+      <p class="fig"><b><small>$</small>0.0070</b><span>measured, on recraft-v4.1-flash</span></p>
+    </li>
+  </ul>
+  <p class="aside">Each price is the other model’s bill for one call. The hand-off itself costs Claude a few cents more, so p0ssess keeps it for work Claude can’t do or shouldn’t spend itself on. Small edits and plain questions never leave Claude.</p>
+</div>
+</section>
+
+<section class="sec" id="how" aria-labelledby="how-h">
+<div class="wrap">
+  <div class="sec-head">
+    <h2 id="how-h">How a possession works</h2>
+    <p>Other models join your session as subagents. Claude starts one with the same Agent tool it uses for its own, in one sentence. That subagent is a small Haiku, possessed: it never does the job itself. It carries the request to the other model and passes the answer back word for word.</p>
+  </div>
+
+  <figure class="relay" aria-labelledby="relay-cap" data-jobs='[["qwen3.8-omni-flash","Watched a ten-minute film for $0.0162.","$0.0162"],["gemini-3.8-flash","Described a ten-second clip for $0.0067.","$0.0067"],["whisper-large-v3-turbo","Transcribed 16 seconds of speech for $0.0002.","$0.0002"],["recraft-v4.1-flash","Drew a 1024-pixel image for $0.0070.","$0.0070"]]'>
+    <figcaption class="sr-only" id="relay-cap">How a hand-off travels: Claude asks, a possessed Haiku subagent drives another model, and the answer comes back with the model and its price. On measured calls, qwen3.8-omni-flash watched a ten-minute film for $0.0162, gemini-3.8-flash described a ten-second clip for $0.0067, whisper-large-v3-turbo transcribed 16 seconds of speech for $0.0002 and recraft-v4.1-flash drew a 1024-pixel image for $0.0070.</figcaption>
+    <ol class="hops">
+      <li class="hop claude"><div class="at"><span class="pill"><span class="pip"></span>Claude</span><span class="after" aria-hidden="true"><span class="g rider"><img src="ghost.svg" alt="" width="48" height="48"><i class="lid"></i></span><span class="back">(qwen3.8-omni-flash, $0.0162)</span></span></div><span class="wire" aria-hidden="true"><i></i></span><p>Plans, reviews and answers. It starts one subagent and reads only what comes back.</p></li>
+      <li class="hop haiku"><div class="at"><span class="pill"><img class="seat" src="ghost.svg" alt="" width="32" height="32">Haiku</span></div><span class="wire" aria-hidden="true"><i></i></span><p>A background subagent, possessed. It makes the call and hands the answer back unchanged.</p></li>
+      <li class="hop model"><div class="at"><span class="pill"><span class="swap"><span class="idle">another model</span><span class="live name" aria-hidden="true">qwen3.8-omni-flash</span></span></span></div><p class="swap"><span class="idle">Does the one job, because Claude can’t or shouldn’t.</span><span class="live job" aria-hidden="true">Watched a ten-minute film for $0.0162.</span></p></li>
+    </ol>
+    <button class="replay" type="button" hidden>Replay</button>
+  </figure>
+
+  <div class="split how-more">
+    <div class="copy">
+      <p>Claude never reads the video, the raw tool output or the other model’s transcript, so the work doesn’t fill your conversation. After ten minutes of film its context stood at 28,883 tokens, against 28,555 when it worked alone.</p>
+      <p>Then Claude does what it does with any subagent’s work: checks it, uses it and answers you. Code edits come back as a diff from a separate git worktree, and nothing lands until Claude has read it.</p>
+    </div>
+    <figure class="bill hl" aria-labelledby="bill-cap">
+      <figcaption id="bill-cap">Where the film run’s $0.1140 went</figcaption>
+      <svg class="bill-bar" width="100%" height="10" aria-hidden="true" focusable="false"><rect class="b1" x="0" width="82.3%" height="10"/><rect class="b2" x="82.3%" width="3.5%" height="10"/><rect class="b3" x="85.8%" width="14.2%" height="10"/><rect class="gap" x="82.3%" width="2" height="10"/><rect class="gap" x="85.8%" width="2" height="10"/></svg>
+      <ul class="bill-rows">
+        <li class="r1"><span class="who">Claude Sonnet 5.5, in charge</span><span class="amt"><small>$</small>0.0938</span></li>
+        <li class="r2"><span class="who">The possessed Haiku</span><span class="amt"><small>$</small>0.0040</span></li>
+        <li class="r3"><span class="who">qwen3.8-omni-flash, which watched</span><span class="amt"><small>$</small>0.0162</span></li>
+      </ul>
+    </figure>
+  </div>
+</div>
+</section>
+
+<section class="sec" id="engine" aria-labelledby="engine-h">
+<div class="wrap">
+  <div class="sec-head">
+    <h2 id="engine-h">An engine picks who does the job</h2>
+    <p>For each job, the Predictive Model Engine scores every model that could do it, Claude included. A score is a cautious estimate, out of 100, that the result will be accepted. It comes from licensed benchmarks, p0ssess’s own checks and your history.</p>
+  </div>
+  <div class="split">
+    <div class="copy">
+      <p>Each level of stakes has a gate, and a model that scores below it isn’t considered. The violet part of each line is the scores that clear.</p>
+      <table class="gates" role="table">
+        <caption class="sr-only">The gate for each level of stakes</caption>
+        <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Stakes</th><th scope="col" role="columnheader" class="sr-only">For example</th><th scope="col" role="columnheader">Gate</th><th scope="col" role="columnheader">A mistake costs</th></tr></thead>
+        <tbody role="rowgroup">
+          <tr role="row" class="g20"><th scope="row" role="rowheader">Trivial</th><td role="cell" class="eg">Log summaries, captions, describing a clip</td><td role="cell" class="gate">20</td><td role="cell" class="harm"><small>$</small>0.01</td></tr>
+          <tr role="row" class="g35"><th scope="row" role="rowheader">Routine</th><td role="cell" class="eg">Test drafts, transcripts, bulk edits</td><td role="cell" class="gate">35</td><td role="cell" class="harm"><small>$</small>0.10</td></tr>
+          <tr role="row" class="g60"><th scope="row" role="rowheader">Important</th><td role="cell" class="eg">Features that ship, migration plans</td><td role="cell" class="gate">60</td><td role="cell" class="harm"><small>$</small>1</td></tr>
+          <tr role="row" class="g80"><th scope="row" role="rowheader">Critical</th><td role="cell" class="eg">Auth, firewalls, production, money</td><td role="cell" class="gate">80</td><td role="cell" class="harm"><small>$</small>10</td></tr>
+        </tbody>
+      </table>
+      <p class="scale" aria-hidden="true"><span>0</span><span>score</span><span>100</span></p>
+      <p>Critical work stays with Claude unless a rule of yours names a model. Claude makes the final call either way.</p>
+      <p>The engine starts from 104 researched use cases and runs on your machine. <a data-doc="engine/" hidden>How routes are scored</a></p>
+    </div>
+    <figure class="chart hl" aria-labelledby="cmp-engine">
+      <p class="est">Engine estimate, not a measurement</p>
       <p class="task">Pull the tables from a 50-page PDF statement into CSV. Routine, so the gate is 35.</p>
-      <p class="def">The bar and the big figure are the total, and the shortest bar wins. The small print is the score and the price of the call alone.</p>
+      <p class="def">The bar and the big figure are the total: the call, Claude’s time and the risk of a redo. Above the gate, the shortest bar wins.</p>
       <ol class="bars">
       <li class="win"><span class="who">GPT-6 Luna</span><span class="tag">lowest total</span><span class="tot"><small>$</small>0.072</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="24.43%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span><span class="score">score 98, clears 35</span><span class="call">call $0.0082</span></li>
       <li><span class="who">Claude Haiku 5.5 <small>subagent</small></span><span class="tot"><small>$</small>0.082</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="27.71%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span><span class="score">score 97, clears 35</span><span class="call">Claude usage</span></li>
-      <li><span class="who">Gemini 3.8 Flash</span><span class="tot"><small>$</small>0.123</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="41.66%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span><span class="score">score 100, clears 35</span><span class="call">call $0.062</span></li>
-      <li><span class="who">Gemini 4 Argon</span><span class="tot"><small>$</small>0.221</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="74.83%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span><span class="score">score 100, clears 35</span><span class="call">call $0.16</span></li>
+      <li><span class="who">Gemini 3.8 Flash</span><span class="tot"><small>$</small>0.123</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="41.64%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span><span class="score">score 100, clears 35</span><span class="call">call $0.062</span></li>
+      <li><span class="who">Gemini 4 Argon</span><span class="tot"><small>$</small>0.221</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="74.82%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span><span class="score">score 100, clears 35</span><span class="call">call $0.16</span></li>
       <li><span class="who">Claude Sonnet 5.5 <small>in session</small></span><span class="tot"><small>$</small>0.296</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="100.00%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span><span class="score">score 99, clears 35</span><span class="call">Claude usage</span></li>
       </ol>
-      <p class="note">GPT-6 Luna does it about as well as Claude for a quarter of the total, and under a cent in cash. Above the gate, a higher score alone doesn’t win: the total already counts the chance of a redo.</p>
-      <figcaption id="cmp-engine">These are 5 of the engine’s 12 ranked options, on an API key. Scores use the cautious end of each estimate. On a subscription early in a window, a Haiku subagent gets this job instead. Evidence: LMArena leaderboard dataset, rev f566816, CC BY 4.0.</figcaption>
+      <figcaption id="cmp-engine">These are 5 of the engine’s 12 ranked options, on an API key, from p0ssess 0.5.4. Scores use the cautious end of each estimate. Evidence: LMArena leaderboard dataset, rev f566816, CC BY 4.0.</figcaption>
     </figure>
   </div>
-  <details class="scene-wrap"><summary>Show the session<span class="sr-only">: Predictive Model Engine</span></summary>
-  <figure class="scene" data-title="claude ~/books" data-st="idle|" aria-labelledby="t-engine">
-    <figcaption class="sr-only" id="t-engine">Transcript: the engine’s ranking for pulling tables from a PDF, on an API key and then on a subscription.</figcaption>
-    <div class="log">
-      <p class="l in bang">p0ssess engine recommend --use-case pdf-table-extract --top 2</p>
-      <p class="l out" data-d="700">pdf-table-extract (#93, media) · stakes 2 · λ 1.00 (API-key plan: Claude at list price)</p>
-      <p class="l out c">   route            model             total    cash     claude   risk     p_fail</p>
-      <p class="l out c">1  direct           gpt-6-luna        $0.0723  $0.0082  $0.0608  $0.0033  0.01</p>
-      <p class="l out c">2  claude-subagent  claude-haiku-5.5  $0.0820  $0.0000  $0.0773  $0.0047  0.02</p>
-      <p class="l out c">pick: handing this to gpt-6-luna: tables from PDF reports or statements to CSV</p>
-      <p class="l out c">      best: gpt-6-luna via direct, $0.008 cash, a mechanical check decides; p_fail 0.01 (LMArena longer query 1448 vs best 1543)</p>
-      <p class="l in bang">p0ssess engine set plan subscription</p>
-      <p class="l out" data-d="400">plan = subscription (saved to …/.config/p0ssess/budget.toml)</p>
-      <p class="l in bang">p0ssess engine recommend --use-case pdf-table-extract --top 2</p>
-      <p class="l out" data-d="700">pdf-table-extract (#93, media) · stakes 2 · λ 0.15 (no Claude usage reading yet; using the floor)</p>
-      <p class="l out c">   route            model             total    cash     claude   risk     p_fail</p>
-      <p class="l out c">1  claude-subagent  claude-haiku-5.5  $0.0125  $0.0000  $0.0116  $0.0009  0.02</p>
-      <p class="l out c">2  direct           gpt-6-luna        $0.0179  $0.0082  $0.0091  $0.0006  0.01</p>
-      <p class="l out c">pick: handing this to a claude-haiku-5.5 subagent: tables from PDF reports or statements to CSV</p>
-      <p class="l out c">      best: claude-haiku-5.5 via claude-subagent, $0.002 of Claude subagent usage, a mechanical check decides; p_fail 0.02 (LMArena longer query 1423 vs best 1543)</p>
-    </div>
-    <p class="foot"><span class="me">~/books  Sonnet 5.5</span></p>
-  </figure>
-  </details>
-</section>
-
-<section class="sec" id="media" aria-labelledby="media-h">
-  <div class="copy">
-    <h2 id="media-h">Media Claude can’t hear or watch</h2>
-    <p>Claude can’t watch video or hear audio, so p0ssess sends the file to a model that can. On real calls, Gemini 3.8 Flash described a ten-second clip for $0.0067 and Whisper transcribed sixteen seconds of speech for $0.0002.</p>
-    <figure class="chart" aria-labelledby="cmp-media">
-      <ol class="bars">
-      <li class="win"><span class="who">Whisper large v3 turbo</span><span class="tag">lowest total</span><span class="tot"><small>$</small>0.070</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="60.25%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/><path class="brk" d="M9.5 -2l-4 14M15.5 -2l-4 14"/></svg></span><span class="score">score 75, clears 35</span><span class="call">call $0.0001</span></li>
-      <li><span class="who">Parakeet TDT 0.6B v3</span><span class="tot"><small>$</small>0.075</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="79.29%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/><path class="brk" d="M9.5 -2l-4 14M15.5 -2l-4 14"/></svg></span><span class="score">score 72, clears 35</span><span class="call">call $0.0003</span></li>
-      <li><span class="who">Voxtral Mini Transcribe 3</span><span class="tot"><small>$</small>0.076</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="82.51%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/><path class="brk" d="M9.5 -2l-4 14M15.5 -2l-4 14"/></svg></span><span class="score">score 72, clears 35</span><span class="call">call $0.0010</span></li>
-      <li class="none"><span class="who">Claude</span><span class="cant">can’t hear audio</span></li>
-      </ol>
-      <svg class="axis" width="100%" height="24" aria-hidden="true" focusable="false"><rect class="ax" width="100%" height="1"/><rect class="tk" x="0.00%" width="1" height="5"/><rect class="tk" x="20.00%" width="1" height="5"/><rect class="tk" x="40.00%" width="1" height="5"/><rect class="tk" x="60.00%" width="1" height="5"/><rect class="tk" x="80.00%" width="1" height="5"/><rect class="tk" x="100.00%" width="1" height="5"/><text class="o" x="0.00%" y="19" text-anchor="start">$0.055</text><text x="60.00%" y="19" text-anchor="middle">$0.07</text><text x="100.00%" y="19" text-anchor="end">$0.08</text></svg>
-      <p class="origin">The scale starts at $0.055, not zero: every option pays that much Claude time for the hand-off and the check.</p>
-      <figcaption id="cmp-media">Transcribe 16 seconds of speech. Routine, so the gate is 35. These are the top 3 of the engine’s 14 ranked options, on an API key. No speech benchmark has a license the engine can use, so these scores are the catalog’s own estimates.</figcaption>
-    </figure>
-  </div>
-  <details class="scene-wrap"><summary>Show the session<span class="sr-only">: media</span></summary>
-  <figure class="scene" data-title="claude ~/shop-web" data-st="idle|" aria-labelledby="t-media">
-    <figcaption class="sr-only" id="t-media">Transcript: a support voicemail goes out through the possessed Haiku and comes back as text.</figcaption>
-    <div class="log">
-      <p class="l in">transcribe voicemail-0412.m4a</p>
-      <p class="l tool ann" data-d="700"><b>Agent</b>(p0ssess:p0ssess, "Transcribe this recording (use case audio-transcribe): …/voicemail-0412.m4a")</p>
-      <p class="l ai" data-d="2200" data-credit="whisper-large-v3-turbo, $0.0002" data-st="idle|&lt;$0.01 today">Hi, I tried to check out twice this morning. The first time, the page just went blank. The second time I was charged, but no confirmation came. The order number ends in 4471. Could someone call me back? <span class="credit">(whisper-large-v3-turbo, $0.0002)</span></p>
-      <p class="l in">what does the customer want?</p>
-      <p class="l ai" data-d="800">A call back. They were charged for order …4471 with no confirmation, after the first try left a blank page.</p>
-    </div>
-    <p class="foot"><span class="me">~/shop-web  Sonnet 5.5</span><span class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  &lt;$0.01 today</span></p>
-  </figure>
-  </details>
-</section>
-
-<section class="sec" id="chores" aria-labelledby="chores-h">
-  <div class="copy">
-    <h2 id="chores-h">Tedious code, handed to a coding agent</h2>
-    <p>For chores the tests can check, a cheap coding model works in its own sandbox, on a separate git worktree. Its edits come back as a diff, and Claude reads it and runs the tests before anything lands. You can have it ask before any edit run.</p>
-    <figure class="chart" aria-labelledby="cmp-chores">
-      <ol class="bars">
-      <li class="win"><span class="who">DeepSeek V4.1 Flash</span><span class="tag">lowest total</span><span class="tot"><small>$</small>0.148</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="61.46%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span><span class="score">score 78, clears 35</span><span class="call">call $0.0041</span></li>
-      <li><span class="who">Claude Haiku 5.5 <small>subagent</small></span><span class="tot"><small>$</small>0.169</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="70.22%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span><span class="score">score 73, clears 35</span><span class="call">Claude usage</span></li>
-      <li><span class="who">Claude <small>in session</small></span><span class="tot"><small>$</small>0.227</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="94.46%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span><span class="score">score 78, clears 35</span><span class="call">Claude usage</span></li>
-      <li><span class="who">GPT-6.1 Sol</span><span class="tot"><small>$</small>0.241</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="100.00%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span><span class="score">score 83, clears 35</span><span class="call">call $0.11</span></li>
-      </ol>
-      <figcaption id="cmp-chores">Routine, so the gate is 35. These are 4 of the engine’s 29 ranked options, on an API key. Evidence: LMArena leaderboard dataset, rev f566816, CC BY 4.0.</figcaption>
-    </figure>
-  </div>
-  <details class="scene-wrap"><summary>Show the session<span class="sr-only">: coding chores</span></summary>
-  <figure class="scene" data-title="claude ~/billing-api" data-st="idle|" aria-labelledby="t-chores">
-    <figcaption class="sr-only" id="t-chores">Transcript: a router migration goes to DeepSeek V4.1 Flash, and Claude reviews the diff before applying it.</figcaption>
-    <div class="log">
-      <p class="l in">use deepseek flash to move the handlers in api/ to the v2 router. the tests should still pass</p>
-      <p class="l tool ann" data-d="700"><b>Agent</b>(p0ssess:p0ssess, "Move the handlers in api/ to the v2 router and keep the tests passing, model deepseek flash, edit mode: …/billing-api")</p>
-      <p class="l tool" data-d="2400" data-credit="deepseek-v4.1-flash-1017, $0.004"><b>Read</b>(…/p0ssess/relay/runs/…/diff.patch)</p>
-      <p class="l tool" data-d="700"><b>Bash</b>(git apply …/p0ssess/relay/runs/…/diff.patch)</p>
-      <p class="l tool" data-d="600"><b>Update</b>(api/orders.go)</p>
-      <p class="l res">Updated api/orders.go with 1 addition</p>
-      <p class="l tool" data-d="600"><b>Bash</b>(go test ./api/...)</p>
-      <p class="l ai" data-d="900" data-st="idle|&lt;$0.01 today">Moved 9 handlers to router v2. It had dropped the idempotency-key check in orders.go, so I put that line back, and go test ./api/... passes. <span class="credit">(deepseek-v4.1-flash-1017, $0.004)</span></p>
-    </div>
-    <p class="foot"><span class="me">~/billing-api  Sonnet 5.5</span><span class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  &lt;$0.01 today</span></p>
-  </figure>
-  </details>
-</section>
-
-<section class="sec" id="review" aria-labelledby="review-h">
-  <div class="copy">
-    <h2 id="review-h">A second opinion from another family</h2>
-    <p>Before a merge, ask for a review from outside Claude’s family. Claude checks each finding against the code and fixes what holds up.</p>
-    <figure class="chart" aria-labelledby="cmp-review">
-      <ol class="bars">
-      <li class="win"><span class="who">GLM-5.3-Flash</span><span class="tag">lowest total</span><span class="tot"><small>$</small>0.108</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="55.31%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span><span class="score">score 84, clears 35</span><span class="call">call $0.0021</span></li>
-      <li><span class="who">DeepSeek V4.1 Flash</span><span class="tot"><small>$</small>0.110</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="56.39%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span><span class="score">score 83, clears 35</span><span class="call">call $0.0032</span></li>
-      <li><span class="who">Claude <small>in session</small></span><span class="tot"><small>$</small>0.146</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="74.86%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span><span class="score">score 82, clears 35</span><span class="call">Claude usage</span></li>
-      <li><span class="who">GPT-6.1 Sol</span><span class="tot"><small>$</small>0.195</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="100.00%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span><span class="score">score 87, clears 35</span><span class="call">call $0.095</span></li>
-      </ol>
-      <figcaption id="cmp-review">Routine, so the gate is 35. These are 4 of the engine’s 18 ranked options, on an API key. Evidence: LMArena leaderboard dataset, rev f566816, CC BY 4.0.</figcaption>
-    </figure>
-  </div>
-  <details class="scene-wrap"><summary>Show the session<span class="sr-only">: second opinion</span></summary>
-  <figure class="scene" data-title="claude ~/retry" data-st="idle|" aria-labelledby="t-review">
-    <figcaption class="sr-only" id="t-review">Transcript: a diff goes out for review by another family, and Claude weighs the findings.</figcaption>
-    <div class="log">
-      <p class="l in">before I merge this branch, get a review from another model family</p>
-      <p class="l tool ann" data-d="700"><b>Agent</b>(p0ssess:p0ssess, "Review this diff for bugs and missing tests with a model from another family (use case code-review-diff): /tmp/retry.diff")</p>
-      <p class="l ai" data-d="2200" data-credit="glm-5.3-flash, $0.002" data-st="idle|&lt;$0.01 today">1. retry.go:41  The first retry waits 2s, not the documented 1s.</p>
-      <p class="l ai c">2. retry.go:58  Do ignores ctx while sleeping.</p>
-      <p class="l ai c">3. retry_test.go  No test for a permanent error.</p>
-      <p class="l ai c"><span class="credit">(glm-5.3-flash, $0.002)</span></p>
-      <p class="l in">fix what holds up</p>
-      <p class="l ai" data-d="800">The first two hold up. The third is already covered by TestDoStopsOnPermanent. Fixing the backoff and making the sleep watch ctx.Done().</p>
-    </div>
-    <p class="foot"><span class="me">~/retry  Sonnet 5.5</span><span class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  &lt;$0.01 today</span></p>
-  </figure>
-  </details>
-</section>
-
-<section class="sec" id="usage" aria-labelledby="usage-h">
-  <div class="copy">
-    <h2 id="usage-h">When your Claude usage runs low</h2>
-    <p>On Pro, Max and Ultra, p0ssess reads the 5-hour and weekly usage Claude Code reports to the status line. Early in a window Claude’s time is cheap, so it keeps the work. Near the limit the same job goes out.</p>
-    <figure class="chart" aria-labelledby="cmp-usage">
-      <p class="when">Early: 5-hour window 5% used, projected 17%</p>
-      <ol class="bars">
-      <li class="win"><span class="who">Claude <small>in session</small></span><span class="tag">lowest total</span><span class="tot"><small>$</small>0.346</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="23.75%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span><span class="score">score 71, clears 60</span><span class="call">in plan</span></li>
-      <li><span class="who">GPT-6.1 Sol</span><span class="tot"><small>$</small>0.893</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="61.29%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span><span class="score">score 65, clears 60</span><span class="call">call $0.74</span></li>
-      </ol>
-      <p class="when">Late: 78% used, projected 89%</p>
-      <ol class="bars">
-      <li class="win"><span class="who">GPT-6.1 Sol</span><span class="tag">lowest total</span><span class="tot"><small>$</small>1.241</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="85.18%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span><span class="score">score 65, clears 60</span><span class="call">call $0.74</span></li>
-      <li><span class="who">Claude <small>in session</small></span><span class="tot"><small>$</small>1.457</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="100.00%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span><span class="score">score 71, clears 60</span><span class="call">in plan</span></li>
-      </ol>
-      <figcaption id="cmp-usage">Important, so the gate is 60. These are 2 of the engine’s 4 ranked options, for example readings. Claude’s time counts at 0.17 of list price early, 0.82 late. Evidence: LMArena agent board, rev f566816, CC BY 4.0.</figcaption>
-    </figure>
-  </div>
-  <details class="scene-wrap"><summary>Show the session<span class="sr-only">: usage</span></summary>
-  <figure class="scene" data-title="claude ~/billing-api" data-st="idle|" data-me="~/billing-api  Sonnet 5.5  5h 5%" aria-labelledby="t-usage">
-    <figcaption class="sr-only" id="t-usage">Transcript: the same kind of job early in a usage window and near the limit.</figcaption>
-    <div class="log">
-      <p class="l in" data-me="~/billing-api  Sonnet 5.5  5h 5%">move the billing module to the new ledger API, end to end</p>
-      <p class="l tool ann" data-d="600"><b>Agent</b>(p0ssess:p0ssess, "Which model for a long agent session at stakes 3 (use case long-agent-session), and what would it cost?")</p>
-      <p class="l ai" data-d="1800">keeping this on Claude</p>
-      <p class="l tool" data-d="700"><b>Update</b>(billing/ledger.go)</p>
-      <p class="l res">Updated billing/ledger.go with 64 additions and 41 removals</p>
-      <p class="l in" data-me="~/billing-api  Sonnet 5.5  5h 78%">now do the same for invoicing</p>
-      <p class="l tool ann" data-d="600"><b>Agent</b>(p0ssess:p0ssess, "Which model for a long agent session at stakes 3 (use case long-agent-session), and what would it cost?")</p>
-      <p class="l tool ann" data-d="1800"><b>Agent</b>(p0ssess:p0ssess, "Move invoicing to the new ledger API end to end, model gpt-6.1-sol, edit mode, stakes 3: …/billing-api")</p>
-      <p class="l ai" data-d="1600">Your 5-hour window is projected at 89%, so handing this off costs less than my time. gpt-6.1-sol needs about $0.74, which is above your per-task limit. Go ahead?</p>
-      <p class="l in">yes</p>
-      <p class="l tool" data-d="500"><b>p0ssess - approvals_add</b> (MCP)(…)</p>
-      <p class="l tool ann" data-d="500"><b>SendMessage</b>(p0ssess:p0ssess, "approved, run it again")</p>
-    </div>
-    <p class="foot"><span class="me">~/billing-api  Sonnet 5.5  5h 78%</span></p>
-  </figure>
-  </details>
-</section>
-
-<section class="sec" id="stakes" aria-labelledby="stakes-h">
-  <div class="copy">
-    <h2 id="stakes-h">Some work stays with Claude</h2>
-    <p>For critical work the gate decides before price does, and the tools enforce it: a firewall change stays with Claude. So does a small rename, because handing it off would cost more than it saves. If a rating looks wrong, say so.</p>
-  </div>
-  <details class="scene-wrap"><summary>Show the session<span class="sr-only">: work that stays with Claude</span></summary>
-  <figure class="scene" data-title="claude ~/edge" data-st="idle|" aria-labelledby="t-stakes">
-    <figcaption class="sr-only" id="t-stakes">Transcript: a firewall change stays on Claude; a rename stays without comment.</figcaption>
-    <div class="log">
-      <p class="l in">use deepseek flash to open 443 for the new ingress in nft/edge.nft</p>
-      <p class="l ai" data-d="700">critical: keeping this on Claude</p>
-      <p class="l tool" data-d="600"><b>Update</b>(nft/edge.nft)</p>
-      <p class="l res">Updated nft/edge.nft with 1 addition</p>
-      <p class="l ai" data-d="700">Added an accept rule for tcp/443 to the ingress address only, above the default drop.</p>
-      <p class="l in">rename getUsr to getUser everywhere</p>
-      <p class="l tool" data-d="700"><b>Update</b>(src/users.ts)</p>
-      <p class="l res">Updated src/users.ts with 3 additions and 3 removals</p>
-    </div>
-    <p class="foot"><span class="me">~/edge  Sonnet 5.5</span></p>
-  </figure>
-  </details>
-</section>
-
-<section class="sec" id="rules" aria-labelledby="rules-h">
-  <div class="copy">
-    <h2 id="rules-h">Rules in your own words</h2>
-    <p>Say “only use gemini-3.8-flash for video”. Claude shows the rule in one line and saves it when you say yes. A standing approval lets repeats of a job run without asking, up to a price. A cloned repository’s rules can only tighten yours.</p>
-  </div>
-  <details class="scene-wrap"><summary>Show the session<span class="sr-only">: rules</span></summary>
-  <figure class="scene" data-title="claude ~/talks" data-st="idle|" aria-labelledby="t-rules">
-    <figcaption class="sr-only" id="t-rules">Transcript: a rule and a standing approval in plain language, then a video job that runs without asking.</figcaption>
-    <div class="log">
-      <p class="l in">only use gemini-3.8-flash for video, and auto-approve video descriptions up to 15 cents each</p>
-      <p class="l tool" data-d="600"><b>p0ssess - rules_add</b> (MCP)(kind: "only", models: ["google/gemini-3.8-flash"], kinds: ["media"], scope: "global", dry_run: true)</p>
-      <p class="l tool" data-d="400"><b>p0ssess - approvals_add</b> (MCP)(use_cases: ["video-understand"], max_per_run_usd: 0.15, scope: "global", dry_run: true)</p>
-      <p class="l ai" data-d="600">only use gemini-3.8-flash for media work (global), and auto-approve for video-understand up to $0.15 each (global). Save both?</p>
-      <p class="l in">yes</p>
-      <p class="l tool" data-d="400"><b>p0ssess - rules_add</b> (MCP)(…)</p>
-      <p class="l tool" data-d="300"><b>p0ssess - approvals_add</b> (MCP)(…)</p>
-      <p class="l in">what happens in demo-take.mp4?</p>
-      <p class="l tool ann" data-d="600"><b>Agent</b>(p0ssess:p0ssess, "Describe what happens in this video (use case video-understand): …/demo-take.mp4")</p>
-      <p class="l ai" data-d="2000" data-credit="gemini-3.8-flash, $0.0067" data-st="idle|$0.01 today">A ten-second take: the intro slide for the first four seconds, then the demo. <span class="credit">(gemini-3.8-flash, $0.0067)</span></p>
-    </div>
-    <p class="foot"><span class="me">~/talks  Sonnet 5.5</span><span class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  $0.01 today</span></p>
-  </figure>
-  </details>
-</section>
-
-<section class="sec" id="ghost" aria-labelledby="ghost-h">
-  <div class="copy">
-    <h2 id="ghost-h">A ghost in the status line</h2>
-    <p>One quiet segment after your own status line, shown once something has happened today.</p>
-    <ul class="states">
-      <li><span class="say">Idle</span><code class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  $0.14 today</code></li>
-      <li><span class="say">Working</span><code class="seg run"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  2 running  $0.14</code></li>
-      <li><span class="say">Near the budget</span><code class="seg amber"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  $8.10 of $10 this month</code></li>
-    </ul>
-    <p>It is never red and never animated. <code>/p0ssess:p0ssess-me</code> prints your spend, your limits and what is running, and opens a local page with recent runs, rules and settings.</p>
-  </div>
-  <details class="scene-wrap"><summary>Show the session<span class="sr-only">: status line</span></summary>
-  <figure class="scene" data-title="claude ~/talks" data-st="idle|$0.04 today" aria-labelledby="t-ghost">
-    <figcaption class="sr-only" id="t-ghost">Transcript: the summary that /p0ssess:p0ssess-me prints.</figcaption>
-    <div class="log">
-      <p class="l in">/p0ssess:p0ssess-me</p>
-      <p class="l ai blk" data-d="800"><span class="mark">ᗣ</span> p0ssess 0.5.1   today $0.04   month $0.04 of $10.00 ▰▱▱▱▱▱▱▱▱▱   nothing running</p>
-      <p class="l ai blk c">limits   asks above $0.10 a task · $0.45 today (paced) · no-training · Claude 5-hour 1%, weekly 89%</p>
-      <p class="l ai blk c">change   tell Claude ("cap OpenRouter at $5", "always ask before grok") · page http://127.0.0.1:…/t/…/</p>
-    </div>
-    <p class="foot"><span class="me">~/talks  Sonnet 5.5</span><span class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  $0.04 today</span></p>
-  </figure>
-  </details>
-</section>
-
-<section class="sec" id="sandbox" aria-labelledby="sandbox-h">
-  <div class="copy">
-    <h2 id="sandbox-h">The sandbox</h2>
-    <p>Agent work runs in OpenCode inside a rootless podman pod per session. It sees the repository read-only plus its own worktree, and no home directory, keys or credentials. Firewall rules loaded from outside the pod block your network, Tailscale and the host.</p>
-    <p>Your OpenRouter key stays in a proxy the model never sees. Shell commands get no network unless you allow it for a project. Every limit is checked by the tool that spends.</p>
-    <p>An independent review before release found a host-escape bug through a tampered worktree. It is fixed and tested.</p>
-  </div>
-  <details class="scene-wrap"><summary>Show the session<span class="sr-only">: sandbox</span></summary>
-  <figure class="scene" data-title="claude ~/parser" data-st="idle|" aria-labelledby="t-sandbox">
-    <figcaption class="sr-only" id="t-sandbox">Transcript: a sandboxed run asks to install a package, and Claude says no.</figcaption>
-    <div class="log">
-      <p class="l in">use deepseek flash to add property tests for parser.py</p>
-      <p class="l tool ann" data-d="600"><b>Agent</b>(p0ssess:p0ssess, "Add property tests for parser.py, model deepseek flash, edit mode: …/parser")</p>
-      <p class="l ai" data-d="2000">It wants to run pip install hypothesis. The sandbox has no network for this project, so I’m rejecting that; the standard library will do.</p>
-      <p class="l tool ann" data-d="500"><b>SendMessage</b>(p0ssess:p0ssess, "reject")</p>
-      <p class="l tool" data-d="2200" data-credit="deepseek-v4.1-flash-1017, $0.004"><b>Read</b>(…/p0ssess/relay/runs/…/diff.patch)</p>
-      <p class="l tool" data-d="600"><b>Bash</b>(git apply …/p0ssess/relay/runs/…/diff.patch &amp;&amp; python3 -m unittest)</p>
-      <p class="l ai" data-d="800" data-st="idle|$0.02 today">Added property tests for parser.py using only the standard library, and they pass. <span class="credit">(deepseek-v4.1-flash-1017, $0.004)</span></p>
-    </div>
-    <p class="foot"><span class="me">~/parser  Sonnet 5.5</span><span class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  $0.02 today</span></p>
-  </figure>
-  </details>
-</section>
-
-<section class="sec" id="wont" aria-labelledby="wont-h">
-  <div class="copy">
-    <h2 id="wont-h">What it won’t do</h2>
-    <ul class="wont">
-      <li>Patch or preload into Claude Code.</li>
-      <li>Send prompts to providers that train on them.</li>
-      <li>Spend past your monthly cap.</li>
-      <li>Create a rule or a standing approval on its own.</li>
-      <li>Send secrets, or anything from a repository marked <code>.p0ssess-private</code>.</li>
-      <li>Read, store or relay your Claude credentials.</li>
-      <li>Phone home. History stays local, without prompt text.</li>
-    </ul>
-  </div>
-  <details class="scene-wrap"><summary>Show the session<span class="sr-only">: what it won’t do</span></summary>
-  <figure class="scene" data-title="claude ~/standups" data-st="idle|" aria-labelledby="t-wont">
-    <figcaption class="sr-only" id="t-wont">Transcript: a private repository blocks the hand-off.</figcaption>
-    <div class="log">
-      <p class="l in">transcribe standup.m4a and list the action items</p>
-      <p class="l tool ann" data-d="600"><b>Agent</b>(p0ssess:p0ssess, "Transcribe this recording and list the action items (use case audio-transcribe): …/standup.m4a")</p>
-      <p class="l ai" data-d="1400">p0ssess won’t send anything from this repository: it has a .p0ssess-private file. I can’t listen to audio myself.</p>
-    </div>
-    <p class="foot"><span class="me">~/standups  Sonnet 5.5</span></p>
-  </figure>
-  </details>
-</section>
-
-<section class="sec" id="data" aria-labelledby="data-h">
-  <div class="copy">
-    <h2 id="data-h">Built from 104 use cases</h2>
-    <p>The engine starts from 104 researched use cases: half from OpenRouter usage data, half from what Claude Code can’t do or does expensively. A few, with the catalog’s pick:</p>
-    <table class="cases" role="table">
-      <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Use case</th><th scope="col" role="columnheader">Catalog pick</th><th scope="col" role="columnheader">Estimate</th></tr></thead>
-      <tbody role="rowgroup">
-        <tr role="row"><td role="cell">Summarize a talk, meeting or lecture video</td><td role="cell">Gemini 3.8 Flash</td><td role="cell">$0.05 to $0.15 per 10 min</td></tr>
-        <tr role="row"><td role="cell">Meetings, memos, interviews to text</td><td role="cell">Whisper large v3 turbo</td><td role="cell">about $0.006 per 30 min</td></tr>
-        <tr role="row"><td role="cell">Bulk migration gated by tests</td><td role="cell">DeepSeek V4.1 Flash</td><td role="cell">about $0.002 per attempt</td></tr>
-        <tr role="row"><td role="cell">Label many issues, logs or files</td><td role="cell">GLM-5.3-Flash</td><td role="cell">about $0.04 per 1,000</td></tr>
-        <tr role="row"><td role="cell">Firewall rules, Terraform, IAM</td><td role="cell">Stays with Claude</td><td role="cell">critical</td></tr>
-      </tbody>
-    </table>
-    <p class="cite">Data: OpenRouter, LMArena and Epoch AI (CC BY 4.0), models.dev (MIT); every value carries its source and date.</p>
-  </div>
-  <details class="scene-wrap"><summary>Show the session<span class="sr-only">: use cases</span></summary>
-  <figure class="scene" data-title="claude ~/talks" data-st="idle|" aria-labelledby="t-data">
-    <figcaption class="sr-only" id="t-data">Transcript: the engine’s ranking for describing a video, and the size of the catalog.</figcaption>
-    <div class="log">
-      <p class="l in bang">p0ssess engine recommend --use-case video-understand --top 2</p>
-      <p class="l out" data-d="700">video-understand (#75, media) · stakes 1 · λ 1.00 (API-key plan: Claude at list price)</p>
-      <p class="l out c">catalog default 1 of 1-2; rate the instance</p>
-      <p class="l out c">   route   model                  total    cash     claude   risk     p_fail</p>
-      <p class="l out c">1  direct  qwen3.8-omni-flash     $0.0997  $0.0283  $0.0550  $0.0164  0.19    <span class="nb">ask: about $0.028, above the $0.02 auto-approve limit</span></p>
-      <p class="l out c">2  direct  gemini-3.1-flash-lite  $0.1006  $0.0241  $0.0550  $0.0215  0.26    <span class="nb">ask: about $0.048, above the $0.02 auto-approve limit</span></p>
-      <p class="l out c">pick: handing this to qwen3.8-omni-flash: summarize a talk, meeting or lecture video</p>
-      <p class="l out c">      Claude cannot do this (does not take video input); best: qwen3.8-omni-flash via direct, $0.028 cash, passed through with its label; p_fail 0.19 (p0ssess video check 0.824 vs best 0.882)</p>
-      <p class="l in bang">p0ssess engine usecases | wc -l</p>
-      <p class="l out" data-d="500">104</p>
-    </div>
-    <p class="foot"><span class="me">~/talks  Sonnet 5.5</span></p>
-  </figure>
-  </details>
-</section>
-
 </div>
+</section>
 
-<div class="stage">
-<div class="pin">
-  <nav class="island" aria-label="Sections">
-    <div class="dots"><svg class="focus" aria-hidden="true" focusable="false"><defs><filter id="goo" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceGraphic" stdDeviation="2.4"/><feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -9"/></filter></defs><g filter="url(#goo)"><circle class="trail" r="3.4"/><circle class="lead" r="4.2"/></g></svg>
-    <ol><li><a href="#possession" aria-label="Possession"></a></li><li><a href="#engine" aria-label="Predictive Model Engine"></a></li><li><a href="#media" aria-label="Media"></a></li><li><a href="#chores" aria-label="Coding chores"></a></li><li><a href="#review" aria-label="Second opinion"></a></li><li><a href="#usage" aria-label="Usage"></a></li><li><a href="#stakes" aria-label="Stays with Claude"></a></li><li><a href="#rules" aria-label="Rules"></a></li><li><a href="#ghost" aria-label="Status line"></a></li><li><a href="#sandbox" aria-label="Sandbox"></a></li><li><a href="#wont" aria-label="What it won’t do"></a></li><li><a href="#data" aria-label="Use cases"></a></li></ol></div>
-    <span class="live" aria-hidden="true"><span class="mark">ᗣ</span><span class="live-text"></span></span>
-  </nav>
-  <div class="term">
-    <div class="bar">
-      <span class="title" aria-hidden="true">claude ~/shop-web</span>
-      <button class="replay" type="button" aria-label="Replay this terminal scene">Replay</button>
-    </div>
-    <div class="screen" aria-hidden="true">
-      <div class="log"></div>
-    </div>
-    <div class="input" aria-hidden="true"><span class="caret-row"><span class="gt">&gt;</span> <span class="typed"></span><span class="caret"></span><span class="ph"></span></span></div>
-    <p class="foot" aria-hidden="true"><span class="me"></span><span class="seg idle" hidden><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  <span class="seg-text"></span></span></p>
+<section class="sec" id="more" aria-labelledby="more-h">
+<div class="wrap">
+  <div class="sec-head">
+    <h2 id="more-h">And the work Claude shouldn’t spend itself on</h2>
+    <p>Beyond new senses, the same hand-off covers chores, second opinions and the last stretch of a usage window. The prices in this section are the engine’s estimates.</p>
   </div>
-  <p class="cap" aria-hidden="true"></p>
+  <div class="grid three">
+    <div class="cell hl">
+      <h3>Tedious code, in a sandbox</h3>
+      <p class="ask"><span class="sr-only">You say: </span>Use deepseek flash to draft tests for stats.py.</p>
+      <p>For chores the tests can judge, a cheap coding model works in its own sandbox, on a separate git worktree. The edits come back as a diff. Claude reads it and runs the tests before anything lands.</p>
+      <p class="fig"><b><small>$</small>0.0081</b><span>engine estimate for drafting unit tests on deepseek-v4.1-flash-1017</span></p>
+    </div>
+    <div class="cell hl">
+      <h3>A second opinion from another family</h3>
+      <p class="ask"><span class="sr-only">You say: </span>Before I merge, get a review from another model family.</p>
+      <p>A model from outside Claude’s family reads the diff. Claude checks each finding against the code and fixes what holds up.</p>
+      <p class="fig"><b><small>$</small>0.0021</b><span>engine estimate for reviewing a diff on glm-5.3-flash</span></p>
+    </div>
+    <figure class="cell hl chart usage" aria-labelledby="cmp-usage">
+      <h3>More hand-offs as your limit nears</h3>
+      <p>On Pro, Max and Ultra, p0ssess reads the 5-hour and weekly usage that Claude Code reports. Early in a window Claude’s time is cheap, so Claude keeps the work. Near the limit, the same job goes out.</p>
+      <fieldset class="mode when">
+        <legend class="sr-only">Where you are in the 5-hour window</legend>
+        <span class="mode-thumb" aria-hidden="true"></span>
+        <label><input type="radio" name="when" id="when-early" value="early" checked><span>5% used</span></label>
+        <label><input type="radio" name="when" id="when-late" value="late"><span>78% used</span></label>
+      </fieldset>
+      <ol class="bars u-early">
+      <li class="win"><span class="who">Claude <small>in session</small></span><span class="tag">lowest total</span><span class="tot"><small>$</small>0.346</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="23.59%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span><span class="score">score 71, clears 60</span><span class="call">in plan</span></li>
+      <li><span class="who">GPT-6.1 Sol</span><span class="tot"><small>$</small>0.893</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="60.85%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span><span class="score">score 65, clears 60</span><span class="call">call $0.74</span></li>
+      </ol>
+      <ol class="bars u-late">
+      <li class="win"><span class="who">GPT-6.1 Sol</span><span class="tag">lowest total</span><span class="tot"><small>$</small>1.244</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="84.79%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span><span class="score">score 65, clears 60</span><span class="call">call $0.74</span></li>
+      <li><span class="who">Claude <small>in session</small></span><span class="tot"><small>$</small>1.467</span><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="100.00%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span><span class="score">score 71, clears 60</span><span class="call">in plan</span></li>
+      </ol>
+      <figcaption id="cmp-usage">Engine estimates for a long agent session, which is important work, so the gate is 60. These are 2 of its 4 ranked options. At 5% used the window is projected to end at 17%, and Claude’s time counts at 0.17 of list price. At 78% it is projected at 89%, and Claude’s time counts at 0.82.</figcaption>
+    </figure>
+  </div>
 </div>
-</div>
-</div>
+</section>
 
-<section class="get" id="try" aria-labelledby="try-h">
-<div class="get-in">
-  <div class="get-head">
-    <h2 id="try-h">Install</h2>
-    <p>Releases are served from the project’s own git server, next to the source, so you can see exactly what you run.</p>
+<section class="sec" id="limits" aria-labelledby="limits-h">
+<div class="wrap">
+  <div class="sec-head">
+    <h2 id="limits-h">You set the limits</h2>
+    <p>A monthly cap and a per-task limit, enforced by the tools that spend. Under the limit a job just runs. Above it, Claude asks first, in one line with the cost.</p>
+  </div>
+  <div class="split">
+    <div class="copy">
+      <h3>Rules in your own words</h3>
+      <ul class="says">
+        <li class="ask">Never use grok.</li>
+        <li class="ask">Only use gemini-3.8-flash for video.</li>
+        <li class="ask">Auto-approve video summaries up to 20 cents each today.</li>
+      </ul>
+      <p>Claude shows the rule it wrote in one line and saves it when you confirm. A cloned repository’s rules can only tighten yours.</p>
+      <h3>A sandbox for agent work</h3>
+      <p>Coding agents run in a rootless podman sandbox with no access to your home directory, SSH keys or credentials, and no route to your local network. Your OpenRouter key stays in a proxy the model can’t reach.</p>
+      <h3>A ghost in the status line</h3>
+      <ul class="states">
+        <li><span class="say">Idle</span><code class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  $0.14 today</code></li>
+        <li><span class="say">Working</span><code class="seg run"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  2 running  $0.14</code></li>
+        <li><span class="say">Near the budget</span><code class="seg amber"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  $8.10 of $10 this month</code></li>
+      </ul>
+      <p>One quiet segment after your own status line. It is never red and never animated.</p>
+    </div>
+    <div class="copy">
+      <h3>What it won’t do</h3>
+      <ul class="wont">
+        <li class="hl">Send prompts to providers that train on them.</li>
+        <li class="hl">Spend past your monthly cap.</li>
+        <li class="hl">Hand off critical work, such as auth, infrastructure, production or money, unless your rule allows it.</li>
+        <li class="hl">Create a rule or a standing approval on its own.</li>
+        <li class="hl">Send secrets, or anything from a repository marked <code>.p0ssess-private</code>.</li>
+        <li class="hl">Read, store or relay your Claude credentials.</li>
+        <li class="hl">Patch or preload into Claude Code.</li>
+        <li class="hl">Phone home. History stays local, without prompt text.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="sec get" id="try" aria-labelledby="try-h">
+<div class="wrap">
+  <div class="sec-head">
+    <h2 id="try-h">Install p0ssess</h2>
+    <p>Two commands and an OpenRouter key. Releases are served from the project’s own git server, next to the source, so you can see exactly what you run.</p>
   </div>
   <div class="get-cols">
     <div class="get-col">
-      <h3>What you need</h3>
-      <ul class="needs">
-        <li>Claude Code 2.1.319 or later, on any Claude plan (Pro, Max, Team or Enterprise) or an API key.</li>
-        <li>An OpenRouter API key. Other models bill to it.</li>
-        <li>For the agent sandbox, Linux with rootless podman. Without it, media and one-shot jobs still work.</li>
-        <li>Go 1.27 or later, only when a checkout has to build the binary itself.</li>
-      </ul>
-      <h3>Install it</h3>
       <ol class="steps">
-        <li><p>Add the plugin to Claude Code.</p><div class="cmd"><pre><code>claude plugin marketplace add <span data-repo-url>&lt;repository URL&gt;</span>
+        <li class="hl"><p>Add the plugin to Claude Code.</p><div class="cmd"><pre><code>claude plugin marketplace add <span data-repo-url>&lt;repository URL&gt;</span>
 claude plugin install p0ssess@p0ssess</code></pre><button class="copy-btn" type="button" aria-label="Copy the commands" hidden>Copy</button></div></li>
-        <li><p>Put your OpenRouter key where p0ssess reads it.</p><div class="cmd"><pre><code>mkdir -p ~/.config/p0ssess/secrets
+        <li class="hl"><p>Put your OpenRouter key where p0ssess reads it.</p><div class="cmd"><pre><code>mkdir -p ~/.config/p0ssess/secrets
 install -m 600 /dev/null ~/.config/p0ssess/secrets/openrouter_key
 "${EDITOR:-vi}" ~/.config/p0ssess/secrets/openrouter_key</code></pre><button class="copy-btn" type="button" aria-label="Copy the commands" hidden>Copy</button></div></li>
-        <li><p>Start Claude Code and run <code>/p0ssess:p0ssess-me</code>. Settings changes wait for your yes, and <code>p0ssess setup undo</code> reverts them.</p>
-        <details class="scene-wrap"><summary>Show the first run</summary>
-  <figure class="scene" data-title="claude ~/shop-web" data-st="idle|" aria-labelledby="t-try">
-    <figcaption class="sr-only" id="t-try">Transcript: the first run of /p0ssess:p0ssess-me, before the key is in place.</figcaption>
-    <div class="log">
-      <p class="l in">/p0ssess:p0ssess-me</p>
-      <p class="l ai blk" data-d="800"><span class="mark">ᗣ</span> p0ssess 0.5.1   today $0.00   month $0.00 of $10.00 ▱▱▱▱▱▱▱▱▱▱   nothing running</p>
-      <p class="l ai blk c">limits   asks above $0.02 a task · $0.45 today (paced) · no-training</p>
-      <p class="l ai blk c">change   tell Claude ("cap OpenRouter at $5", "always ask before grok") · page http://127.0.0.1:42319/t/974fcecf…/</p>
-      <p class="l ai blk c">setup    no OpenRouter key (put it in …/.config/p0ssess/secrets/openrouter_key, mode 0600) · 13 tools still prompt (p0ssess setup allow) · no status line segment (p0ssess setup statusline)</p>
-      <p class="l ai" data-d="700">Your OpenRouter key goes in that file. Tell me when it’s there and I’ll offer the next step.</p>
-    </div>
-    <p class="foot"><span class="me">~/shop-web  Sonnet 5.5</span></p>
-  </figure>
-  </details></li>
+        <li class="hl"><p>Start Claude Code and run <code>/p0ssess:p0ssess-me</code>. Then ask it to watch something. Settings changes wait for your yes, and <code>p0ssess setup undo</code> reverts them.</p>
+        <details class="first-run"><summary>Show the first run</summary>
+          <figure class="out" aria-labelledby="t-try">
+            <figcaption class="sr-only" id="t-try">What /p0ssess:p0ssess-me prints on a first run, before the key is in place.</figcaption>
+            <pre><code><span class="mark">ᗣ</span> p0ssess 0.5.4   today $0.00   month $0.00 of $10.00 ▱▱▱▱▱▱▱▱▱▱   nothing running
+limits   asks above $0.02 a task · $0.48 today (paced) · no-training
+change   tell Claude ("cap OpenRouter at $5", "always ask before grok") · page http://127.0.0.1:…/t/…/
+setup    no OpenRouter key (put it in …/.config/p0ssess/secrets/openrouter_key, mode 0600) · 13 tools still prompt (p0ssess setup allow) · no status line segment (p0ssess setup statusline)</code></pre>
+          </figure>
+        </details></li>
       </ol>
+      <h3>What you need</h3>
+      <ul class="needs">
+        <li class="hl">Claude Code 2.1.319 or later, on any Claude plan (Pro, Max, Team or Enterprise) or an API key.</li>
+        <li class="hl">An OpenRouter API key. Other models bill to it.</li>
+        <li class="hl">For the agent sandbox, Linux with rootless podman. Without it, media and one-shot jobs still work.</li>
+        <li class="hl">Go 1.27 or later, only when a checkout has to build the binary itself.</li>
+      </ul>
     </div>
     <div class="get-col">
       <h3>Downloads</h3>
       <p class="release-state" data-release-state>No release is published yet. These buttons turn on with the first one.</p>
       <ul class="dl">
-        <li><span class="what">Linux, x86-64</span><code class="file">p0ssess-linux-amd64</code><a class="dl-btn" role="link" aria-disabled="true" aria-label="Download p0ssess-linux-amd64" data-asset="p0ssess-linux-amd64">Download</a><code class="sum" data-sum="p0ssess-linux-amd64" hidden></code></li>
-        <li><span class="what">Linux, arm64</span><code class="file">p0ssess-linux-arm64</code><a class="dl-btn" role="link" aria-disabled="true" aria-label="Download p0ssess-linux-arm64" data-asset="p0ssess-linux-arm64">Download</a><code class="sum" data-sum="p0ssess-linux-arm64" hidden></code></li>
-        <li><span class="what">macOS, Apple silicon</span><code class="file">p0ssess-darwin-arm64</code><a class="dl-btn" role="link" aria-disabled="true" aria-label="Download p0ssess-darwin-arm64" data-asset="p0ssess-darwin-arm64">Download</a><code class="sum" data-sum="p0ssess-darwin-arm64" hidden></code></li>
-        <li><span class="what">The plugin with all three binaries</span><code class="file" data-archive-name>p0ssess-&lt;version&gt;.tar.gz</code><a class="dl-btn" role="link" aria-disabled="true" aria-label="Download the plugin archive" data-asset="p0ssess-{version}.tar.gz">Download</a></li>
+        <li class="hl"><span class="what">Linux, x86-64</span><code class="file">p0ssess-linux-amd64</code><a class="dl-btn" role="link" aria-disabled="true" aria-label="Download p0ssess-linux-amd64" data-asset="p0ssess-linux-amd64">Download</a><code class="sum" data-sum="p0ssess-linux-amd64" hidden></code></li>
+        <li class="hl"><span class="what">Linux, arm64</span><code class="file">p0ssess-linux-arm64</code><a class="dl-btn" role="link" aria-disabled="true" aria-label="Download p0ssess-linux-arm64" data-asset="p0ssess-linux-arm64">Download</a><code class="sum" data-sum="p0ssess-linux-arm64" hidden></code></li>
+        <li class="hl"><span class="what">macOS, Apple silicon</span><code class="file">p0ssess-darwin-arm64</code><a class="dl-btn" role="link" aria-disabled="true" aria-label="Download p0ssess-darwin-arm64" data-asset="p0ssess-darwin-arm64">Download</a><code class="sum" data-sum="p0ssess-darwin-arm64" hidden></code></li>
+        <li class="hl"><span class="what">The plugin with all three binaries</span><code class="file" data-archive-name>p0ssess-&lt;version&gt;.tar.gz</code><a class="dl-btn" role="link" aria-disabled="true" aria-label="Download the plugin archive" data-asset="p0ssess-{version}.tar.gz">Download</a></li>
       </ul>
       <p>You rarely need these by hand. The plugin’s launcher fetches the binary for your platform and runs it only if its SHA-256 matches the sums committed in the repository. Builds are reproducible, so anyone can rebuild a release and compare.</p>
       <div class="cmd"><pre><code>sha256sum -c --ignore-missing SHA256SUMS</code></pre><button class="copy-btn" type="button" aria-label="Copy the command" hidden>Copy</button></div>
@@ -519,11 +385,13 @@ install -m 600 /dev/null ~/.config/p0ssess/secrets/openrouter_key
 </main>
 
 <footer class="site-foot">
+<div class="wrap foot-in">
   <img class="foot-g" src="ghost.svg" alt="" width="32" height="32">
   <div>
     <p>p0ssess is MIT licensed. By s3ym0ur.</p>
-    <p class="small">The terminal sessions are reconstructed from how the plugin behaves. Costs are from measured runs or the engine’s own output. Set in Obel Mono and IBM Plex Sans, with one glyph from Noto Sans Canadian Aboriginal, all under the <a href="fonts/OFL-obel-mono.txt">SIL Open Font License</a>.</p>
+    <p class="small">Figures marked measured come from real runs; engine figures are its own estimates. Film frames and loudness: <cite>Big Buck Bunny</cite>, © Blender Foundation, CC BY 3.0, peach.blender.org. Set in Obel Mono and IBM Plex Sans, with one glyph from Noto Sans Canadian Aboriginal, all under the <a href="fonts/OFL-obel-mono.txt">SIL Open Font License</a>.</p>
   </div>
+</div>
 </footer>
 <p class="sr-only" id="copy-status" role="status"></p>
 
