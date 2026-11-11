@@ -5,11 +5,11 @@ window.P0SSESS = {
   // The repository's page on the git server, without a trailing slash:
   // "https://<host>/<owner>/p0ssess". Release files are read from
   // <repo>/releases/download/v<version>/<file>, which is where Gitea serves them.
-  repo: "",
+  repo: "https://git.christianmoo.re/cmoore/p0ssess",
   // The published release, without the "v": "<major>.<minor>.<patch>".
-  version: "",
+  version: "", // LAUNCH: set to the launch release (e.g. "0.5.3") once its files are published.
   // The documentation site, or "" to keep the Docs link hidden.
-  docs: "",
+  docs: "https://docs.p0ssess.me",
   // Optional: the lines of that release's SHA256SUMS, to print each sum under its file.
   // Leave a value empty to show only the link to SHA256SUMS.
   sha256: {
