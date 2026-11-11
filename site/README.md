@@ -110,6 +110,7 @@ Measured calls are from the live results in `../docs/MEDIA.md`:
 | $0.0067, a ten-second clip on gemini-3.8-flash, described correctly including its tone | "Describe video", $0.006684 |
 | $0.0002, 16 seconds of speech on whisper-large-v3-turbo, word for word with timestamps | "Transcript with timestamps", $0.000180, 16.2 s, word-perfect, 5 timed segments |
 | $0.0070, a 1024-pixel image on recraft-v4.1-flash that matched its prompt | "Generate image (image API)", $0.007000, 1024×1024, on prompt |
+| The ghost-with-a-lantern image in the images cell (`ghost-lantern.webp`) | A real p0ssess 0.5.4 run on 2026-11-11 through the p0ssess agent: the cell's prompt word for word, recraft/recraft-v4.1-flash, no resolution set, $0.0070. It returned an 832×1280 WebP; the page shows rows 150 to 774, saved at quality 80. |
 | "a few cents more" for the hand-off itself | $0.04 to $0.12 of Sonnet usage, `../docs/RESEARCH.md` |
 | $0.0938, $0.0040, $0.0162 of the film run's $0.1140 | MEDIA.md, the run B on 0.5.4 table: Sonnet, Haiku, OpenRouter |
 | 28,883 tokens against 28,555 | same table, "Main context at the last call" |

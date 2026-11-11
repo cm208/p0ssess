@@ -327,6 +327,8 @@ p { text-wrap: pretty; }
 .cell > .fig { margin-top: auto; padding-top: 1.2rem; }
 .px { display: block; width: 48px; height: 48px; }
 .px + h3 { margin-top: 1.1rem; }
+/* A real output, shown as it came back (cropped) */
+.shot { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
 /* What you say to Claude, set as a prompt line */
 .ask {
   position: relative; padding: 0.55rem 0.8rem 0.6rem 2rem;
