@@ -42,8 +42,11 @@ type Request struct {
 	PDFEngine       string // "native", "cloudflare-ai" or "mistral-ocr"; empty picks per model
 	VideoProcessing string // Gemini only: "agentic" or "static"
 	VideoPrep       VideoPrep
-	Timestamps      bool   // transcripts: ask for segment timestamps
-	Language        string // transcripts: ISO-639-1 hint
+	// FromSegment skips the parts of a segmented video before this index (from 0): they were answered by
+	// an earlier call.
+	FromSegment int
+	Timestamps  bool   // transcripts: ask for segment timestamps
+	Language    string // transcripts: ISO-639-1 hint
 
 	ImageAspect     string // image generation: e.g. "1:1"
 	ImageResolution string // image generation: e.g. "1K"

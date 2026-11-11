@@ -234,6 +234,11 @@ func Downscale(ctx context.Context, in, out string, height int, fps float64) err
 
 // SplitVideo cuts a video into segments of about `seconds` each (re-encoded so every cut is exact).
 func SplitVideo(ctx context.Context, in, outDir string, seconds float64) ([]Segment, error) {
+	return splitVideo(ctx, in, outDir, seconds, 0)
+}
+
+// splitVideo lists every segment but cuts only those from index `from` on; the others have no Path.
+func splitVideo(ctx context.Context, in, outDir string, seconds float64, from int) ([]Segment, error) {
 	mi, err := Probe(ctx, in)
 	if err != nil {
 		return nil, err
@@ -247,6 +252,10 @@ func SplitVideo(ctx context.Context, in, outDir string, seconds float64) ([]Segm
 	var segs []Segment
 	for start, i := 0.0, 1; start < mi.Seconds; start, i = start+seconds, i+1 {
 		end := min(start+seconds, mi.Seconds)
+		if i <= from {
+			segs = append(segs, Segment{Start: start, End: end})
+			continue
+		}
 		out := filepath.Join(outDir, fmt.Sprintf("segment-%03d.mp4", i))
 		if _, err := runFF(ctx, "-ss", ff(start), "-i", in, "-t", ff(end-start), "-c:v", "libx264",
 			"-preset", "veryfast", "-crf", "28", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "64k", out); err != nil {

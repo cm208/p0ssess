@@ -93,14 +93,30 @@ func (c *Client) runSegments(ctx context.Context, p *plan, lim Limits, outDir st
 	if video == nil {
 		return c.chatOnce(ctx, p, p.inputs, p.req.Prompt, nil, res, outDir)
 	}
-	segs, err := SplitVideo(ctx, video.Path, filepath.Join(outDir, "work", "segments"), lim.SegmentSeconds)
+	segs, err := splitVideo(ctx, video.Path, filepath.Join(outDir, "work", "segments"), lim.SegmentSeconds, p.req.FromSegment)
 	if err != nil {
 		return err
 	}
+	answered := 0
 	for i, s := range segs {
+		if i < p.req.FromSegment {
+			continue
+		}
+		head := fmt.Sprintf("[segment %d of %d, %s to %s]", i+1, len(segs), clock(s.Start), clock(s.End))
+		stop := func(err error) error {
+			if answered == 0 {
+				return fmt.Errorf("segment %d: %w", i+1, err)
+			}
+			marker := fmt.Sprintf("%s\n(not answered: %v)\n", head, err)
+			if i+1 < len(segs) {
+				marker += fmt.Sprintf("(segments %d to %d were not sent)\n", i+2, len(segs))
+			}
+			res.Text += marker
+			return &PartialError{Answered: answered, Total: len(segs), Failed: i, Marker: marker, Err: err}
+		}
 		si, err := Inspect(s.Path, lim)
 		if err != nil {
-			return err
+			return stop(err)
 		}
 		sizeOnly := Limits{VideoBytes: lim.VideoBytes, VideoSeconds: 1e9}
 		if VideoOverLimit(si, sizeOnly) != "" {
@@ -108,36 +124,52 @@ func (c *Client) runSegments(ctx context.Context, p *plan, lim Limits, outDir st
 			// here rather than fail, so one call with video_prep "segment" is enough.
 			small := strings.TrimSuffix(s.Path, filepath.Ext(s.Path)) + "-small.mp4"
 			if err := Downscale(ctx, s.Path, small, lim.DownscaleHeight, 1); err != nil {
-				return fmt.Errorf("segment %d: %w", i+1, err)
+				return stop(err)
 			}
 			from := si.Bytes
 			if si, err = Inspect(small, lim); err != nil {
-				return err
+				return stop(err)
 			}
 			if why := VideoOverLimit(si, sizeOnly); why != "" {
-				return fmt.Errorf("segment %d is still too large after downscaling (%s); lower segment_seconds", i+1, why)
+				return stop(fmt.Errorf("still too large after downscaling (%s); lower segment_seconds", why))
 			}
 			res.Warnings = append(res.Warnings, fmt.Sprintf("segment %d downscaled locally to %dp at 1 fps (%s to %s)",
 				i+1, lim.DownscaleHeight, human(from), human(si.Bytes)))
 		}
-		head := fmt.Sprintf("[segment %d of %d, %s to %s]", i+1, len(segs), clock(s.Start), clock(s.End))
 		prompt := p.req.Prompt + fmt.Sprintf("\n\nThis is segment %d of %d of a longer video, covering %s to %s. Give times relative to the full video.",
 			i+1, len(segs), clock(s.Start), clock(s.End))
-		res.Text += head + "\n"
 		before := res.Text
+		res.Text += head + "\n"
 		if err := c.chatOnce(ctx, p, append(append([]Input{}, rest...), si), prompt, nil, res, outDir); err != nil {
-			return fmt.Errorf("segment %d: %w", i+1, err)
+			res.Text = before
+			return stop(err)
 		}
-		if res.Text == before {
+		if res.Text == before+head+"\n" {
 			res.Text += "(no answer)"
 		}
 		res.Text += "\n\n"
-		if p.req.MaxCostUSD > 0 && res.Usage.CostUSD > p.req.MaxCostUSD {
-			return fmt.Errorf("%w: spent $%.4f after %d of %d segments; stopped", ErrOverBudget, res.Usage.CostUSD, i+1, len(segs))
+		answered++
+		if p.req.MaxCostUSD > 0 && res.Usage.CostUSD > p.req.MaxCostUSD && i+1 < len(segs) {
+			return stop(fmt.Errorf("%w: spent $%.4f after %d of %d segments; stopped", ErrOverBudget, res.Usage.CostUSD, i+1, len(segs)))
 		}
 	}
 	return nil
 }
+
+// PartialError is a segmented call that stopped at a failed part. The result keeps the parts answered
+// before it, followed by Marker, the line that says which part is missing.
+type PartialError struct {
+	Answered, Total int
+	Failed          int // index of the part that failed, from 0
+	Marker          string
+	Err             error
+}
+
+func (e *PartialError) Error() string {
+	return fmt.Sprintf("partial answer: segment %d of %d failed: %v", e.Failed+1, e.Total, e.Err)
+}
+
+func (e *PartialError) Unwrap() error { return e.Err }
 
 func clock(s float64) string {
 	t := int(s + 0.5)

@@ -8,9 +8,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -56,6 +58,10 @@ type APIError struct {
 
 func (e *APIError) Error() string {
 	s := fmt.Sprintf("openrouter: HTTP %d: %s", e.Status, e.Message)
+	if e.Status == 200 {
+		// The provider failed after OpenRouter had answered 200; the code is the provider's.
+		s = fmt.Sprintf("openrouter: provider error %v: %s", e.Code, e.Message)
+	}
 	if e.Provider != "" {
 		s += " (provider " + e.Provider + ")"
 	}
@@ -102,6 +108,8 @@ func (c *Client) Plan(ctx context.Context, req Request) (*plan, error) {
 		p.inputs = append(p.inputs, in)
 	}
 	lim := c.Limits.withDefaults()
+	p.autoPrep(total, lim)
+	req = p.req
 	if total > lim.TotalBytes && req.VideoPrep == PrepNone {
 		msg := fmt.Sprintf("attachments total %s, over the %s request limit", human(total), human(lim.TotalBytes))
 		var videos []string
@@ -232,6 +240,39 @@ func (p *plan) checkVideo(lim Limits) error {
 	return nil
 }
 
+// autoPrep picks a local video step when the request cannot go as it is and the model takes video, so the
+// caller does not pay a round trip to choose one: "segment" for a video over the length limit, else
+// "downscale". The note says what was done; the estimate and the limits apply to the prepared request.
+func (p *plan) autoPrep(total int64, lim Limits) {
+	if p.req.VideoPrep != PrepNone || !p.model.Takes("video") || p.req.Output == OutImage || p.req.Output == OutTranscript || !haveFFmpeg() {
+		return
+	}
+	var long, over []string
+	for _, in := range p.inputs {
+		if in.Kind != KindVideo {
+			continue
+		}
+		if in.Duration != "ffprobe" {
+			return // not a video ffmpeg can read; the error names the options
+		}
+		if in.Seconds > lim.VideoSeconds {
+			long = append(long, filepath.Base(in.Path))
+		} else if VideoOverLimit(in, lim) != "" || total > lim.TotalBytes {
+			over = append(over, filepath.Base(in.Path))
+		}
+	}
+	switch {
+	case len(long) == 1 && len(over) == 0:
+		p.req.VideoPrep = PrepSegment
+		p.warn = append(p.warn, fmt.Sprintf("%s is over the %.0f s limit, so it was split into %.0f s parts, one call each (video_prep segment, chosen automatically)",
+			long[0], lim.VideoSeconds, lim.SegmentSeconds))
+	case len(long) == 0 && len(over) > 0:
+		p.req.VideoPrep = PrepDownscale
+		p.warn = append(p.warn, fmt.Sprintf("%s is over the size limit, so it was downscaled locally to %dp at 1 fps (video_prep downscale, chosen automatically)",
+			strings.Join(over, ", "), lim.DownscaleHeight))
+	}
+}
+
 // videoPrepOptions names the opt-in steps for a video over a limit, so the caller can retry with one
 // instead of re-encoding the file itself.
 func videoPrepOptions(lim Limits) string {
@@ -244,15 +285,18 @@ func videoPrepOptions(lim Limits) string {
 }
 
 func (p *plan) segmentEstimate(lim Limits) Estimate {
-	e := estimateChat(p.model, p.req, p.inputs, p.engine)
-	for _, in := range p.inputs {
-		if in.Kind == KindVideo {
-			n := int(in.Seconds/lim.SegmentSeconds) + 1
-			if n > e.Calls {
-				e.Calls = n
-			}
+	ins := append([]Input(nil), p.inputs...)
+	calls := 1
+	for i := range ins {
+		if ins[i].Kind == KindVideo {
+			n := max(int(math.Ceil(ins[i].Seconds/lim.SegmentSeconds)), 1)
+			skip := min(max(p.req.FromSegment, 0), n-1)
+			ins[i].Seconds = max(ins[i].Seconds-float64(skip)*lim.SegmentSeconds, 0)
+			calls = max(calls, n-skip)
 		}
 	}
+	e := estimateChat(p.model, p.req, ins, p.engine)
+	e.Calls = calls
 	// Each extra call repeats the prompt, the other attachments and the completion cap.
 	base := estimateChat(p.model, p.req, nonVideo(p.inputs), p.engine)
 	e.CostUSD += float64(e.Calls-1) * base.CostUSD
@@ -421,6 +465,17 @@ func (c *Client) post(ctx context.Context, path string, body any, out any) error
 	if resp.StatusCode != 200 {
 		return apiError(resp.StatusCode, data)
 	}
+	var top struct {
+		Error *json.RawMessage `json:"error"`
+		Usage *apiUsage        `json:"usage"`
+	}
+	if json.Unmarshal(data, &top) == nil && top.Error != nil && string(*top.Error) != "null" {
+		// A provider failure after the 200 status was sent. With no usage in it, nothing was billed.
+		if top.Usage == nil || top.Usage.Cost == nil {
+			c.rejected.Add(1)
+		}
+		return apiError(200, data)
+	}
 	if err := json.Unmarshal(data, out); err != nil {
 		return fmt.Errorf("openrouter: bad JSON answer: %w", err)
 	}
@@ -454,6 +509,25 @@ func apiError(status int, data []byte) error {
 		ae.Message = truncate(strings.TrimSpace(string(data)), 400)
 	}
 	return ae
+}
+
+// ProviderFailed reports whether err is a provider timeout or server error that OpenRouter answered and
+// did not bill, so the same request may go to another model.
+func ProviderFailed(err error) bool {
+	var ae *APIError
+	if !errors.As(err, &ae) {
+		return false
+	}
+	code := ae.Status
+	if code == 200 {
+		switch v := ae.Code.(type) {
+		case float64:
+			code = int(v)
+		case string:
+			code, _ = strconv.Atoi(v)
+		}
+	}
+	return code == 408 || code >= 500
 }
 
 func redact(err error, key string) error {

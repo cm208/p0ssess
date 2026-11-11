@@ -34,7 +34,7 @@ var ToolSchema = json.RawMessage(`{
     "reasoning": {"type": "string", "enum": ["none", "low", "medium", "high"]},
     "pdf_engine": {"type": "string", "enum": ["native", "cloudflare-ai", "mistral-ocr"]},
     "video_processing": {"type": "string", "enum": ["agentic", "static"], "description": "Gemini only"},
-    "video_prep": {"type": "string", "enum": ["downscale", "keyframes", "segment"], "description": "local ffmpeg step for videos over the size or length limit"},
+    "video_prep": {"type": "string", "enum": ["downscale", "keyframes", "segment"], "description": "local ffmpeg step for videos over the size or length limit; left out, segment (too long) or downscale (too large) is chosen"},
     "timestamps": {"type": "boolean", "description": "transcripts: segment timestamps"},
     "language": {"type": "string"},
     "image_aspect": {"type": "string"},

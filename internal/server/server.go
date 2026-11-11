@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -255,10 +256,12 @@ type DirectJob struct {
 }
 
 // RunDirect runs one direct-path job under every limit. With no model it picks one for the use case
-// (pickModel). The estimate decides whether the user is asked; the ceiling is the caller's
+// (pickModels). The estimate decides whether the user is asked; the ceiling is the caller's
 // max_cost_usd, else the estimate. Authorize checks the rules, lists, stakes, privacy, per-task, daily
 // and monthly limits and reserves the ceiling; the measured cost settles the reservation, or, when the
-// cost is not known, the reserved maximum is recorded as an estimate. runID is empty for dry runs and
+// cost is not known, the reserved maximum is recorded as an estimate. When p0ssess picked the model and
+// its provider fails (a timeout or server error OpenRouter did not bill), the next-ranked option gets
+// the unanswered part once, as a call of its own under the same limits. runID is empty for dry runs and
 // calls that were never sent.
 func RunDirect(ctx context.Context, cfg config.Config, eng *engine.Engine, req direct.Request, job DirectJob) (*direct.Result, string, error) {
 	cwd, _ := os.Getwd()
@@ -273,13 +276,146 @@ func RunDirect(ctx context.Context, cfg config.Config, eng *engine.Engine, req d
 	if p, err := cfg.RegistryPath(); err == nil {
 		c.Catalog.LoadRegistry(p)
 	}
-	if req.Model == "" {
-		m, err := pickModel(eng, c, req, &job, cwd)
+	var alts []string
+	picked := req.Model == ""
+	if picked {
+		ms, err := pickModels(eng, c, req, &job, cwd)
 		if err != nil {
 			return nil, "", err
 		}
-		req.Model = m
+		req.Model, alts = ms[0], ms[1:]
 	}
+	res, runID, err := runAuthorized(ctx, cfg, eng, c, req, job, cwd)
+	if err != nil && !req.DryRun && picked && direct.ProviderFailed(err) && ctx.Err() == nil {
+		if len(alts) > 0 {
+			res, runID, err = fallback(ctx, cfg, eng, c, req, job, cwd, alts[0], res, runID, err)
+		} else if res != nil {
+			res.Warnings = append(res.Warnings, "no other model fits this job without asking, so none was tried")
+		}
+	}
+	var pe *direct.PartialError
+	if errors.As(err, &pe) && res != nil {
+		res.Warnings = append(res.Warnings, fmt.Sprintf("partial answer: segment %d of %d and any after it are missing (%v)", pe.Failed+1, pe.Total, pe.Err))
+	}
+	return res, runID, err
+}
+
+// fallback sends the part of req that failed to model alt, under every limit, and merges the answers.
+// Without a caller's ceiling it runs only if what was spent plus its estimate stays within the per-task
+// auto-approve limit; with one, only within what is left of it.
+func fallback(ctx context.Context, cfg config.Config, eng *engine.Engine, c *direct.Client, req direct.Request, job DirectJob, cwd, alt string,
+	res *direct.Result, runID string, cause error) (*direct.Result, string, error) {
+	first := req.Model
+	spent := 0.0
+	if res != nil {
+		spent = res.Usage.CostUSD
+	}
+	next := req
+	next.Model = alt
+	var pe *direct.PartialError
+	partial := errors.As(cause, &pe)
+	if partial {
+		next.FromSegment = pe.Failed
+	}
+	skip := func(why string) (*direct.Result, string, error) {
+		if res != nil {
+			res.Warnings = append(res.Warnings, fmt.Sprintf("%s failed; %s was not tried: %s", history.Short(first), history.Short(alt), why))
+		}
+		return res, runID, cause
+	}
+	if req.MaxGiven {
+		if next.MaxCostUSD = req.MaxCostUSD - spent; next.MaxCostUSD <= 0 {
+			return skip("your ceiling is spent")
+		}
+	} else {
+		dry := next
+		dry.DryRun = true
+		p, err := c.Plan(ctx, dry)
+		if err != nil {
+			return skip(err.Error())
+		}
+		bud, err := eng.Budget()
+		if err != nil {
+			return skip(err.Error())
+		}
+		if est := p.Estimate(); est.CostUnknown || spent+est.CostUSD > bud.PerTaskUSD+1e-12 {
+			return skip(fmt.Sprintf("with it the task would cost about $%.4f, above your $%.2f auto-approve limit", spent+est.CostUSD, bud.PerTaskUSD))
+		}
+	}
+	job.OfferID = ""
+	res2, runID2, err2 := runAuthorized(ctx, cfg, eng, c, next, job, cwd)
+	if res2 == nil || (err2 != nil && !errors.As(err2, new(*direct.PartialError)) && !res2.Billed()) {
+		why := "it was refused"
+		if err2 != nil {
+			why = err2.Error()
+		}
+		if res2 != nil {
+			why = "it failed too: " + why
+		}
+		return skip(why)
+	}
+	if res == nil {
+		res = &direct.Result{}
+	}
+	text := res.Text
+	if partial {
+		text = strings.TrimSuffix(text, pe.Marker)
+	}
+	what := "answered"
+	if partial {
+		what = fmt.Sprintf("answered from segment %d", pe.Failed+1)
+	}
+	why := cause.Error()
+	if partial {
+		why = pe.Err.Error()
+	}
+	merged := *res2
+	merged.Text = text + res2.Text
+	merged.Usage = sumUsage(res.Usage, res2.Usage)
+	merged.IDs = append(append([]string{}, res.IDs...), res2.IDs...)
+	merged.Sent, merged.Rejected = res.Sent+res2.Sent, res.Rejected+res2.Rejected
+	merged.Estimate.CostUSD += res.Estimate.CostUSD
+	merged.Warnings = append(uniqueAppend(res.Warnings, res2.Warnings...),
+		fmt.Sprintf("%s's provider failed (%s); %s %s", history.Short(first), why, history.Short(alt), what))
+	ids := runID2
+	if runID != "" && runID2 != "" {
+		ids = runID + ", " + runID2
+	} else if runID != "" {
+		ids = runID
+	}
+	return &merged, ids, err2
+}
+
+func sumUsage(a, b direct.Usage) direct.Usage {
+	a.PromptTokens += b.PromptTokens
+	a.CompletionTokens += b.CompletionTokens
+	a.ReasoningTokens += b.ReasoningTokens
+	a.AudioTokens += b.AudioTokens
+	a.VideoTokens += b.VideoTokens
+	a.AudioSeconds += b.AudioSeconds
+	a.CostUSD += b.CostUSD
+	a.OpenRouterUSD += b.OpenRouterUSD
+	a.UpstreamUSD += b.UpstreamUSD
+	a.BYOK = a.BYOK || b.BYOK
+	a.Unmeasured += b.Unmeasured
+	if a.CostSource == "" || b.CostSource == "unknown" {
+		a.CostSource = b.CostSource
+	}
+	return a
+}
+
+func uniqueAppend(have []string, add ...string) []string {
+	out := append([]string{}, have...)
+	for _, s := range add {
+		if !slices.Contains(out, s) {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+// runAuthorized is one call: authorize, run, then settle or release.
+func runAuthorized(ctx context.Context, cfg config.Config, eng *engine.Engine, c *direct.Client, req direct.Request, job DirectJob, cwd string) (*direct.Result, string, error) {
 	var grant *engine.Grant
 	if !req.DryRun {
 		dry := req
@@ -307,9 +443,11 @@ func RunDirect(ctx context.Context, cfg config.Config, eng *engine.Engine, req d
 		if g.ZDR {
 			req.StrictZDR = true
 		}
-		if c.Key, err = cfg.OpenRouterKey(); err != nil {
-			eng.Release(grant)
-			return nil, "", err
+		if c.Key == "" {
+			if c.Key, err = cfg.OpenRouterKey(); err != nil {
+				eng.Release(grant)
+				return nil, "", err
+			}
 		}
 	}
 	var j usage.Job
@@ -332,7 +470,9 @@ func RunDirect(ctx context.Context, cfg config.Config, eng *engine.Engine, req d
 	key := c.Key
 	runID := "d-" + randID()
 	status := "done"
-	if err != nil {
+	if errors.As(err, new(*direct.PartialError)) {
+		status = "partial"
+	} else if err != nil {
 		status = "failed"
 	}
 	run := engine.Run{ID: runID, Route: "direct", Model: req.Model, CashUSD: res.Usage.CostUSD,
@@ -377,16 +517,17 @@ func inferUseCase(out direct.Output, kinds map[direct.Kind]int) string {
 	return ""
 }
 
-// pickModel chooses the model for a direct call that names none: the engine's best direct option for
+// pickModels chooses the model for a direct call that names none: the engine's best direct option for
 // the use case, sized from the files. It prefers an option that runs without asking when one costs at
-// most half again as much as the best. The offer is recorded, and job gets its id and the use case.
-func pickModel(eng *engine.Engine, c *direct.Client, req direct.Request, job *DirectJob, cwd string) (string, error) {
+// most half again as much as the best. The other direct options that run without asking follow in rank
+// order, as fallbacks. The offer is recorded, and job gets its id and the use case.
+func pickModels(eng *engine.Engine, c *direct.Client, req direct.Request, job *DirectJob, cwd string) ([]string, error) {
 	prof := catalog.Profile{Text: "direct call"}
 	kinds := map[direct.Kind]int{}
 	for _, f := range req.Files {
 		in, err := direct.Inspect(f, c.Limits)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		kinds[in.Kind]++
 		switch in.Kind {
@@ -407,11 +548,11 @@ func pickModel(eng *engine.Engine, c *direct.Client, req direct.Request, job *Di
 		uc = inferUseCase(req.Output, kinds)
 	}
 	if uc == "" {
-		return "", errors.New("name a model, or a use_case (for example video-understand, audio-transcribe, image-generate), so p0ssess can pick one")
+		return nil, errors.New("name a model, or a use_case (for example video-understand, audio-transcribe, image-generate), so p0ssess can pick one")
 	}
 	rec, err := eng.Recommend(engine.Request{UseCase: uc, Profile: &prof, Stakes: job.Stakes, Record: true, Scope: engine.Scope{Cwd: cwd}})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	var best *score.Option
 	for i := range rec.Options {
@@ -437,10 +578,16 @@ func pickModel(eng *engine.Engine, c *direct.Client, req direct.Request, job *Di
 		if len(rec.Notes) > 0 {
 			why += " (" + strings.Join(rec.Notes, "; ") + ")"
 		}
-		return "", errors.New(why)
+		return nil, errors.New(why)
 	}
 	job.UseCase, job.OfferID = uc, rec.OfferID
-	return best.Model, nil
+	out := []string{best.Model}
+	for _, o := range rec.Options {
+		if o.Route == score.RouteDirect && !o.NeedsApproval && !slices.Contains(out, o.Model) {
+			out = append(out, o.Model)
+		}
+	}
+	return out, nil
 }
 
 // Reconcile looks up the measured cost of recent estimated direct runs and records it.
@@ -526,6 +673,10 @@ func (d *directTool) call(ctx context.Context, raw json.RawMessage, _ mcp.Progre
 		return mcp.Error(err.Error())
 	}
 	res, runID, err := RunDirect(ctx, d.cfg, d.eng, req, DirectJob{OfferID: extra.OfferID, UseCase: extra.UseCase, Stakes: extra.Stakes})
+	if errors.As(err, new(*direct.PartialError)) && res != nil && strings.TrimSpace(res.Text) != "" {
+		// The parts answered before the failure are the result; the note says what is missing.
+		err = nil
+	}
 	if err != nil {
 		msg := err.Error()
 		if res != nil && res.Usage.CostUSD > 0 {

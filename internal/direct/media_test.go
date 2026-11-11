@@ -2,6 +2,7 @@ package direct
 
 import (
 	"context"
+	"errors"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -166,4 +167,80 @@ func TestVideoPrepThroughClient(t *testing.T) {
 			t.Errorf("warnings = %v", res.Warnings)
 		}
 	})
+}
+
+// A video over a limit is prepared without a second call: segment when it is too long, else downscale.
+// The note says so and the estimate is the prepared request's (MEDIA.md, run B: one wasted round each).
+func TestVideoPrepChosenAutomatically(t *testing.T) {
+	v := makeVideo(t, t.TempDir(), 4)
+	f, c := newFake(t)
+	c.Limits = Limits{VideoSeconds: 2, SegmentSeconds: 2, DownscaleHeight: 60}
+	f.answer["/chat/completions"] = chatOK("part", "")
+	res, err := c.Run(context.Background(), Request{Model: "google/gemini-3.8-flash", Prompt: "describe", Files: []string{v}, MaxTokens: 200, MaxCostUSD: 0.1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f.count() != 2 || res.Estimate.Calls < 2 || !strings.Contains(strings.Join(res.Warnings, "|"), "video_prep segment, chosen automatically") {
+		t.Errorf("requests %d, calls %d, warnings %v", f.count(), res.Estimate.Calls, res.Warnings)
+	}
+
+	f, c = newFake(t)
+	c.Limits = Limits{VideoBytes: 30000, DownscaleHeight: 60}
+	f.answer["/chat/completions"] = chatOK("ok", "")
+	res, err = c.Run(context.Background(), Request{Model: "google/gemini-3.8-flash", Prompt: "describe", Files: []string{v}, MaxCostUSD: 0.1})
+	if err != nil || f.count() != 1 || !strings.Contains(strings.Join(res.Warnings, "|"), "video_prep downscale, chosen automatically") {
+		t.Errorf("downscale: %v, %d requests, %v", err, f.count(), res)
+	}
+
+	// A model without video input keeps the error and its options.
+	f, c = newFake(t)
+	c.Limits = Limits{VideoSeconds: 2}
+	c.Catalog.Add(ModelInfo{ID: "x/img", Input: []string{"text", "image"}, Output: []string{"text"}, Routes: chatRoutes, InPerM: 1, OutPerM: 1})
+	if _, err := c.Run(context.Background(), Request{Model: "x/img", Prompt: "d", Files: []string{v}, MaxCostUSD: 0.1}); err == nil {
+		t.Error("no error for a model without video input")
+	}
+}
+
+// A failed part keeps the parts answered before it, marked partial; a later call can resume at the
+// failed part (MEDIA.md, run B on 0.5.2 lost part 1 when part 2 timed out).
+func TestSegmentFailureKeepsAnsweredParts(t *testing.T) {
+	v := makeVideo(t, t.TempDir(), 4)
+	f, c := newFake(t)
+	c.Limits = Limits{VideoSeconds: 2, SegmentSeconds: 2, DownscaleHeight: 60}
+	n := 0
+	f.answer["/chat/completions"] = func(b map[string]any) (int, string) {
+		if n++; n == 1 {
+			return chatOK("red square", "")(b)
+		}
+		return 200, timeout200
+	}
+	req := Request{Model: "google/gemini-3.8-flash", Prompt: "describe", Files: []string{v}, VideoPrep: PrepSegment, MaxTokens: 200, MaxCostUSD: 0.1}
+	res, err := c.Run(context.Background(), req)
+	var pe *PartialError
+	if !errors.As(err, &pe) || pe.Answered != 1 || pe.Failed != 1 || pe.Total != 2 || !ProviderFailed(err) {
+		t.Fatalf("err = %v (%+v)", err, pe)
+	}
+	if !strings.Contains(res.Text, "[segment 1 of 2, 0:00 to 0:02]\nred square") || !strings.HasSuffix(res.Text, pe.Marker) ||
+		!strings.Contains(pe.Marker, "[segment 2 of 2, 0:02 to 0:04]\n(not answered: openrouter: provider error 504") {
+		t.Errorf("text = %q", res.Text)
+	}
+	if res.Usage.CostUSD != 0.00042 || !res.Measured() || !res.Billed() {
+		t.Errorf("usage %+v measured %v", res.Usage, res.Measured())
+	}
+
+	// Resuming at the failed part sends only that part.
+	f, c = newFake(t)
+	c.Limits = Limits{VideoSeconds: 2, SegmentSeconds: 2, DownscaleHeight: 60}
+	f.answer["/chat/completions"] = chatOK("blue square", "")
+	req.FromSegment = 1
+	res, err = c.Run(context.Background(), req)
+	if err != nil || f.count() != 1 || res.Estimate.Calls != 1 || !strings.HasPrefix(res.Text, "[segment 2 of 2, 0:02 to 0:04]\nblue square") {
+		t.Errorf("resume: %v, %d requests, %d calls, %q", err, f.count(), res.Estimate.Calls, res.Text)
+	}
+	// The first part failing leaves nothing to keep: a plain error.
+	f.answer["/chat/completions"] = func(map[string]any) (int, string) { return 200, timeout200 }
+	req.FromSegment = 0
+	if _, err = c.Run(context.Background(), req); err == nil || errors.As(err, &pe) {
+		t.Errorf("first part failed: %v", err)
+	}
 }

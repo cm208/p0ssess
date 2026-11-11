@@ -424,3 +424,131 @@ func TestApprovalFromTheMessageCoversTheCall(t *testing.T) {
 		})
 	}
 }
+
+const timeout200 = `{"error":{"message":"A Timeout Occurred","code":504,"metadata":{"error_type":"timeout"}}}`
+
+// TestDirectFallsBackOnProviderFailure: when the model p0ssess picked times out at its provider, the
+// next-ranked option answers once, under the same limits, and only billed calls are recorded (MEDIA.md,
+// run B on 0.5.2: no fallback, and the unbilled failure was recorded at its reserved maximum).
+func TestDirectFallsBackOnProviderFailure(t *testing.T) {
+	var models []string
+	f := &fakeRouter{}
+	f.chat = func() (int, string) {
+		var b struct {
+			Model string `json:"model"`
+		}
+		json.Unmarshal([]byte(f.bodies[len(f.bodies)-1]), &b)
+		models = append(models, b.Model)
+		if len(models) == 1 {
+			return 200, timeout200
+		}
+		return 200, strings.Replace(okChat, `"model":"test/cheap"`, `"model":"`+b.Model+`"`, 1)
+	}
+	withFake(t, f)
+	cfg, eng, _ := directEnv(t, "monthly_usd = 1\nper_task_usd = 0.50\ndaily_usd = -1\n")
+	req := direct.Request{Prompt: "summarize the plot", MaxTokens: 200}
+	res, runID, err := RunDirect(context.Background(), cfg, eng, req, DirectJob{UseCase: "video-understand", Stakes: 1})
+	if err != nil {
+		t.Fatalf("fallback: %v", err)
+	}
+	if len(models) != 2 || models[0] == models[1] || !strings.HasSuffix(res.Model, history.Short(models[1])) {
+		t.Fatalf("models %v, answered by %s", models, res.Model)
+	}
+	note := strings.Join(res.Warnings, "|")
+	if !strings.Contains(note, history.Short(models[0])+"'s provider failed (openrouter: provider error 504: A Timeout Occurred); "+history.Short(models[1])+" answered") {
+		t.Errorf("warnings: %v", res.Warnings)
+	}
+	l, sp := ledger(t, eng)
+	var runs []history.Entry
+	for _, e := range l.Entries {
+		if e.Type == history.TypeRun {
+			runs = append(runs, e)
+		}
+	}
+	if len(runs) != 1 || runs[0].Model != models[1] || runs[0].Estimated || runs[0].RunID != runID || sp.Month != 0.00002 || sp.Reserved != 0 || len(l.Open()) != 0 {
+		t.Errorf("ledger: runs %+v, spend %+v, open %d", runs, sp, len(l.Open()))
+	}
+
+	// A model the caller named is not swapped, and the unbilled failure is not recorded.
+	models = nil
+	_, _, err = RunDirect(context.Background(), cfg, eng, direct.Request{Model: testModel, Prompt: "hi", MaxTokens: 10}, DirectJob{})
+	if !direct.ProviderFailed(err) || len(models) != 1 {
+		t.Errorf("named model: %v, %d calls", err, len(models))
+	}
+	if _, sp2 := ledger(t, eng); sp2.Month != sp.Month || sp2.Estimated != 0 {
+		t.Errorf("an unbilled failure changed spend: %+v -> %+v", sp, sp2)
+	}
+
+	// The fallback stays within the caller's ceiling: it reserves at most what is left of it.
+	models = nil
+	capped := req
+	capped.MaxCostUSD, capped.MaxGiven = 0.0002, true
+	res, _, err = RunDirect(context.Background(), cfg, eng, capped, DirectJob{UseCase: "video-understand", Stakes: 1})
+	l, _ = ledger(t, eng)
+	var last history.Entry
+	for _, e := range l.Entries {
+		if e.Type == history.TypeReserve {
+			last = e
+		}
+	}
+	if err != nil || len(models) != 2 || last.Model != models[1] || last.CashUSD > 0.0002 {
+		t.Errorf("under a ceiling: %v, models %v, reserved %+v", err, models, last)
+	}
+	// With no other option that runs without asking, nothing else is tried, and the note says so.
+	if _, err := eng.SetSetting("per_task_usd", "0.0001"); err != nil {
+		t.Fatal(err)
+	}
+	models = nil
+	res, _, err = RunDirect(context.Background(), cfg, eng, req, DirectJob{UseCase: "video-understand", Stakes: 1})
+	if !direct.ProviderFailed(err) || len(models) != 1 || !strings.Contains(strings.Join(res.Warnings, "|"), "none was tried") {
+		t.Errorf("no alternative: %v, models %v, warnings %v", err, models, res.Warnings)
+	}
+}
+
+// TestDirectPartialIsAnAnswer: a split video whose second part fails comes back as the first part's
+// answer with a note, not as an error, and is recorded as partial at its measured cost.
+func TestDirectPartialIsAnAnswer(t *testing.T) {
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		t.Skip("ffmpeg not installed")
+	}
+	dir := t.TempDir()
+	v := filepath.Join(dir, "clip.mp4")
+	if out, err := exec.Command("ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-f", "lavfi", "-i", "color=c=red:s=160x90:r=10:d=4",
+		"-f", "lavfi", "-i", "sine=frequency=440:duration=4", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", v).CombinedOutput(); err != nil {
+		t.Skipf("ffmpeg: %v %s", err, out)
+	}
+	n := 0
+	f := &fakeRouter{chat: func() (int, string) {
+		if n++; n == 1 {
+			return 200, okChat
+		}
+		return 200, timeout200
+	}}
+	withFake(t, f)
+	plain := newClient
+	newClient = func(key string) *direct.Client {
+		c := plain(key)
+		c.Limits = direct.Limits{VideoSeconds: 2, SegmentSeconds: 2, DownscaleHeight: 60}
+		c.Catalog.Add(direct.ModelInfo{ID: "test/video", Input: []string{"text", "video", "audio"}, Output: []string{"text"},
+			Routes: []string{"/api/v1/chat/completions"}, InPerM: 1, OutPerM: 1})
+		return c
+	}
+	cfg, eng, _ := directEnv(t, "monthly_usd = 1\nper_task_usd = 0.50\ndaily_usd = -1\n")
+	args, _ := json.Marshal(map[string]any{"model": "test/video", "prompt": "describe", "files": []string{v}, "max_tokens": 50})
+	out := (&directTool{cfg: cfg, eng: eng}).call(context.Background(), args, nil)
+	text := out.Content[0].Text
+	if out.IsError || !strings.Contains(text, "[segment 1 of 2, 0:00 to 0:02]\nhi") || !strings.Contains(text, "(not answered: openrouter: provider error 504") ||
+		!strings.Contains(text, "note: ") || !strings.Contains(text, "partial answer: segment 2 of 2") || !strings.Contains(text, "video_prep segment, chosen automatically") {
+		t.Fatalf("error %v:\n%s", out.IsError, text)
+	}
+	l, sp := ledger(t, eng)
+	var run history.Entry
+	for _, e := range l.Entries {
+		if e.Type == history.TypeRun {
+			run = e
+		}
+	}
+	if run.Status != "partial" || run.Estimated || sp.Month != 0.00002 || sp.Reserved != 0 {
+		t.Errorf("run %+v, spend %+v", run, sp)
+	}
+}

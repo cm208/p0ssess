@@ -735,3 +735,36 @@ func TestLiveImageListingKeepsRegistryPrice(t *testing.T) {
 		t.Errorf("image price after a live listing with none = %s %v, want image 0.02", m.ImageUnit, m.ImageCost)
 	}
 }
+
+const timeout200 = `{"error":{"message":"A Timeout Occurred","code":504,"metadata":{"error_type":"timeout","provider_name":"Alibaba"}}}`
+
+// OpenRouter can fail a call after it has sent the 200 status; the body then holds only an error. That is
+// the provider's error, not "no choices", and it was not billed (MEDIA.md, run B on 0.5.2).
+func TestTopLevelErrorInA200Answer(t *testing.T) {
+	f, c := newFake(t)
+	f.answer["/chat/completions"] = func(map[string]any) (int, string) { return 200, timeout200 }
+	res, err := c.Run(context.Background(), Request{Model: "google/gemini-3.8-flash", Prompt: "hi", MaxCostUSD: 0.05})
+	if err == nil || !strings.Contains(err.Error(), "provider error 504: A Timeout Occurred (provider Alibaba)") || strings.Contains(err.Error(), "no choices") {
+		t.Fatalf("err = %v", err)
+	}
+	if !ProviderFailed(err) || res == nil || res.Billed() {
+		t.Errorf("provider failed %v, billed %v", ProviderFailed(err), res != nil && res.Billed())
+	}
+	// An error answer that carries a cost was billed.
+	f.answer["/chat/completions"] = func(map[string]any) (int, string) {
+		return 200, `{"error":{"message":"cut off","code":502},"usage":{"prompt_tokens":5,"completion_tokens":1,"cost":0.0001}}`
+	}
+	if res, err = c.Run(context.Background(), Request{Model: "google/gemini-3.8-flash", Prompt: "hi", MaxCostUSD: 0.05}); err == nil || !res.Billed() {
+		t.Errorf("billed error: %v %+v", err, res)
+	}
+	for _, e := range []error{&APIError{Status: 400}, &APIError{Status: 429}, &APIError{Status: 200, Code: "invalid"}, errors.New("x")} {
+		if ProviderFailed(e) {
+			t.Errorf("%v counted as a provider failure", e)
+		}
+	}
+	for _, e := range []error{&APIError{Status: 502}, &APIError{Status: 408}, &APIError{Status: 200, Code: "503"}} {
+		if !ProviderFailed(e) {
+			t.Errorf("%v not counted as a provider failure", e)
+		}
+	}
+}
