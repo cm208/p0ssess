@@ -234,7 +234,7 @@ p { text-wrap: pretty; }
   grid-template-areas: "ctl ctl" "say say" "score parts";
 }
 .ctl { grid-area: ctl; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.8rem; }
-.mode-say { grid-area: say; max-width: 34rem; font-size: 0.95rem; line-height: 1.5; min-height: 3em; }
+.mode-say { grid-area: say; max-width: 34rem; font-size: 0.95rem; line-height: 1.5; min-height: 4.5em; }
 .tally { grid-area: score; }
 .parts { grid-area: parts; }
 .tally { display: flex; align-items: baseline; gap: 0.5rem; }
@@ -649,6 +649,7 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
   .said { min-height: 10.9rem; }
   .readout { grid-template-areas: "ctl score" "say parts"; column-gap: clamp(1.4rem, 3vw, 2.8rem); }
   .tally { justify-self: end; }
+  .mode-say { min-height: 3em; }
   .tally .num { font-size: clamp(3.4rem, 5.4vw, 4.2rem); }
   .isl-label { display: block; }
 }
