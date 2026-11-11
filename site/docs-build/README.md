@@ -25,7 +25,7 @@ podman run --rm -v "$PWD":/src:z -w /src docker.io/library/python:3.13.17-slim p
 - `base_url`: the docs site, for canonical links, `sitemap.xml` and `robots.txt`.
 - `site_url`: the landing page, linked from the header.
 - `repo_url` and `branch`: a Markdown link to a repository file that is not a page (code, `LICENSE`, `catalog/`) goes to `<repo_url>/src/branch/<branch>/<path>`.
-- `pages`: source, slug, sidebar label and group, in reading order. Links between listed files become links between pages, anchors included; a page's own `#anchor` links keep working because headings get GitHub-style ids. To add a page, add its line (the internal review is there, commented out).
+- `pages`: source, slug, sidebar label and group, in reading order. Links between listed files become links between pages, anchors included; a page's own `#anchor` links keep working because headings get GitHub-style ids. To add a page, add its line.
 
 ## What it makes
 

@@ -16,5 +16,5 @@ pages = [
   { source = "docs/MEDIA.md",         slug = "media",         nav = "Media",         group = "How it works" },
   { source = "docs/RELEASE.md",       slug = "release",       nav = "Releases",      group = "Project" },
   { source = "docs/RESEARCH.md",      slug = "research",      nav = "Research",      group = "Project" },
-  # { source = "docs/REVIEW-2026-11-09.md", slug = "review-2026-11-09", nav = "Review, 2026-11-09", group = "Project" },
+  { source = "docs/REVIEW-2026-11-09.md", slug = "review-2026-11-09", nav = "Review, 2026-11-09", group = "Project" },
 ]
