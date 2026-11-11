@@ -221,7 +221,7 @@ Haiku relay turns in run B (input, cache read, cache write): 2, 0, 5,482; 2, 5,4
 - One run each. Claude chooses its own method; a finer frame grid would catch more and cost more.
 - The film is famous. Run A named the three rodents from memory, and either model may lean on what it knows of the film. A private recording would be a fairer test.
 - **In this run p0ssess did not save Claude usage.** The hand-off turns, the failed first attempt and the model's 4,800-token answer in the main context cost more than run A's single contact sheet. What it bought was coverage and the soundtrack: 25 of 25 against 15, for $0.044 more in total and about 4.5 minutes more wall time.
-- Run B paid for one wasted round because the 48 MiB error does not offer `video_prep`. With that hint p0ssess would downscale on its own and Claude would skip the re-encode.
+- Run B paid for one wasted round because the 48 MiB error does not offer `video_prep`. With that hint p0ssess would downscale on its own and Claude would skip the re-encode. (0.5.2 added the hint; since 0.5.4 the tool prepares the video itself, see [Run B on 0.5.4](#run-b-on-054).)
 - On a short clip the other model's cost is a tenth of a cent (Qwen3.8 Omni Flash averaged $0.0012 per 8–15-second clip above), so nearly all of the cost is Claude's hand-off, $0.04–0.06 on Sonnet in RESEARCH.md's measurement. Short clips save little or nothing; the reason to delegate them is the sound, which Claude cannot hear.
 - Scored by hand by the agent that ran both sessions.
 
@@ -258,9 +258,38 @@ Per turn, main session (input, cache read, cache write): 2, 12,944, 7,805; 2, 20
 
 **What it shows.**
 
-- The request-limit fix worked: the first error named the steps, and nobody re-encoded the film by hand. The wasted round did not go away entirely, because the relay agent passed the error up instead of acting on it.
-- Three p0ssess bugs, not fixed in 0.5.2: an error object at the top level of a 200 answer is reported as "no choices" instead of the provider's message; a failed segment discards the parts already answered; and the ledger recorded the failed `downscale` call at its reserved maximum ($0.0556, marked estimated) although OpenRouter did not bill it.
-- There is no fallback: when the picked model's only provider times out, p0ssess does not try the next option (Gemini 3.8 Flash here).
+- The request-limit fix worked: the first error named the steps, and nobody re-encoded the film by hand. The wasted round did not go away entirely, because the relay agent passed the error up instead of acting on it. **Fixed in 0.5.4:** the tool picks `segment` or `downscale` itself in the same call.
+- Three p0ssess bugs, not fixed in 0.5.2: an error object at the top level of a 200 answer is reported as "no choices" instead of the provider's message; a failed segment discards the parts already answered; and the ledger recorded the failed `downscale` call at its reserved maximum ($0.0556, marked estimated) although OpenRouter did not bill it. **All three fixed in 0.5.4:** the error is reported as the provider's ("provider error 504: A Timeout Occurred"), the answered parts come back marked partial, and an error answer with no usage releases its reservation.
+- There is no fallback: when the picked model's only provider times out, p0ssess does not try the next option (Gemini 3.8 Flash here). **Fixed in 0.5.4:** the next-ranked option that runs without asking gets the unanswered part once, within the limits ([Cost guard](#cost-guard)).
+
+### Run B on 0.5.4
+
+Measured on 2026-11-10 with p0ssess 0.5.4, a binary built from the release commit with the release flags (its SHA-256 matches `dist/SHA256SUMS`). Changed since 0.5.2: a video over a limit is prepared in the same call, provider errors inside a 200 answer are reported and not billed, a failed part keeps the parts before it, and a failed provider falls back once to the next option. The engine's pick was still Qwen3.8 Omni Flash at stakes 1, with Gemini 3.8 Flash next.
+
+**Method.** As for the 0.5.2 run: the same prompt, flags, allowed tools, checklist and scoring rules, Claude Code 2.1.322, and a scratch `P0SSESS_HOME` with `monthly_usd = 0.50`, `per_task_usd = 0.50` and `plan = "api"`. The film was made again from the same official 720p file with the same ffmpeg command; it came out at the same size to the byte (393,831,787) and the same duration (596.461667 s). The checklist is the one written before the first runs, unchanged. **Run A was not repeated**; its figures are reused.
+
+**Attempts.** Two, both reported here.
+
+1. The test machine's desktop power manager suspended it 6 seconds into the run, during the local split, and it woke 29 minutes 36 seconds later. Claude Code's print mode stops background agents 10 minutes (wall clock) after the last turn, so on waking it stopped the p0ssess agent. Nothing was sent to OpenRouter (key usage stayed at $0), and the reservation was released. The main session had ended its first turn with "The video is still being analyzed", so there is no answer. This is a failure of the test machine, not of p0ssess or the provider; it is listed for completeness.
+2. Run again with sleep inhibited, otherwise the same. The main session started one p0ssess agent. Its single `direct` call, with no `video_prep`, split the film into two 300-second parts on its own, downscaled each locally (23.5 to 5.0 MiB and 28.8 to 6.0 MiB), and Qwen3.8 Omni Flash answered both. No timeouts, so the fallback was not exercised. The provider again billed more completion tokens than the cap (12,111 against 8,192), and the note said so.
+
+| | Run A: Claude alone (earlier figure, reused) | Run B on 0.5.1 | Run B on 0.5.2 | Run B on 0.5.4, attempt 1 | Run B on 0.5.4, attempt 2 |
+|---|---|---|---|---|---|
+| Wall time | 40 s | 321 s | 437 s | 1,783 s (machine asleep 1,776 s) | 262 s |
+| Agents started | none | 2 | 3 | 1 (stopped) | 1 |
+| Sonnet: input / cache read / cache write / output | 10 / 105,692 / 15,609 / 2,690 | 14 / 158,380 / 17,881 / 2,564 | 16 / 185,080 / 15,204 / 1,686 | 6 / 57,247 / 10,777 / 278 | 8 / 80,965 / 15,937 / 2,196 |
+| Haiku: input / cache read / cache write / output | none | 10 / 23,378 / 14,275 / 5,217 | 12 / 26,448 / 12,177 / 1,729 | 2 / 0 / 5,545 / 218 | 4 / 5,545 / 11,695 / 4,879 |
+| Claude cost at list price | $0.0999 | $0.1177 | $0.0989 | $0.0524 (Sonnet $0.0516, Haiku $0.0008) | $0.0978 (Sonnet $0.0938, Haiku $0.0040) |
+| OpenRouter cost | $0 | $0.0264 | $0.0072 | $0 | $0.0162 (ledger and key usage both $0.01618947) |
+| **Total** | **$0.0999** | **$0.1441** | **$0.1061** | **$0.0524** | **$0.1140** |
+| Main context at the last call | 28,555 tokens | 30,827 tokens | 28,150 tokens | 23,723 tokens | 28,883 tokens |
+| **Score (of 25)** | **15** | **25** | **0** | **0** (no answer) | **25** (events 20 of 20, sound 5 of 5) |
+
+Attempt 2, per turn, main session (input, cache read, cache write): 2, 12,944, 7,820; 2, 20,764, 2,774; 2, 23,538, 181; 2, 23,719, 5,162 (the model's answer). Haiku turns: 2, 0, 5,545; 2, 5,545, 6,150.
+
+**Score.** Every event was described within its window and every sound cue was named, including no dialogue and a score that follows the mood. The closest call is the butterflies' deaths (3:05 to 3:45): the answer says the rodents "grab his butterfly", with the spiky burr, and that the bunny's expression turns cold at 3:51; it does not say the butterflies are killed. Scored as described, that is 25; scored strictly, 23. Some details are wrong: it calls the chinchilla a mouse, says the mouse is unharmed by the log trap, and calls the credits quiet, while the measured levels are loud from 8:10 to 8:50.
+
+**Result.** Run B on 0.5.4 cost $0.1140 against run A's $0.0999: **$0.0141 (14%) more than Claude alone**, for 25 of 25 against 15. It is $0.0301 (21%) less than run B on 0.5.1, which scored the same. Most of the difference from run A is Claude's own cost: Sonnet's one-hour cache writes (15,937 tokens, $0.064) for the plugin's agent definitions in the first turn and the model's 5,200-token answer at the end. The other model's whole share was $0.0162. On this job p0ssess did not make Claude cheaper; it made the answer complete, with the soundtrack Claude cannot hear.
 
 ## Local shortcuts
 
