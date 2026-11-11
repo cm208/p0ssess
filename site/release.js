@@ -7,7 +7,7 @@ window.P0SSESS = {
   // <repo>/releases/download/v<version>/<file>, which is where Gitea serves them.
   repo: "https://git.christianmoo.re/cmoore/p0ssess",
   // The published release, without the "v": "<major>.<minor>.<patch>".
-  version: "0.5.4",
+  version: "0.5.5",
   // The documentation site, or "" to keep the Docs link hidden.
   docs: "https://docs.p0ssess.me",
   // Optional: the lines of that release's SHA256SUMS, to print each sum under its file.
