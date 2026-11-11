@@ -696,7 +696,7 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
 
 @media (min-width: 1024px) {
   .hero-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 480px); column-gap: clamp(40px, 5vw, 88px); row-gap: 1rem;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 482px); column-gap: clamp(40px, 5vw, 88px); row-gap: 1rem;
     grid-template-areas: "pitch screen" "readout readout" "tracks tracks" "note note";
   }
   .pitch { grid-area: pitch; align-self: center; }
