@@ -25,10 +25,10 @@ The hand-off runs in a small background agent on Haiku, which makes the calls an
 
 ## Install
 
-You need Claude Code and an [OpenRouter](https://openrouter.ai) API key. The plugin runs one Go binary: a release archive ships it for Linux (amd64, arm64) and macOS (Apple silicon), checked against SHA-256 sums before it runs. A plain clone downloads the same binary from the [releases page](https://git.christianmoo.re/cmoore/p0ssess/releases) and checks it the same way, or, when that fails, builds it on first use with Go 1.27 or later in a few seconds. Releases are built reproducibly from the tagged commit, so anyone can rebuild one and compare ([docs/RELEASE.md](docs/RELEASE.md)). For the sandboxed agent path you also need Linux with rootless podman; without it, media and one-shot jobs still work.
+You need Claude Code and an [OpenRouter](https://openrouter.ai) API key. The plugin runs one Go binary: a release archive ships it for Linux (amd64, arm64) and macOS (Apple silicon), checked against SHA-256 sums before it runs. A plain clone downloads the same binary from the [releases page](https://github.com/cm208/p0ssess/releases) and checks it the same way, or, when that fails, builds it on first use with Go 1.27 or later in a few seconds. Releases are built reproducibly from the tagged commit, so anyone can rebuild one and compare ([docs/RELEASE.md](docs/RELEASE.md)). For the sandboxed agent path you also need Linux with rootless podman; without it, media and one-shot jobs still work.
 
 ```sh
-claude plugin marketplace add https://git.christianmoo.re/cmoore/p0ssess.git
+claude plugin marketplace add cm208/p0ssess
 claude plugin install p0ssess@p0ssess
 ```
 
@@ -79,7 +79,7 @@ The mark is a 16-by-16 pixel ghost, the thing that possesses another model for a
 
 ## Questions or bugs
 
-Write to [me@christianmoo.re](mailto:me@christianmoo.re).
+Open an issue at [github.com/cm208/p0ssess](https://github.com/cm208/p0ssess/issues), or write to [me@christianmoo.re](mailto:me@christianmoo.re).
 
 ## License
 

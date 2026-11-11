@@ -1,7 +1,7 @@
 # Addresses. Each is used everywhere it appears in the output.
 base_url = "https://docs.p0ssess.me"     # this docs site: canonical links, sitemap, robots.txt
 site_url = "https://p0ssess.me"          # the landing page, linked from the header
-repo_url = "https://git.christianmoo.re/cmoore/p0ssess"
+repo_url = "https://github.com/cm208/p0ssess"
 branch = "main"                          # links into the repo go to <repo_url>/src/branch/<branch>/<path>
 
 # Pages in reading order. source is relative to the repository root; slug "" is the home page.

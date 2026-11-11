@@ -4,8 +4,8 @@
 window.P0SSESS = {
   // The repository's page on the git server, without a trailing slash:
   // "https://<host>/<owner>/p0ssess". Release files are read from
-  // <repo>/releases/download/v<version>/<file>, which is where Gitea serves them.
-  repo: "https://git.christianmoo.re/cmoore/p0ssess",
+  // <repo>/releases/download/v<version>/<file>, which is where GitHub and Gitea serve them.
+  repo: "https://github.com/cm208/p0ssess",
   // The published release, without the "v": "<major>.<minor>.<patch>".
   version: "0.5.5",
   // The documentation site, or "" to keep the Docs link hidden.

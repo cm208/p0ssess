@@ -24,9 +24,9 @@ Needs Go 1.27 or later, git, GNU tar, gzip and sha256sum. Use the same Go versio
 3. Write the checksums: `scripts/build-release.sh sums` builds from `HEAD` and writes `dist/SHA256SUMS` and `dist/VERSION`. Commit them (`git add dist/SHA256SUMS dist/VERSION`). The binaries do not depend on `dist/`, so this commit does not change them.
 4. Tag: `git tag -a v<version> -m "p0ssess <version>"`, then push `main` and the tag.
 5. Build the release: `scripts/build-release.sh` builds from the tagged `HEAD` into `release/<version>/` and refuses unless the binaries match the committed `dist/SHA256SUMS`.
-6. Publish `release/<version>/*` as the release for the tag, below.
+6. Publish `release/<version>/*` as the release for the tag on both GitHub and Gitea, below.
 
-### On Gitea (now)
+### On Gitea
 
 In the web UI: the repository's **Releases**, **New release**, choose the tag `v<version>`, title `p0ssess <version>`, notes, then attach every file in `release/<version>/`. The same over the API, with a token that has repository write access in `$GITEA_TOKEN`:
 
@@ -39,17 +39,13 @@ for f in release/<version>/*; do
 done
 ```
 
-`dist/release-url` holds `https://git.christianmoo.re/cmoore/p0ssess/releases/download`, so a plain clone downloads its binary from the release and checks it against `dist/SHA256SUMS`. A download that fails or does not match falls through to a Go build.
-
-### On GitHub (later)
-
-Once the repository is public on GitHub:
+### On GitHub
 
 ```sh
 gh release create v<version> release/<version>/* --title "p0ssess <version>" --notes-file <notes>
 ```
 
-Then commit `dist/release-url` with `https://github.com/<owner>/p0ssess/releases/download`, so a plain clone downloads and checks the binary instead of needing Go. Do this in the release commit of step 3 for the next release, or as its own commit after the release is published. A download that fails or does not match falls through to a Go build, so the URL can be committed before the files are published without breaking anything.
+`dist/release-url` holds `https://github.com/cm208/p0ssess/releases/download`, so a plain clone downloads its binary from the GitHub release and checks it against `dist/SHA256SUMS`. A download that fails or does not match falls through to a Go build, so publish on GitHub before pushing the release commit there.
 
 ## Checking a release
 
