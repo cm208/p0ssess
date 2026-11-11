@@ -1,11 +1,11 @@
 # p0ssess website
 
-A single static page: `index.html`, `style.css`, `page.js`, `release.js`, `ghost.svg`, three film images (`film-frames.webp`, `film-strip.webp`, `film-still.png`), `og.png` (the share image) and `fonts/`. No build step, no framework, and no requests to anything but its own files.
+A single static page: `index.html`, `style.css`, `page.js`, `release.js`, `ghost.svg`, three film images (`film-frames.webp`, `film-strip.webp`, `film-still.png`), the real outputs under the abilities (`ghost-lantern.webp`, and `apollo-ignition.webp`, `apollo-scan.webp` and `apollo-strip.webp` for the video answer), `og.png` (the share image) and `fonts/`. No build step, no framework, and no requests to anything but its own files.
 
 The page is a launch page. In order:
 
 1. **The hero.** The headline, what p0ssess is, the way to the install steps, and beside them the film test: one prompt run twice on a ten-minute film, Claude alone and Claude with p0ssess.
-2. **Three things Claude couldn't do before.** Video, audio and images, each with something to say to Claude and one measured call.
+2. **Three things Claude couldn't do before.** Video, audio and images, each with the prompt that was sent, what came back, and what the call cost.
 3. **How a possession works.** The hand-off drawn as three stops, and where one run's money went.
 4. **An engine picks who does the job.** The gates and one ranking from the engine.
 5. **The work Claude shouldn't spend itself on.** Chores, second opinions and usage-aware routing, with engine estimates.
@@ -30,10 +30,11 @@ One motion language: arrivals ease out (`--out`), travel that stays on screen ea
 
 - **The sweep**, the page's one authored moment. With motion allowed the film test opens on "Claude alone" and, once its timeline is on screen, the ghost rides the playhead across the film in 2.4 seconds. The lit layers follow it, the frames run in the screen, and the score ticks from 15 to 25 as it passes what Claude alone missed.
 - **Hairlines** draw out of their 24 px violet start when they scroll into view, and **chart bars** grow from the baseline, each once.
+- **The two answers under the abilities** come back once, when their box is mostly on screen: the clip is scanned to the pin and the frame sharpens, and the recording is played through while each line of the transcript arrives at its time. About two seconds each.
 - **The hand-off** plays once when it scrolls into view (4.8 seconds) and again on Replay.
 - **The island** slides its violet dot to the part in view and resizes to its name.
 
-Every animated part has a complete still state in the markup. With `prefers-reduced-motion: reduce`, or with scripts off, the page shows that: the film test on "with p0ssess" at 25 of 25, the hand-off possessed with one measured job named, bars at full length. With reduced motion the switches, the event tabs and scrubbing still work, without the sweep. If scripting is on but `page.js` never runs, the film test shows itself after 2.5 seconds.
+Every animated part has a complete still state in the markup. With `prefers-reduced-motion: reduce`, or with scripts off, the page shows that: the film test on "with p0ssess" at 25 of 25, the two answers under the abilities complete, the hand-off possessed with one measured job named, bars at full length. With reduced motion the switches, the event tabs and scrubbing still work, without the sweep. If scripting is on but `page.js` never runs, the film test shows itself after 2.5 seconds.
 
 ## The film test
 
@@ -103,19 +104,63 @@ The loud stretches match the ones MEDIA.md measured (4:10 to 4:55, 6:40 to 7:20,
 
 ## Every other figure, and where it comes from
 
-Measured calls are from the live results in `../docs/MEDIA.md`:
+The three cells under the abilities each show a real p0ssess run, with the prompt that was sent word for word:
 
 | On the page | Source |
 |---|---|
-| $0.0067, a ten-second clip on gemini-3.8-flash, described correctly including its tone | "Describe video", $0.006684 |
-| $0.0002, 16 seconds of speech on whisper-large-v3-turbo, word for word with timestamps | "Transcript with timestamps", $0.000180, 16.2 s, word-perfect, 5 timed segments |
-| $0.0070, a 1024-pixel image on recraft-v4.1-flash that matched its prompt | "Generate image (image API)", $0.007000, 1024×1024, on prompt |
-| The ghost-with-a-lantern image in the images cell (`ghost-lantern.webp`) | A real p0ssess 0.5.4 run on 2026-11-11 through the p0ssess agent: the cell's prompt word for word, recraft/recraft-v4.1-flash, no resolution set, $0.0070. It returned an 832×1280 WebP; the page shows rows 150 to 774, saved at quality 80. |
+| The video cell: `Watch apollo11-launch.mp4 and tell me when the engines ignite.`, $0.0103 on gemini-3.8-flash | Run `d-87b85c904aee` on 2026-11-11, google/gemini-3.8-flash. The clip is 45 s at 1280×720, cut from 55:55 to 56:40 of NASA's "Video - Apollo 11 Pre-Launch and Launch" (nasa_id `KSC-19690716-MH-NAS01-0001-Apollo_11_Launch_President_Johnson_Jack_King_Narration_Press_Site-B_1372`, images.nasa.gov, NASA/KSC, public domain). |
+| The quote in the video cell, "The engine ignition sequence begins at approximately 00:28 – 00:29 …" | The opening of that run's answer, cut where the page shows "…". The whole answer is below the table. The page shows the answer's bold time in violet. |
+| "That time is right: at 0:28 the countdown clock in the frame reads 00 09", and the pin at 0:28 | Checked against frames of the clip: the clock on screen reads 00 11 at 0:26, 00 10 at 0:27, 00 09 at 0:28 and 00 08 at 0:29. The frame in the cell is the one at 0:28. The rest of the answer is not on the page: flames burst on screen at about 0:33, and its liftoff time is about 2 s late (T-0 is about 0:37). Do not quote the liftoff time as right. |
+| The audio cell: `Transcribe eagle-has-landed.mp3 with timestamps.`, $0.0013 on gemini-3.8-flash | Run `d-48d679adc103`, google/gemini-3.8-flash. The file is NASA's 5.36 s recording, `569462main_eagle_has_landed.mp3` from nasa.gov (public domain). |
+| The two transcript lines and their times | That run's whole answer, word for word: "00:00 - 00:03 Houston, Tranquility Base here." and "00:03 - 00:05 The Eagle has landed." It is correct. Not on the page: openai/whisper-large-v3-turbo on the same file returned "Swifton, uh, Tranquility Base here. The Eagle has landed." (run `d-9c7da65784ab`, about $0.0000). |
+| The ghost-with-a-lantern image in the images cell (`ghost-lantern.webp`), $0.0070 on recraft-v4.1-flash | A real p0ssess 0.5.4 run on 2026-11-11 through the p0ssess agent: the cell's prompt word for word, recraft/recraft-v4.1-flash, no resolution set, $0.0070. It returned an 832×1280 WebP; the page shows rows 150 to 774, saved at quality 80. |
+
+The video run's whole answer, as it came back:
+
+```
+The engine ignition sequence begins at approximately **00:28 – 00:29** in the video (at **T-8.9 seconds** on the countdown, when launch control announces *"ignition sequence start"*). Smoke and exhaust become visible at the base of the rocket around **00:26 – 00:28**, followed by the full eruption of flames and exhaust plumes at **00:32**, leading up to liftoff at **00:39 – 00:40**.
+```
+
+The video cell's images are made from that clip. Its picture is 4:3 inside a 16:9 file, so each frame is cropped to the picture first. The scan frames are small on purpose and drawn pixelated, like the film test's.
+
+```sh
+C="crop=944:708:172:10"
+# The frame at 0:28, where the answer puts ignition.
+ffmpeg -ss 28 -i apollo11-launch.mp4 -frames:v 1 -vf "$C,scale=480:360:flags=lanczos" still.png
+magick still.png -quality 72 -define webp:method=6 apollo-ignition.webp
+# The scan: 15 frames, one every 2 s from 0 to 28, each 64x48, in one row.
+ffmpeg -ss $T -i apollo11-launch.mp4 -frames:v 1 -vf "$C,scale=64:48:flags=area" $N.png
+magick montage *.png -tile 15x1 -geometry 64x48+0+0 scan.png
+magick scan.png -dither None -colors 64 PNG8:scan-64.png
+magick scan-64.png -define webp:lossless=true -define webp:method=6 apollo-scan.webp
+# The strip: 30 slices, one every 1.5 s from 0.75 s, each the middle 24 px of a 64x48 frame.
+ffmpeg -ss $T -i apollo11-launch.mp4 -frames:v 1 -vf "$C,scale=64:48:flags=area,crop=24:48:20:0" $N.png
+magick montage *.png -tile 30x1 -geometry 24x48+0+0 strip.png
+magick strip.png -quality 72 -define webp:method=6 apollo-strip.webp
+```
+
+The pin stands at 28 of 45 seconds (62.22%, in `.vid-run` and the `vid-run` keyframes). The frame keeps its lower part (`object-position`), where the clock is.
+
+The audio cell's waveform is the recording's own loudness, as in the film test's sound lane: decoded to 16 kHz mono, RMS per 50 ms (107 bars, 5.35 s). A bar's height is `(dB + 30) / 24.5`, clamped to 0.05 to 1, of nine tenths of the lane. The path is in `index.html` (`#eagle-d`). The two marks under it are the answer's ranges on that scale, 3 s and 2 s (`.aud-marks`).
+
+```sh
+ffmpeg -i eagle-has-landed.mp3 -ac 1 -ar 16000 -f s16le eagle.raw
+```
+
+Both boxes (`figure.result`) keep the image's 4:3, so the three cells are the same height. The footer credits NASA; keep that while these are on the page.
+
+Other measured calls are from the live results in `../docs/MEDIA.md`:
+
+| On the page | Source |
+|---|---|
+| In the hand-off figure: $0.0067, a ten-second clip on gemini-3.8-flash | "Describe video", $0.006684 |
+| In the hand-off figure: $0.0002, 16 seconds of speech on whisper-large-v3-turbo | "Transcript with timestamps", $0.000180, 16.2 s, word-perfect, 5 timed segments |
+| In the hand-off figure: $0.0070, a 1024-pixel image on recraft-v4.1-flash | "Generate image (image API)", $0.007000, 1024×1024, on prompt |
 | "a few cents more" for the hand-off itself | $0.04 to $0.12 of Sonnet usage, `../docs/RESEARCH.md` |
 | $0.0938, $0.0040, $0.0162 of the film run's $0.1140 | MEDIA.md, the run B on 0.5.4 table: Sonnet, Haiku, OpenRouter |
 | 28,883 tokens against 28,555 | same table, "Main context at the last call" |
 
-The three things to say to Claude under the abilities, "Use deepseek flash to draft tests for stats.py" and the three rules are from `../README.md`. The status line's three states are from `../docs/ENGINE.md`. The list of what it won't do follows `../README.md` (Privacy, Respects a budget, Rates stakes, Learns quietly) and `../docs/DESIGN.md`.
+"Use deepseek flash to draft tests for stats.py", the image prompt and the three rules are from `../README.md`. The status line's three states are from `../docs/ENGINE.md`. The list of what it won't do follows `../README.md` (Privacy, Respects a budget, Rates stakes, Learns quietly) and `../docs/DESIGN.md`.
 
 Engine figures are estimates and the page labels each as one. They are output of the 0.5.4 release binary (its SHA-256 matches `../dist/SHA256SUMS`) in a scratch `P0SSESS_HOME` with no history and no network, so prices are the shipped snapshot's:
 
@@ -175,7 +220,7 @@ With scripts off the buttons stay disabled, because the addresses live in the sc
 
 ## Screenshots
 
-`shoot.js` serves the folder on 127.0.0.1, blocks every other request, and captures 1440×900 and 390×844 with reduced motion, so the captures are deterministic: the top, the film test, each section and the end. `--only name,name` retakes single shots and `--full` adds full-page captures. `--live` adds captures with motion allowed (`live-*.png`): the sweep at three moments on each size, the hand-off part-way through, and the island over the engine section. `--og FILE` writes the share image. It needs Node, `playwright-core` and a Chromium-based browser:
+`shoot.js` serves the folder on 127.0.0.1, blocks every other request, and captures 1440×900 and 390×844 with reduced motion, so the captures are deterministic: the top, the film test, each section and the end. `--only name,name` retakes single shots and `--full` adds full-page captures. `--live` adds captures with motion allowed (`live-*.png`): the sweep at three moments on each size, the two answers under the abilities and the hand-off part-way through, and the island over the engine section. `--og FILE` writes the share image. It needs Node, `playwright-core` and a Chromium-based browser:
 
 ```sh
 node site/shoot.js --browser /path/to/chromium --out site/shots --full --live
@@ -188,7 +233,7 @@ It prints console errors, failed and outside requests, and any horizontal overfl
 
 ## Deploy
 
-Copy `index.html`, `style.css`, `page.js`, `release.js`, `ghost.svg`, `film-frames.webp`, `film-strip.webp`, `film-still.png`, `og.png` and `fonts/` to any static host. `scenes.js` is gone; remove it from the host. `README.md`, `shoot.js`, `shots/` and `docs-build/` are not needed there.
+Copy `index.html`, `style.css`, `page.js`, `release.js`, `ghost.svg`, `film-frames.webp`, `film-strip.webp`, `film-still.png`, `ghost-lantern.webp`, `apollo-ignition.webp`, `apollo-scan.webp`, `apollo-strip.webp`, `og.png` and `fonts/` to any static host. `scenes.js` is gone; remove it from the host. `README.md`, `shoot.js`, `shots/` and `docs-build/` are not needed there.
 
 The page carries a strict Content Security Policy in a `<meta>` tag. If the host can set headers, send the same policy as a header and add what a meta tag cannot express:
 
@@ -198,7 +243,7 @@ Referrer-Policy: no-referrer
 X-Content-Type-Options: nosniff
 ```
 
-Serve `.woff2` as `font/woff2` and `.webp` as `image/webp`, and cache `fonts/` and the film images for a long time. Outside addresses are only followed when someone clicks a link; the page itself loads nothing from them. Uncompressed, the page and everything it loads come to about 280 KB.
+Serve `.woff2` as `font/woff2` and `.webp` as `image/webp`, and cache `fonts/` and the images for a long time. Outside addresses are only followed when someone clicks a link; the page itself loads nothing from them. Uncompressed, the page and everything it loads come to about 340 KB.
 
 ## Fonts
 
