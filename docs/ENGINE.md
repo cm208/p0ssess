@@ -432,7 +432,7 @@ The `direct` and `run` tools enforce every limit before they spend (see Enforcem
 
 A shortcut is a named relay agent with a fixed model, such as `p0ssess-gemini-3-8-flash-media`, written to your Claude Code agent directory (`~/.claude/agents/`, or `$CLAUDE_CONFIG_DIR/agents/`). `shortcuts_suggest` proposes one for a model and kind of work you have accepted in at least 80% of three or more outcomes; nothing is written until Claude calls `shortcuts_create`, which Claude Code asks you to approve. A `direct` shortcut calls the direct tool; an `agent` shortcut calls the relay. There are at most 12, and `shortcuts_remove` deletes only files p0ssess made.
 
-The server finds the session for session-scoped rules from the latest status line or hook reading for its project directory; tools also take `session_id` and `cwd`.
+The server finds the session for session-scoped rules from `CLAUDE_CODE_SESSION_ID`, which Claude Code gives the MCP server (subagents' calls share it), else from the latest status line or hook reading for its project directory; tools also take `session_id` and `cwd`. A needs-approval answer names the session it resolved, so its `approvals_add` arguments work as given.
 
 ## The local page
 

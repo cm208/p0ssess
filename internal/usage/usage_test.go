@@ -61,6 +61,13 @@ func TestRecordAndSessions(t *testing.T) {
 	if !ok || se.ID != "abc" || se.Project != dir {
 		t.Errorf("SessionFor = %+v", se)
 	}
+	// Claude Code's project directory need not be a repository: a session that moved below it is
+	// still found from it.
+	launch := t.TempDir()
+	s.TouchSession(Session{ID: "moved", Cwd: filepath.Join(launch, "repo"), Project: launch, Seen: time.Now()})
+	if se, ok := s.SessionFor(launch); !ok || se.ID != "moved" {
+		t.Errorf("SessionFor(project dir) = %+v %v", se, ok)
+	}
 	// Another project's session (and its session-scoped rules) never applies here.
 	if se, ok := s.SessionFor(t.TempDir()); ok {
 		t.Errorf("SessionFor fell back to %+v for an unrelated directory", se)

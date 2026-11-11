@@ -234,7 +234,9 @@ func (r Rule) String() string {
 		if r.Period == "day" {
 			per = " a day"
 		}
-		if r.MaxCount > 0 {
+		if r.MaxCount == 1 {
+			fmt.Fprintf(&b, ", 1 run%s", per)
+		} else if r.MaxCount > 0 {
 			fmt.Fprintf(&b, ", %d runs%s", r.MaxCount, per)
 		}
 		if r.MaxTotalUSD > 0 {

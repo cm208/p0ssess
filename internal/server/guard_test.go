@@ -2,12 +2,15 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -18,8 +21,11 @@ import (
 	"p0ssess/internal/history"
 	"p0ssess/internal/opencode"
 	"p0ssess/internal/pme/engine"
+	"p0ssess/internal/pme/hook"
+	"p0ssess/internal/pme/mcpserver"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/relay"
+	"p0ssess/internal/usage"
 )
 
 const testModel = "test/cheap"
@@ -76,6 +82,7 @@ func directEnv(t *testing.T, budgetTOML string) (config.Config, *engine.Engine, 
 	proj := filepath.Join(home, "proj")
 	os.MkdirAll(filepath.Join(proj, ".git"), 0o755)
 	t.Setenv("CLAUDE_PROJECT_DIR", proj)
+	t.Setenv("CLAUDE_CODE_SESSION_ID", "")
 	cfg, err := config.Load()
 	if err != nil {
 		t.Fatal(err)
@@ -348,5 +355,68 @@ func TestDirectPicksTheModel(t *testing.T) {
 		if got := inferUseCase(tc.out, tc.kinds); got != tc.want {
 			t.Errorf("%s %v: %q, want %q", tc.out, tc.kinds, got, tc.want)
 		}
+	}
+}
+
+// TestApprovalFromTheMessageCoversTheCall replays a needs-approval answer end to end, as it happened
+// live: Claude Code was started in a directory that is not a repository and the session has moved to a
+// repository below it, so the server's directory is not the session's. The approvals_add arguments
+// are copied from the message verbatim, and the retried call must run under that approval. The
+// session comes from Claude Code's environment, or, without it, from the status line and hook records.
+func TestApprovalFromTheMessageCoversTheCall(t *testing.T) {
+	const model, sid = "openai/gpt-6.1-sol", "ed59eeff-0000-4000-8000-000000000001"
+	for name, env := range map[string]string{"environment": sid, "records": ""} {
+		t.Run(name, func(t *testing.T) {
+			f := &fakeRouter{chat: func() (int, string) { return 200, okChat }}
+			withFake(t, f)
+			priced := newClient
+			newClient = func(key string) *direct.Client {
+				c := priced(key)
+				c.Catalog.Add(direct.ModelInfo{ID: model, Input: []string{"text"}, Output: []string{"text"},
+					Routes: []string{"/api/v1/chat/completions"}, InPerM: 2, OutPerM: 10})
+				return c
+			}
+			cfg, eng, _ := directEnv(t, "monthly_usd = 10\nper_task_usd = 0.10\ndaily_usd = -1\n")
+			launch := filepath.Join(t.TempDir(), "home")
+			sub := filepath.Join(launch, "repo")
+			os.MkdirAll(filepath.Join(sub, ".git"), 0o755)
+			t.Setenv("CLAUDE_PROJECT_DIR", launch)
+			t.Setenv("CLAUDE_CODE_SESSION_ID", env)
+			var in usage.StatusInput
+			in.SessionID, in.Workspace.CurrentDir, in.Workspace.ProjectDir = sid, sub, launch
+			usage.Update(eng.Dirs.UsageFile(), func(s *usage.State) { s.Record(in, time.Now()) })
+			hook.Run([]byte(`{"session_id":"`+sid+`","cwd":"`+sub+`","hook_event_name":"PreToolUse"}`), eng.Dirs, time.Now())
+
+			req := direct.Request{Model: model, Prompt: "hi", MaxTokens: 21000, MaxCostUSD: 0.469612, MaxGiven: true}
+			_, _, err := RunDirect(context.Background(), cfg, eng, req, DirectJob{})
+			m := regexp.MustCompile(`call approvals_add with (\{.*?\}), then`).FindStringSubmatch(fmt.Sprint(err))
+			if m == nil || !strings.Contains(m[1], `"max_per_run_usd":0.4697`) || !strings.Contains(m[1], `"session_id":"`+sid+`"`) {
+				t.Fatalf("want an approval ask for this session covering $0.469612, got %v", err)
+			}
+			out, err := (&mcpserver.Server{E: eng}).Call("approvals_add", json.RawMessage(m[1]))
+			if err != nil {
+				t.Fatalf("approvals_add %s: %v", m[1], err)
+			}
+			saved := out.(map[string]any)["rule"].(engine.RuleView)
+			if !strings.HasSuffix(saved.Text, ", 1 run (session, until "+saved.Expires.Local().Format("Jan 2 15:04")+")") {
+				t.Errorf("rule text: %q", saved.Text)
+			}
+			if _, _, err := RunDirect(context.Background(), cfg, eng, req, DirectJob{}); err != nil {
+				t.Fatalf("retry under the approval: %v", err)
+			}
+			l, _ := ledger(t, eng)
+			var tagged string
+			for _, e := range l.Entries {
+				if e.Type == history.TypeReserve {
+					tagged = e.ApprovalID
+				}
+			}
+			if tagged != saved.ID {
+				t.Errorf("reservation approval %q, want %q", tagged, saved.ID)
+			}
+			if _, _, err := RunDirect(context.Background(), cfg, eng, req, DirectJob{}); err == nil || !strings.Contains(err.Error(), "needs approval") {
+				t.Errorf("a one-run approval is used up: %v", err)
+			}
+		})
 	}
 }

@@ -131,6 +131,11 @@ func TestRemoveAndString(t *testing.T) {
 	if got := mix.String(); got != "mix a 75%, b 25% for code work" {
 		t.Errorf("mix String = %q", got)
 	}
+	for n, want := range map[int]string{1: ", 1 run", 3: ", 3 runs"} {
+		if got := (Rule{Kind: KindApprove, MaxPerRunUSD: 0.47, MaxCount: n}).String(); !strings.HasSuffix(got, want) {
+			t.Errorf("String = %q, want the suffix %q", got, want)
+		}
+	}
 	if _, err := Remove(f, r.ID); err != nil {
 		t.Fatal(err)
 	}

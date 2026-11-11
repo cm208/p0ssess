@@ -79,8 +79,9 @@ type Scope struct {
 	Session string `json:"session_id,omitempty"`
 }
 
-// Resolve fills a missing session from the latest status line or hook reading
-// for the directory.
+// Resolve fills a missing session from Claude Code's environment (the MCP server and the commands it
+// runs carry the session that started them, subagents included), else from the latest status line or
+// hook reading for the directory.
 func (e *Engine) Resolve(s Scope) Scope {
 	if s.Cwd == "" {
 		if v := os.Getenv("CLAUDE_PROJECT_DIR"); v != "" {
@@ -88,6 +89,9 @@ func (e *Engine) Resolve(s Scope) Scope {
 		} else {
 			s.Cwd, _ = os.Getwd()
 		}
+	}
+	if s.Session == "" {
+		s.Session = os.Getenv("CLAUDE_CODE_SESSION_ID")
 	}
 	if s.Session == "" {
 		if se, ok := e.Usage().SessionFor(s.Cwd); ok && e.Now().Sub(se.Seen) < 12*time.Hour {

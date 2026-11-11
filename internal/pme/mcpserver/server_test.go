@@ -19,6 +19,7 @@ func run(t *testing.T, lines ...string) []map[string]any {
 	proj := filepath.Join(home, "proj")
 	os.MkdirAll(filepath.Join(proj, ".git"), 0o755)
 	t.Setenv("CLAUDE_PROJECT_DIR", proj)
+	t.Setenv("CLAUDE_CODE_SESSION_ID", "")
 	e, err := engine.Load(paths.Default())
 	if err != nil {
 		t.Fatal(err)

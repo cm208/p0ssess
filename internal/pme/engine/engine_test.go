@@ -20,6 +20,7 @@ func setup(t *testing.T, budgetTOML string) (*Engine, string) {
 	home := t.TempDir()
 	t.Setenv("P0SSESS_HOME", home)
 	t.Setenv("CLAUDE_PROJECT_DIR", "")
+	t.Setenv("CLAUDE_CODE_SESSION_ID", "")
 	if budgetTOML != "" {
 		os.MkdirAll(home, 0o700)
 		os.WriteFile(filepath.Join(home, "budget.toml"), []byte(budgetTOML), 0o600)

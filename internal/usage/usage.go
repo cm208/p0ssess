@@ -140,13 +140,14 @@ func (s *State) TouchSession(se Session) {
 }
 
 // SessionFor guesses the active session for a directory: the most recently
-// seen session for the same directory or project.
+// seen session for the same directory or project. Project is Claude Code's
+// project directory (CLAUDE_PROJECT_DIR), which need not be a repository.
 func (s State) SessionFor(dir string) (Session, bool) {
 	ss := append([]Session(nil), s.Sessions...)
 	sort.SliceStable(ss, func(i, j int) bool { return ss[i].Seen.After(ss[j].Seen) })
 	root := paths.ProjectRoot(dir)
 	for _, x := range ss {
-		if dir != "" && (x.Cwd == dir || (root != "" && x.Project == root)) {
+		if dir != "" && (x.Cwd == dir || x.Project == dir || (root != "" && x.Project == root)) {
 			return x, true
 		}
 	}

@@ -417,3 +417,39 @@ func TestUnknownPriceNeedsExplicitMax(t *testing.T) {
 		t.Errorf("a priced model with a default maximum was refused: %v", err)
 	}
 }
+
+// TestApprovalAskArgsWork: the session comes from Claude Code's environment when the caller names none,
+// the suggested limit is rounded up to cover the call, and without a session the yes is a global
+// approval that lapses, or none when the call needs a yes for this run.
+func TestApprovalAskArgsWork(t *testing.T) {
+	e, proj := setup(t, "monthly_usd = 1\nper_task_usd = 0.02\ndaily_usd = -1\n")
+	if s := e.Resolve(Scope{Cwd: proj}); s.Session != "" {
+		t.Fatalf("no session known, got %q", s.Session)
+	}
+	t.Setenv("CLAUDE_CODE_SESSION_ID", "env-1")
+	if s := e.Resolve(Scope{Cwd: proj}); s.Session != "env-1" {
+		t.Errorf("session from the environment: %q", s.Session)
+	}
+	if s := e.Resolve(Scope{Cwd: proj, Session: "s1"}); s.Session != "s1" {
+		t.Errorf("an explicit session is kept: %q", s.Session)
+	}
+	c := charge(proj, 0.0400001)
+	c.Session = ""
+	_, err := e.Authorize(c)
+	refused(t, err, true, `{"max_count":1,"max_per_run_usd":0.0401,"models":["`+cheap+`"],"scope":"session","session_id":"env-1"}`)
+
+	for _, tc := range []struct {
+		max    float64
+		strict bool
+		want   string
+	}{
+		{0.4696, false, `"expires_in_minutes":60,"max_count":1,"max_per_run_usd":0.4696,"models":["m"],"scope":"global"}`},
+		{0.46960001, false, `"max_per_run_usd":0.4697`},
+		{0.4696, true, "cannot be recorded"},
+	} {
+		got := approvalAsk("m", "", tc.strict, 0.2, tc.max, []string{"why"})
+		if !strings.Contains(got, tc.want) || tc.strict && strings.Contains(got, "approvals_add") {
+			t.Errorf("approvalAsk(%v, strict %v) = %q, want %q", tc.max, tc.strict, got, tc.want)
+		}
+	}
+}

@@ -133,8 +133,12 @@ func Run(raw []byte, d paths.Dirs, now time.Time) string {
 		return ""
 	}
 	if in.SessionID != "" {
+		proj := os.Getenv("CLAUDE_PROJECT_DIR")
+		if proj == "" {
+			proj = paths.ProjectRoot(in.Cwd)
+		}
 		usage.Update(d.UsageFile(), func(st *usage.State) {
-			st.TouchSession(usage.Session{ID: in.SessionID, Cwd: in.Cwd, Project: paths.ProjectRoot(in.Cwd), Seen: now.UTC()})
+			st.TouchSession(usage.Session{ID: in.SessionID, Cwd: in.Cwd, Project: proj, Seen: now.UTC()})
 		})
 		markMainCalls(d, in.SessionID, in.Prompt)
 	}

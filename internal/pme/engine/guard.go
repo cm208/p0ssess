@@ -215,7 +215,7 @@ func (e *Engine) Authorize(c Charge) (*Grant, error) {
 				if why != "" {
 					reasons = append(reasons, why)
 				}
-				return nil, &Refusal{NeedsApproval: true, Reason: approvalAsk(c.Model, est, g.MaxUSD, reasons)}
+				return nil, &Refusal{NeedsApproval: true, Reason: approvalAsk(c.Model, c.Session, strict, est, g.MaxUSD, reasons)}
 			}
 			g.ApprovalID = r.ID
 			// A standing approval's per-run limit is a ceiling too, wherever the call's own is a default.
@@ -260,16 +260,27 @@ func (e *Engine) AgentEstimate(model, useCase string) (float64, bool) {
 }
 
 // approvalAsk words a call that needs the user's yes: the cost, why, and the exact one-run approval
-// that records the yes.
-func approvalAsk(model string, est, maxUSD float64, reasons []string) string {
-	args, _ := json.Marshal(map[string]any{"scope": rules.ScopeSession, "max_per_run_usd": math.Ceil(maxUSD*1e4) / 1e4,
-		"max_count": 1, "models": []string{model}})
+// that records the yes. The limit is rounded up so the approval covers the call, and the session is
+// the one this call resolved, so the arguments work verbatim from any caller. With no session known,
+// the yes is a global approval that lapses in an hour; a call that needs a yes for this run cannot
+// take one.
+func approvalAsk(model, session string, strict bool, est, maxUSD float64, reasons []string) string {
+	per := math.Ceil(maxUSD*1e4-1e-9) / 1e4
 	cost := fmt.Sprintf("about $%.4f", est)
 	if maxUSD > est+1e-9 {
-		cost += fmt.Sprintf(" (at most $%.4f)", maxUSD)
+		cost += fmt.Sprintf(" (at most $%.4f)", per)
 	}
-	return fmt.Sprintf("%s on %s; %s. Ask the user in one line with the cost. If they say yes, call approvals_add with %s, then call again.",
-		cost, history.Short(model), strings.Join(reasons, "; "), args)
+	head := fmt.Sprintf("%s on %s; %s.", cost, history.Short(model), strings.Join(reasons, "; "))
+	a := map[string]any{"scope": rules.ScopeSession, "session_id": session, "max_per_run_usd": per, "max_count": 1, "models": []string{model}}
+	if session == "" {
+		if strict {
+			return head + " No Claude Code session is known here, so a yes for this run cannot be recorded; run it from Claude Code."
+		}
+		delete(a, "session_id")
+		a["scope"], a["expires_in_minutes"] = rules.ScopeGlobal, 60
+	}
+	args, _ := json.Marshal(a)
+	return fmt.Sprintf("%s Ask the user in one line with the cost. If they say yes, call approvals_add with %s, then call again.", head, args)
 }
 
 // zdrBlock says why a model cannot run in zero-retention mode, or "" when it can. A model with no
