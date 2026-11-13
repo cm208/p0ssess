@@ -184,7 +184,11 @@ func cloudSetup(t *testing.T, model *fakeOpenRouter) (string, *Engine) {
 	os.WriteFile(keys, kj, 0o600)
 	cert, key := selfSigned(t, tmp)
 	addr := freePort(t)
-	state := filepath.Join(tmp, "host-state")
+	state, err := os.MkdirTemp("/tmp", "p0sbx-") // the host keeps Unix socket paths under 108 bytes
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.RemoveAll(state) })
 	args := []string{"-listen", addr, "-tls-cert", cert, "-tls-key", key, "-state", state,
 		"-init", initBin, "-ticket-keys", keys}
 	args = append(args, strings.Fields(os.Getenv("P0SSESS_SANDBOX_HOST_ARGS"))...)
@@ -223,6 +227,7 @@ func cloudSetup(t *testing.T, model *fakeOpenRouter) (string, *Engine) {
 	home := filepath.Join(tmp, "home")
 	t.Setenv("P0SSESS_HOME", home)
 	t.Setenv("P0SSESS_SANDBOX", "cloud")
+	t.Setenv("P0SSESS_ALLOW_UNSAFE_TEST_MODE", "1")
 	t.Setenv("P0SSESS_CLOUD_URL", fakeAccounts(t, priv).URL)
 	t.Setenv("P0SSESS_SANDBOX_URL", "https://"+addr)
 	t.Setenv("P0SSESS_SANDBOX_CA", cert)
@@ -262,7 +267,7 @@ func TestCloudIntegrationEditRun(t *testing.T) {
 	repo, e := cloudSetup(t, model)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	res, err := e.Run(ctx, RunRequest{Task: "Create made.txt", Model: "fake/model", Mode: "unsafe-allow-all", Cwd: repo, MaxCostUSD: 0.05}, nil)
+	res, err := e.Run(ctx, RunRequest{Task: "Create made.txt", Model: "openai/gpt-4o-mini", Mode: "unsafe-allow-all", Cwd: repo, MaxCostUSD: 0.05}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -301,7 +306,7 @@ func TestCloudIntegrationCostCap(t *testing.T) {
 	repo, e := cloudSetup(t, model)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	res, err := e.Run(ctx, RunRequest{Task: "x", Model: "fake/model", Mode: "unsafe-allow-all", Cwd: repo, MaxCostUSD: 0.01}, nil)
+	res, err := e.Run(ctx, RunRequest{Task: "x", Model: "openai/gpt-4o-mini", Mode: "unsafe-allow-all", Cwd: repo, MaxCostUSD: 0.01}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
