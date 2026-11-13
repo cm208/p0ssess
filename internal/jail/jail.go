@@ -40,6 +40,7 @@ const (
 
 	ctlMount    = "/run/p0ssess-ctl"
 	egressMount = "/run/p0ssess-egress"
+	meterMount  = "/run/p0ssess-meter"
 	// EgressSocketEnv tells the shell wrapper where the egress proxy's socket is; set only with shell internet.
 	EgressSocketEnv = "P0SSESS_SHELL_EGRESS"
 
@@ -99,6 +100,10 @@ func recordPath(name string) string   { return filepath.Join(jailDir(name), "jai
 func passwordPath(name string) string { return filepath.Join(jailDir(name), "pw") }
 func ctlDir(name string) string       { return filepath.Join(jailDir(name), "ctl") }
 func egressDir(name string) string    { return filepath.Join(jailDir(name), "egress") }
+
+// meterDir is where the key proxy records each model call's cost; only the proxy container mounts it, and
+// only it may write there.
+func meterDir(name string) string { return filepath.Join(jailDir(name), "meter") }
 
 // Canonical resolves symlinks so the mount path, the session directory and Claude's paths agree.
 func Canonical(dir string) (string, error) {
@@ -456,7 +461,7 @@ func Start(ctx context.Context, spec Spec, cfg config.Config, log io.Writer) (*J
 	j := &Jail{Name: newName(), Repo: repo, Worktree: spec.Worktree, Image: image, Created: t0.UTC(),
 		ZDR: spec.ZDR, ShellInternet: spec.ShellInternet, Owner: Self(), KeepUntil: t0.Add(startGrace).UTC()}
 	pw := newPassword()
-	for _, d := range []string{ctlDir(j.Name), egressDir(j.Name)} {
+	for _, d := range []string{ctlDir(j.Name), egressDir(j.Name), meterDir(j.Name)} {
 		if err := os.MkdirAll(d, 0o700); err != nil {
 			return nil, err
 		}
@@ -495,7 +500,9 @@ func Start(ctx context.Context, spec Spec, cfg config.Config, log io.Writer) (*J
 	args = append(args, "-e", "OPENROUTER_API_KEY",
 		"-v", exe+":/opt/p0ssess:"+mountOpt(cfg, "ro"),
 		"-v", ctlDir(j.Name)+":"+ctlMount+":"+mountOpt(cfg, "ro"),
-		"--entrypoint", "/opt/p0ssess", image, "proxy", "--listen", ProxyAddr, "--deadline-file", ctlMount+"/deadline")
+		"-v", meterDir(j.Name)+":"+meterMount+":"+mountOpt(cfg, "rw"),
+		"--entrypoint", "/opt/p0ssess", image, "proxy", "--listen", ProxyAddr, "--deadline-file", ctlMount+"/deadline",
+		"--meter-dir", meterMount, "--run-file", ctlMount+"/"+runFileName)
 	if spec.ZDR {
 		args = append(args, "--zdr")
 	}

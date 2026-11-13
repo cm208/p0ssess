@@ -36,6 +36,8 @@ var CloudUpstream = proxy.Upstream
 type cloudLive struct {
 	s     *cloudsandbox.Session
 	meter *cloudsandbox.Meter
+	mu    sync.Mutex
+	run   string // the run the meter counts now
 }
 
 var (
@@ -226,19 +228,45 @@ func (j *Jail) RemotePath(local string) string {
 	return path.Join(j.RemoteDir, filepath.ToSlash(rel))
 }
 
-// StartRun gives a cloud session's cost meter the next run's cap and model. Local jails meter through
-// OpenCode's session cost alone.
-func (j *Jail) StartRun(capUSD float64, model string) error {
+const runFileName = "run.json"
+
+// StartRun names the next run and its cost cap and model for the jail's cost meter: the local key proxy
+// reads them from the run file, a cloud session's meter is told directly.
+func (j *Jail) StartRun(run string, capUSD float64, model string) error {
 	if !j.Cloud {
-		return nil
+		return proxy.WriteRunSpec(filepath.Join(ctlDir(j.Name), runFileName), proxy.RunSpec{Run: run, CapUSD: capUSD, Model: model})
 	}
 	live := liveCloud(j.Name)
 	if live == nil {
 		return errors.New("this cloud sandbox session belongs to another process; start a new run")
 	}
+	live.mu.Lock()
+	live.run = run
+	live.mu.Unlock()
 	live.meter.StartRun(capUSD, model)
 	return nil
 }
+
+// RunCost is what the jail's cost meter charged run. ok is false when the meter has no record of it:
+// a jail started before metering, a cloud session owned by another process, or a run that is not the
+// cloud session's current one.
+func RunCost(name, run string) (proxy.RunCost, bool) {
+	if live := liveCloud(name); live != nil {
+		live.mu.Lock()
+		cur := live.run
+		live.mu.Unlock()
+		if cur != run {
+			return proxy.RunCost{}, false
+		}
+		var rc proxy.RunCost
+		rc.Calls, rc.KnownUSD, rc.Unknown, rc.ChargedUSD = live.meter.RunSpend()
+		return rc, true
+	}
+	return proxy.ReadRunCost(MeterFile(name), run)
+}
+
+// MeterFile is where a local jail's key proxy records its calls.
+func MeterFile(name string) string { return filepath.Join(meterDir(name), proxy.MeterFile) }
 
 // Sync brings an edit session's cloud changes into its local worktree, so the relay's own diff of the
 // worktree reports them. Local jails write the worktree directly.

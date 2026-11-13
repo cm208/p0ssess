@@ -164,13 +164,16 @@ func proxyCmd(args []string) error {
 	listen := fs.String("listen", jail.ProxyAddr, "listen address")
 	zdr := fs.Bool("zdr", false, "require zero-retention endpoints")
 	deadline := fs.String("deadline-file", "", "refuse requests after the Unix time in this file")
+	meterDir := fs.String("meter-dir", "", "record each model call's cost in calls.jsonl here")
+	runFile := fs.String("run-file", "", "the relay's file naming the current run and its cost cap")
 	fs.Parse(args)
 	key := os.Getenv("OPENROUTER_API_KEY")
 	os.Unsetenv("OPENROUTER_API_KEY")
 	if key == "" {
 		return errors.New("OPENROUTER_API_KEY is not set")
 	}
-	return proxy.Serve(*listen, key, *zdr, *deadline)
+	return proxy.ServeOptions(proxy.Options{Addr: *listen, Key: key, ZDR: *zdr, DeadlineFile: *deadline,
+		MeterDir: *meterDir, RunFile: *runFile})
 }
 
 func egressCmd(args []string) error {
@@ -358,6 +361,7 @@ func runCmd(ctx context.Context, name string, args []string) error {
 		return err
 	}
 	e.SetObserver(server.NewObserver(eng))
+	e.SetPricer(server.Pricer(eng))
 	progress := func(v float64, msg string) { fmt.Fprintf(os.Stderr, "progress: %s\n", msg) }
 	var res *relay.Result
 	switch name {

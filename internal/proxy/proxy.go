@@ -150,14 +150,5 @@ func beforeDeadline(file string, now time.Time) bool {
 
 // Serve listens on addr until the process exits. With deadlineFile set, requests stop at its deadline.
 func Serve(addr, key string, zdr bool, deadlineFile string) error {
-	h := Handler(Upstream, key, zdr)
-	if deadlineFile != "" {
-		h = WithDeadline(h, deadlineFile)
-	}
-	srv := &http.Server{
-		Addr:              addr,
-		Handler:           h,
-		ReadHeaderTimeout: 30 * time.Second,
-	}
-	return srv.ListenAndServe()
+	return ServeOptions(Options{Addr: addr, Key: key, ZDR: zdr, DeadlineFile: deadlineFile})
 }

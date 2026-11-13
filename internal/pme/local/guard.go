@@ -282,6 +282,18 @@ func (e *Engine) AgentEstimate(model, useCase string) (float64, bool) {
 	return v, true
 }
 
+// TokenCost prices tokens on model at the route table's prices (the cheapest zero-retention endpoint's in
+// zero-retention mode, else the list price). ok is false when no price is known. It prices runs whose
+// cost OpenRouter did not report.
+func (e *Engine) TokenCost(model string, in, out, cacheRead, cacheWrite float64) (float64, bool) {
+	bud, _ := e.Budget()
+	tp, ok := e.facts().Model(model).Prices(bud.Privacy.Mode == "zdr", false)
+	if !ok {
+		return 0, false
+	}
+	return (in*tp.In + out*tp.Out + cacheRead*tp.CacheRead + cacheWrite*tp.In) / 1e6, true
+}
+
 // approvalAsk words a call that needs the user's yes: the cost, why, and the exact one-run approval
 // that records the yes. The limit is rounded up so the approval covers the call, and the session is
 // the one this call resolved, so the arguments work verbatim from any caller. With no session known,

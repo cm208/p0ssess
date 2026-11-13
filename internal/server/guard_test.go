@@ -276,6 +276,54 @@ func TestRelayUnknownPriceCountsAtCap(t *testing.T) {
 	}
 }
 
+// TestRelayCostIsNeverZeroForBilledTokens is the gemini-3.8-flash case: p0ssess knows the model's price,
+// OpenCode does not and reports $0. The relay's measured (or token-priced) cost settles the ledger, and
+// counts against the budget.
+func TestRelayCostIsNeverZeroForBilledTokens(t *testing.T) {
+	_, eng, proj := directEnv(t, "monthly_usd = 1\nper_task_usd = 0.5\ndaily_usd = -1\n")
+	obs := NewObserver(eng)
+	auth := relay.RunAuth{Model: "google/gemini-3.8-flash", MaxCostUSD: 0.2, MaxRuntime: time.Minute, Cwd: proj}
+	toks := &opencode.Tokens{Input: 10000, Output: 2000}
+
+	// The table's price: 0.3 in, 2.5 out per million.
+	p, ok := Pricer(eng)("google/gemini-3.8-flash", *toks)
+	if !ok || p < 0.00799 || p > 0.00801 {
+		t.Fatalf("table price %v %v", p, ok)
+	}
+	if _, ok := Pricer(eng)("newco/unpriced", *toks); ok {
+		t.Fatal("an unknown model has no price")
+	}
+
+	g, err := obs.Authorize(auth)
+	if err != nil || g.PriceUnknown {
+		t.Fatalf("%+v %v", g, err)
+	}
+	res := &relay.Result{Status: "done", CostUSD: 0.0051, CostBasis: relay.CostMeasured, Tokens: toks}
+	if err := obs.RunFinished(relay.RunInfo{SessionID: "ses-1", Turn: 1, Model: auth.Model, Grant: g}, res); err != nil {
+		t.Fatal(err)
+	}
+	_, sp := ledger(t, eng)
+	if sp.Month < 0.0050 || sp.Month > 0.0052 || sp.Estimated != 0 || res.CostEstimated {
+		t.Fatalf("measured cost must settle as measured: %+v", sp)
+	}
+
+	g, _ = obs.Authorize(auth)
+	res = &relay.Result{Status: "done", CostUSD: 0.008, CostBasis: relay.CostTokens, Tokens: toks}
+	obs.RunFinished(relay.RunInfo{SessionID: "ses-1", Turn: 2, Model: auth.Model, Grant: g}, res)
+	_, sp = ledger(t, eng)
+	if sp.Month < 0.0130 || sp.Month > 0.0132 || sp.Estimated < 0.0079 || sp.Estimated > 0.0081 {
+		t.Fatalf("a token-priced run counts at its price, marked as not measured: %+v", sp)
+	}
+
+	g, _ = obs.Authorize(auth)
+	res = &relay.Result{Status: "done", CostUSD: 0, CostBasis: relay.CostCap, CostEstimated: true, Tokens: toks}
+	obs.RunFinished(relay.RunInfo{SessionID: "ses-1", Turn: 3, Model: auth.Model, Grant: g}, res)
+	_, sp = ledger(t, eng)
+	if want := 0.0131 + g.CapUSD; g.CapUSD <= 0 || sp.Month < want-0.0001 || sp.Month > want+0.0001 {
+		t.Fatalf("an unmeasured, unpriced run counts at its $%v cap: %+v", g.CapUSD, sp)
+	}
+}
+
 // TestShellInternetIsTheUsersChoice: only the user's own budget.toml turns shell internet on, per
 // project; a repository cannot turn it on for itself.
 func TestShellInternetIsTheUsersChoice(t *testing.T) {

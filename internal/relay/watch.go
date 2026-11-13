@@ -336,9 +336,9 @@ func (w *watch) checkSession(ctx context.Context) {
 	if err != nil {
 		return
 	}
+	cost := w.e.liveCost(w.rec, s.Cost-w.rec.CostBefore)
 	w.mu.Lock()
-	w.cost = s.Cost - w.rec.CostBefore
-	cost := w.cost
+	w.cost = cost
 	w.mu.Unlock()
 	capUSD := w.rec.Grant.CapUSD
 	if capUSD <= 0 {

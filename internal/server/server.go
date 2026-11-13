@@ -26,6 +26,7 @@ import (
 	"p0ssess/internal/history"
 	"p0ssess/internal/jail"
 	"p0ssess/internal/mcp"
+	"p0ssess/internal/opencode"
 	"p0ssess/internal/pme/local"
 	"p0ssess/internal/pme/mcpserver"
 	"p0ssess/internal/pme/paths"
@@ -78,6 +79,7 @@ func New(opt Options) (s *mcp.Server, closeFn func(), err error) {
 	obs := NewObserver(eng).(*observer)
 	re := relay.NewEngine(cfg, opt.Version, opt.Log)
 	re.SetObserver(obs)
+	re.SetPricer(Pricer(eng))
 	s = relay.NewServer(re, opt.Version)
 	s.Name = Name
 	s.Instructions = instructions + "\nEngine:\n" + mcpserver.Instructions
@@ -249,15 +251,27 @@ func (o *observer) RunFinished(r relay.RunInfo, res *relay.Result) error {
 	o.mu.Unlock()
 	run := local.Run{ID: fmt.Sprintf("%s/%d", r.SessionID, r.Turn), Route: "agent", Model: r.Model,
 		CashUSD: res.CostUSD, Status: res.Status, UseCase: r.UseCase, Cwd: r.Repo}
-	if res.CostEstimated {
-		// The session's cost could not be read: count the run at its cap until a measured figure exists.
+	switch {
+	case res.CostEstimated || res.CostBasis == relay.CostCap:
+		// The run's cost could not be measured or priced: count it at its cap until a measured figure exists.
 		run.CashUSD, run.Estimated = max(res.CostUSD, r.Grant.CapUSD), true
-	} else if r.Grant.PriceUnknown && res.CostUSD <= 0 && (res.Tokens == nil || res.Tokens.Input+res.Tokens.Output+res.Tokens.Reasoning > 0) {
-		// OpenCode prices runs from its own model list; with no price known it reports $0 for tokens that were billed.
+	case res.CostBasis == relay.CostTokens:
+		// Priced from tokens, not measured.
+		run.Estimated = true
+	case r.Grant.PriceUnknown && res.CostUSD <= 0 && (res.Tokens == nil || res.Tokens.Input+res.Tokens.Output+res.Tokens.Reasoning > 0):
+		// No price is known and nothing measured a cost: a $0 figure for tokens that were billed is not
+		// trusted.
 		run.CashUSD, run.Estimated = r.Grant.CapUSD, true
-		res.CostEstimated = true
+		res.CostEstimated, res.CostUSD, res.CostBasis = true, r.Grant.CapUSD, relay.CostCap
 	}
 	return o.eng.Settle(&local.Grant{ReserveID: r.Grant.ReserveID, ApprovalID: r.Grant.ApprovalID, Session: r.Grant.Session}, run)
+}
+
+// Pricer prices relay runs whose cost OpenRouter did not report, at the route table's prices.
+func Pricer(eng *local.Engine) relay.Pricer {
+	return func(model string, t opencode.Tokens) (float64, bool) {
+		return eng.TokenCost(model, t.Input, t.Output+t.Reasoning, t.Cache.Read, t.Cache.Write)
+	}
 }
 
 func (o *observer) finishAll() {

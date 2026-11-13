@@ -24,6 +24,7 @@ type Result struct {
 	Mode           string           `json:"mode"`
 	CostUSD        float64          `json:"cost_usd"`
 	CostEstimated  bool             `json:"cost_estimated,omitempty"`
+	CostBasis      string           `json:"cost_basis,omitempty"`
 	Tokens         *opencode.Tokens `json:"tokens,omitempty"`
 	DurationS      float64          `json:"duration_s"`
 	TranscriptPath string           `json:"transcript_path,omitempty"`
@@ -127,16 +128,21 @@ func (e *Engine) result(w *watch, status string) (*Result, error) {
 	if tampered {
 		r.Error = "tampered: " + tamperReason
 	}
-	if s, err := w.c.GetSession(ctx, rec.SessionID); err == nil {
-		r.CostUSD = math.Round((s.Cost-rec.CostBefore)*1e6) / 1e6
-		t := subTokens(s.Tokens, rec.TokensBefore)
-		r.Tokens = &t
+	var oc float64
+	var toks opencode.Tokens
+	s, err := w.c.GetSession(ctx, rec.SessionID)
+	if err == nil {
+		oc = s.Cost - rec.CostBefore
+		toks = subTokens(s.Tokens, rec.TokensBefore)
+		r.Tokens = &toks
 	} else {
 		w.mu.Lock()
-		r.CostUSD = math.Round(w.cost*1e6) / 1e6
+		oc = w.cost
 		w.mu.Unlock()
-		r.CostEstimated = true
 	}
+	cost, basis := e.runCost(rec, oc, err == nil, toks)
+	r.CostUSD, r.CostBasis = math.Round(cost*1e6)/1e6, basis
+	r.CostEstimated = basis == CostCap
 	msgs, msgErr := w.c.AllMessages(ctx, rec.SessionID)
 	if msgErr == nil {
 		r.Answer = finalAnswer(msgs, rec.PromptID)
@@ -197,8 +203,8 @@ func (e *Engine) result(w *watch, status string) (*Result, error) {
 			}
 		}
 	}
-	if r.CostEstimated {
-		r.Note = strings.TrimSpace(r.Note + " the run's cost was not measured (the session cost could not be read, or no price is known for the model); it is counted at its cap")
+	if n := costNote(r.CostBasis, r.CostUSD); n != "" {
+		r.Note = strings.TrimSpace(r.Note + " " + n)
 	}
 	if r.ShellInternet {
 		r.Note = strings.TrimSpace(ShellInternetNote + " " + r.Note)

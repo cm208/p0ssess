@@ -32,6 +32,8 @@ type Engine struct {
 	// jails are the sessions whose pods this process owns and removes.
 	jails map[string]*sessionJail
 	obs   Observer
+	// pricer prices runs whose cost was not reported (cost.go).
+	pricer Pricer
 	// recMu serializes recording a finished run, which both a waiting caller and the watch may do.
 	recMu sync.Mutex
 	// Unguarded lets tests run without an observer; nothing else sets it. TestShellInternet is the
@@ -206,7 +208,8 @@ func (e *Engine) Run(ctx context.Context, req RunRequest, progress func(float64,
 	if err := j.Keep(end.Add(e.idle()), end); err != nil {
 		return nil, fmt.Errorf("jail: %w", err)
 	}
-	if err := j.StartRun(grant.CapUSD, rec.Model); err != nil {
+	rec.MeterRun = newMeterRun()
+	if err := j.StartRun(rec.MeterRun, grant.CapUSD, rec.Model); err != nil {
 		return nil, err
 	}
 	rec.Grant = grant

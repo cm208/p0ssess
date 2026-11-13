@@ -1,6 +1,7 @@
 package relay
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -45,6 +46,15 @@ type SessionRecord struct {
 	UseCase      string          `json:"use_case,omitempty"`
 	// Grant is the current prompt's authorization: its reservation and cost cap.
 	Grant Grant `json:"grant"`
+	// MeterRun names the current prompt in the jail's cost meter.
+	MeterRun string `json:"meter_run,omitempty"`
+}
+
+// newMeterRun makes a random id for one prompt's calls in the cost meter.
+func newMeterRun() string {
+	var b [8]byte
+	rand.Read(b[:])
+	return hex.EncodeToString(b[:])
 }
 
 var storeMu sync.Mutex
