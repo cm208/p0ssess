@@ -35,8 +35,8 @@ func TestBuiltInVerifiesWithThePinnedKey(t *testing.T) {
 }
 
 func TestPinnedKeyID(t *testing.T) {
-	b, _ := base64.StdEncoding.DecodeString("geck4OX4R4kwzDil6EIboqNdUzW8gpqnLLElaXongys=")
-	if id := table.KeyID(ed25519.PublicKey(b)); id != "dd8c7efb6dac450c" {
+	b, _ := base64.StdEncoding.DecodeString("E2QMzvvrMFvaKJxjJPJPNyxZ7q7wfIHtNAxNXF+laQc=")
+	if id := table.KeyID(ed25519.PublicKey(b)); id != "5f3c395ee96ca932" {
 		t.Errorf("key id %s", id)
 	}
 }

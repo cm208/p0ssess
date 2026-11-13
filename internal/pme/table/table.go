@@ -160,11 +160,12 @@ func KeyID(pub ed25519.PublicKey) string {
 	return hex.EncodeToString(s[:8])
 }
 
-// devKey is the engine's development signing key.
-const devKey = "geck4OX4R4kwzDil6EIboqNdUzW8gpqnLLElaXongys="
+// prodKey is the public half of the engine's production signing key (key id 5f3c395ee96ca932).
+// The development key is no longer trusted.
+const prodKey = "E2QMzvvrMFvaKJxjJPJPNyxZ7q7wfIHtNAxNXF+laQc="
 
 func pinned() map[string]ed25519.PublicKey {
-	b, err := base64.StdEncoding.DecodeString(devKey)
+	b, err := base64.StdEncoding.DecodeString(prodKey)
 	if err != nil || len(b) != ed25519.PublicKeySize {
 		panic("table: bad pinned key")
 	}
