@@ -66,6 +66,8 @@ type State struct {
 	EndsAt       string    `json:"ends_at,omitempty"`
 	Renew        string    `json:"renew,omitempty"`
 	Manage       string    `json:"manage,omitempty"`
+	AccountID    string    `json:"account_id,omitempty"`
+	OrgID        string    `json:"org_id,omitempty"`
 	CheckedAt    time.Time `json:"checked_at"`
 	LapsePending bool      `json:"lapse_pending,omitempty"`
 	LapseShown   bool      `json:"lapse_shown,omitempty"`
@@ -143,6 +145,8 @@ func Refresh(ctx context.Context, d paths.Dirs, c *Client) (State, error) {
 		EndsAt:    resp.Entitlements.EndsAt,
 		Renew:     resp.Links.Renew,
 		Manage:    resp.Links.Manage,
+		AccountID: resp.Account.ID,
+		OrgID:     resp.Entitlements.OrgID,
 		CheckedAt: now().UTC(),
 
 		LapsePending: prev.LapsePending,

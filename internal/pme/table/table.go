@@ -175,36 +175,45 @@ func pinned() map[string]ed25519.PublicKey {
 //go:embed default.json
 var builtIn []byte
 
-var (
-	errKey  = errors.New("route table: unknown signing key")
-	errSig  = errors.New("route table: bad signature")
-	errTier = errors.New("route table: unexpected tier")
-)
+var errTier = errors.New("route table: unexpected tier")
+
+// PinnedKeys returns the public keys this client trusts for signed envelopes, by key id.
+func PinnedKeys() map[string]ed25519.PublicKey { return pinned() }
+
+// Unseal checks an envelope's signature against keys and returns the payload it carries. what names the
+// payload in errors.
+func Unseal(raw []byte, keys map[string]ed25519.PublicKey, what string) ([]byte, error) {
+	var env Envelope
+	if err := json.Unmarshal(raw, &env); err != nil {
+		return nil, fmt.Errorf("%s: %w", what, err)
+	}
+	if env.V != 1 {
+		return nil, fmt.Errorf("%s: envelope version %d", what, env.V)
+	}
+	pub, ok := keys[env.KeyID]
+	if !ok {
+		return nil, fmt.Errorf("%s: unknown signing key", what)
+	}
+	payload, err := base64.StdEncoding.DecodeString(env.Payload)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", what, err)
+	}
+	sig, err := base64.StdEncoding.DecodeString(env.Sig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", what, err)
+	}
+	if !ed25519.Verify(pub, payload, sig) {
+		return nil, fmt.Errorf("%s: bad signature", what)
+	}
+	return payload, nil
+}
 
 // Verify checks an envelope against keys and returns the table it carries. tiers lists the tiers that
 // are accepted.
 func Verify(raw []byte, keys map[string]ed25519.PublicKey, tiers ...string) (*Table, error) {
-	var env Envelope
-	if err := json.Unmarshal(raw, &env); err != nil {
-		return nil, fmt.Errorf("route table: %w", err)
-	}
-	if env.V != 1 {
-		return nil, fmt.Errorf("route table: envelope version %d", env.V)
-	}
-	pub, ok := keys[env.KeyID]
-	if !ok {
-		return nil, errKey
-	}
-	payload, err := base64.StdEncoding.DecodeString(env.Payload)
+	payload, err := Unseal(raw, keys, "route table")
 	if err != nil {
-		return nil, fmt.Errorf("route table: %w", err)
-	}
-	sig, err := base64.StdEncoding.DecodeString(env.Sig)
-	if err != nil {
-		return nil, fmt.Errorf("route table: %w", err)
-	}
-	if !ed25519.Verify(pub, payload, sig) {
-		return nil, errSig
+		return nil, err
 	}
 	t := empty()
 	var raw2 struct {
@@ -285,6 +294,14 @@ func (s *Store) file() string     { return filepath.Join(s.dir, "route-table.jso
 func (s *Store) etagFile() string { return filepath.Join(s.dir, "route-table.etag") }
 func (s *Store) checkFile() string {
 	return filepath.Join(s.dir, "route-table.checked")
+}
+
+// Keys returns the public keys the store trusts.
+func (s *Store) Keys() map[string]ed25519.PublicKey {
+	if s == nil {
+		return pinned()
+	}
+	return s.keys
 }
 
 // Table returns the current table; it is never nil.

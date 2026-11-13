@@ -23,6 +23,7 @@ type fake struct {
 	plan       string
 	status     string
 	endsAt     string
+	org        string
 	revoked    bool
 	accountHit int
 	gotName    string
@@ -70,6 +71,9 @@ func newFake(t *testing.T) *fake {
 		ent := map[string]any{"plan": f.plan, "status": f.status, "interval": "year", "renews_at": "2027-11-12T00:00:00Z"}
 		if f.endsAt != "" {
 			ent["ends_at"] = f.endsAt
+		}
+		if f.org != "" {
+			ent["org_id"] = f.org
 		}
 		json.NewEncoder(w).Encode(map[string]any{"account": map[string]any{"id": "acc_1"}, "entitlements": ent,
 			"links": map[string]string{"renew": f.srv.URL + "/pro", "manage": f.srv.URL + "/account"}})
@@ -370,5 +374,22 @@ func TestTicketAndWaitlist(t *testing.T) {
 	}
 	if err := c.Waitlist(context.Background(), "a@example.com", "pro"); err != nil || got["source"] != "client" {
 		t.Errorf("%v %v", err, got)
+	}
+}
+
+func TestStateKeepsAccountAndOrg(t *testing.T) {
+	d, f, c := setup(t)
+	SaveToken(d, "p0d_abc")
+	f.org = "org_1"
+	if _, err := Refresh(context.Background(), d, c); err != nil {
+		t.Fatal(err)
+	}
+	if s := Current(d); s.AccountID != "acc_1" || s.OrgID != "org_1" {
+		t.Errorf("state %+v", s)
+	}
+	f.org = ""
+	Refresh(context.Background(), d, c)
+	if s := Current(d); s.OrgID != "" {
+		t.Errorf("org should clear: %+v", s)
 	}
 }

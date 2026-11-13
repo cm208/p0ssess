@@ -61,9 +61,13 @@ type Entitlements struct {
 	RenewsAt             string `json:"renews_at"`
 	EndsAt               string `json:"ends_at"`
 	SandboxHoursPerMonth int    `json:"sandbox_hours_per_month"`
+	OrgID                string `json:"org_id"`
 }
 
 type AccountResponse struct {
+	Account struct {
+		ID string `json:"id"`
+	} `json:"account"`
 	Entitlements Entitlements `json:"entitlements"`
 	Links        struct {
 		Renew  string `json:"renew"`
@@ -145,6 +149,12 @@ func (c *Client) do(ctx context.Context, method, path, token string, in, out any
 		}
 	}
 	return resp.StatusCode, nil
+}
+
+// Do sends one request to the accounts API and decodes a 2xx answer into out. An error answer is an
+// *APIError carrying the server's code.
+func (c *Client) Do(ctx context.Context, method, path, token string, in, out any) (int, error) {
+	return c.do(ctx, method, path, token, in, out)
 }
 
 // ClientName is what the confirm page shows: version and platform only.
