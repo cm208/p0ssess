@@ -202,16 +202,20 @@ func (c *Client) Waitlist(ctx context.Context, email, plan string) error {
 	return err
 }
 
-// Ticket trades the device token for a short-lived signed ticket for a service ("sandbox").
-func (c *Client) Ticket(ctx context.Context, token, aud string) (ticket string, expiresAt time.Time, err error) {
-	var out struct {
-		Ticket    string    `json:"ticket"`
-		ExpiresAt time.Time `json:"expires_at"`
-	}
-	_, err = c.do(ctx, "POST", "/v1/account/ticket", token, map[string]string{"aud": aud}, &out)
+// Ticket is a short-lived signed ticket for another service, and where that service is.
+type Ticket struct {
+	Ticket     string    `json:"ticket"`
+	ExpiresAt  time.Time `json:"expires_at"`
+	SandboxURL string    `json:"sandbox_url"`
+}
+
+// Ticket trades the device token for a ticket for a service ("sandbox").
+func (c *Client) Ticket(ctx context.Context, token, aud string) (Ticket, error) {
+	var out Ticket
+	_, err := c.do(ctx, "POST", "/v1/account/ticket", token, map[string]string{"aud": aud}, &out)
 	var ae *APIError
 	if errors.As(err, &ae) && ae.Status == http.StatusForbidden {
 		err = ErrNotEntitled
 	}
-	return out.Ticket, out.ExpiresAt, err
+	return out, err
 }

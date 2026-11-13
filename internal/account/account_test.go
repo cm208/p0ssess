@@ -351,7 +351,7 @@ func TestTicketAndWaitlist(t *testing.T) {
 			w.Write([]byte(`{"error":"not_entitled"}`))
 			return
 		}
-		w.Write([]byte(`{"ticket":"p0t1.x.y","expires_at":"2026-11-12T20:10:00Z"}`))
+		w.Write([]byte(`{"ticket":"p0t1.x.y","expires_at":"2026-11-12T20:10:00Z","sandbox_url":"https://sbx.example"}`))
 	})
 	mux.HandleFunc("/v1/waitlist", func(w http.ResponseWriter, r *http.Request) {
 		json.NewDecoder(r.Body).Decode(&got)
@@ -361,11 +361,11 @@ func TestTicketAndWaitlist(t *testing.T) {
 	defer srv.Close()
 	c.Base = srv.URL
 	_ = d
-	tk, exp, err := c.Ticket(context.Background(), "p0d_abc", "sandbox")
-	if err != nil || tk != "p0t1.x.y" || exp.IsZero() {
-		t.Fatal(tk, exp, err)
+	tk, err := c.Ticket(context.Background(), "p0d_abc", "sandbox")
+	if err != nil || tk.Ticket != "p0t1.x.y" || tk.ExpiresAt.IsZero() || tk.SandboxURL != "https://sbx.example" {
+		t.Fatal(tk, err)
 	}
-	if _, _, err := c.Ticket(context.Background(), "free", "sandbox"); err != ErrNotEntitled {
+	if _, err := c.Ticket(context.Background(), "free", "sandbox"); err != ErrNotEntitled {
 		t.Errorf("err %v", err)
 	}
 	if err := c.Waitlist(context.Background(), "a@example.com", "pro"); err != nil || got["source"] != "client" {
