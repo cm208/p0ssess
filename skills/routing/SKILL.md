@@ -1,6 +1,6 @@
 ---
 name: routing
-description: How to hand work to other models with p0ssess (OpenRouter) through its Haiku agent while Claude stays in charge. Use when the user wants a video watched, audio heard or transcribed, or an image made or edited; names a non-Claude model ("use deepseek flash for ..."); asks for bulk one-shot work (summarize, translate, caption or extract over many items); mentions the OpenRouter budget, spend, rules or approvals; or when a p0ssess hint appears in context.
+description: How to hand work to other models with p0ssess (OpenRouter) through its Haiku agent while Claude stays in charge. Use when the user wants a video watched, audio heard or transcribed, or an image made or edited; names a non-Claude model ("use deepseek flash for ..."); asks for bulk one-shot work (summarize, translate, caption or extract over many items); mentions the OpenRouter budget, spend, rules or approvals; when a p0ssess rule sends the work at hand to a model; or when a p0ssess hint appears in context.
 ---
 
 # Routing with p0ssess
@@ -30,9 +30,19 @@ When the result has a `files:` line (JSON `[{path, kind}]`):
 
 Do not open a generated file yourself (an image costs this conversation its own context) unless the user asks you to check it.
 
+## Work a rule sends to a model
+
+An `only` or `mix` rule limited to a use case or kind ("always send unit-test writing to deepseek flash") is a decision the user or their team already made. When a p0ssess hint says a rule covers the request, hand it to the agent right away with the model and use case the hint names, plus "edit mode" when files should change. Do not price the route, weigh doing it yourself, or keep it on Claude. A team rule comes from the team's owner and cannot be loosened here. The same holds when `rules_list` shows such a rule for the work in hand and no hint fired. If the request is not actually that work, ignore the hint.
+
 ## Edits from an agent run
 
-The agent returns `diff: <path> (summary)`, never the diff. Read that file, check it, run the tests, and `git apply <path>` only if it is right. That review is the safety net, so edit runs within the user's limits do not ask first. Continue a run with SendMessage to the same agent.
+The agent returns the model's short report (each file it changed, the test command it ran and the counts), `diff: <path> (summary)` and `apply: <command>`, never the diff itself. The diff and your check of it are the safety net, so edit runs within the user's limits do not ask first. Check in proportion to the stakes:
+
+- Stakes 1-2 (test drafts, bulk data files, translations, docs, mechanical edits): run the `apply` command, then the project's tests or the check the user asked for, once. If it passes and the summary matches the request, you are done. Do not re-read every file, redo the work, or run the same check twice. Open a file only when a check fails, the summary looks wrong (missing files, files nobody asked for, deletions) or the report says something was skipped.
+- A data file the user asked for (JSON, CSV) at stakes 1-2: after applying, check it parses and has every item, and spot-check two or three entries against the source. Do not redo the batch.
+- Stakes 3-4, or code that ships (features, migrations, auth, payments, infrastructure, anything security-relevant): read the whole diff before applying it and review it as you would your own change.
+
+Continue a run with SendMessage to the same agent. A `permission:` line for ordinary work inside the run's copy (reading, writing there, running the project's tests) can be approved: SendMessage "approve once". Reject network access or writes outside the copy unless the user asked for them.
 
 ## Approval
 

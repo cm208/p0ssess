@@ -32,12 +32,16 @@ type Result struct {
 	Worktree       string           `json:"worktree,omitempty"`
 	DiffStat       string           `json:"diff_stat,omitempty"`
 	DiffPath       string           `json:"diff_path,omitempty"`
+	// Apply is the command that applies the run's changes to the user's repository.
+	Apply string `json:"apply,omitempty"`
 	// Files are the media and office files the run added or changed in its worktree, to present.
-	Files        []direct.FileHint `json:"files,omitempty"`
-	Diff         string            `json:"diff,omitempty"`
-	AsksRejected []string          `json:"asks_rejected,omitempty"`
-	Error        string            `json:"error,omitempty"`
-	Note         string            `json:"note,omitempty"`
+	Files []direct.FileHint `json:"files,omitempty"`
+	// Diff is the start of the patch, for the CLI and tests. It is left out of the tool result: the relay
+	// agent passes on diff_path, never the diff, so the patch only cost tokens there.
+	Diff         string   `json:"-"`
+	AsksRejected []string `json:"asks_rejected,omitempty"`
+	Error        string   `json:"error,omitempty"`
+	Note         string   `json:"note,omitempty"`
 	// ShellInternet says the model's shell commands could reach the public internet in this run.
 	ShellInternet bool `json:"shell_internet,omitempty"`
 	// JailStartS is how long the session's jail took to start, on its first run.
@@ -77,8 +81,11 @@ type Escalation struct {
 
 const (
 	answerCap = 30000
-	diffCap   = 8000
-	errorCap  = 1500
+	// editAnswerCap bounds an edit run's answer, which the main conversation reads: the work is in the
+	// diff, and the answer is the model's short report (the full text stays in the run directory).
+	editAnswerCap = 4000
+	diffCap       = 8000
+	errorCap      = 1500
 )
 
 func clip(s string, n int, tail string) (string, bool) {
@@ -159,7 +166,11 @@ func (e *Engine) result(w *watch, status string) (*Result, error) {
 	}
 	if full := r.Answer; full != "" {
 		var cut bool
-		r.Answer, cut = clip(full, answerCap, "\n\n[answer truncated; the full text is in transcript_path]")
+		limit := answerCap
+		if rec.Mode == "edit" {
+			limit = editAnswerCap
+		}
+		r.Answer, cut = clip(full, limit, "\n\n[answer truncated; the full text is in transcript_path]")
 		if cut && r.TranscriptPath != "" {
 			ap := filepath.Join(RunDir(rec.SessionID), fmt.Sprintf("answer-%d.md", rec.Turns))
 			os.WriteFile(ap, []byte(full), 0o600)
@@ -182,6 +193,7 @@ func (e *Engine) result(w *watch, status string) (*Result, error) {
 				os.MkdirAll(filepath.Dir(p), 0o700)
 				if os.WriteFile(p, []byte(patch), 0o600) == nil {
 					r.DiffPath = p
+					r.Apply = "git -C " + shellQuote(rec.Repo) + " apply " + shellQuote(p)
 				}
 				r.Diff, _ = clip(patch, diffCap, "\n[diff truncated; the full patch is in diff_path]\n")
 			}
@@ -304,4 +316,14 @@ func renderTool(b *strings.Builder, c opencode.ContentPart) {
 		o, _ := clip(strings.Join(out, "\n"), 4000, "\n…")
 		fmt.Fprintf(b, "```\n%s\n```\n\n", o)
 	}
+}
+
+// shellQuote quotes a path for a POSIX shell when it needs it.
+func shellQuote(s string) string {
+	if s != "" && strings.IndexFunc(s, func(r rune) bool {
+		return !(r == '/' || r == '.' || r == '-' || r == '_' || r == ':' || r >= '0' && r <= '9' || r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z')
+	}) < 0 {
+		return s
+	}
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }

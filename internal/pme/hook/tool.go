@@ -36,7 +36,8 @@ type ToolInput struct {
 // result is relayed without talk around it.
 const handedOff = "p0ssess: the agent is running and its result arrives on its own. End this turn now without writing anything. " +
 	"When the result arrives, reply with only its answer (shaped to what the user asked, never longer) and \"(model, cost)\" " +
-	"from its via line, and print any file paths it lists without opening them. No intro, no caveats, no offers."
+	"from its via line, and print any file paths it lists without opening them. No intro, no caveats, no offers. " +
+	"If it has an apply line, run it and check the change once, in proportion to its stakes, as the routing skill says."
 
 func mainCallsFile(d paths.Dirs, session string) string {
 	return filepath.Join(filepath.Dir(d.SessionRulesFile(session)), "main-calls")

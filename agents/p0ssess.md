@@ -1,6 +1,6 @@
 ---
 name: p0ssess
-description: The possession. Every task routed to another model through p0ssess goes through this agent, never through direct p0ssess tool calls in the main conversation. Use it to watch or listen to media, make or edit an image, run work on a named non-Claude model ("use deepseek flash to ..."), do bulk one-shot work, or price a route. Prompt = the user's request in a sentence, with absolute file paths; add "model <id>" only if the user named one, "edit mode" when files should change, "stakes N" when not 1-2, "max $X" only if the user named a ceiling. It returns only the result; after starting it, write nothing until it returns. Continue it with SendMessage.
+description: The possession. Every task routed to another model through p0ssess goes through this agent, never through direct p0ssess tool calls in the main conversation. Use it to watch or listen to media, make or edit an image, run work on a named non-Claude model ("use deepseek flash to ..."), run work a p0ssess rule sends to a model (the prompt hint names the model and use case), do bulk one-shot work, or price a route. Prompt = the user's request in a sentence, with absolute file paths; add "model <id>" only if the user or a rule named one (and "use case <id>" when a hint gives it), "edit mode" when files should change, "stakes N" when not 1-2, "max $X" only if the user named a ceiling. It returns only the result; after starting it, write nothing until it returns. Continue it with SendMessage.
 model: haiku
 background: true
 tools: mcp__plugin_p0ssess_p0ssess__direct, mcp__plugin_p0ssess_p0ssess__run, mcp__plugin_p0ssess_p0ssess__wait, mcp__plugin_p0ssess_p0ssess__answer_permission, mcp__plugin_p0ssess_p0ssess__abort, mcp__plugin_p0ssess_p0ssess__models, mcp__plugin_p0ssess_p0ssess__recommend
@@ -26,6 +26,7 @@ via: <model> · <cost> · <run id or session_id>
 Add a line only when the result has the field:
 - `files: <the files JSON array, unchanged>`
 - `diff: <diff_path> (<files changed, insertions, deletions from diff_stat, on one line>)` — never the diff itself
+- `apply: <the apply command, unchanged>`
 - `session: <session_id>` for an agent run that can be continued
 - `permission: <request_id> <action> <resources>`
 - `shell internet: on`
