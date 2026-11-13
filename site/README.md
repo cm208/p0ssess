@@ -1,8 +1,10 @@
 # p0ssess website
 
-A single static page: `index.html`, `style.css`, `page.js`, `release.js`, `ghost.svg`, three film images (`film-frames.webp`, `film-strip.webp`, `film-still.png`), the real outputs under the abilities (`ghost-lantern.webp`, and `apollo-ignition.webp`, `apollo-scan.webp` and `apollo-strip.webp` for the video answer), `og.png` (the share image) and `fonts/`. No build step, no framework, and no requests to anything but its own files.
+The home page is a single static page: `index.html`, `style.css`, `page.js`, `release.js`, `ghost.svg`, three film images (`film-frames.webp`, `film-strip.webp`, `film-still.png`), the real outputs under the abilities (`ghost-lantern.webp`, and `apollo-ignition.webp`, `apollo-scan.webp` and `apollo-strip.webp` for the video answer), `og.png` (the share image) and `fonts/`. No build step, no framework, and no requests to anything but its own files.
 
-The page is a launch page. In order:
+Beside it are six smaller pages, each an `index.html` in its own folder: `pricing/`, `business/`, `data/`, `terms/`, `privacy/` and `refunds/`. They share `pages.css` and `pages.js` and are described under "Pricing, business and policy pages".
+
+The home page is a launch page. In order:
 
 1. **The hero.** The headline, what p0ssess is, the way to the install steps, and beside them the film test: one prompt run twice on a ten-minute film, Claude alone and Claude with p0ssess.
 2. **Three things Claude couldn't do before.** Video, audio and images, each with the prompt that was sent, what came back, and what the call cost.
@@ -22,7 +24,7 @@ Browsers refuse web fonts over `file://`, so serve the folder:
 python3 -m http.server --bind 127.0.0.1 --directory site 8000
 ```
 
-Then open <http://127.0.0.1:8000/>. The page is dark only. The hero is two columns from 1024 px, the frame and its caption sit side by side from 620 px, and narrower screens stack everything.
+Then open <http://127.0.0.1:8000/>, or a page beside it such as <http://127.0.0.1:8000/pricing/>. The site is dark only. The hero is two columns from 1024 px, the frame and its caption sit side by side from 620 px, and narrower screens stack everything.
 
 ## Motion
 
@@ -185,6 +187,81 @@ Both charts share one scale, the late Claude total.
 
 The first-run summary in the install section is `p0ssess me --brief` from 0.5.4 in a fresh scratch home with an empty Claude config, with the home path and the page address shortened.
 
+## Pricing, business and policy pages
+
+Six pages sit beside the home page. Each loads `style.css`, then `pages.css` (what only these pages need), `release.js` and `pages.js`, so the home page's weight is unchanged. They share the top bar (the lockup links home; Pricing, Business, Docs, Source and Install, with the current page marked `aria-current="page"`) and the footer. The footer's row of links (Pricing, Business, Terms, Privacy, Data, Refunds) is on the home page too, and below 760 px, where the top bar keeps only Install, it is the way between pages.
+
+| Page | What it holds |
+|---|---|
+| `pricing/` | Three tiers, Free, Pro and Team, with what each includes, then how billing works. Prices and the buy buttons come from the offer (below). |
+| `business/` | The cost case for people who pay for Claude at work: Claude's three workarounds against real input and output, three measured side-by-sides, two slots for tests still being recorded, what Pro measures on your own work, and Team. |
+| `data/` | The data policy for the cloud sandbox: five commitments, then how each is kept. It is marked "Draft, not yet in effect" and its date reads "date not set"; set both when it takes effect. |
+| `terms/`, `privacy/`, `refunds/` | A heading, one line saying the policy is being written, and a link back to pricing. They carry `noindex` until they have text. |
+
+One rule runs through these pages: a dashed outline means not real yet. A price that is not set (`.blank` and the "Placeholder" tag), a test that is not recorded (`.slot-frame`, "Coming"), a policy that is not in effect ("Draft") and a policy that is not written (`.notice`) are all drawn that way, and nothing else is.
+
+With `prefers-reduced-motion: reduce` or with scripts off every page is complete: hairlines and bars are drawn in full, prices show as placeholders and the buy buttons read "Opening soon". `pages.js` adds what `page.js` adds on the home page (the links from `release.js`, hairlines that draw and bars that grow once when they scroll into view) and runs the pricing page.
+
+### The offer
+
+What is for sale is configured in one place, `offer` in `release.js`:
+
+- `api` is the cloud API's address without a trailing slash, or `""` until the server is hosted.
+- `prices` holds `pro_month`, `pro_year` and `team_seat_month` in US cents. They are shown only while the API cannot be reached. `null` means not decided, and the page then shows the placeholder, never a number.
+
+No price is written in any HTML file, apart from Free's $0. The pricing page ships with every slot as a placeholder, and `pages.js` replaces a slot only when it has a decided amount.
+
+| `offer.api` | What the API says | Prices | Pro's button | Team's button |
+|---|---|---|---|---|
+| `""` | not asked | `offer.prices` | "Opening soon", off, with "Sign-up opens soon." | "Not open yet", off |
+| set | no answer within 4 seconds, or an error | `offer.prices` | "Opening soon, get notified", which opens the address form | "Get notified about Team", which opens the address form |
+| set | `checkout: "opening_soon"` | from `plans` | the same | the same |
+| set | `checkout: "open"`, a Pro plan `available`, and an https `start_url` | from `plans` | "Get Pro", a link to `start_url` | "Get notified about Team" |
+
+`pages.js` asks `GET <api>/v1/pro/offer` and reads each plan:
+
+- `placeholder: true` (or anything but `false`) means the price is not decided. The page keeps the placeholder and ignores the amount, and does the same for `sandbox_hours_per_month`.
+- `placeholder: false` shows `price.amount_cents` as dollars ("$90 a year", "$9 a month", "$15 per seat, a month"), if `price.currency` is `usd`.
+- `available` on a Pro plan allows "Get Pro" once checkout is open. Team is shown and never gets a buy button, whatever the API says.
+- `recommended` picks which billing period the Yearly and Monthly switch starts on, unless the reader has already chosen. The page ships on Yearly.
+
+The address form sends `POST <api>/v1/waitlist` with the body `email=...&plan=pro|team&source=site` as `application/x-www-form-urlencoded`. That content type keeps it a simple request, so the browser sends no preflight. The API has to answer both routes with an `Access-Control-Allow-Origin` header that allows the site, or the page cannot read the answer. What the reader sees, in a live region under the form:
+
+| Answer | Message |
+|---|---|
+| 204 | "You’re on the list. We’ll send one email when Pro opens, then delete your address." (or "Team") |
+| 400, or an address the browser already rejects | "That doesn’t look like an email address." |
+| 429 | "Too many tries. Try again in a while." |
+| anything else, or no answer in 10 seconds | "Couldn’t reach the server. Try again later." |
+
+The send button is disabled while a request is out. Sending the same address twice is not an error. The form is in the markup with `hidden` and no `action`, and the policy has `form-action 'none'`, so with scripts off there is no form to submit.
+
+**The policy and the address change together.** Every page forbids connections (`default-src 'none'`). The pricing page alone adds `connect-src https://cloud.p0ssess.me` to the policy in its `<meta>` tag. That address is a placeholder for the cloud API. When `offer.api` is set, the same origin has to be in that `connect-src`, and if the host also sends the policy as a header, in the header for `/pricing/` too, since a browser enforces both.
+
+### Every figure on the business page, and where it comes from
+
+| On the page | Source |
+|---|---|
+| The speech recording. Claude alone: about 7 min, $0.0845, transcript wrong. With p0ssess: 8 s, $0.0519, transcript correct. | p0ssess benchmark run, 2026-11-11. The same speech recording was given to Claude Sonnet 5.5 twice. Alone, Claude installed faster-whisper (base.en) and ran it; with p0ssess the file went to whisper-large-v3-turbo. The page does not name the recording or quote either transcript. |
+| The film. Claude alone: 15 of 25, $0.0999, 40 s. With p0ssess: 25 of 25, $0.1140, 262 s. | `../docs/MEDIA.md`, the run B on 0.5.4 table, as in "The film test" above. |
+| The film's cost per point, $0.0067 and $0.0046 | Derived from those totals: $0.0999 / 15 = $0.00666 and $0.1140 / 25 = $0.00456. The page says they are derived. |
+| The Apollo 11 tape. Claude alone: 68% of words right in 404 s. With p0ssess: 66% in about 30 s, for $0.03. | p0ssess benchmark run, 2026-11-12. A 3-minute part of the Apollo 11 onboard recording (Internet Archive item `NasaApollo11OnboardRecordings`, highlight 2), scored as the share of words right against NASA's Apollo Flight Journal transcript. Alone, Claude ran a local Whisper large-v3 with audio filtering; p0ssess sent the tape to gemini-3.8-flash. |
+| The three workarounds under "Claude can already do that" | Stills and loudness are run A of the film test (MEDIA.md, "What happened"). The local Whisper is what Claude did in the two audio runs above. SVG is what Claude draws when asked for a picture with no image model. |
+
+Each side-by-side is a table (`table.duel-t`) whose first measure is also drawn as a bar under it, both rows on one scale from zero, as an SVG `rect` with a percentage `width`: 8 s of 420 s is 1.9%, $0.00456 of $0.00666 is 68.47%, and 30 s of 404 s is 7.43%. Violet is the run with p0ssess and gray is Claude alone, on every table. Who did better is said in words, in the table ("Wrong", "Correct") and in the sentence beside it.
+
+Three things the page must keep saying, because they are true:
+
+- On the film, p0ssess cost more in total and took longer. Only the cost per point is lower. Do not write that it was cheaper.
+- On the Apollo tape, Claude alone got 2 points more of the words right. The result is speed at about the same accuracy, not accuracy.
+- The page gives no cost for Claude alone on the Apollo tape. Add one only from that run's own record.
+
+**The two slots.** "Sarcasm" and "A spoken number against fingers held up" are being recorded. Each is a `figure.duel.slot` with a dashed frame, the line "Being recorded. No result yet." and no figures, under an HTML comment that starts `DEMO SLOT`. To fill one, replace its `div.slot-frame` with a `table.duel-t` like the three above, remove the `slot` class and the "Coming" tag, and add a row to the table of sources.
+
+### The reading layout
+
+The policies use one layout: a heading block (`.doc-head`), then `.doc`, which holds an optional table of contents (`nav.toc`) and the text (`.prose`, 68 characters wide). From 960 px the contents sit beside the text and stay in view; on narrower screens they come first and show only the top level. In `.prose`, an `h2` with the class `hl` starts a part and an `h3` a point within it. `ol.vows` is the numbered list of commitments. When a policy gets its text, add the `nav.toc` with a link to each `h2`, and remove the page's `noindex`.
+
 ## How the charts are drawn
 
 Each chart is an `ol.bars` in a `figure.chart`. Rows are sorted by total and the winner is first, with a visible "lowest total" tag, so the result does not depend on color. A row holds the name, the total, the bar, and under it the score against the gate and the price of the call alone. A chart shows only some of the engine's ranked options, and its caption says how many.
@@ -220,7 +297,7 @@ With scripts off the buttons stay disabled, because the addresses live in the sc
 
 ## Screenshots
 
-`shoot.js` serves the folder on 127.0.0.1, blocks every other request, and captures 1440×900 and 390×844 with reduced motion, so the captures are deterministic: the top, the film test, each section and the end. `--only name,name` retakes single shots and `--full` adds full-page captures. `--live` adds captures with motion allowed (`live-*.png`): the sweep at three moments on each size, the two answers under the abilities and the hand-off part-way through, and the island over the engine section. `--og FILE` writes the share image. It needs Node, `playwright-core` and a Chromium-based browser:
+`shoot.js` serves the folder on 127.0.0.1, blocks every other request, and captures 1440×900 and 390×844 with reduced motion, so the captures are deterministic: the top, the film test, each section and the end. `--only name,name` retakes single shots and `--full` adds full-page captures. `--pages` adds the six pages beside the home page (below). `--live` adds captures with motion allowed (`live-*.png`): the sweep at three moments on each size, the two answers under the abilities and the hand-off part-way through, and the island over the engine section. `--og FILE` writes the share image. It needs Node, `playwright-core` and a Chromium-based browser:
 
 ```sh
 node site/shoot.js --browser /path/to/chromium --out site/shots --full --live
@@ -229,13 +306,25 @@ node site/shoot.js --browser /path/to/chromium --only none --og site/og.png
 
 Without an installed `playwright-core`, set `PLAYWRIGHT_CORE` to a copy of it; Playwright for Python ships one as `playwright/driver/package`, next to its own `node`.
 
-It prints console errors, failed and outside requests, and any horizontal overflow. The PNGs in `shots/` were reduced to 256-color palettes afterwards (`magick in.png -colors 256 PNG8:out.png`) to keep them small.
+`--pages` captures each of the six pages whole at both sizes (`desk-pricing.png`, `phone-data.png` and so on), then the pricing page against a cloud API that `shoot.js` answers itself. For those captures it serves `release.js` with `offer.api` set to `https://cloud.p0ssess.me` and fulfills requests to that address in the browser, so nothing leaves the machine:
+
+| Capture | State |
+|---|---|
+| `*-pricing.png` | As the page ships: no API, placeholders, "Opening soon". |
+| `*-pricing-mock-soon.png` | The API answers `opening_soon` with placeholder plans. |
+| `*-pricing-mock-waitlist-bad.png` | The address form after an address that is refused. |
+| `*-pricing-mock-waitlist-ok.png` | Both forms after an address that is accepted. |
+| `*-pricing-mock-open.png` | The API answers `open` with decided plans. |
+
+The amounts in the mock (`TEST` in `shoot.js`) are test values, not prices. They are in the mocked answer for every state, and the run fails a check if one shows while its plan is a placeholder. The `-mock-open` captures show them, under a band across the top that says so. Do not publish those captures as if they were prices. `--only` takes page names too, so `--pages --only pricing` retakes the pricing captures alone.
+
+It prints console errors, failed and outside requests, failed checks and any horizontal overflow. The PNGs in `shots/` were reduced to 256-color palettes afterwards (`magick in.png -colors 256 PNG8:out.png`) to keep them small. `shots/` holds the home page only.
 
 ## Deploy
 
-Copy `index.html`, `style.css`, `page.js`, `release.js`, `ghost.svg`, `film-frames.webp`, `film-strip.webp`, `film-still.png`, `ghost-lantern.webp`, `apollo-ignition.webp`, `apollo-scan.webp`, `apollo-strip.webp`, `og.png` and `fonts/` to any static host. `scenes.js` is gone; remove it from the host. `README.md`, `shoot.js`, `shots/` and `docs-build/` are not needed there.
+Copy `index.html`, `style.css`, `pages.css`, `page.js`, `pages.js`, `release.js`, `ghost.svg`, `film-frames.webp`, `film-strip.webp`, `film-still.png`, `ghost-lantern.webp`, `apollo-ignition.webp`, `apollo-scan.webp`, `apollo-strip.webp`, `og.png`, `fonts/` and the six page folders (`pricing/`, `business/`, `data/`, `terms/`, `privacy/`, `refunds/`, each with its `index.html`) to any static host. The pages link to each other as folders (`../pricing/`), so the host has to serve a folder's `index.html` for its address; with nginx, `try_files $uri $uri/` and `index index.html` do that. `scenes.js` is gone; remove it from the host. `README.md`, `shoot.js`, `shots/` and `docs-build/` are not needed there.
 
-The page carries a strict Content Security Policy in a `<meta>` tag. If the host can set headers, send the same policy as a header and add what a meta tag cannot express:
+Every page carries a strict Content Security Policy in a `<meta>` tag. If the host can set headers, send the same policy as a header and add what a meta tag cannot express. For `/pricing/` the header also needs the page's `connect-src` (see "The offer"), or the header will block what the meta tag allows:
 
 ```
 Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
@@ -243,7 +332,7 @@ Referrer-Policy: no-referrer
 X-Content-Type-Options: nosniff
 ```
 
-Serve `.woff2` as `font/woff2` and `.webp` as `image/webp`, and cache `fonts/` and the images for a long time. Outside addresses are only followed when someone clicks a link; the page itself loads nothing from them. Uncompressed, the page and everything it loads come to about 340 KB.
+Serve `.woff2` as `font/woff2` and `.webp` as `image/webp`, and cache `fonts/` and the images for a long time. Outside addresses are only followed when someone clicks a link; the pages load nothing from them, except the pricing page's two calls to the cloud API once `offer.api` is set. Uncompressed, the home page and everything it loads come to about 340 KB.
 
 ## Fonts
 
