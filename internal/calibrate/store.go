@@ -14,14 +14,16 @@ import (
 
 // Result is one graded call. It stays on this machine; only Scores leave it.
 type Result struct {
-	Sample  string    `json:"sample"`
-	UseCase string    `json:"use_case"`
-	Model   string    `json:"model"`
-	User    bool      `json:"user,omitempty"`
-	Correct bool      `json:"correct"`
-	CostUSD float64   `json:"cost_usd"`
-	Seconds float64   `json:"seconds"`
-	At      time.Time `json:"at"`
+	Sample  string  `json:"sample"`
+	UseCase string  `json:"use_case"`
+	Model   string  `json:"model"`
+	User    bool    `json:"user,omitempty"`
+	Correct bool    `json:"correct"`
+	CostUSD float64 `json:"cost_usd"`
+	// CostBasis is how the call's cost was arrived at (reported, byok-upstream, tokens or reserved).
+	CostBasis string    `json:"cost_basis,omitempty"`
+	Seconds   float64   `json:"seconds"`
+	At        time.Time `json:"at"`
 	// Error is set when no reply came back; such a result counts in no score.
 	Error string `json:"error,omitempty"`
 }

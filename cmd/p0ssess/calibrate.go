@@ -17,6 +17,7 @@ import (
 	"p0ssess/internal/account"
 	"p0ssess/internal/calibrate"
 	"p0ssess/internal/config"
+	"p0ssess/internal/costbasis"
 	"p0ssess/internal/direct"
 	"p0ssess/internal/history"
 	"p0ssess/internal/pme/local"
@@ -124,7 +125,13 @@ func (r directRunner) Run(ctx context.Context, c calibrate.Call) (calibrate.Repl
 	res, _, err := server.RunDirect(ctx, r.cfg, r.eng, req, server.DirectJob{UseCase: c.UseCase, Stakes: c.Stakes, Route: "calibrate", Confirmed: true})
 	var rep calibrate.Reply
 	if res != nil {
-		rep = calibrate.Reply{Text: res.Text, CostUSD: res.Usage.CostUSD, Elapsed: res.Elapsed,
+		charged, basis := res.Usage.CostUSD, res.Usage.CostBasis
+		if res.Billed() && !res.Measured() && !(res.Usage.Unmeasured == 0 && res.Usage.Priced > 0) {
+			// The call's cost could be neither read nor priced: the ledger counts the reserved maximum, and
+			// so does the run's ceiling.
+			charged, basis = max(charged, res.Estimate.CostUSD), costbasis.Reserved
+		}
+		rep = calibrate.Reply{Text: res.Text, CostUSD: res.Usage.CostUSD, ChargedUSD: charged, CostBasis: basis, Elapsed: res.Elapsed,
 			EstimateUSD: res.Estimate.CostUSD, EstimateUnknown: res.Estimate.CostUnknown}
 	}
 	return rep, err

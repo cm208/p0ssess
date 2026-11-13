@@ -77,15 +77,7 @@ func (c *Client) runImages(ctx context.Context, p *plan, res *Result, outDir str
 	if ir.ID != "" {
 		res.IDs = append(res.IDs, ir.ID)
 	}
-	if res.Usage.add(ir.Usage) {
-		return nil
-	}
-	if ir.ID != "" {
-		c.lookupCost(ctx, res, ir.ID)
-		return nil
-	}
-	res.Usage.unmeasured()
-	res.Warnings = append(res.Warnings, "the image API reported no cost")
+	c.settleCost(ctx, res, p, ir.ID, ir.Usage, "the image API reported no cost")
 	return nil
 }
 

@@ -299,7 +299,9 @@ type Run struct {
 	ApprovalID  string
 	Reserve     string
 	// Estimated marks a cost that was not measured; CashUSD is then the reserved maximum.
-	Estimated   bool
+	Estimated bool
+	// CostBasis is how CashUSD was arrived at (costbasis.Reported, BYOKUpstream, Tokens or Reserved).
+	CostBasis   string
 	Generations []string
 }
 
@@ -316,7 +318,7 @@ func (e *Engine) RecordRun(r Run) error {
 		Kind: kind, Family: family,
 		Route: r.Route, Model: r.Model, CashUSD: r.CashUSD, UpstreamUSD: r.UpstreamUSD, Status: r.Status,
 		OfferID: r.OfferID, UseCase: r.UseCase, Session: r.Session, Project: paths.ProjectRoot(r.Cwd),
-		ApprovalID: r.ApprovalID, Reserve: r.Reserve, Estimated: r.Estimated, Generations: r.Generations})
+		ApprovalID: r.ApprovalID, Reserve: r.Reserve, Estimated: r.Estimated, CostBasis: r.CostBasis, Generations: r.Generations})
 	if err != nil {
 		return err
 	}

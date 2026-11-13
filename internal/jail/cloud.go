@@ -258,9 +258,7 @@ func RunCost(name, run string) (proxy.RunCost, bool) {
 		if cur != run {
 			return proxy.RunCost{}, false
 		}
-		var rc proxy.RunCost
-		rc.Calls, rc.KnownUSD, rc.Unknown, rc.ChargedUSD = live.meter.RunSpend()
-		return rc, true
+		return live.meter.RunSpend(), true
 	}
 	return proxy.ReadRunCost(MeterFile(name), run)
 }

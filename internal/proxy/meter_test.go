@@ -119,7 +119,10 @@ func TestMeterLooksUpMissingCost(t *testing.T) {
 	e := newMeterEnv(t, fakeOpenRouter(t, "", &calls).URL)
 	e.start(t, "run-1", 1)
 	var looked string
-	e.m.Lookup = func(_ context.Context, id string) (float64, bool) { looked = id; return 0.0021, true }
+	e.m.Lookup = func(_ context.Context, id string) (float64, string, bool) {
+		looked = id
+		return 0.0021, "reported", true
+	}
 	e.post("/api/v1/chat/completions", prompt+`}`)
 	rc, _ := ReadRunCost(e.file, "run-1")
 	if looked != "gen-2" || rc.Calls != 1 || rc.Unknown != 0 || rc.KnownUSD != 0.0021 {
@@ -130,7 +133,7 @@ func TestMeterLooksUpMissingCost(t *testing.T) {
 func TestMeterUnknownCostChargesTheRestAndStops(t *testing.T) {
 	var calls atomic.Int32
 	e := newMeterEnv(t, fakeOpenRouter(t, "", &calls).URL)
-	e.m.Lookup = func(context.Context, string) (float64, bool) { return 0, false }
+	e.m.Lookup = func(context.Context, string) (float64, string, bool) { return 0, "", false }
 	e.start(t, "run-1", 0.5)
 	if w := e.post("/api/v1/chat/completions", prompt+`}`); w.Code != 200 {
 		t.Fatalf("%d", w.Code)
@@ -195,6 +198,62 @@ func TestMeterWithoutRunFileStillRecords(t *testing.T) {
 		t.Fatalf("%d", w.Code)
 	}
 	if rc, ok := ReadRunCost(e.file, ""); !ok || rc.Calls != 1 {
+		t.Fatalf("%+v", rc)
+	}
+}
+
+// TestMeterCostBasis: a call on the user's own provider key reports $0 (or OpenRouter's fee) in cost and the
+// provider's charge in cost_details; the meter records the sum with its basis, and a call that omits the
+// provider's charge is unknown (to be priced from its tokens by the relay), never $0.
+func TestMeterCostBasis(t *testing.T) {
+	for _, c := range []struct {
+		name, cost string
+		known      bool
+		usd        float64
+		basis      string
+		charged    float64
+	}{
+		{"normal paid call", `0.004,"is_byok":false,"cost_details":{"upstream_inference_cost":0.004}`, true, 0.004, "reported", 0.004},
+		{"byok with the upstream cost", `0,"is_byok":true,"cost_details":{"upstream_inference_cost":0.0031}`, true, 0.0031, "byok-upstream", 0.0031},
+		{"byok with a fee", `0.0001,"is_byok":true,"cost_details":{"upstream_inference_cost":0.0031}`, true, 0.0032, "byok-upstream", 0.0032},
+		{"byok without the upstream cost", `0,"is_byok":true`, false, 0, "", 0.5},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			var calls atomic.Int32
+			e := newMeterEnv(t, fakeOpenRouter(t, c.cost, &calls).URL)
+			e.m.Lookup = func(context.Context, string) (float64, string, bool) { return 0, "", false }
+			e.start(t, "run-1", 0.5)
+			if w := e.post("/api/v1/chat/completions", prompt+`}`); w.Code != 200 {
+				t.Fatal(w.Code)
+			}
+			rc, _ := ReadRunCost(e.file, "run-1")
+			if (rc.Unknown == 0) != c.known || rc.KnownUSD < c.usd-1e-12 || rc.KnownUSD > c.usd+1e-12 ||
+				rc.ChargedUSD < c.charged-1e-12 || rc.ChargedUSD > c.charged+1e-12 {
+				t.Fatalf("%+v", rc)
+			}
+			if wantBYOK := c.basis == "byok-upstream"; (rc.BYOK == 1) != wantBYOK {
+				t.Errorf("byok calls = %d", rc.BYOK)
+			}
+			if !c.known && (rc.UnknownInput != 1000 || rc.UnknownOutput != 200) {
+				t.Errorf("the unknown call's tokens must be kept for pricing: %+v", rc)
+			}
+		})
+	}
+}
+
+// A BYOK call whose provider charge is only in the generation record is settled from it.
+func TestMeterBYOKLookup(t *testing.T) {
+	var calls atomic.Int32
+	e := newMeterEnv(t, fakeOpenRouter(t, `0,"is_byok":true`, &calls).URL)
+	gen := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"data":{"is_byok":true,"total_cost":0,"upstream_inference_cost":0.0042}}`)
+	}))
+	defer gen.Close()
+	e.m.Lookup = GenerationLookup(gen.Client(), gen.URL, "k")
+	e.start(t, "run-1", 0.5)
+	e.post("/api/v1/chat/completions", prompt+`}`)
+	rc, _ := ReadRunCost(e.file, "run-1")
+	if rc.Unknown != 0 || rc.BYOK != 1 || rc.KnownUSD != 0.0042 {
 		t.Fatalf("%+v", rc)
 	}
 }

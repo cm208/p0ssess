@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"p0ssess/internal/costbasis"
 	"p0ssess/internal/history"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/pme/table"
@@ -361,10 +362,15 @@ func (e *Engine) Release(g *Grant) error {
 
 // Reconcile replaces an estimated run's cost with the measured one.
 func (e *Engine) Reconcile(runID string, cost float64) error {
+	return e.ReconcileBasis(runID, cost, costbasis.Reported)
+}
+
+// ReconcileBasis is Reconcile with the basis of the measured cost (costbasis.Reported or BYOKUpstream).
+func (e *Engine) ReconcileBasis(runID string, cost float64, basis string) error {
 	if math.IsNaN(cost) || math.IsInf(cost, 0) || cost < 0 {
 		return errors.New("cost must be a finite number, 0 or more")
 	}
-	if err := history.Append(e.Dirs.HistoryFile(), history.Entry{TS: e.Now().UTC(), Type: history.TypeSettle, RunID: runID, CashUSD: cost}); err != nil {
+	if err := history.Append(e.Dirs.HistoryFile(), history.Entry{TS: e.Now().UTC(), Type: history.TypeSettle, RunID: runID, CashUSD: cost, CostBasis: basis}); err != nil {
 		return err
 	}
 	return team.Settle(e.Dirs, runID, cost)

@@ -88,6 +88,11 @@ type Entry struct {
 	Reserve string `json:"reserve,omitempty"`
 	// Estimated marks a run whose cost was not measured: CashUSD is the reserved maximum.
 	Estimated bool `json:"estimated,omitempty"`
+	// CostBasis says how a run's cost was arrived at: "reported" (OpenRouter's figure), "byok-upstream"
+	// (OpenRouter's fee plus the provider's charge on the user's own key), "tokens" (priced from the
+	// call's tokens at the model's list price) or "reserved" (counted at the reserved maximum). Old
+	// entries have none.
+	CostBasis string `json:"cost_basis,omitempty"`
 	// Generations are OpenRouter generation ids, kept so an estimated cost can be looked up later.
 	Generations []string `json:"generations,omitempty"`
 	// Expires ends a reservation's hold.
@@ -221,10 +226,12 @@ type Ledger struct {
 	// for an estimated run.
 	closed  map[string]bool
 	settled map[string]float64
+	// settledBasis is the cost basis of each settle entry.
+	settledBasis map[string]string
 }
 
 func NewLedger(es []Entry) *Ledger {
-	l := &Ledger{Entries: es, offers: map[string]*Entry{}, closed: map[string]bool{}, settled: map[string]float64{}}
+	l := &Ledger{Entries: es, offers: map[string]*Entry{}, closed: map[string]bool{}, settled: map[string]float64{}, settledBasis: map[string]string{}}
 	for i := range es {
 		switch e := es[i]; e.Type {
 		case TypeOffer:
@@ -238,6 +245,7 @@ func NewLedger(es []Entry) *Ledger {
 		case TypeSettle:
 			if e.RunID != "" {
 				l.settled[e.RunID] = e.CashUSD
+				l.settledBasis[e.RunID] = e.CostBasis
 			}
 		}
 	}
@@ -377,7 +385,15 @@ func (l *Ledger) Runs(n int) []Entry {
 	var out []Entry
 	for i := len(l.Entries) - 1; i >= 0 && (n <= 0 || len(out) < n); i-- {
 		if l.Entries[i].Type == TypeRun {
-			out = append(out, l.Entries[i])
+			e := l.Entries[i]
+			if c, ok := l.settled[e.RunID]; ok && e.Estimated {
+				// The measured figure replaced the estimate.
+				e.CashUSD, e.Estimated = c, false
+				if b := l.settledBasis[e.RunID]; b != "" {
+					e.CostBasis = b
+				}
+			}
+			out = append(out, e)
 		}
 	}
 	return out

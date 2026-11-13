@@ -896,3 +896,36 @@ func TestReasoningEffortAndCapReachTheWire(t *testing.T) {
 		t.Errorf("reasoning = %v", body["reasoning"])
 	}
 }
+
+// A BYOK call whose answer and generation record carry no provider charge is priced from its tokens at the
+// model's list price, not recorded as the $0 OpenRouter reported.
+func TestBYOKWithoutUpstreamIsPricedFromTokens(t *testing.T) {
+	f, c := newFake(t)
+	f.answer["/chat/completions"] = func(map[string]any) (int, string) {
+		return 200, `{"id":"gen-3","provider":"Google AI Studio","choices":[{"message":{"content":"x"}}],` +
+			`"usage":{"prompt_tokens":1000,"completion_tokens":200,"cost":0,"is_byok":true}}`
+	}
+	res, err := c.Run(context.Background(), Request{Model: "google/gemini-3.8-flash", Prompt: "x", MaxCostUSD: 0.05})
+	if err != nil {
+		t.Fatal(err)
+	}
+	u := res.Usage
+	want := (1000*0.825 + 200*4.125) / 1e6
+	if u.CostUSD < want-1e-12 || u.CostUSD > want+1e-12 || u.CostBasis != "tokens" || u.Priced != 1 || u.Unmeasured != 0 || res.Measured() {
+		t.Errorf("usage = %+v, want %v", u, want)
+	}
+	if !strings.Contains(Compact(res, ""), "priced from tokens") {
+		t.Errorf("compact = %q", Compact(res, ""))
+	}
+	// Not on the user's key: a missing cost is still unmeasured and left to the reserved maximum.
+	f.answer["/chat/completions"] = func(map[string]any) (int, string) {
+		return 200, `{"id":"gen-4","choices":[{"message":{"content":"x"}}],"usage":{"prompt_tokens":1000,"completion_tokens":200}}`
+	}
+	res, err = c.Run(context.Background(), Request{Model: "google/gemini-3.8-flash", Prompt: "x", MaxCostUSD: 0.05})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Usage.Unmeasured != 1 || res.Usage.Priced != 0 || res.Usage.CostBasis != "reserved" {
+		t.Errorf("non-byok usage = %+v", res.Usage)
+	}
+}

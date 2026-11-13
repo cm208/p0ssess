@@ -92,12 +92,12 @@ func TestMeterUnknownCost(t *testing.T) {
 	h := m.Guard(fakeUpstream("", &calls))
 	m.StartRun(0.5, "x/y")
 	var looked string
-	m.Lookup = func(_ context.Context, id string) (float64, bool) { looked = id; return 0.02, true }
+	m.Lookup = func(_ context.Context, id string) (float64, string, bool) { looked = id; return 0.02, "reported", true }
 	call(t, h, "POST", "/api/v1/chat/completions", `{"model":"x/y","stream":true}`)
 	if looked != "gen-1" || m.Spent() != 0.02 {
 		t.Fatalf("lookup %q spent %v", looked, m.Spent())
 	}
-	m.Lookup = func(context.Context, string) (float64, bool) { return 0, false }
+	m.Lookup = func(context.Context, string) (float64, string, bool) { return 0, "", false }
 	call(t, h, "POST", "/api/v1/chat/completions", `{"model":"x/y"}`)
 	if m.Spent() != 0.5 {
 		t.Fatalf("an unmetered call must use up the run's cap, spent %v", m.Spent())
@@ -146,7 +146,7 @@ func TestGenerationLookup(t *testing.T) {
 		io.WriteString(w, `{"data":{"total_cost":0.0031}}`)
 	}))
 	defer srv.Close()
-	c, ok := GenerationLookup(srv.Client(), srv.URL, "k")(context.Background(), "gen-abc")
+	c, _, ok := GenerationLookup(srv.Client(), srv.URL, "k")(context.Background(), "gen-abc")
 	if !ok || c != 0.0031 {
 		t.Fatalf("%v %v", c, ok)
 	}
@@ -161,5 +161,36 @@ func TestMeterChargesCancelledCalls(t *testing.T) {
 	call(t, h, "POST", "/api/v1/chat/completions", `{"model":"x/y"}`)
 	if m.Spent() != 0.3 {
 		t.Fatalf("a call that broke after it was sent must count as the rest of the cap, spent %v", m.Spent())
+	}
+}
+
+func TestMeterCostBasis(t *testing.T) {
+	for _, c := range []struct {
+		name, cost string
+		unknown    int
+		byok       int
+		known      float64
+	}{
+		{"normal paid call", `0.004,"is_byok":false`, 0, 0, 0.004},
+		{"byok with the upstream cost", `0,"is_byok":true,"cost_details":{"upstream_inference_cost":0.0031}`, 0, 1, 0.0031},
+		{"byok without the upstream cost", `0,"is_byok":true`, 1, 0, 0},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			var calls atomic.Int32
+			m := NewMeter()
+			m.Lookup = func(context.Context, string) (float64, string, bool) { return 0, "", false }
+			h := m.Guard(fakeUpstream(c.cost, &calls))
+			m.StartRun(0.5, "x/y")
+			if w := call(t, h, "POST", "/api/v1/chat/completions", `{"model":"x/y","messages":[]}`); w.Code != 200 {
+				t.Fatal(w.Code)
+			}
+			rc := m.RunSpend()
+			if rc.Calls != 1 || rc.Unknown != c.unknown || rc.BYOK != c.byok || rc.KnownUSD != c.known {
+				t.Fatalf("%+v", rc)
+			}
+			if c.unknown == 1 && (rc.UnknownInput != 3 || rc.UnknownOutput != 2 || rc.ChargedUSD != 0.5) {
+				t.Errorf("an unreadable call keeps its tokens for pricing and is charged the rest of the cap: %+v", rc)
+			}
+		})
 	}
 }

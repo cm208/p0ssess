@@ -56,14 +56,6 @@ func (c *Client) runSTT(ctx context.Context, p *plan, res *Result) error {
 	if tr.ID != "" {
 		res.IDs = append(res.IDs, tr.ID)
 	}
-	if res.Usage.add(tr.Usage) {
-		return nil
-	}
-	if tr.ID != "" {
-		c.lookupCost(ctx, res, tr.ID)
-		return nil
-	}
-	res.Usage.unmeasured()
-	res.Warnings = append(res.Warnings, "the transcription API reported no cost")
+	c.settleCost(ctx, res, p, tr.ID, tr.Usage, "the transcription API reported no cost")
 	return nil
 }

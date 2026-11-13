@@ -3,7 +3,6 @@ package proxy
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -14,6 +13,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"p0ssess/internal/costbasis"
 )
 
 // The local jail's key proxy meters every model call itself, so a run's cost never depends on whether
@@ -38,8 +39,11 @@ type Call struct {
 	Time  time.Time `json:"time"`
 	Run   string    `json:"run,omitempty"`
 	Model string    `json:"model"`
-	// Known says CostUSD is OpenRouter's own figure (from the answer or the generation lookup).
+	// Known says CostUSD is OpenRouter's own figure (from the answer or the generation lookup). Basis
+	// says which: costbasis.Reported, or BYOKUpstream when it includes the provider's own charge on the
+	// user's key. A call that is not Known has no basis here; the relay prices it or counts it at the cap.
 	Known   bool    `json:"known"`
+	Basis   string  `json:"basis,omitempty"`
 	CostUSD float64 `json:"cost_usd"`
 	// ChargedUSD is what the call counted against the run's cap: its cost, or for an unknown cost the
 	// rest of the cap.
@@ -74,6 +78,9 @@ func readRunSpec(file string) (RunSpec, bool) {
 type RunCost struct {
 	// Calls is the number of billed calls; Unknown how many of them had no readable cost.
 	Calls, Unknown int
+	// BYOK is how many of the known calls were on the user's own provider key (their cost includes the
+	// provider's charge).
+	BYOK int
 	// KnownUSD is the sum of the known costs; ChargedUSD what the calls counted against the cap.
 	KnownUSD, ChargedUSD float64
 	// UnknownInput and UnknownOutput are the token counts the unknown calls reported, if any.
@@ -105,6 +112,9 @@ func (rc *RunCost) add(c Call) {
 	rc.ChargedUSD += c.ChargedUSD
 	if c.Known {
 		rc.KnownUSD += c.CostUSD
+		if c.Basis == costbasis.BYOKUpstream {
+			rc.BYOK++
+		}
 	} else {
 		rc.Unknown++
 		rc.UnknownInput += c.InputTokens
@@ -117,7 +127,7 @@ type Meter struct {
 	Dir     string // where calls.jsonl is written
 	RunFile string // the relay's run file; "" or unreadable means no cap is known
 	// Lookup reads a generation's cost when the answer carried none. Nil skips the lookup.
-	Lookup func(ctx context.Context, id string) (float64, bool)
+	Lookup Lookup
 
 	mu      sync.Mutex
 	run     string
@@ -194,7 +204,7 @@ func (m *Meter) Wrap(next http.Handler) http.Handler {
 		}
 		c := Call{Time: time.Now().UTC(), Run: spec.Run, Model: model, InputTokens: rd.InputTokens, OutputTokens: rd.OutputTokens}
 		if s == SettleKnown {
-			c.Known, c.CostUSD, c.ChargedUSD = true, rd.CostUSD, rd.CostUSD
+			c.Known, c.Basis, c.CostUSD, c.ChargedUSD = true, rd.Basis, rd.CostUSD, rd.CostUSD
 		} else if haveSpec && spec.CapUSD > 0 {
 			m.mu.Lock()
 			rest := spec.CapUSD - m.spentOn(spec.Run)

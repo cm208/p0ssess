@@ -37,12 +37,12 @@ func TestGenerationLookupBYOK(t *testing.T) {
 	answer := `{"data":{"is_byok":true,"total_cost":0,"upstream_inference_cost":0.0000195}}`
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, answer) }))
 	defer srv.Close()
-	c, ok := GenerationLookup(srv.Client(), srv.URL, "k")(context.Background(), "gen-1")
+	c, _, ok := GenerationLookup(srv.Client(), srv.URL, "k")(context.Background(), "gen-1")
 	if !ok || c != 0.0000195 {
 		t.Fatalf("byok lookup: %v %v", c, ok)
 	}
 	answer = `{"data":{"is_byok":false,"total_cost":0.003,"upstream_inference_cost":0.003}}`
-	if c, ok := GenerationLookup(srv.Client(), srv.URL, "k")(context.Background(), "gen-1"); !ok || c != 0.003 {
+	if c, _, ok := GenerationLookup(srv.Client(), srv.URL, "k")(context.Background(), "gen-1"); !ok || c != 0.003 {
 		t.Fatalf("plain lookup: %v %v", c, ok)
 	}
 }

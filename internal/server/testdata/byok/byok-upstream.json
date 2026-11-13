@@ -1,0 +1,1 @@
+{"id":"gen-byok","model":"test/cheap","provider":"Google AI Studio","choices":[{"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}],"usage":{"prompt_tokens":1000,"completion_tokens":200,"total_tokens":1200,"cost":0,"is_byok":true,"cost_details":{"upstream_inference_cost":0.0031}}}

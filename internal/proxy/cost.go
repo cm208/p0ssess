@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"p0ssess/internal/costbasis"
 )
 
 // Reading what a model call cost. OpenRouter reports a call's cost in the answer's usage object when the
@@ -199,28 +201,27 @@ func (d usageDoc) usage() *usage {
 }
 
 // total is what a call cost the user: OpenRouter's charge, plus the provider's own charge on a BYOK call.
-func (u *usage) total() (float64, bool) {
-	if u == nil || u.Cost == nil || !(*u.Cost >= 0) {
-		return 0, false
+// basis says which (costbasis.Reported or BYOKUpstream); ok is false when the figures do not say.
+func (u *usage) total() (usd float64, basis string, ok bool) {
+	if u == nil {
+		return 0, "", false
 	}
-	c := *u.Cost
-	if u.IsBYOK {
-		if u.CostDetails == nil || u.CostDetails.UpstreamInferenceCost == nil || !(*u.CostDetails.UpstreamInferenceCost >= 0) {
-			// The provider's charge is not reported: the call's cost is not known.
-			return 0, false
-		}
-		c += *u.CostDetails.UpstreamInferenceCost
+	var up *float64
+	if u.CostDetails != nil {
+		up = u.CostDetails.UpstreamInferenceCost
 	}
-	return c, true
+	return costbasis.FromUsage(u.Cost, u.IsBYOK, up)
 }
 
-func (d usageDoc) cost() (float64, bool) { return d.usage().total() }
+func (d usageDoc) cost() (float64, string, bool) { return d.usage().total() }
 
 // Reading is what an answer says about its own cost.
 type Reading struct {
 	// CostUSD is valid when Found.
 	CostUSD float64
 	Found   bool
+	// Basis is how CostUSD was arrived at (costbasis.Reported or BYOKUpstream) when Found.
+	Basis string
 	// ID is the generation id, for a lookup when the cost was not in the answer.
 	ID string
 	// Input and output token counts, when the answer reported them.
@@ -254,7 +255,7 @@ func (t *CostTap) Read() Reading {
 	if !ok {
 		return r
 	}
-	r.CostUSD, r.Found = d.cost()
+	r.CostUSD, r.Basis, r.Found = d.cost()
 	r.InputTokens, r.OutputTokens = d.usage().tokens()
 	return r
 }
@@ -279,7 +280,7 @@ const (
 
 // Outcome decides how a finished call is charged: from the answer, else from a generation lookup (nil
 // skips it), else unknown. cancelled says the caller went away while the call was in flight.
-func (t *CostTap) Outcome(ctx context.Context, cancelled bool, lookup func(context.Context, string) (float64, bool)) (Settle, Reading) {
+func (t *CostTap) Outcome(ctx context.Context, cancelled bool, lookup Lookup) (Settle, Reading) {
 	r := t.Read()
 	switch {
 	case r.Found:
@@ -297,24 +298,27 @@ func (t *CostTap) Outcome(ctx context.Context, cancelled bool, lookup func(conte
 	}
 	if r.ID != "" && lookup != nil {
 		lctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)
-		c, ok := lookup(lctx, r.ID)
+		c, basis, ok := lookup(lctx, r.ID)
 		cancel()
 		if ok {
-			r.CostUSD, r.Found = c, true
+			r.CostUSD, r.Basis, r.Found = c, basis, true
 			return SettleKnown, r
 		}
 	}
 	return SettleUnknown, r
 }
 
+// Lookup reads a generation's cost (and its costbasis basis) by id; ok is false when it cannot.
+type Lookup func(ctx context.Context, id string) (usd float64, basis string, ok bool)
+
 // GenerationLookup returns a lookup that asks OpenRouter (or a test server at upstream) for a
 // generation's total cost, retrying while the generation is not recorded yet.
-func GenerationLookup(client *http.Client, upstream, key string) func(context.Context, string) (float64, bool) {
-	return func(ctx context.Context, id string) (float64, bool) {
+func GenerationLookup(client *http.Client, upstream, key string) Lookup {
+	return func(ctx context.Context, id string) (float64, string, bool) {
 		for wait := time.Second; wait <= 4*time.Second; wait *= 2 {
 			req, err := http.NewRequestWithContext(ctx, http.MethodGet, upstream+"/api/v1/generation?id="+urlQuery(id), nil)
 			if err != nil {
-				return 0, false
+				return 0, "", false
 			}
 			req.Header.Set("Authorization", "Bearer "+key)
 			resp, err := client.Do(req)
@@ -328,22 +332,19 @@ func GenerationLookup(client *http.Client, upstream, key string) func(context.Co
 				}
 				ok := resp.StatusCode == 200 && json.NewDecoder(bufio.NewReader(io.LimitReader(resp.Body, 1<<20))).Decode(&g) == nil
 				resp.Body.Close()
-				if ok && g.Data.TotalCost != nil && *g.Data.TotalCost >= 0 {
-					if !g.Data.IsBYOK {
-						return *g.Data.TotalCost, true
-					}
-					if g.Data.Upstream != nil && *g.Data.Upstream >= 0 {
-						return *g.Data.TotalCost + *g.Data.Upstream, true
+				if ok {
+					if usd, basis, found := costbasis.FromUsage(g.Data.TotalCost, g.Data.IsBYOK, g.Data.Upstream); found {
+						return usd, basis, true
 					}
 				}
 			}
 			select {
 			case <-ctx.Done():
-				return 0, false
+				return 0, "", false
 			case <-time.After(wait):
 			}
 		}
-		return 0, false
+		return 0, "", false
 	}
 }
 

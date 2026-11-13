@@ -22,6 +22,7 @@ import (
 	"p0ssess/internal/account"
 	"p0ssess/internal/calibrate"
 	"p0ssess/internal/config"
+	"p0ssess/internal/costbasis"
 	"p0ssess/internal/direct"
 	"p0ssess/internal/history"
 	"p0ssess/internal/jail"
@@ -264,6 +265,7 @@ func (o *observer) RunFinished(r relay.RunInfo, res *relay.Result) error {
 		run.CashUSD, run.Estimated = r.Grant.CapUSD, true
 		res.CostEstimated, res.CostUSD, res.CostBasis = true, r.Grant.CapUSD, relay.CostCap
 	}
+	run.CostBasis = relay.LedgerBasis(res.CostBasis)
 	return o.eng.Settle(&local.Grant{ReserveID: r.Grant.ReserveID, ApprovalID: r.Grant.ApprovalID, Session: r.Grant.Session}, run)
 }
 
@@ -448,6 +450,8 @@ func sumUsage(a, b direct.Usage) direct.Usage {
 	a.UpstreamUSD += b.UpstreamUSD
 	a.BYOK = a.BYOK || b.BYOK
 	a.Unmeasured += b.Unmeasured
+	a.Priced += b.Priced
+	a.CostBasis = costbasis.Combine(a.CostBasis, b.CostBasis)
 	if a.CostSource == "" || b.CostSource == "unknown" {
 		a.CostSource = b.CostSource
 	}
@@ -532,8 +536,20 @@ func runAuthorized(ctx context.Context, cfg config.Config, eng *local.Engine, c 
 	}
 	run := local.Run{ID: runID, Route: route, Model: req.Model, CashUSD: res.Usage.CostUSD,
 		UpstreamUSD: res.Usage.UpstreamUSD, Status: status, OfferID: job.OfferID, UseCase: job.UseCase, Cwd: cwd}
-	if !res.Measured() {
+	run.CostBasis = res.Usage.CostBasis
+	switch {
+	case res.Measured():
+	case res.Usage.Unmeasured == 0 && res.Usage.Priced > 0:
+		// Priced from the calls' tokens at the model's list price: OpenRouter did not report the cost. The
+		// price is recorded as an estimate until the generation records report one.
+		run.Estimated = true
+		if len(res.IDs) == res.Sent-res.Rejected {
+			run.Generations = res.IDs
+		}
+		res.Warnings = append(res.Warnings, fmt.Sprintf("cost not reported; $%.4f (priced from the tokens at the model's list price) is recorded until OpenRouter reports it", run.CashUSD))
+	default:
 		run.CashUSD, run.Estimated = max(grant.MaxUSD, res.Usage.CostUSD), true
+		run.CostBasis = costbasis.Reserved
 		// Only a full set of generation ids can replace the estimate later.
 		if len(res.IDs) == res.Sent-res.Rejected {
 			run.Generations = res.IDs
@@ -677,15 +693,16 @@ func Reconcile(ctx context.Context, cfg config.Config, eng *local.Engine) {
 func reconcileRun(ctx context.Context, key string, eng *local.Engine, runID string, ids []string) {
 	c := newClient(key)
 	c.GenerationWait = 2 * time.Second
-	total := 0.0
+	total, basis := 0.0, ""
 	for _, id := range ids {
-		cost, err := c.GenerationCost(ctx, id)
+		cost, b, err := c.GenerationCost(ctx, id)
 		if err != nil {
 			return
 		}
 		total += cost
+		basis = costbasis.Combine(basis, b)
 	}
-	eng.Reconcile(runID, total)
+	eng.ReconcileBasis(runID, total, basis)
 }
 
 // directTool is the direct path as an MCP tool, with the engine's budget cap and measured spend.

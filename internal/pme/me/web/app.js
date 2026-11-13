@@ -81,6 +81,14 @@
     }
   }
 
+  // How a run's cost was arrived at, from the ledger's cost_basis.
+  const BASIS = {
+    reported: ["", "OpenRouter's reported cost"],
+    "byok-upstream": ["own key", "OpenRouter's fee plus the charge your own provider key was billed, as OpenRouter reported it"],
+    tokens: ["from tokens", "priced from the call's tokens at the model's list price; OpenRouter did not report the cost"],
+    reserved: ["max held", "counted at the maximum reserved for the call; the cost could not be read or priced"],
+  };
+
   function renderRuns(runs) {
     const box = $("#runs");
     runs = list(runs).slice(0, 7);
@@ -89,9 +97,10 @@
       return;
     }
     box.replaceChildren(...runs.map((r) => el("li", {},
-      el("span", { class: "what", text: words(r.use_case || r.route || "run") }, r.status && r.status !== "done" ? el("span", { class: "tag", text: r.status }) : null),
+      el("span", { class: "what", text: words(r.use_case || r.route || "run") }, r.status && r.status !== "done" ? el("span", { class: "tag", text: r.status }) : null,
+        BASIS[r.cost_basis] && BASIS[r.cost_basis][0] ? el("span", { class: "tag", text: BASIS[r.cost_basis][0], title: BASIS[r.cost_basis][1] }) : null),
       el("span", { class: "who", text: short(r.model) }),
-      el("span", { class: "cost", text: cost(r.cash_usd) + (r.estimated ? "*" : "") }),
+      el("span", { class: "cost", text: cost(r.cash_usd) + (r.estimated ? "*" : ""), title: BASIS[r.cost_basis] ? BASIS[r.cost_basis][1] : null }),
       el("span", { class: "when", text: ago(r.ts) }))));
   }
 

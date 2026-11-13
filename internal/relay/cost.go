@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 
+	"p0ssess/internal/costbasis"
 	"p0ssess/internal/jail"
 	"p0ssess/internal/opencode"
 	"p0ssess/internal/proxy"
@@ -14,6 +15,9 @@ const (
 	// CostMeasured is OpenRouter's own figure for every model call, read by the key proxy (or, in the
 	// cloud sandbox, by the laptop's cost guard).
 	CostMeasured = "openrouter"
+	// CostBYOK is OpenRouter's figure plus the provider's own charge that OpenRouter reported, for at
+	// least one call on the user's own provider key.
+	CostBYOK = costbasis.BYOKUpstream
 	// CostOpenCode is OpenCode's session cost: no call went through a meter that knew this run.
 	CostOpenCode = "opencode"
 	// CostTokens prices the tokens of calls with no readable cost at the model's known prices.
@@ -21,6 +25,20 @@ const (
 	// CostCap counts the run at its cost cap: the cost could neither be read nor priced.
 	CostCap = "cap"
 )
+
+// LedgerBasis is a run's cost basis in the ledger's terms (costbasis.Reported, BYOKUpstream, Tokens,
+// Reserved).
+func LedgerBasis(basis string) string {
+	switch basis {
+	case CostBYOK:
+		return costbasis.BYOKUpstream
+	case CostTokens:
+		return costbasis.Tokens
+	case CostCap:
+		return costbasis.Reserved
+	}
+	return costbasis.Reported
+}
 
 // Pricer prices tokens on model at the prices p0ssess knows (its route table); ok is false when it knows
 // none. The plugin's server sets it.
@@ -64,6 +82,9 @@ func (e *Engine) runCost(rec *SessionRecord, oc float64, ocOK bool, tokens openc
 	capUSD := e.runCap(rec)
 	if rc, ok := e.metered(rec); ok && rc.Calls > 0 {
 		if rc.Unknown == 0 {
+			if rc.BYOK > 0 {
+				return rc.KnownUSD, CostBYOK
+			}
 			return rc.KnownUSD, CostMeasured
 		}
 		if p, ok := e.price(rec.Model, opencode.Tokens{Input: rc.UnknownInput, Output: rc.UnknownOutput}); ok {
@@ -96,6 +117,8 @@ func (e *Engine) liveCost(rec *SessionRecord, oc float64) float64 {
 
 func costNote(basis string, usd float64) string {
 	switch basis {
+	case CostBYOK:
+		return "some calls ran on your own provider key; their cost is OpenRouter's fee plus the provider's charge OpenRouter reported"
 	case CostTokens:
 		return "OpenRouter reported no cost for some of this run's calls; they are priced from their tokens at the model's known prices"
 	case CostCap:

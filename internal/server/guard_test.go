@@ -607,3 +607,101 @@ func TestDirectPartialIsAnAnswer(t *testing.T) {
 		t.Errorf("run %+v, spend %+v", run, sp)
 	}
 }
+
+func recorded(t *testing.T, name string) string {
+	b, err := os.ReadFile(filepath.Join("testdata", "byok", name))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(b)
+}
+
+// lastRun is the newest run entry in the ledger.
+func lastRun(t *testing.T, eng *local.Engine) history.Entry {
+	l, _ := ledger(t, eng)
+	runs := l.Runs(1)
+	if len(runs) != 1 {
+		t.Fatalf("no run in the ledger")
+	}
+	return runs[0]
+}
+
+// TestRunDirectCostBasis: each way a direct call's cost is settled is recorded in the ledger, so a call on
+// the user's own provider key (which OpenRouter reports at $0 or its fee) is not recorded as free.
+func TestRunDirectCostBasis(t *testing.T) {
+	const unpriced = "test/unpriced"
+	for _, c := range []struct {
+		name      string
+		model     string
+		chat, gen string
+		cash      float64
+		basis     string
+		estimated bool
+	}{
+		{"normal paid call", testModel, "paid.json", "", 0.0004, "reported", false},
+		{"byok with the upstream cost", testModel, "byok-upstream.json", "", 0.0031, "byok-upstream", false},
+		{"byok, upstream only in the generation record", testModel, "byok-no-upstream.json", "generation-byok.json", 0.0042, "byok-upstream", false},
+		// 1000 prompt + 200 completion tokens at the test model's $1 per million each.
+		{"byok without the upstream cost: priced from tokens", testModel, "byok-no-upstream.json", "", 0.0012, "tokens", true},
+		// No price is known: the reserved maximum (the caller's $0.05 ceiling).
+		{"byok, price unknown: reserved maximum", unpriced, "byok-no-upstream.json", "", 0.05, "reserved", true},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			chat := recorded(t, c.chat)
+			f := &fakeRouter{chat: func() (int, string) { return 200, chat }}
+			if c.gen != "" {
+				gen := recorded(t, c.gen)
+				f.gen = func() (int, string) { return 200, gen }
+			}
+			withFake(t, f)
+			prev := newClient
+			newClient = func(key string) *direct.Client {
+				cl := prev(key)
+				cl.Catalog.Add(direct.ModelInfo{ID: unpriced, Input: []string{"text"}, Output: []string{"text"},
+					Routes: []string{"/api/v1/chat/completions"}})
+				return cl
+			}
+			t.Cleanup(func() { newClient = prev })
+			cfg, eng, _ := directEnv(t, "monthly_usd = 1\nper_task_usd = 0.05\ndaily_usd = -1\n")
+			req := direct.Request{Model: c.model, Prompt: "hi", MaxCostUSD: 0.05, MaxGiven: true, MaxTokens: 10}
+			res, id, err := RunDirect(context.Background(), cfg, eng, req, DirectJob{})
+			if err != nil || id == "" {
+				t.Fatalf("%q %v", id, err)
+			}
+			run := lastRun(t, eng)
+			if run.CostBasis != c.basis || run.Estimated != c.estimated || run.CashUSD < c.cash-1e-9 || run.CashUSD > c.cash+1e-9 {
+				t.Errorf("ledger run = basis %q estimated %v cash %v; want %q %v %v", run.CostBasis, run.Estimated, run.CashUSD, c.basis, c.estimated, c.cash)
+			}
+			if res.Usage.CostBasis != c.basis {
+				t.Errorf("result basis %q, want %q", res.Usage.CostBasis, c.basis)
+			}
+			_, sp := ledger(t, eng)
+			if sp.Month < c.cash-1e-9 {
+				t.Errorf("month spend %v is below the call's cost %v", sp.Month, c.cash)
+			}
+		})
+	}
+}
+
+// A token-priced BYOK call is replaced by the real figure once the generation record reports the
+// provider's charge, and its basis follows.
+func TestRunDirectBYOKPricedThenReconciled(t *testing.T) {
+	chat := recorded(t, "byok-no-upstream.json")
+	f := &fakeRouter{chat: func() (int, string) { return 200, chat }}
+	withFake(t, f)
+	cfg, eng, _ := directEnv(t, "monthly_usd = 1\nper_task_usd = 0.05\ndaily_usd = -1\n")
+	req := direct.Request{Model: testModel, Prompt: "hi", MaxCostUSD: 0.05, MaxGiven: true, MaxTokens: 10}
+	if _, _, err := RunDirect(context.Background(), cfg, eng, req, DirectJob{}); err != nil {
+		t.Fatal(err)
+	}
+	gen := recorded(t, "generation-byok.json")
+	f.gen = func() (int, string) { return 200, gen }
+	Reconcile(context.Background(), cfg, eng)
+	run := lastRun(t, eng)
+	if run.CostBasis != "byok-upstream" || run.Estimated || run.CashUSD != 0.0042 {
+		t.Errorf("after reconcile: %+v", run)
+	}
+	if _, sp := ledger(t, eng); sp.Estimated != 0 || sp.Month != 0.0042 {
+		t.Errorf("spend after reconcile: %+v", sp)
+	}
+}

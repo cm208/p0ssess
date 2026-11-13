@@ -27,8 +27,13 @@ type Call struct {
 
 // Reply is what a call came back with.
 type Reply struct {
-	Text            string
-	CostUSD         float64
+	Text    string
+	CostUSD float64
+	// ChargedUSD is what the call counts against the run's ceiling and in the ledger: CostUSD, or for a
+	// call whose cost could be neither read nor priced, the reserved maximum.
+	ChargedUSD float64
+	// CostBasis is how the cost was arrived at (costbasis.Reported, BYOKUpstream, Tokens or Reserved).
+	CostBasis       string
 	Elapsed         time.Duration
 	EstimateUSD     float64
 	EstimateUnknown bool
@@ -171,7 +176,7 @@ func Execute(ctx context.Context, p Plan, r Runner, stakes StakesFunc, maxUSD fl
 			defer func() { <-sem; wg.Done() }()
 			rep, err := r.Run(ctx, callFor(it.Sample, it.Model, stakes, false))
 			res := Result{Sample: it.Sample.Key(), UseCase: it.Sample.UseCase, Model: it.Model, User: !it.Sample.Builtin,
-				CostUSD: rep.CostUSD, Seconds: rep.Elapsed.Seconds(), At: now().UTC()}
+				CostUSD: rep.CostUSD, CostBasis: rep.CostBasis, Seconds: rep.Elapsed.Seconds(), At: now().UTC()}
 			if err != nil {
 				res.Error = oneLine(err.Error())
 			} else {
@@ -179,7 +184,7 @@ func Execute(ctx context.Context, p Plan, r Runner, stakes StakesFunc, maxUSD fl
 			}
 			mu.Lock()
 			reserved -= it.EstimateUSD
-			spent += rep.CostUSD
+			spent += max(rep.CostUSD, rep.ChargedUSD)
 			out = append(out, res)
 			mu.Unlock()
 			if progress != nil {

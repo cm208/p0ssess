@@ -116,8 +116,13 @@ func Format(r *Result) string {
 		if r.Usage.ReasoningTokens > 0 {
 			fmt.Fprintf(&b, " (%d reasoning)", r.Usage.ReasoningTokens)
 		}
-		if r.Usage.BYOK {
+		if r.Usage.BYOK && r.Usage.Priced == 0 {
 			fmt.Fprintf(&b, "; bring-your-own-key: OpenRouter $%.6f + provider $%.6f", r.Usage.OpenRouterUSD, r.Usage.UpstreamUSD)
+		} else if r.Usage.BYOK {
+			b.WriteString("; bring-your-own-key: the provider's charge was not reported, so the tokens are priced at the model's list price")
+		}
+		if r.Usage.CostBasis != "" {
+			fmt.Fprintf(&b, "; cost basis %s", r.Usage.CostBasis)
 		}
 		b.WriteString("\n")
 	}
@@ -181,6 +186,8 @@ func Compact(r *Result, tail string) string {
 		cost = "cost unknown"
 	case r.Usage.CostSource == "":
 		cost = fmt.Sprintf("about $%.4f", r.Estimate.CostUSD)
+	case r.Usage.Unmeasured == 0 && r.Usage.Priced > 0:
+		cost = "about " + cost + " (priced from tokens)"
 	case !r.Measured():
 		cost += " so far"
 	}

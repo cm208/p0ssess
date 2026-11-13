@@ -54,6 +54,13 @@ func TestRunCostBasis(t *testing.T) {
 	if got := e.liveCost(rec, 0); got < 0.00499 || got > 0.00501 {
 		t.Errorf("the cap check while running must see the metered spend, got %v", got)
 	}
+	// Calls on the user's own provider key carry the provider's charge in their cost, and say so.
+	writeCalls(t, "p0-test",
+		proxy.Call{Run: "r1", Model: rec.Model, Known: true, Basis: "byok-upstream", CostUSD: 0.003, ChargedUSD: 0.003},
+		proxy.Call{Run: "r1", Model: rec.Model, Known: true, Basis: "reported", CostUSD: 0.002, ChargedUSD: 0.002})
+	if c, b := e.runCost(rec, 0, true, toks); b != CostBYOK || c < 0.00499 || c > 0.00501 {
+		t.Errorf("byok: %v %s", c, b)
+	}
 	// A call whose cost could not be read is priced from its tokens.
 	writeCalls(t, "p0-test",
 		proxy.Call{Run: "r1", Model: rec.Model, Known: true, CostUSD: 0.003, ChargedUSD: 0.003},
@@ -95,5 +102,13 @@ func TestRunCostBasis(t *testing.T) {
 	}
 	if priced == 0 {
 		t.Error("the pricer was never asked")
+	}
+}
+
+func TestLedgerBasis(t *testing.T) {
+	for in, want := range map[string]string{CostMeasured: "reported", CostOpenCode: "reported", CostBYOK: "byok-upstream", CostTokens: "tokens", CostCap: "reserved"} {
+		if got := LedgerBasis(in); got != want {
+			t.Errorf("%s -> %s, want %s", in, got, want)
+		}
 	}
 }

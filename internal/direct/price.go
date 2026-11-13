@@ -462,6 +462,31 @@ func imageFee(m ModelInfo) (float64, string) {
 	return 0, "no image output price found; only token prices are counted"
 }
 
+// tokenCost prices a finished chat call from the tokens its answer reported, at the model's list price
+// (the highest across endpoints, and the long-context tier when the prompt is that long). ok is false
+// when it cannot: not a text chat call, no price known, or no tokens reported.
+func (m ModelInfo) tokenCost(route string, out Output, u *apiUsage) (float64, bool) {
+	in, completion := float64(u.PromptTokens+u.InputTokens), float64(u.CompletionTokens+u.OutputTokens)
+	if route != "chat" || out == OutImage || in+completion <= 0 || m.priceGap(route, out) != "" {
+		return 0, false
+	}
+	if m.Free || strings.HasSuffix(m.ID, ":free") {
+		return 0, true
+	}
+	inP, outP := m.InPerM, math.Max(m.OutPerM, m.ReasonPerM)
+	for _, lc := range m.LongContext {
+		if in > float64(lc.MinPromptTokens) {
+			inP, outP = math.Max(inP, lc.InPerM), math.Max(outP, lc.OutPerM)
+		}
+	}
+	audio := math.Min(float64(u.PromptTokensDetails.AudioTokens), in)
+	audioP := inP
+	if m.AudioPerM > 0 {
+		audioP = math.Max(m.AudioPerM, inP)
+	}
+	return ((in-audio)*inP + audio*audioP + completion*outP) / 1e6, true
+}
+
 // estimateSTT prices transcription per second of audio. OpenRouter lists the price as "prompt" without a
 // unit; a billed call (docs/MEDIA.md) matched the serving endpoint's price times the audio seconds.
 func estimateSTT(m ModelInfo, in Input) Estimate {

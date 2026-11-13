@@ -2,13 +2,13 @@ package cloudsandbox
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"sync"
 
+	"p0ssess/internal/costbasis"
 	"p0ssess/internal/proxy"
 )
 
@@ -29,11 +29,14 @@ type Meter struct {
 	runCalls   int
 	runUnknown int
 	runKnown   float64
+	runBYOK    int     // known calls on the user's own provider key
+	runUnkIn   float64 // tokens the unknown calls reported, for pricing them
+	runUnkOut  float64
 
 	one chan struct{}
 
 	// Lookup reads a generation's cost from OpenRouter when the answer carried none. Nil skips the lookup.
-	Lookup func(ctx context.Context, id string) (float64, bool)
+	Lookup proxy.Lookup
 }
 
 func NewMeter() *Meter { return &Meter{one: make(chan struct{}, 1)} }
@@ -48,6 +51,7 @@ func (m *Meter) StartRun(capUSD float64, model string) {
 	m.limit = m.spent + capUSD
 	m.model = baseModel(model)
 	m.runStart, m.runCalls, m.runUnknown, m.runKnown = m.spent, 0, 0, 0
+	m.runBYOK, m.runUnkIn, m.runUnkOut = 0, 0, 0
 }
 
 // Spent is the session's metered spend.
@@ -57,24 +61,30 @@ func (m *Meter) Spent() float64 {
 	return m.spent
 }
 
-// RunSpend is what the current run (since StartRun) was charged: its billed calls, the sum of their known
-// costs, how many were charged at the rest of the cap, and the total charged.
-func (m *Meter) RunSpend() (calls int, knownUSD float64, unknown int, chargedUSD float64) {
+// RunSpend is what the current run (since StartRun) was charged, as the local jail's meter file would
+// show it: its billed calls, the sum of the known costs, the calls charged at the rest of the cap and
+// their reported tokens, and the total charged.
+func (m *Meter) RunSpend() proxy.RunCost {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return m.runCalls, m.runKnown, m.runUnknown, m.spent - m.runStart
+	return proxy.RunCost{Calls: m.runCalls, Unknown: m.runUnknown, BYOK: m.runBYOK, KnownUSD: m.runKnown,
+		ChargedUSD: m.spent - m.runStart, UnknownInput: m.runUnkIn, UnknownOutput: m.runUnkOut}
 }
 
-func (m *Meter) add(usd float64) {
+func (m *Meter) add(usd float64, basis string) {
 	m.mu.Lock()
 	m.spent += usd
 	m.runKnown += usd
 	m.runCalls++
+	if basis == costbasis.BYOKUpstream {
+		m.runBYOK++
+	}
 	m.mu.Unlock()
 }
 
-// chargeRest charges what is left of the run's cap, for a call whose cost is unknown.
-func (m *Meter) chargeRest() {
+// chargeRest charges what is left of the run's cap, for a call whose cost is unknown, and keeps the
+// tokens it reported so the run can be priced from them instead.
+func (m *Meter) chargeRest(in, out float64) {
 	m.mu.Lock()
 	if rest := m.limit - m.spent; rest > 0 {
 		m.spent += rest
@@ -82,6 +92,8 @@ func (m *Meter) chargeRest() {
 	}
 	m.runCalls++
 	m.runUnknown++
+	m.runUnkIn += in
+	m.runUnkOut += out
 	m.mu.Unlock()
 }
 
@@ -148,15 +160,15 @@ func (m *Meter) Guard(next http.Handler) http.Handler {
 		next.ServeHTTP(tap, r)
 		switch s, rd := tap.Outcome(r.Context(), r.Context().Err() != nil, m.Lookup); s {
 		case proxy.SettleKnown:
-			m.add(rd.CostUSD)
+			m.add(rd.CostUSD, rd.Basis)
 		case proxy.SettleUnknown:
-			m.chargeRest()
+			m.chargeRest(rd.InputTokens, rd.OutputTokens)
 		}
 	})
 }
 
 // GenerationLookup returns a Meter.Lookup that asks OpenRouter (or a test server at upstream) for a
 // generation's total cost, retrying while the generation is not recorded yet.
-func GenerationLookup(client *http.Client, upstream, key string) func(context.Context, string) (float64, bool) {
+func GenerationLookup(client *http.Client, upstream, key string) proxy.Lookup {
 	return proxy.GenerationLookup(client, upstream, key)
 }

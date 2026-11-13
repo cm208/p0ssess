@@ -12,6 +12,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"p0ssess/internal/costbasis"
 )
 
 type chatResponse struct {
@@ -215,7 +217,7 @@ func (c *Client) chatOnce(ctx context.Context, p *plan, inputs []Input, prompt s
 		res.Warnings = append(res.Warnings, "the answer hit max_tokens and is cut off")
 	}
 	// Count the cost before saving images, so a failed save still records what the call was billed.
-	c.addUsage(ctx, res, cr)
+	c.settleCost(ctx, res, p, cr.ID, cr.Usage, "the answer reported no cost")
 	for i, im := range cr.Choices[0].Message.Images {
 		f, err := c.saveImage(ctx, im.ImageURL.URL, outDir, len(res.Files)+i+1)
 		if err != nil {
@@ -229,30 +231,50 @@ func (c *Client) chatOnce(ctx context.Context, p *plan, inputs []Input, prompt s
 	return nil
 }
 
-func (c *Client) addUsage(ctx context.Context, res *Result, cr chatResponse) {
-	if res.Usage.add(cr.Usage) {
+// settleCost records a finished call's cost: from its usage block, else from OpenRouter's generation
+// record, else (for a chat call) from its tokens at the model's list price, else as unmeasured. A call on
+// the user's own provider key (BYOK) whose provider charge is not in the usage block takes the same
+// fallbacks: OpenRouter's own cost there is only its fee.
+func (c *Client) settleCost(ctx context.Context, res *Result, p *plan, id string, u *apiUsage, noCost string) {
+	if res.Usage.add(u) {
 		return
 	}
-	if cr.ID == "" {
-		res.Usage.unmeasured()
-		res.Warnings = append(res.Warnings, "the answer reported no cost")
-		return
+	why := noCost
+	byok := u != nil && u.IsBYOK
+	if id != "" {
+		g, err := c.generation(ctx, id)
+		if err == nil {
+			if res.Provider == "" {
+				res.Provider = g.ProviderName
+			}
+			if res.Usage.bill(&g.TotalCost, g.IsBYOK, g.Upstream) {
+				res.Usage.CostSource = "generation"
+				if g.IsBYOK {
+					res.Usage.BYOK = true
+				}
+				return
+			}
+			byok = byok || g.IsBYOK
+			why = "OpenRouter did not report the provider's charge on your own key"
+		} else {
+			why = "cost not reported: " + err.Error()
+		}
 	}
-	c.lookupCost(ctx, res, cr.ID)
-}
-
-func (c *Client) lookupCost(ctx context.Context, res *Result, id string) {
-	g, err := c.generation(ctx, id)
-	if err != nil {
-		res.Usage.unmeasured()
-		res.Warnings = append(res.Warnings, "cost not reported: "+err.Error())
-		return
+	// Only a call on the user's own key is priced from its tokens; any other call whose cost is missing
+	// counts at the reserved maximum.
+	if byok && u != nil && p != nil {
+		if usd, ok := p.model.tokenCost(p.route, p.req.Output, u); ok {
+			var fee float64
+			if u.Cost != nil && *u.Cost >= 0 {
+				fee = *u.Cost
+			}
+			res.Usage.priced(fee, usd)
+			res.Warnings = append(res.Warnings, why+"; the call is priced from its tokens at the model's list price")
+			return
+		}
 	}
-	res.Usage.bill(g.TotalCost, g.IsBYOK, g.Upstream)
-	res.Usage.CostSource = "generation"
-	if res.Provider == "" {
-		res.Provider = g.ProviderName
-	}
+	res.Usage.unmeasured()
+	res.Warnings = append(res.Warnings, why)
 }
 
 func joinUnique(have, add string) string {
@@ -327,16 +349,21 @@ func writeImage(data []byte, mt, outDir string, n int) (OutFile, error) {
 	return OutFile{Path: path, MIME: mt, Bytes: int64(len(data))}, nil
 }
 
+// ErrNoProviderCost says OpenRouter has not (or will not) report what the provider billed on the user's
+// own key, so the generation's cost is not known.
+var ErrNoProviderCost = errors.New("OpenRouter does not report the provider's charge for this call")
+
 // GenerationCost looks up the billed cost of a finished call by its generation id: OpenRouter's charge
-// plus, for bring-your-own-key calls, the upstream one.
-func (c *Client) GenerationCost(ctx context.Context, id string) (float64, error) {
+// plus, for bring-your-own-key calls, the upstream one, and which of the two that is (costbasis.Reported
+// or BYOKUpstream). A bring-your-own-key call without the upstream figure is an error, not a cheap call.
+func (c *Client) GenerationCost(ctx context.Context, id string) (float64, string, error) {
 	g, err := c.generation(ctx, id)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
-	cost := g.TotalCost
-	if g.IsBYOK && g.Upstream != nil {
-		cost += *g.Upstream
+	usd, basis, ok := costbasis.FromUsage(&g.TotalCost, g.IsBYOK, g.Upstream)
+	if !ok {
+		return 0, "", ErrNoProviderCost
 	}
-	return cost, nil
+	return usd, basis, nil
 }

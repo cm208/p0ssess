@@ -2,7 +2,11 @@
 // video in; text, transcripts or generated images out. It is the path for media OpenCode cannot carry.
 package direct
 
-import "time"
+import (
+	"time"
+
+	"p0ssess/internal/costbasis"
+)
 
 // Output selects what the call should produce.
 type Output string
@@ -146,7 +150,14 @@ type Usage struct {
 	OpenRouterUSD float64 `json:"openrouter_usd"`
 	UpstreamUSD   float64 `json:"upstream_usd,omitempty"`
 	BYOK          bool    `json:"byok,omitempty"`
-	CostSource    string  `json:"cost_source"` // "usage", "generation" or "unknown"
+	CostSource    string  `json:"cost_source"` // "usage", "generation", "tokens" or "unknown"
+	// CostBasis is how CostUSD was arrived at, the least certain of its calls: "reported" (OpenRouter's
+	// figure), "byok-upstream" (plus the provider's own charge on the user's key), "tokens" (the call's
+	// tokens at the model's list price: OpenRouter did not report the provider's charge) or "reserved"
+	// (a call's cost could be neither read nor priced).
+	CostBasis string `json:"cost_basis,omitempty"`
+	// Priced counts the calls priced from their tokens.
+	Priced int `json:"priced_calls,omitempty"`
 	// Unmeasured counts sent calls whose cost was not reported.
 	Unmeasured int `json:"unmeasured_calls,omitempty"`
 }
@@ -172,7 +183,8 @@ type apiUsage struct {
 	} `json:"prompt_tokens_details"`
 }
 
-// add folds one answer's usage in and reports whether it carried a cost.
+// add folds one answer's usage in and reports whether it carried a cost. A bring-your-own-key call whose
+// provider charge is missing carries none: the cost field is only OpenRouter's fee.
 func (u *Usage) add(a *apiUsage) bool {
 	if a == nil {
 		return false
@@ -183,33 +195,62 @@ func (u *Usage) add(a *apiUsage) bool {
 	u.AudioTokens += a.PromptTokensDetails.AudioTokens
 	u.VideoTokens += a.PromptTokensDetails.VideoTokens
 	u.AudioSeconds += a.Seconds
-	if a.Cost == nil {
+	if a.IsBYOK {
+		u.BYOK = true
+	}
+	if !u.bill(a.Cost, a.IsBYOK, a.CostDetails.Upstream) {
 		return false
 	}
-	u.bill(*a.Cost, a.IsBYOK, a.CostDetails.Upstream)
 	if u.CostSource == "" {
 		u.CostSource = "usage"
 	}
 	return true
 }
 
+// unmeasured counts a call whose cost could be neither read nor priced.
 func (u *Usage) unmeasured() {
 	u.Unmeasured++
+	u.CostBasis = costbasis.Combine(u.CostBasis, costbasis.Reserved)
 	if u.CostSource == "" {
 		u.CostSource = "unknown"
 	}
 }
 
-func (u *Usage) bill(openrouter float64, byok bool, upstream *float64) {
+// priced counts a call priced from its tokens: openrouter is what OpenRouter charged (its fee on the
+// user's own key), usd the list price of the tokens.
+func (u *Usage) priced(openrouter, usd float64) {
+	u.Priced++
 	u.OpenRouterUSD += openrouter
-	u.CostUSD += openrouter
-	if byok {
+	u.CostUSD += openrouter + usd
+	u.CostBasis = costbasis.Combine(u.CostBasis, costbasis.Tokens)
+	if u.CostSource == "" {
+		u.CostSource = "tokens"
+	}
+}
+
+// bill adds one call's reported figures and reports whether they gave its cost.
+func (u *Usage) bill(cost *float64, byok bool, upstream *float64) bool {
+	usd, basis, ok := costbasis.FromUsage(cost, byok, upstream)
+	if !ok {
+		return false
+	}
+	u.CostUSD += usd
+	if basis == costbasis.BYOKUpstream {
 		u.BYOK = true
 		if upstream != nil {
 			u.UpstreamUSD += *upstream
-			u.CostUSD += *upstream
 		}
 	}
+	u.OpenRouterUSD += usd - upstreamPart(basis, upstream)
+	u.CostBasis = costbasis.Combine(u.CostBasis, basis)
+	return true
+}
+
+func upstreamPart(basis string, upstream *float64) float64 {
+	if basis == costbasis.BYOKUpstream && upstream != nil {
+		return *upstream
+	}
+	return 0
 }
 
 type Result struct {
@@ -228,9 +269,10 @@ type Result struct {
 	Rejected int `json:"-"`
 }
 
-// Measured reports whether every billed call's cost is known.
+// Measured reports whether every billed call's cost is known: reported by OpenRouter, not priced from
+// tokens.
 func (r *Result) Measured() bool {
-	return r.Usage.Unmeasured == 0 && (r.Usage.CostSource == "usage" || r.Usage.CostSource == "generation")
+	return r.Usage.Unmeasured == 0 && r.Usage.Priced == 0 && (r.Usage.CostSource == "usage" || r.Usage.CostSource == "generation")
 }
 
 // Billed reports whether any request may have been charged.

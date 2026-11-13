@@ -76,6 +76,8 @@ The tool result is compact: the answer in `<answer>`, then `files: [{"path", "ki
 
 **Bring-your-own-key calls.** On an account with a provider key attached, OpenRouter's `usage.cost` is $0 and the provider bills its own rates to that key; OpenRouter reports them in `usage.cost_details.upstream_inference_cost` with `is_byok: true`. p0ssess counts both: `cost_usd` is the OpenRouter charge plus the upstream charge, and both parts are shown. The upstream rates can be higher than OpenRouter's list price for the same model. On the test account, Gemini 3.8 Flash on Google AI Studio billed about $1.50 per million prompt tokens and $7.50 per million completion tokens, against the $0.825 and $4.125 listed, so BYOK calls can exceed the estimate.
 
+Every run in the ledger records a `cost_basis`, and the local page shows it as a tag on the run. `reported` is OpenRouter's own figure. `byok-upstream` is OpenRouter's fee plus the provider's charge on your key, as OpenRouter reported it (in the answer, or in the generation record when the answer left it out). `tokens` is a call on your own key whose provider charge OpenRouter did not report: it is priced from the call's tokens at the model's list price and recorded as an estimate until the generation record reports the real figure. `reserved` is a call whose cost could be neither read nor priced, counted at the maximum reserved for it. The agent path (key proxy, cloud sandbox guard) applies the same order; calls outside BYOK keep their old handling.
+
 ## Live results, 2026-11-09
 
 Synthetic media made with ffmpeg and espeak-ng:
