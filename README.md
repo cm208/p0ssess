@@ -13,7 +13,7 @@ The hand-off runs in a small background agent on Haiku, which makes the calls an
 
 ## What it does
 
-- **Routes by expected cost per accepted result.** The p0ssess engine scores every route that could do a task, Claude included: one OpenRouter call, a sandboxed agent session on another model, a smaller Claude subagent, or a local tool. It weighs the cash, the Claude usage it saves, how likely each model is to get it right (from public benchmarks and your own history), and how much a wrong answer would hurt. Your budget, rules and approvals are enforced on your machine, whatever the engine says.
+- **Routes by expected cost per accepted result.** The p0ssess engine, a hosted service, scores every route that could do a task, Claude included: one OpenRouter call, a sandboxed agent session on another model, a smaller Claude subagent, or a local tool. It weighs the cash, the Claude usage it saves, how likely each model is to get it right (from public benchmarks and your own history), and how much a wrong answer would hurt. Your budget, rules and approvals are enforced on your machine, whatever the engine says.
 - **Rates stakes.** Claude rates each task from trivial to critical. Critical work (auth, infrastructure, production, money) stays with Claude unless you say otherwise.
 - **Reviews everything that matters.** Code edits come back as a diff from a separate git worktree and are never applied unreviewed. For important diffs Claude can offer an optional second opinion from two other model families, in addition to its own review.
 - **Asks only when it matters.** A job runs without a question when its estimate is under your per-task auto-approve limit. Claude asks, in one line with the cost, only when the estimate is above that limit, the monthly cap would be passed, a rule of yours says to ask, or the work is critical. Asking before a model's first run or before agent edits is a setting you can turn on.
@@ -56,8 +56,6 @@ Ask for things the way you normally would:
 `/p0ssess:p0ssess-me` shows the summary and opens a local page: spend today and this month, what is running, Claude's usage windows, recent runs, your limits and rules, and the settings.
 
 ## Privacy
-
-<!-- DRAFT for 1.0.0: states what the client sends; review before release. -->
 
 p0ssess talks to two services: OpenRouter, which runs the models you hand work to, and the p0ssess engine service, which ranks the routes for a task.
 

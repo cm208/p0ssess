@@ -15,7 +15,8 @@ What a p0ssess install puts on a machine, and how to remove each piece. Everythi
 | settings | `~/.config/p0ssess/budget.toml` (including the shell internet projects), `engine.toml`, `rules.toml`, optional `config.json` | `/p0ssess:p0ssess-me`, `settings_set`, the local page, rules you confirm |
 | project rules | `<repo>/.p0ssess/rules.toml` | project-scoped rules you confirm |
 | the ledger | `~/.local/state/p0ssess/history.jsonl` (offers, outcomes, measured runs; never prompt content), session rules in `~/.local/state/p0ssess/sessions/` | the engine, the relay, the direct path |
-| caches | `~/.cache/p0ssess/usage.json` (Claude usage readings), `openrouter-models.json` (public model list), `running/` (running jobs), `registry-*.json` (when the binary runs outside the plugin) | the status line, the engine, the relay and direct path |
+| caches | `~/.cache/p0ssess/usage.json` (Claude usage readings), `route-table.json` (the last signed route table that verified), `engine-offline` (present while the engine service cannot be reached), `running/` (running jobs) | the status line, the engine, the relay and direct path |
+| engine service state | `~/.local/state/p0ssess/install-token` (a random token for rate limits), `outcomes.json` (which outcome records were sent); with a linked account also `~/.config/p0ssess/secrets/p0ssess_token`, `~/.local/state/p0ssess/account.json`, `calibration/`, and for a team `team-policy.json` and `team-spend.jsonl` | the engine client, the outcome sender, `p0ssess account` and `p0ssess team` |
 | allow rules | 13 `mcp__plugin_p0ssess_p0ssess__…` entries in `permissions.allow` of `$CLAUDE_CONFIG_DIR/settings.json` | `p0ssess setup allow`, with your consent |
 | status line wrapper | `statusLine` in `$CLAUDE_CONFIG_DIR/settings.json` points at `~/.config/p0ssess/bin/p0ssess` (`p0ssess.exe` on Windows); your previous command is kept in `engine.toml` as `statusline.command` | `p0ssess setup statusline`, with your consent |
 | progress-summary switch | `env.CLAUDE_CODE_DISABLE_AGENT_PROGRESS_SUMMARIES` in `$CLAUDE_CONFIG_DIR/settings.json` | `p0ssess setup summaries`, only if you ask |
@@ -85,6 +86,15 @@ rm -rf ~/.config/p0ssess ~/.cache/p0ssess ~/.local/state/p0ssess
 ```
 
 This deletes your key file, settings, rules and history. Project rules live in each repository's `.p0ssess/`.
+
+## Upgrading from 0.6
+
+Install and update the same way; there is nothing to set up. Your key, settings, rules, budgets, approvals and history carry over.
+
+- **Routing uses the hosted engine.** The scoring code, the model registry and the catalog left the plugin. `recommend` now asks the p0ssess engine service (`https://cloud.p0ssess.me`) to rank routes, and every limit (budgets, rules, approvals, the monthly cap) is still enforced on your machine. When the service cannot be reached, p0ssess routes from a signed table of default routes, downloaded once a day and checked against a key built into the binary, and the status line ghost turns a dimmer grey. [README.md](../README.md#privacy) lists exactly what a request sends; never your prompt, files or file names.
+- **Anonymous outcome records are on.** At the end of a session p0ssess sends one short record per finished delegated run (kind, model, route, stakes, outcome, cost bucket, week). The local page shows the pending ones first. To turn them off, tell Claude "turn off outcome records" or set `outcomes.send = false` under `[outcomes]` in `~/.config/p0ssess/budget.toml`.
+- **`p0ssess engine refresh`** fetches the signed route table instead of the OpenRouter model list. The old `openrouter-models.json` and `registry-*.json` files in `~/.cache/p0ssess/` are no longer read and can be deleted.
+- **The 0.6.0 engine stays MIT.** Releases up to 0.6.0, with the engine, its registry and its catalog, remain in this repository's history and on the releases page. `git checkout v0.6.0` gives the fully local version.
 
 ## Upgrading from 0.3
 
