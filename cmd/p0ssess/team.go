@@ -558,12 +558,12 @@ func (t *teamCLI) spend(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	t.printf("Team spend %s: $%.2f\n", db.Month, db.TotalUSD)
+	t.printf("Team spend %s: %s\n", db.Month, spent(db.TotalUSD))
 	tw := tabwriter.NewWriter(t.out, 0, 2, 2, ' ', 0)
 	if len(db.Members) > 0 {
 		fmt.Fprintln(tw, "\nMember\tRole\tSpent\tShare\tRuns")
 		for _, m := range db.Members {
-			fmt.Fprintf(tw, "%s\t%s\t$%.2f\t%s\t%d\n", m.Name(), m.Role, m.SpentUSD, usd(m.MonthlyShareUSD), m.Runs)
+			fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%d\n", m.Name(), m.Role, spent(m.SpentUSD), usd(m.MonthlyShareUSD), m.Runs)
 		}
 	}
 	if len(db.ByUseCase) > 0 {
@@ -573,13 +573,13 @@ func (t *teamCLI) spend(ctx context.Context, args []string) error {
 			if uc == "" {
 				uc = "(none)"
 			}
-			fmt.Fprintf(tw, "%s\t%s\t%s\t%d\t$%.2f\n", uc, history.Short(u.Model), u.Route, u.Runs, u.SpentUSD)
+			fmt.Fprintf(tw, "%s\t%s\t%s\t%d\t%s\n", uc, history.Short(u.Model), u.Route, u.Runs, spent(u.SpentUSD))
 		}
 	}
 	if len(db.ByDay) > 0 {
 		fmt.Fprintln(tw, "\nDay\tRuns\tSpent")
 		for _, dd := range db.ByDay {
-			fmt.Fprintf(tw, "%s\t%d\t$%.2f\n", dd.Day, dd.Runs, dd.SpentUSD)
+			fmt.Fprintf(tw, "%s\t%d\t%s\n", dd.Day, dd.Runs, spent(dd.SpentUSD))
 		}
 	}
 	return tw.Flush()
@@ -631,4 +631,12 @@ func (t *teamCLI) delete(ctx context.Context, args []string) error {
 	account.Refresh(ctx, t.d, t.c.API)
 	t.printf("Deleted the team.\n")
 	return nil
+}
+
+// spent shows dollars to the cent, and a sub-cent amount as "<$0.01" so a real run never reads as $0.00.
+func spent(v float64) string {
+	if v > 0 && v < 0.005 {
+		return "<$0.01"
+	}
+	return fmt.Sprintf("$%.2f", v)
 }
