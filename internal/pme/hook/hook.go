@@ -1,7 +1,7 @@
 // Package hook is the UserPromptSubmit hook. It prints one line of context
 // only when routing matters (attached audio or video, a Claude limit that is
-// close, cheap bulk work, or a route the user's history favors) and nothing
-// otherwise. It reads only local files and never touches the network.
+// close, cheap bulk work, work a rule sends to a model, or a route the user's
+// history favors) and nothing otherwise. It reads only local files and never touches the network.
 package hook
 
 import (
@@ -17,6 +17,7 @@ import (
 	"p0ssess/internal/config"
 	"p0ssess/internal/history"
 	"p0ssess/internal/pme/paths"
+	"p0ssess/internal/rules"
 	"p0ssess/internal/usage"
 )
 
@@ -56,6 +57,13 @@ func hint(in Input, d paths.Dirs, now time.Time, ready bool) string {
 		return ""
 	}
 	p := in.Prompt
+	// A rule that sends this kind of work to a model is the user's (or the team's) standing decision: it
+	// comes first, so Claude routes the work without deciding again.
+	if set, _ := rules.Load(ruleFiles(d, in.Cwd, in.SessionID)); len(set.Rules) > 0 {
+		if rt := ruleRoute(p, set, now); rt != nil {
+			return ruleHint(rt, ready)
+		}
+	}
 	media := func(what, how, kind string) string {
 		if !ready {
 			return "p0ssess: " + what + " p0ssess could do it but has no OpenRouter key yet; tell the user to run /p0ssess:p0ssess-me."

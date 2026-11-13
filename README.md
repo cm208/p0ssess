@@ -21,7 +21,7 @@ The hand-off runs in a small background agent on Haiku, which makes the calls an
 - **Takes rules in plain language.** "Never use grok." "Only use gemini-3.8-flash for video." "Auto-approve video summaries up to 20 cents each today." Claude shows the rule it wrote in one line and saves it when you confirm. A repository's own `.p0ssess/rules.toml` can only tighten your limits, never loosen them.
 - **Learns quietly.** It notices what you accept, redo and decline, adjusts its offers, and suggests rules and shortcut agents. It never creates either on its own.
 - **Hands you the files.** Images (and documents an agent run makes) come back as files: Claude prints each absolute path and, when you follow the session from the Claude app or work in a cloud session, sends them to you with Claude Code's own file tool.
-- **Stays out of the way.** A hint Claude sees (you do not) only when a prompt has media or bulk work in it, a small status line segment, and a local page.
+- **Stays out of the way.** A hint Claude sees (you do not) only when a prompt has media or bulk work in it or is work one of your rules sends to a model, a small status line segment, and a local page.
 
 ## Install
 

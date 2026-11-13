@@ -15,7 +15,7 @@ Status: design agreed and researched ([RESEARCH.md](RESEARCH.md)); built as a Cl
 
 ## How a request is routed
 
-1. A `UserPromptSubmit` hook adds a one-line hint **only when it matters**: an attached media file, a Claude usage limit that is close, a task that looks cheap and bulky, or a route the user's history favors. Otherwise it adds nothing.
+1. A `UserPromptSubmit` hook adds a one-line hint **only when it matters**: an attached media file, work a user or team rule sends to a model, a Claude usage limit that is close, a task that looks cheap and bulky, or a route the user's history favors. Otherwise it adds nothing.
 2. Claude can ask the engine for a ranked list of options for the task at hand.
 3. Claude rates the task's **stakes** (see below), and the engine scores every candidate that fits the task (modalities, context size, tool use) by its expected cost per **accepted** result:
 
