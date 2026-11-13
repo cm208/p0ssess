@@ -508,6 +508,46 @@ func (l *Ledger) Stats(model, useCase, family string) ModelStats {
 	return s
 }
 
+// UseCaseCount is the outcome counts for one use case and model.
+type UseCaseCount struct {
+	UseCase string
+	Model   string
+	Counts
+}
+
+// UseCaseCounts sums the outcomes per use case and model, implied acceptances included, most used
+// first, at most limit rows. Outcomes without a use case or model are left out.
+func (l *Ledger) UseCaseCounts(limit int) []UseCaseCount {
+	idx := map[[2]string]int{}
+	var out []UseCaseCount
+	for _, e := range l.outcomes() {
+		if e.UseCase == "" || e.Model == "" {
+			continue
+		}
+		k := [2]string{e.UseCase, e.Model}
+		i, ok := idx[k]
+		if !ok {
+			i = len(out)
+			idx[k] = i
+			out = append(out, UseCaseCount{UseCase: e.UseCase, Model: e.Model})
+		}
+		out[i].add(e.Outcome, 1)
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		if a, b := out[i].Offers(), out[j].Offers(); a != b {
+			return a > b
+		}
+		if out[i].UseCase != out[j].UseCase {
+			return out[i].UseCase < out[j].UseCase
+		}
+		return out[i].Model < out[j].Model
+	})
+	if limit > 0 && len(out) > limit {
+		out = out[:limit]
+	}
+	return out
+}
+
 // Recent returns the last n outcomes, newest first.
 func (l *Ledger) Recent(n int) []Entry {
 	out := l.outcomes()

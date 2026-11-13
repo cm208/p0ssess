@@ -66,6 +66,11 @@ type Ask struct {
 	CodeEdits bool `toml:"code_edits" json:"code_edits"`
 }
 
+// Outcomes holds whether anonymous outcome records are sent once a week. On unless turned off.
+type Outcomes struct {
+	Send bool `toml:"send" json:"send"`
+}
+
 type Budget struct {
 	MonthlyUSD float64 `toml:"monthly_usd" json:"monthly_usd"`
 	PerTaskUSD float64 `toml:"per_task_usd" json:"per_task_usd"`
@@ -74,19 +79,20 @@ type Budget struct {
 	DailyUSD   float64 `toml:"daily_usd" json:"daily_usd"`
 	SaveClaude bool    `toml:"save_claude" json:"save_claude"`
 	// Plan is "auto", "api" or "subscription".
-	Plan         string  `toml:"plan" json:"plan"`
-	UsageCredits bool    `toml:"usage_credits" json:"usage_credits"`
-	Models       List    `toml:"models" json:"models"`
-	Providers    List    `toml:"providers" json:"providers"`
-	Privacy      Privacy `toml:"privacy" json:"privacy"`
-	Sandbox      Sandbox `toml:"sandbox" json:"sandbox"`
-	Ask          Ask     `toml:"ask" json:"ask"`
+	Plan         string   `toml:"plan" json:"plan"`
+	UsageCredits bool     `toml:"usage_credits" json:"usage_credits"`
+	Models       List     `toml:"models" json:"models"`
+	Providers    List     `toml:"providers" json:"providers"`
+	Privacy      Privacy  `toml:"privacy" json:"privacy"`
+	Sandbox      Sandbox  `toml:"sandbox" json:"sandbox"`
+	Ask          Ask      `toml:"ask" json:"ask"`
+	Outcomes     Outcomes `toml:"outcomes" json:"outcomes"`
 	// DailyCapUSD is a lower daily limit set by project rules; 0 means none. It is never saved.
 	DailyCapUSD float64 `toml:"-" json:"daily_cap_usd,omitempty"`
 }
 
 func Default() Budget {
-	return Budget{MonthlyUSD: 10, PerTaskUSD: 0.02, DailyUSD: 0, Plan: "auto", Privacy: Privacy{Mode: "no-training"}}
+	return Budget{MonthlyUSD: 10, PerTaskUSD: 0.02, DailyUSD: 0, Plan: "auto", Privacy: Privacy{Mode: "no-training"}, Outcomes: Outcomes{Send: true}}
 }
 
 // Load reads path, filling defaults for anything missing.

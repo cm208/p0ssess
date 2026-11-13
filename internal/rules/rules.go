@@ -25,7 +25,6 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	"p0ssess/internal/pme/catalog"
 	"p0ssess/internal/pme/paths"
 )
 
@@ -151,7 +150,7 @@ func (r Rule) Validate() error {
 	}
 	for _, k := range r.Kinds {
 		switch k {
-		case catalog.KindMedia, catalog.KindGenerate, catalog.KindAgent, catalog.KindReview, catalog.KindCode, catalog.KindText, "all":
+		case TaskMedia, TaskGenerate, TaskAgent, TaskReview, TaskCode, TaskText, "all":
 		default:
 			return fmt.Errorf("unknown kind %q", k)
 		}
@@ -169,7 +168,7 @@ func (r Rule) Covers(useCase, kind string) bool {
 	if len(r.Kinds) > 0 {
 		ok := false
 		for _, k := range r.Kinds {
-			if catalog.KindMatches(k, kind) {
+			if KindMatches(k, kind) {
 				ok = true
 			}
 		}
