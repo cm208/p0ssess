@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; connect-src https://cloud.p0ssess.me; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
-<title>p0ssess: Pricing</title>
-<meta name="description" content="p0ssess is free and MIT licensed. Pro adds a cloud sandbox, live data and a savings report for one person. Team adds shared rules and budgets for an org.">
-<meta property="og:title" content="p0ssess: Pricing">
-<meta property="og:description" content="p0ssess is free and MIT licensed. Pro adds a cloud sandbox, live data and a savings report for one person. Team adds shared rules and budgets for an org.">
+<title>p0ssess pricing: free, Pro at $4 a month, Team at $8 a seat</title>
+<meta name="description" content="The p0ssess plugin is free and MIT licensed. Pro is $4 a month or $36 a year and adds a cloud sandbox and a savings report. Team is $8 a seat a month and adds shared rules and budgets.">
+<meta property="og:title" content="p0ssess pricing: free, Pro at $4 a month, Team at $8 a seat">
+<meta property="og:description" content="The p0ssess plugin is free and MIT licensed. Pro is $4 a month or $36 a year and adds a cloud sandbox and a savings report. Team is $8 a seat a month and adds shared rules and budgets.">
 <meta property="og:type" content="website">
 <link rel="canonical" href="https://p0ssess.me/pricing/">
 <meta property="og:url" content="https://p0ssess.me/pricing/">
@@ -34,10 +34,10 @@
     </a>
     <nav class="topnav" aria-label="Site">
       <a href="../pricing/" aria-current="page">Pricing</a>
-      <a href="../business/">Business</a>
+      <a href="../business/">For business</a>
       <a data-link="docs" hidden>Docs</a>
       <a data-link="repo" hidden>Source</a>
-      <a class="nav-cta" href="../#try">Install</a>
+      <a class="nav-cta" href="#pro">Get Pro</a>
     </nav>
   </div>
 </header>
@@ -46,30 +46,26 @@
 
 <section class="page-head" aria-labelledby="page-h">
 <div class="wrap">
-  <h1 id="page-h">Pricing</h1>
-  <p class="lede">The plugin is free and MIT licensed. Pro adds a cloud sandbox, live data and a savings report for one person. Team adds shared rules and budgets for an org.</p>
+  <h1 id="page-h">Routing is free. Pro is $4 a month.</h1>
+  <p class="lede">The plugin that sends repetitive work to cheaper models is free and open source. Pro adds the parts that need a server, for one person. Team is $8 a seat, and puts one set of rules and one budget across everyone. The models themselves bill to your own OpenRouter key.</p>
 </div>
 </section>
 
 <section class="tiers-sec" aria-label="Plans">
 <div class="wrap tiers">
 
-  <article class="tier hl" aria-labelledby="free-h">
+  <article class="tier hl" id="free" aria-labelledby="free-h">
     <div class="tier-head"><h2 id="free-h">Free</h2></div>
     <p class="price"><b><small>$</small>0</b></p>
-    <p class="tier-terms">The MIT-licensed plugin. No account.</p>
-    <ul class="tier-list">
-      <li>Routing through the hosted engine, using public benchmark data.</li>
-      <li>Media, image generation and cheaper delegation, through your own OpenRouter key.</li>
-      <li>The local agent sandbox, on Linux with rootless podman.</li>
-      <li>Budgets, rules and history stay on your machine.</li>
-      <li>Support through GitHub issues.</li>
-      <li>Anonymous outcome records are on by default, and one setting turns them off. <a href="../privacy/">Privacy policy</a></li>
-    </ul>
-    <div class="buy"><a class="btn" href="../#try">Install p0ssess</a></div>
+    <div class="tier-body">
+      <p class="tier-terms">The plugin is MIT licensed and needs no account. It routes work to other models through your own OpenRouter key: the cheaper delegation measured on this site, and video, audio and images. Budgets, rules and history stay on your machine.</p>
+      <p class="tier-terms">The sandbox for coding work runs locally, on Linux with rootless podman. Support is through GitHub issues.</p>
+      <p class="tier-terms">Anonymous outcome records are on by default, and one setting turns them off. <a href="../privacy/">Privacy policy</a></p>
+    </div>
+    <div class="buy"><a class="btn quiet" href="../#try">Install p0ssess</a></div>
   </article>
 
-  <article class="tier hl lit" aria-labelledby="pro-h">
+  <article class="tier hl lit" id="pro" aria-labelledby="pro-h">
     <div class="tier-head">
       <h2 id="pro-h">Pro</h2>
       <fieldset class="mode">
@@ -80,21 +76,19 @@
       </fieldset>
     </div>
     <div class="tier-price">
-      <p class="price v-year" data-price="pro_year"><b aria-hidden="true"><small>$</small><i class="blank"></i></b> <span class="per">a year</span> <span class="price-note"><span class="ph-tag">Placeholder</span> Price not set yet</span></p>
-      <p class="price v-month" data-price="pro_month"><b aria-hidden="true"><small>$</small><i class="blank"></i></b> <span class="per">a month</span> <span class="price-note"><span class="ph-tag">Placeholder</span> Price not set yet</span></p>
+      <p class="price v-year" data-price="pro_year"><b><small>$</small><span data-amount>36</span></b> <span class="per">a year</span> <span class="price-note" data-each>$3 a month, billed once a year</span></p>
+      <p class="price v-month" data-price="pro_month"><b><small>$</small><span data-amount>4</span></b> <span class="per">a month</span> <span class="price-note">billed monthly</span></p>
+      <p class="price-unset" hidden>The price is being set. Leave your address and we’ll send it.</p>
     </div>
-    <p class="tier-terms">For one person. <span data-rec>Yearly is recommended.</span> Buy early and keep your price for life.</p>
-    <ul class="tier-list">
-      <li class="lead">Everything in Free, plus:</li>
-      <li>The cloud sandbox, so agent work runs on any laptop: macOS, Windows or Linux. It comes with a monthly fair-use allowance of sandbox hours. <span data-hours><span class="ph-tag">Placeholder</span> The number is set with the prices.</span></li>
-      <li>Live engine data.</li>
-      <li>Community success rates, from outcome records.</li>
-      <li>Routing tuned by your own calibration runs.</li>
-      <li>The savings report: cost per correct answer and time, Claude alone against Claude with p0ssess. It is a local page, with a PDF a manager can forward.</li>
-      <li>Priority email support. Best effort, with no guaranteed response time.</li>
-    </ul>
+    <div class="tier-body">
+      <p class="tier-terms">For one person: everything in Free, and the parts that need a server. <span data-rec>Yearly is recommended.</span></p>
+      <p class="tier-terms">The cloud sandbox runs coding hand-offs for you, so they work from a Mac or a Windows laptop as well as Linux. It comes with a monthly fair-use allowance of sandbox hours. <span data-hours></span></p>
+      <p class="tier-terms">Routing gets better data: the live engine, community success rates from outcome records, and tuning from your own calibration runs.</p>
+      <p class="tier-terms">The savings report measures your own work the way this site measures ours: cost per correct answer and time, Claude alone against Claude with p0ssess. It is a local page, with a PDF you can forward to whoever pays the bill.</p>
+      <p class="tier-terms">Support is priority email, best effort, with no guaranteed response time. Buy before the first price change and you keep this price for as long as you stay subscribed.</p>
+    </div>
     <div class="buy" data-buy="pro">
-      <span class="btn off" data-off>Opening soon</span>
+      <a class="btn" data-mail href="mailto:support@p0ssess.me?subject=Notify%20me%20when%20p0ssess%20Pro%20opens">Opening soon, get notified</a>
       <button class="btn" type="button" data-open hidden>Opening soon, get notified</button>
       <a class="btn" data-start hidden>Get Pro</a>
       <form class="wl" id="wl-pro" novalidate hidden>
@@ -106,24 +100,24 @@
         <p class="wl-terms">We’ll send one email when Pro opens, then delete your address.</p>
       </form>
       <p class="buy-say" id="wl-pro-say" role="status" aria-live="polite"></p>
-      <p class="buy-note" data-note>Sign-up opens soon.</p>
+      <p class="buy-note" data-note>Checkout isn’t open yet. This opens an email to support@p0ssess.me, and we’ll write once when it is.</p>
     </div>
   </article>
 
-  <article class="tier hl" aria-labelledby="team-h">
-    <div class="tier-head"><h2 id="team-h">Team</h2><span class="soon-tag">Coming right after 1.0</span></div>
-    <p class="price" data-price="team_seat_month"><b aria-hidden="true"><small>$</small><i class="blank"></i></b> <span class="per">per seat, a month</span> <span class="price-note"><span class="ph-tag">Placeholder</span> Price not set yet</span></p>
-    <p class="tier-terms">Billed per seat. It ships as release 1.1.0.</p>
-    <ul class="tier-list">
-      <li class="lead">Pro for every seat, plus an org:</li>
-      <li>Invite links.</li>
-      <li>Shared rules that can only tighten.</li>
-      <li>Per-member budget shares.</li>
-      <li>A spend dashboard.</li>
-    </ul>
+  <article class="tier hl lit" id="team" aria-labelledby="team-h">
+    <div class="tier-head"><h2 id="team-h">Team</h2></div>
+    <div class="tier-price">
+      <p class="price" data-price="team_seat_month"><b><small>$</small><span data-amount>8</span></b> <span class="per">a seat, a month</span> <span class="price-note">every seat includes Pro</span></p>
+      <p class="price-unset" hidden>The price is being set. Leave your address and we’ll send it.</p>
+    </div>
+    <div class="tier-body">
+      <p class="tier-terms">For the people who share a Claude bill.</p>
+      <p class="tier-terms">An owner sets rules for the whole team, such as “always send ticket triage to this model”, and they reach every seat. A member’s own rules can only make the team’s stricter.</p>
+      <p class="tier-terms">Each member gets a share of the monthly budget, and a spend dashboard shows the owner where it went. People join with an invite link.</p>
+    </div>
     <div class="buy" data-buy="team">
-      <span class="btn off" data-off>Not open yet</span>
-      <button class="btn quiet" type="button" data-open hidden>Get notified about Team</button>
+      <a class="btn" data-mail href="mailto:support@p0ssess.me?subject=Notify%20me%20when%20p0ssess%20Team%20opens">Opening soon, get notified</a>
+      <button class="btn" type="button" data-open hidden>Opening soon, get notified</button>
       <form class="wl" id="wl-team" novalidate hidden>
         <label for="wl-team-email">Your email address</label>
         <div class="wl-row">
@@ -133,10 +127,34 @@
         <p class="wl-terms">We’ll send one email when Team opens, then delete your address.</p>
       </form>
       <p class="buy-say" id="wl-team-say" role="status" aria-live="polite"></p>
-      <p class="buy-note" data-note>Sign-up opens soon.</p>
+      <p class="buy-note" data-note>Checkout isn’t open yet. This opens an email to support@p0ssess.me, and we’ll write once when it is.</p>
     </div>
   </article>
 
+</div>
+</section>
+
+<section class="sec" id="worth" aria-labelledby="worth-h">
+<div class="wrap">
+  <div class="sec-head">
+    <h2 id="worth-h">What one rule is worth</h2>
+    <p>Two jobs, measured with Claude Opus 5.5 in charge, three runs each way. Every answer was right with and without p0ssess. The figure is what one run cost, on average.</p>
+  </div>
+  <div class="grid two worth">
+    <!--gen:worth-->
+      <figure class="cell hl">
+      <figcaption><h3>Writing unit tests for 15 modules</h3></figcaption>
+      <p class="was"><span class="fig"><b><small>$</small>1.26</b><span>Claude alone</span></span><span class="fig to"><b><small>$</small>0.28</b><span>with p0ssess</span></span></p>
+      <p>That is $0.98 less a run, and 4.4 times cheaper for each test file that passes.</p>
+    </figure>
+    <figure class="cell hl">
+      <figcaption><h3>Triaging 300 support tickets, by a team rule alone</h3></figcaption>
+      <p class="was"><span class="fig"><b><small>$</small>0.73</b><span>Claude alone</span></span><span class="fig to"><b><small>$</small>0.36</b><span>with p0ssess</span></span></p>
+      <p>That is $0.37 less a run, and 2.0 times cheaper for each ticket sorted correctly.</p>
+    </figure>
+      <!--/gen:worth-->
+  </div>
+  <p class="aside">The unit-test runs used the free plugin, with a rule on the person’s own machine. The ticket runs used a team rule and nothing else, set once by an owner, which is what Team adds. Whether the saving covers the price depends on how much of this kind of work you do, and that is what the savings report measures on your own work. The datasets were built for the benchmark and a script graded them. With the team rule, the tickets took 3.4 times as long. <a href="../business/#method">The method, and the jobs that failed</a></p>
 </div>
 </section>
 
@@ -146,14 +164,24 @@
     <h2 id="billing-h">How billing works</h2>
     <p>What a p0ssess price covers, who takes the payment and what happens when a plan ends.</p>
   </div>
-  <ul class="needs pair">
-    <li class="hl">Model calls bill to your own OpenRouter key, on every plan. The price here pays for the p0ssess service and doesn’t include the models.</li>
-    <li class="hl">Prices are in US dollars.</li>
-    <li class="hl">Checkout runs through Polar, the merchant of record. Polar handles sales tax and VAT, and gives you a portal to cancel or change plans.</li>
-    <li class="hl">When Pro ends you drop back to Free quietly. Account data is deleted 30 days later.</li>
-    <li class="hl">The cloud sandbox has to receive code to run it. <a href="../data/">What it does with your code</a></li>
-    <li class="hl">Refunds are set out in the <a href="../refunds/">refund policy</a>.</li>
-  </ul>
+  <div class="grid two">
+    <div class="cell hl">
+      <h3>The models bill separately</h3>
+      <p>Model calls bill to your own OpenRouter key, on every plan. The price here pays for the p0ssess service and doesn’t include the models. Prices are in US dollars.</p>
+    </div>
+    <div class="cell hl">
+      <h3>Checkout and tax</h3>
+      <p>Checkout runs through Polar, the merchant of record. Polar handles sales tax and VAT, and gives you a portal to cancel or change plans. Refunds are set out in the <a href="../refunds/">refund policy</a>.</p>
+    </div>
+    <div class="cell hl">
+      <h3>When a plan ends</h3>
+      <p>When Pro ends you drop back to Free, and the routing keeps working. Account data is deleted 30 days later.</p>
+    </div>
+    <div class="cell hl">
+      <h3>Your code</h3>
+      <p>The cloud sandbox has to receive code to run it. <a href="../data/">What it does with your code</a></p>
+    </div>
+  </div>
 </div>
 </section>
 
@@ -163,8 +191,8 @@
 <div class="wrap foot-in">
   <img class="foot-g" src="../ghost.svg" alt="" width="32" height="32">
   <div>
-    <nav class="foot-nav" aria-label="More pages"><a href="../pricing/" aria-current="page">Pricing</a><a href="../business/">Business</a><a href="../terms/">Terms</a><a href="../privacy/">Privacy</a><a href="../data/">Data</a><a href="../refunds/">Refunds</a></nav>
-    <p>p0ssess is MIT licensed. By s3ym0ur.</p>
+    <nav class="foot-nav" aria-label="More pages"><a href="../pricing/" aria-current="page">Pricing</a><a href="../business/">For business</a><a href="../terms/">Terms</a><a href="../privacy/">Privacy</a><a href="../data/">Data</a><a href="../refunds/">Refunds</a></nav>
+    <p>The p0ssess plugin is MIT licensed. By s3ym0ur. Pro and Team are sold by New Deal Systems LLC.</p>
     <p class="small">Set in Obel Mono and IBM Plex Sans, both under the <a href="../fonts/OFL-obel-mono.txt">SIL Open Font License</a>.</p>
   </div>
 </div>

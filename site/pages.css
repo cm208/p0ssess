@@ -1,75 +1,26 @@
 /* The pages beside the home page: pricing, business and the policies. Loaded after style.css,
-   which holds the tokens, the type, the top bar, buttons, sections, cells and the footer.
-   A dashed outline means one thing on these pages: not real yet. A price that is not set, a
-   test that is not recorded, a policy that is not in effect. */
+   which holds the tokens, the type, the top bar, buttons, sections, cells, charts, the tiers
+   and the footer. This file holds what only these pages need. */
 
 /* A short page still ends with its footer at the foot of the window. */
 body { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
 main { flex: 1 0 auto; }
 
-.topnav a[aria-current="page"] {
-  color: var(--ink);
-  text-decoration: underline 2px var(--violet); text-underline-offset: 0.55em;
-}
-/* 44 px to touch: the links, the Install pill and the second link beside a button. */
+/* 44 px to touch: the links in the top bar. */
 .topnav a:not(.nav-cta) { padding-block: 0.9rem; }
-.topnav .nav-cta { position: relative; }
-.topnav .nav-cta::after { content: ""; position: absolute; inset: -4px 0; }
-.cta .more, .next .more { padding-block: 0.95rem; }
 
-/* The top of a page: its name and one paragraph. */
-.page-head { padding-block: clamp(2rem, 4.6vw, 4rem) clamp(2.6rem, 5vw, 4rem); }
-.page-head h1 { max-width: 20ch; }
-.page-head .lede { max-width: 40rem; }
+/* The top of a page: what it is for, in a headline and one paragraph. */
+.page-head { padding-block: clamp(2rem, 4.6vw, 3.6rem) clamp(2.6rem, 5vw, 4rem); }
+.page-head h1 { max-width: 18ch; font-size: clamp(2.1rem, 5.2vw, 4.4rem); line-height: 1; letter-spacing: -0.04em; }
+.page-head .lede { max-width: 42rem; margin-top: 1.4rem; }
 
-/* The hairline of the tier that is for sale runs violet the whole way, as the film's does once
-   it has been watched. */
-.hl.lit::before { background: var(--violet); }
-
-/* Not real yet: a tag, and an empty slot where a figure will go. */
-.ph-tag {
-  display: inline-block; padding: 0.08rem 0.55rem 0.12rem; vertical-align: middle;
-  border: 1px dashed var(--ink-2); border-radius: 999px;
-  font: 400 0.75rem/1.3 var(--mono); letter-spacing: 0; color: var(--ink); white-space: nowrap;
-}
-.blank {
-  display: inline-block; width: 2.5ch; height: 0.72em;
-  border: 1px dashed var(--ink-2); border-radius: 3px;
-}
-/* Coming, as the engine's "estimate" pill is drawn. */
-.soon-tag {
-  display: inline-block; padding: 0.14rem 0.62rem 0.18rem; vertical-align: middle;
-  background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
-  font: 400 0.75rem/1.4 var(--mono); letter-spacing: 0; color: var(--ink); white-space: nowrap;
-}
-
-/* Pricing: three tiers on the frameless grid. From 860 px they share their rows, so the names,
-   the prices, the terms, the lists and the buttons line up across the three. */
+/* Pricing: the three tiers, with everything a tier includes written out. */
 .tiers-sec { padding-bottom: var(--sec-pad); }
-.tiers { display: grid; grid-template-columns: minmax(0, 1fr); gap: 3.2rem clamp(28px, 4vw, 64px); }
-.tier { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; padding-top: 1.5rem; }
-.tier-head { display: flex; flex-wrap: wrap; align-items: center; align-content: start; justify-content: space-between; gap: 0.3rem 1rem; }
-.tier h2 { font-size: 1.5rem; line-height: 46px; letter-spacing: -0.03em; }  /* the height of the switch beside "Pro" */
-.tier .mode input { top: -4px; height: calc(100% + 8px); }
-.price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.45rem 0.7rem; margin-top: 1.5rem; }
-.price b { font: 700 3rem/1 var(--mono); letter-spacing: -0.04em; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.price b small { font-size: 0.56em; font-weight: 400; color: var(--ink-2); margin-right: 0.12em; }
-.price .per { font: 400 0.84rem/1.3 var(--mono); color: var(--ink-body); white-space: nowrap; }
-.price-note { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.6rem; font: 400 0.76rem/1.4 var(--mono); color: var(--ink-2); }
-.tier:has(#bill-month:checked) .v-year, .tier:not(:has(#bill-month:checked)) .v-month { display: none; }
-.tier-terms { margin-top: 0.9rem; font-size: 0.95rem; line-height: 1.5; }
-.tier-list { list-style: none; margin: 1.6rem 0 0; padding: 0; font-size: 0.95rem; line-height: 1.5; }
-.tier-list li { padding: 0.62rem 0; border-top: 1px solid var(--line); }
-.tier-list .lead { color: var(--ink); }
-.tier-list .ph-tag { margin-right: 0.35em; }
+.tier-price .price { margin-top: 1.2rem; }
+.price-unset { margin-top: 1.2rem; font: 400 0.92rem/1.5 var(--mono); color: var(--ink); }
+.tier-body { margin-top: 0.3rem; }
 
 /* What you can do about a tier: install it, buy it, or leave an address. */
-.buy { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: start; align-content: start; gap: 0.6rem; margin-top: 1.7rem; }
-.btn { border: 0; cursor: pointer; }
-.btn.quiet { background: var(--surface); border: 1px solid var(--line); transition: scale 0.35s var(--spring), background 0.2s var(--out), border-color 0.2s var(--out); }
-.btn.quiet:hover { background: var(--violet-deep); border-color: var(--violet); }
-.btn.off, .btn.off:hover, .btn.off:active { background: none; border: 1px solid var(--line); color: var(--ink-2); cursor: default; scale: 1; }
-.buy-note { font-size: 0.86rem; line-height: 1.45; color: var(--ink-2); }
 .buy-say { font-size: 0.93rem; line-height: 1.5; color: var(--ink); }
 .buy-say:empty { display: none; }
 .buy.done .buy-say { position: relative; padding-left: 1.2rem; }
@@ -77,7 +28,7 @@ main { flex: 1 0 auto; }
 
 /* The address field: a box with its button inside, like a command and its Copy. */
 .wl { display: grid; gap: 0.4rem; width: 100%; max-width: 26rem; }
-.wl label { font: 400 0.76rem/1.4 var(--mono); color: var(--ink-2); }
+.wl label { font: 400 0.8rem/1.4 var(--mono); color: var(--ink-2); }
 .wl-row {
   display: flex; align-items: center; min-height: 52px;
   background: var(--surface); border: 1px solid var(--line); border-radius: 4px;
@@ -101,66 +52,49 @@ main { flex: 1 0 auto; }
 .wl-send:hover { background: #6346d4; }
 .wl-send:active { scale: 0.965; }
 .wl-send:disabled, .wl-send:disabled:hover { background: var(--surface-hi); color: var(--ink-2); cursor: default; scale: 1; }
-.wl-terms { font-size: 0.84rem; line-height: 1.45; color: var(--ink-2); }
+.wl-terms { font-size: 0.86rem; line-height: 1.45; color: var(--ink-2); }
 /* What went wrong takes the place of the line under the field. */
 .buy:has(.buy-say:not(:empty)) .wl-terms { display: none; }
 
-/* Plain rows in two columns. */
-.pair { display: grid; grid-template-columns: minmax(0, 1fr); }
+/* What one rule is worth: the mean run without it, struck through, and the mean run with it. */
+.worth figcaption h3 { font-size: 1.14rem; }
+.was { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.8rem clamp(1.6rem, 4vw, 3rem); }
+.was .fig { flex: none; }
+.was .fig b { font-size: clamp(2.6rem, 4.4vw, 3.4rem); line-height: 0.9; }
+.was .fig:not(.to) b { color: var(--ink-2); text-decoration: line-through 2px var(--bar); }
 
-/* Business. A measured side-by-side: one file, run on Claude alone and again with p0ssess.
-   The first figure of each row is drawn as a bar under it, both rows on one scale from zero. */
-.duels { display: grid; gap: clamp(2.6rem, 4.5vw, 3.6rem); }
-.duel { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.5rem clamp(40px, 5vw, 88px); padding-top: 1.5rem; }
-.duel-head > * + * { margin-top: 0.7rem; }
-.duel-head h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.8rem; }
-.duel-head p { max-width: 36rem; font-size: 0.95rem; line-height: 1.55; }
-.duel-head .duel-read { color: var(--ink); }
-.duel-head .duel-meta { font: 400 0.76rem/1.5 var(--mono); color: var(--ink-2); }
-.duel-t { display: block; font-size: 1rem; }
-.duel-t thead { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.duel-t tbody { display: grid; gap: 1.5rem; }
-.duel-t tr { display: grid; grid-template-columns: minmax(0, 1fr); }
-.duel-t tbody th { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.8rem; padding-bottom: 0.5rem; font: 400 0.84rem/1.4 var(--mono); color: var(--ink); }
-.duel-t tbody th small { font-size: 0.75rem; color: var(--ink-2); }
-.duel-t .poss th { color: var(--violet-ink); }
-.duel-t td { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: 1rem; padding: 0.5rem 0; border-top: 1px solid var(--line); }
-.duel-t td::before { content: attr(data-l); content: attr(data-l) / ""; font-size: 0.86rem; color: var(--ink-2); }
-.duel-t td b { font: 700 1.25rem/1 var(--mono); letter-spacing: -0.03em; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; text-align: right; }
-.duel-t td b small { font-size: 0.62em; font-weight: 400; color: var(--ink-2); margin-right: 0.1em; }
-.duel-t td.lead b { font-size: 2.15rem; letter-spacing: -0.04em; }
-.duel-t td.lead b small { font-size: 0.5em; }
-.duel-t td b .u { margin: 0 0 0 0.22em; }
-.duel-t .len { grid-column: 1 / -1; display: block; height: 8px; margin-top: 0.55rem; }
-.duel-t svg { display: block; overflow: visible; }
-.duel-t rect { fill: var(--bar); }
-.duel-t .poss rect { fill: var(--violet); }
-
-/* A test that is still being recorded: the same rows, empty. */
-.slot-frame {
-  display: grid; align-content: center; gap: 1rem; min-height: 11rem; padding: 1.2rem 1.3rem;
-  border: 1px dashed var(--ink-2); border-radius: 4px;
-}
-.slot-say { font: 400 0.92rem/1.4 var(--mono); color: var(--ink); }
-.slot-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.55rem; }
-.slot-rows li { display: grid; grid-template-columns: 7.2rem repeat(3, minmax(0, 1fr)); align-items: center; column-gap: 0.8rem; font: 400 0.76rem/1.4 var(--mono); color: var(--ink-2); }
-.slot-rows .blank { width: 100%; max-width: 6.5rem; height: 1.15rem; }
-
-.own-rows { margin-top: 0.7rem; }
-.trio { display: grid; grid-template-columns: minmax(0, 1fr); }
-.next { display: flex; flex-wrap: wrap; align-items: center; gap: 0.9rem 1.7rem; margin-top: 2.4rem; }
-.next .more { line-height: 1.4; }
+/* Business: every job as one row. The job, its runs on a shared scale, and what came of it.
+   The scale is cost for each correct item as a multiple of Claude alone's mean on that job. */
+.trows { list-style: none; margin: 0; padding: 0; display: grid; }
+.trow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.5rem; padding: 0.9rem 0 1rem; border-top: 1px solid var(--line); }
+.t-name { font-size: 0.95rem; line-height: 1.35; color: var(--ink); }
+.t-name small { display: block; font-size: 0.86rem; color: var(--ink-2); }
+.t-say { font-size: 0.9rem; line-height: 1.45; color: var(--ink-body); }
+.t-say b { display: block; font: 700 1.02rem/1.3 var(--mono); letter-spacing: -0.02em; color: var(--ink-2); }
+.trow.win .t-say b, .trow.small .t-say b { color: var(--ink); }
+.trow.win .t-say b::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 0.5rem; border-radius: 2px; background: var(--violet); }
+.plot .ref { fill: var(--line); }
+.plot .ref.one { fill: var(--dot); }
+.plot .ref.half { fill: var(--violet); }
+.taxis { display: block; }
+.taxis .plot text { font-family: var(--sans); }
+.tasks > .keys { justify-content: flex-start; gap: 0.6rem 2.4rem; }
+.tasks > .keys li:last-child { text-align: left; }
+.tasks .runs { margin-top: 1.4rem; }
+.method .copy { max-width: 38rem; }
+.tbl.arms { margin-top: 0; }
+.tbl.arms tbody th small { display: block; }
+.duel-t.under { margin-top: 1.6rem; }
 .foot-line { max-width: 44rem; margin-top: 2.4rem; font-size: 0.9rem; color: var(--ink-2); }
-.sec-head h2 .soon-tag { margin-left: 0.4rem; translate: 0 -0.35em; }
 
 /* The reading layout, for the policies: a short table of contents beside one measure of text. */
 .doc-head { padding-block: clamp(2rem, 4.6vw, 3.6rem) 0; }
 .doc-head h1 { max-width: 22ch; font-size: clamp(1.9rem, 3.1vw + 0.95rem, 3.1rem); line-height: 1.06; }
-.doc-head .lede { max-width: 68ch; font-size: 1.1rem; line-height: 1.58; }
+.doc-head .lede { max-width: 68ch; margin-top: 1.25rem; font-size: 1.1rem; line-height: 1.58; }
 .doc-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.8rem; margin-top: 1.3rem; font: 400 0.8rem/1.5 var(--mono); color: var(--ink-2); }
 .doc { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2.2rem clamp(48px, 5.5vw, 96px); padding-block: clamp(2.2rem, 4.5vw, 3.4rem) var(--sec-pad); }
 .toc { align-self: start; padding-top: 1.1rem; font: 400 0.84rem/1.35 var(--mono); }
-.toc-h { font: 400 0.76rem/1.4 var(--mono); letter-spacing: 0; color: var(--ink-2); }
+.toc-h { font: 400 0.8rem/1.4 var(--mono); letter-spacing: 0; color: var(--ink-2); }
 .toc ol { list-style: none; margin: 0; padding: 0; }
 .toc > ol { margin-top: 0.3rem; }
 .toc ol ol { display: none; padding-left: 1rem; }
@@ -176,49 +110,44 @@ main { flex: 1 0 auto; }
 .prose ul { padding-left: 1.2rem; }
 .prose li + li { margin-top: 0.35rem; }
 .prose li::marker { color: var(--ink-2); }
+/* A run-in heading inside a paragraph. The page carries one weight of the text face, so it is set apart by its ink. */
+.prose strong { font-weight: 400; color: var(--ink); }
 /* The commitments: numbered, because the policy is cited by number. */
 .prose .vows { list-style: none; padding: 0; counter-reset: vow; }
 .vows li { counter-increment: vow; position: relative; padding: 0.9rem 0 0.95rem 2.6rem; color: var(--ink); font-size: 1.08rem; line-height: 1.5; }
 .vows li + li { margin-top: 0; }
 .vows li::after { content: counter(vow); position: absolute; left: 0; top: 0.8rem; font: 700 1.25rem/1.4 var(--mono); color: var(--ink); }
 .vows code { white-space: nowrap; }
-.prose .first-run { margin-top: 1rem; }
-.skip-list { margin-top: 0.9rem; padding: 0.9rem 1rem 1rem 2.1rem; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; font-size: 0.95rem; }
-.prose .skip-list code { color: var(--ink); }
+/* Policy text: an ordered list that is not the commitments, a sample record and the table of data. */
+.prose ol:not(.vows) { padding-left: 1.4rem; }
+.prose .sample { max-width: 100%; padding: 0.9rem 1rem; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; overflow-x: auto; font-size: 0.84rem; line-height: 1.6; color: var(--ink); }
+.prose .sample code { overflow-wrap: normal; }
+.prose a { overflow-wrap: anywhere; }
+/* The table of data in a policy: one card to a row on a phone, a table from 720 px up. */
+.doc .tbl { max-width: none; margin-top: var(--flow); }
+.doc .tbl table { font-size: 0.95rem; font-variant-numeric: normal; }
+.doc .tbl tbody th { color: var(--ink); }
+.doc .tbl td { display: block; padding: 0.5rem 0 0; }
+.doc .tbl td::before { content: attr(data-label); display: block; font: 400 0.8rem/1.4 var(--mono); color: var(--ink-2); }
 .notice { max-width: 68ch; padding: 1rem 1.2rem; border: 1px dashed var(--ink-2); border-radius: 4px; color: var(--ink); }
 .return { display: inline-block; margin-top: 1rem; padding-block: 0.9rem; font: 400 0.92rem/1 var(--mono); }
 
 @media (max-width: 480px) {
-  .price b { font-size: 2.7rem; }
-  .slot-rows li { grid-template-columns: 6.4rem repeat(3, minmax(0, 1fr)); column-gap: 0.5rem; }
   .vows li { padding-left: 2.2rem; font-size: 1.02rem; }
 }
 
 @media (min-width: 720px) {
-  .pair { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: clamp(48px, 5.5vw, 96px); }
-  /* The side-by-side as a table: who, then each measure in its own column. */
-  .duel-t thead { position: static; display: block; width: auto; height: auto; margin: 0; overflow: visible; clip-path: none; white-space: normal; }
-  .duel-t tbody { gap: 0; }
-  .duel-t tr { grid-template-columns: var(--cols); column-gap: 1rem; align-items: baseline; }
-  .duel-t.m2 { --cols: 10.5rem minmax(0, 1.5fr) minmax(0, 1fr); }
-  .duel-t.m3 { --cols: 10.5rem minmax(0, 1.5fr) repeat(2, minmax(0, 1fr)); }
-  .duel-t.m4 { --cols: 10.5rem minmax(0, 1.5fr) repeat(3, minmax(0, 1fr)); }
-  .duel-t thead tr { padding-bottom: 0.45rem; border-bottom: 1px solid var(--line); }
-  .duel-t thead th { font-size: 0.84rem; color: var(--ink-2); }
-  .duel-t tbody tr { padding: 1rem 0 1.1rem; border-bottom: 1px solid var(--line); }
-  .duel-t tbody th { display: block; padding: 0; }
-  .duel-t tbody th small { display: block; margin-top: 0.15rem; }
-  .duel-t td { display: block; padding: 0; border: 0; }
-  .duel-t td::before { content: none; }
-  .duel-t td b { text-align: left; }
+  .doc .tbl td { display: table-cell; padding: 0.8rem 0.9rem 0.85rem 0; }
+  .doc .tbl td::before { content: none; }
 }
 
 @media (min-width: 860px) {
-  .tiers { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 0; }
-  .trio { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: clamp(28px, 4vw, 64px); }
-  @supports (grid-template-rows: subgrid) {
-    .tier { grid-row: span 5; grid-template-rows: subgrid; }
-  }
+  .tiers-sec .tier { --rows: 4; }
+  /* Every job as one chart: names down the left, the shared scale, the result on the right. */
+  .trow, .taxis { grid-template-columns: minmax(0, 15rem) minmax(0, 1fr) minmax(0, 18rem); column-gap: clamp(24px, 3vw, 48px); align-items: center; }
+  .taxis { display: grid; }
+  .taxis .plot { grid-column: 2; }
+  .tasks > .keys { margin-left: calc(15rem + clamp(24px, 3vw, 48px)); }
 }
 
 @media (min-width: 960px) {
@@ -231,29 +160,13 @@ main { flex: 1 0 auto; }
   .toc a { padding: 0.42rem 0; }
 }
 
-@media (min-width: 1200px) {
-  .duel { grid-template-columns: minmax(0, 21rem) minmax(0, 1fr); }
-}
-
-/* Motion that only runs when the script has checked the reader allows it (html.anim). */
-html.anim .duel-t rect.b { transform-box: fill-box; transform-origin: 0 50%; transition: transform 0.9s cubic-bezier(0.3, 0.6, 0.3, 1); }
-html.anim .duel-t:not(.in) rect.b { transform: scaleX(0); }
-html.anim :is(.tiers, .pair, .trio) > :nth-child(2)::before { transition-delay: 0.07s; }
-html.anim :is(.tiers, .pair, .trio) > :nth-child(3)::before { transition-delay: 0.14s; }
-
 @media (prefers-reduced-motion: reduce) {
-  .btn.quiet, .wl-send, .wl-row { transition: none; }
+  .wl-send, .wl-row { transition: none; }
 }
 
 /* Forced colors drop backgrounds; keep the marks that carry data. */
 @media (forced-colors: active) {
-  .hl.lit::before { background: Highlight; }
-  .duel-t rect { fill: CanvasText; }
-  .duel-t .poss rect { fill: Highlight; }
-  .wl-send, .btn.quiet, .btn.off { border: 1px solid ButtonText; }
-  .buy.done .buy-say::before { background: Highlight; }
-}
-
-@media print {
-  html.anim .duel-t rect.b { transform: none !important; }
+  .wl-send { border: 1px solid ButtonText; }
+  .buy.done .buy-say::before, .trow.win .t-say b::before { background: Highlight; }
+  .plot .ref.half { fill: Highlight; }
 }

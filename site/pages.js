@@ -1,8 +1,9 @@
 // The script for the pages beside the home page: pricing, business and the policies.
-// It sets the links release.js names, draws the hairlines and bars as they scroll into view
-// (the same rule as page.js), and on the pricing page reads what is for sale and runs the
-// sign-up form. Every page is complete with scripts off: prices show as placeholders and the
-// buy buttons read "Opening soon".
+// It sets the links release.js names, draws the hairlines, chart marks and bars as they scroll
+// into view (the same rule as page.js), shows what a chart's mark stands for, and on the
+// pricing page reads what is for sale and runs the sign-up form. Every page is complete with
+// scripts off: the prices are in the markup and the buy buttons are a link that opens an email
+// to us ("Opening soon, get notified").
 (() => {
   const doc = document, root = doc.documentElement;
   const reduce = matchMedia("(prefers-reduced-motion: reduce)");
@@ -21,13 +22,14 @@
   if (docs) $$('[data-link="docs"]').forEach((a) => link(a, docs));
   if (repo) $$('[data-link="repo"]').forEach((a) => link(a, repo));
 
-  // Hairlines draw out of their violet start and the bars of a side-by-side grow from the
-  // baseline, once each. Bars move at one speed, so the shorter one lands first.
+  // Hairlines draw out of their violet start, a chart's marks land and the bars of a
+  // side-by-side grow from the baseline, once each. Bars move at one speed, so the shorter
+  // one lands first.
   const grow = (table) => {
     for (const bar of $$("rect.b", table)) bar.style.transitionDuration = 240 + parseFloat(bar.getAttribute("width")) * 9 + "ms";
     table.classList.add("in");
   };
-  const lines = $$(".hl, .sec > .wrap, .duel-t");
+  const lines = $$(".hl, .sec > .wrap, .land, .duel-t");
   if ("IntersectionObserver" in window) {
     const seen = new IntersectionObserver((entries) => {
       for (const e of entries) {
@@ -35,78 +37,112 @@
         seen.unobserve(e.target);
         if (e.target.classList.contains("duel-t")) grow(e.target); else e.target.classList.add("in");
       }
-    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.05 });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.02 });
     lines.forEach((el) => seen.observe(el));
   } else {
     lines.forEach((el) => el.classList.add("in"));
   }
 
-  // Pricing. release.js names the cloud API (offer.api) and the prices to show while it cannot
-  // be reached (offer.prices, in US cents; null is not decided). With an API, the page asks it
-  // what is for sale. A price the API marks as a placeholder is never shown as a number.
-  const tiers = $(".tiers");
+  // What a mark stands for, shown beside it while the pointer is on it. The same figures are in
+  // the table under the chart, so nothing is readable only here.
+  let tip = null, tipBox = null;
+  const hideTip = () => { if (tip) tip.classList.remove("on"); };
+  doc.addEventListener("pointerover", (e) => {
+    const hit = e.target.closest && e.target.closest(".hit[data-tip]");
+    if (!hit) return hideTip();
+    const box = hit.closest(".plot-box") || hit.closest("li") || hit.parentElement.parentElement;
+    if (box !== tipBox) {
+      if (tip) tip.remove();
+      tip = doc.createElement("span");
+      tip.className = "tip";
+      tip.setAttribute("aria-hidden", "true");
+      if (getComputedStyle(box).position === "static") box.style.position = "relative";
+      box.append(tip);
+      tipBox = box;
+    }
+    tip.textContent = hit.dataset.tip;
+    const b = box.getBoundingClientRect(), h = hit.getBoundingClientRect();
+    const x = h.left + h.width / 2 - b.left, w = tip.offsetWidth;
+    tip.style.left = Math.max(0, Math.min(b.width - w, x - w / 2)) + "px";
+    tip.style.top = h.top - b.top - tip.offsetHeight - 4 + "px";
+    tip.classList.add("on");
+  });
+  doc.addEventListener("pointerdown", (e) => { if (!(e.target.closest && e.target.closest(".hit[data-tip]"))) hideTip(); });
+
+  // Pricing. The prices are in the markup. release.js names the cloud API (offer.api) and may
+  // carry prices of its own (offer.prices, in US cents) for when the API cannot be reached.
+  // With an API, the page asks it what is for sale and shows what it says. A price the API marks
+  // as not decided is never shown as a number: the page says the price is being set.
+  const tiers = $(".tiers-sec");
   if (!tiers) return;
   const cfg = rel.offer || {};
   const api = String(cfg.api || "").replace(/\/+$/, "");
   const cents = (v) => (typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : null);
   const fallback = cfg.prices || {};
+  // For each price: cents to show, null to leave the markup's price, false when not decided.
   const state = {
     price: { pro_year: cents(fallback.pro_year), pro_month: cents(fallback.pro_month), team_seat_month: cents(fallback.team_seat_month) },
     hours: {},      // sandbox hours a month, by Pro's billing period
     start: "",      // where checkout begins, once it is open
+    live: false,    // the cloud API answered with an offer, so the address form works
   };
 
-  // A price slot keeps its placeholder, so it can go back to it.
-  const slots = $$("[data-price]", tiers).map((el) => ({ el, key: el.dataset.price, per: $(".per", el).textContent, blank: [...el.childNodes] }));
+  const slots = $$("[data-price]", tiers).map((el) => ({ el, key: el.dataset.price, amount: $("[data-amount]", el), each: $("[data-each]", el),
+    unset: $(".price-unset", el.parentElement) }));
   const money = (c) => (c % 100 ? (c / 100).toFixed(2) : String(c / 100));
   const paintPrices = () => {
+    const groups = new Map();
     for (const s of slots) {
       const c = state.price[s.key];
-      if (c === null || c === undefined) { s.el.replaceChildren(...s.blank); continue; }
-      const b = doc.createElement("b"), unit = doc.createElement("small"), per = doc.createElement("span");
-      unit.textContent = "$";
-      b.append(unit, money(c));
-      per.className = "per";
-      per.textContent = s.per;
-      s.el.replaceChildren(b, " ", per);
+      s.el.hidden = c === false;
+      if (typeof c === "number") {
+        s.amount.textContent = money(c);
+        if (s.each) s.each.textContent = `$${money(Math.round(c / 12))} a month, billed once a year`;
+      }
+      if (s.unset) groups.set(s.unset, (groups.get(s.unset) ?? true) && c === false);
     }
+    // The line that says a price is being set shows only when every price beside it is unset.
+    for (const [el, all] of groups) el.hidden = !all;
   };
 
   // The sandbox allowance follows the billing period in view.
   const year = $("#bill-year", tiers), month = $("#bill-month", tiers);
-  const hoursEl = $("[data-hours]", tiers), hoursBlank = [...hoursEl.childNodes];
+  const hoursEl = $("[data-hours]", tiers);
   const paintHours = () => {
     const h = state.hours[month.checked ? "month" : "year"];
-    if (h) hoursEl.replaceChildren(`The allowance is ${h} hours a month.`); else hoursEl.replaceChildren(...hoursBlank);
+    hoursEl.textContent = h ? `The allowance is ${h} hours a month.` : "";
   };
   let chose = false;
   for (const r of [year, month]) r.addEventListener("change", () => { chose = true; paintHours(); });
 
-  // The buttons. Without an API nothing can be sent, so they stay as the page ships: "Opening
-  // soon", off. With one, Pro and Team take an address; once checkout is open, Pro links to it.
+  // The buttons. The page ships with a link that opens an email to us, and keeps it for as long as
+  // there is no API, or the API cannot be reached: nothing can be sent from the page then. Once the
+  // API has answered with an offer, Pro and Team take an address on the page, and once checkout is
+  // open, Pro links to it.
   const boxes = $$("[data-buy]", tiers).map((box) => ({
-    box, plan: box.dataset.buy, off: $("[data-off]", box), open: $("[data-open]", box), start: $("[data-start]", box),
+    box, plan: box.dataset.buy, mail: $("[data-mail]", box), open: $("[data-open]", box), start: $("[data-start]", box),
     form: $("form", box), input: $("input", box), send: $(".wl-send", box), say: $(".buy-say", box), note: $("[data-note]", box),
     done: false, busy: false,
   }));
   const paintBuy = () => {
     for (const b of boxes) {
       const buy = b.start && state.start;
-      b.off.hidden = !!api;
-      b.note.hidden = !!api;
+      const mail = !state.live && !buy;
+      b.mail.hidden = !mail;
+      b.note.hidden = !mail;
       if (b.start) { b.start.hidden = !buy; if (buy) b.start.href = state.start; }
       if (buy || b.done) b.form.hidden = true;
-      b.open.hidden = !api || !!buy || b.done || !b.form.hidden;
+      b.open.hidden = !state.live || !!buy || b.done || !b.form.hidden;
       if (buy && !b.done) b.say.textContent = "";
     }
   };
   const paint = () => { paintPrices(); paintHours(); paintBuy(); };
 
   const said = {
-    ok: (name) => `You\u2019re on the list. We\u2019ll send one email when ${name} opens, then delete your address.`,
-    bad: "That doesn\u2019t look like an email address.",
+    ok: (name) => `You’re on the list. We’ll send one email when ${name} opens, then delete your address.`,
+    bad: "That doesn’t look like an email address.",
     busy: "Too many tries. Try again in a while.",
-    down: "Couldn\u2019t reach the server. Try again later.",
+    down: "Couldn’t reach the server. Try again later.",
   };
   for (const b of boxes) {
     b.open.addEventListener("click", () => {
@@ -159,13 +195,13 @@
   // What the API says is for sale. Anything it does not say clearly counts as not decided.
   const https = (u) => { try { const url = new URL(u); return url.protocol === "https:" ? url.href : ""; } catch { return ""; } };
   const read = (offer) => {
-    const price = { pro_year: null, pro_month: null, team_seat_month: null }, hours = {};
+    const price = { pro_year: false, pro_month: false, team_seat_month: false }, hours = {};
     let onSale = false, pick = "";
     for (const p of Array.isArray(offer.plans) ? offer.plans : []) {
       const key = p.tier === "team" ? `team_seat_${p.interval}` : `${p.tier}_${p.interval}`;
       if (!(key in price)) continue;
       const set = p.placeholder === false, cost = p.price || {};
-      if (set && cost.currency === "usd") price[key] = cents(cost.amount_cents);
+      if (set && cost.currency === "usd") price[key] = cents(cost.amount_cents) ?? false;
       if (p.tier !== "pro") continue;
       if (set && p.sandbox_hours_per_month > 0) hours[p.interval] = Number(p.sandbox_hours_per_month);
       if (p.available === true) onSale = true;
@@ -186,7 +222,7 @@
   const stop = new AbortController(), timer = setTimeout(() => stop.abort(), 4000);
   fetch(api + "/v1/pro/offer", { credentials: "omit", cache: "no-store", signal: stop.signal })
     .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
-    .then((offer) => { read(offer || {}); paint(); })
-    .catch(() => { /* keeps the prices from release.js and "Opening soon" */ })
+    .then((offer) => { read(offer || {}); state.live = true; paint(); })
+    .catch(() => { /* keeps the prices in the markup and the email link */ })
     .finally(() => clearTimeout(timer));
 })();
