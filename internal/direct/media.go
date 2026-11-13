@@ -132,6 +132,10 @@ func runFF(ctx context.Context, args ...string) ([]byte, error) {
 	if !haveFFmpeg() {
 		return nil, ErrNoFFmpeg
 	}
+	return execFFmpeg(ctx, args...)
+}
+
+func execFFmpeg(ctx context.Context, args ...string) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, "ffmpeg", append([]string{"-hide_banner", "-nostdin", "-y"}, args...)...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr

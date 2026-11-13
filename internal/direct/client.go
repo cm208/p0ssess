@@ -455,6 +455,7 @@ func (c *Client) Run(ctx context.Context, req Request) (*Result, error) {
 		res.Sent = int(c.sent.Load() - sent0)
 		res.Rejected = int(c.rejected.Load() - rejected0)
 	}()
+	defer c.prepAudio(ctx, p)()
 	switch p.route {
 	case "stt":
 		err = c.runSTT(ctx, p, res)
