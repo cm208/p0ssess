@@ -246,6 +246,7 @@ The send button is disabled while a request is out. Sending the same address twi
 | The film. Claude alone: 15 of 25, $0.0999, 40 s. With p0ssess: 25 of 25, $0.1140, 262 s. | `../docs/MEDIA.md`, the run B on 0.5.4 table, as in "The film test" above. |
 | The film's cost per point, $0.0067 and $0.0046 | Derived from those totals: $0.0999 / 15 = $0.00666 and $0.1140 / 25 = $0.00456. The page says they are derived. |
 | The Apollo 11 tape. Claude alone: 68% of words right in 404 s. With p0ssess: 66% in about 30 s, for $0.03. | p0ssess benchmark run, 2026-11-12. A 3-minute part of the Apollo 11 onboard recording (Internet Archive item `NasaApollo11OnboardRecordings`, highlight 2), scored as the share of words right against NASA's Apollo Flight Journal transcript. Alone, Claude ran a local Whisper large-v3 with audio filtering; p0ssess sent the tape to gemini-3.8-flash. |
+| "About 13 times faster" on the Apollo tape | Derived from those times: 404 s / about 30 s = 13.5, rounded down and said with "about". |
 | The three workarounds under "Claude can already do that" | Stills and loudness are run A of the film test (MEDIA.md, "What happened"). The local Whisper is what Claude did in the two audio runs above. SVG is what Claude draws when asked for a picture with no image model. |
 
 Each side-by-side is a table (`table.duel-t`) whose first measure is also drawn as a bar under it, both rows on one scale from zero, as an SVG `rect` with a percentage `width`: 8 s of 420 s is 1.9%, $0.00456 of $0.00666 is 68.47%, and 30 s of 404 s is 7.43%. Violet is the run with p0ssess and gray is Claude alone, on every table. Who did better is said in words, in the table ("Wrong", "Correct") and in the sentence beside it.
@@ -253,7 +254,7 @@ Each side-by-side is a table (`table.duel-t`) whose first measure is also drawn 
 Three things the page must keep saying, because they are true:
 
 - On the film, p0ssess cost more in total and took longer. Only the cost per point is lower. Do not write that it was cheaper.
-- On the Apollo tape, Claude alone got 2 points more of the words right. The result is speed at about the same accuracy, not accuracy.
+- On the Apollo tape, Claude alone got slightly more of the words right (68% against 66%). The result is speed at about the same accuracy. Never present it as an accuracy win.
 - The page gives no cost for Claude alone on the Apollo tape. Add one only from that run's own record.
 
 **The two slots.** "Sarcasm" and "A spoken number against fingers held up" are being recorded. Each is a `figure.duel.slot` with a dashed frame, the line "Being recorded. No result yet." and no figures, under an HTML comment that starts `DEMO SLOT`. To fill one, replace its `div.slot-frame` with a `table.duel-t` like the three above, remove the `slot` class and the "Coming" tag, and add a row to the table of sources.
