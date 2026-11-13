@@ -103,7 +103,7 @@
     </ul>
     <p>The sign-in pages set one session cookie so you stay signed in. It is not used for tracking.</p>
     <h3 id="when-you-join-the-waitlist">When you join the waitlist</h3>
-    <p>You give your email address and choose Pro or Team. We store the address, the plan, whether you signed up on the site or in the plugin, and the time. We send you one email when Pro opens, and then delete the address.</p>
+    <p>You give your email address and choose Pro or Team. We store the address, the plan, whether you signed up on the site or in the plugin, and the time. We send you one email when Pro opens, and then delete the address. Until the waitlist form is live, the pricing page's button opens an email to support@p0ssess.me instead, and we keep those emails as support email.</p>
     <p>The sign-in and waitlist forms count requests per IP address, in memory, for up to an hour, to slow down abuse. The counts are never written to disk and vanish on restart. Our account service's logs record errors, not IP addresses.</p>
     <h3 id="when-you-use-the-cloud-sandbox-pro">When you use the cloud sandbox (Pro)</h3>
     <p>The data policy has the full detail. In brief, the plugin uploads a compressed copy of your git-tracked files (up to 200 MB) for one session, and everything is deleted when the session ends. The sandbox's model calls travel over an encrypted connection to your machine, which adds your key and forwards them to OpenRouter. The sandbox host passes them along and does not store or log them.</p>
@@ -127,7 +127,7 @@
     <h3 id="calibration-results-pro">Calibration results (Pro)</h3>
     <p>If you run calibration, the plugin tests a few models on built-in samples with known answers (and on your own samples, if you add them) on your machine, with your own OpenRouter key. It sends us only counts: for each task kind and model, how many samples ran and how many were right. It never sends the samples, the answers or the models' replies. We use the counts to tune routing for your account only. They are stored against your account, with no times, and deleted with it. Calibration results are never sent as outcome records.</p>
     <h3 id="email-and-support">Email and support</h3>
-    <p>If you write to us, we keep your message and our replies so we can help you. We keep support email for 2 years..</p>
+    <p>If you write to us, we keep your message and our replies so we can help you. We keep support email for 2 years.</p>
     <h2 class="hl" id="table-of-data">Table of data</h2>
     <div class="tbl">
     <table>
@@ -152,7 +152,7 @@
     </div>
     <p>Backups of the accounts database are kept in Cloudflare R2 for 30 days. A deletion reaches the backups when they age out.</p>
     <h2 class="hl" id="why-we-may-process-your-data">Why we may process your data</h2>
-    <p>Where the GDPR or UK GDPR applies, we rely on these legal bases :</p>
+    <p>Where the GDPR or UK GDPR applies, we rely on these legal bases:</p>
     <ul>
       <li>to run the account and subscription you asked for (contract)</li>
       <li>to run, secure and improve the services, such as rate limits and outcome records (legitimate interests)</li>
