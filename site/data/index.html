@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>p0ssess: What the cloud sandbox does with your code</title>
+<meta name="description" content="The data policy for the p0ssess cloud sandbox: what is uploaded, what is skipped, what is deleted and what is logged.">
+<meta property="og:title" content="p0ssess: What the cloud sandbox does with your code">
+<meta property="og:description" content="The data policy for the p0ssess cloud sandbox: what is uploaded, what is skipped, what is deleted and what is logged.">
+<meta property="og:type" content="website">
+<link rel="canonical" href="https://p0ssess.me/data/">
+<meta property="og:url" content="https://p0ssess.me/data/">
+<meta property="og:site_name" content="p0ssess">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0b0b0b">
+<link rel="icon" href="../ghost.svg" type="image/svg+xml">
+<link rel="preload" href="../fonts/obel-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../fonts/plex-sans-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pages.css">
+<script src="../release.js" defer></script>
+<script src="../pages.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the page</a>
+
+<header class="top" id="top">
+  <div class="wrap topbar">
+    <a class="lockup" href="../" aria-label="p0ssess, home">
+      <span class="g"><img src="../ghost.svg" alt="" width="64" height="64"><i class="lid"></i></span>
+      <svg class="wordmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 9" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path class="wm-ink" d="M0 2h3v1h-3zM0 3h1v1h-1zM3 3h1v1h-1zM0 4h1v1h-1zM3 4h1v1h-1zM0 5h3v1h-3zM0 6h1v1h-1zM0 7h1v1h-1zM0 8h1v1h-1zM11 2h3v1h-3zM10 3h1v1h-1zM11 4h2v1h-2zM13 5h1v1h-1zM10 6h3v1h-3zM16 2h3v1h-3zM15 3h1v1h-1zM16 4h2v1h-2zM18 5h1v1h-1zM15 6h3v1h-3zM21 2h2v1h-2zM20 3h1v1h-1zM23 3h1v1h-1zM20 4h4v1h-4zM20 5h1v1h-1zM21 6h3v1h-3zM26 2h3v1h-3zM25 3h1v1h-1zM26 4h2v1h-2zM28 5h1v1h-1zM25 6h3v1h-3zM31 2h3v1h-3zM30 3h1v1h-1zM31 4h2v1h-2zM33 5h1v1h-1zM30 6h3v1h-3z"/><path class="wm-zero" d="M6 0h2v1h-2zM5 1h1v1h-1zM8 1h1v1h-1zM5 2h1v1h-1zM8 2h1v1h-1zM5 3h1v1h-1zM8 3h1v1h-1zM5 4h1v1h-1zM8 4h1v1h-1zM5 5h1v1h-1zM8 5h1v1h-1zM6 6h2v1h-2z"/></svg>
+    </a>
+    <nav class="topnav" aria-label="Site">
+      <a href="../pricing/">Pricing</a>
+      <a href="../business/">Business</a>
+      <a data-link="docs" hidden>Docs</a>
+      <a data-link="repo" hidden>Source</a>
+      <a class="nav-cta" href="../#try">Install</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<section class="doc-head" aria-labelledby="page-h">
+<div class="wrap">
+  <h1 id="page-h">What the cloud sandbox does with your code</h1>
+  <p class="lede">Pro’s cloud sandbox runs agent work on a hosted machine, so it has to receive some of your code. This page says what is sent, what is kept and what is logged.</p>
+  <p class="doc-meta"><span>Last updated: date not set</span><span class="ph-tag">Draft, not yet in effect</span></p>
+</div>
+</section>
+
+<div class="wrap doc">
+  <nav class="toc" aria-labelledby="toc-h">
+    <p class="toc-h" id="toc-h">On this page</p>
+    <ol>
+      <li><a href="#commitments">Five commitments</a></li>
+      <li><a href="#how">How it works</a>
+        <ol>
+          <li><a href="#key">Your OpenRouter key</a></li>
+          <li><a href="#network">What the sandbox can reach</a></li>
+          <li><a href="#machine">What it learns about your machine</a></li>
+          <li><a href="#logs">What the host logs</a></li>
+          <li><a href="#secrets">Files skipped as secrets</a></li>
+        </ol>
+      </li>
+      <li><a href="#rest">Outside the sandbox</a></li>
+    </ol>
+  </nav>
+
+  <article class="prose">
+    <h2 class="hl" id="commitments">Five commitments</h2>
+    <ol class="vows">
+      <li class="hl">Only files git tracks are uploaded (up to 200 MB per session).</li>
+      <li class="hl">Files that look like secrets are skipped, and repositories with a <code>.p0ssess-private</code> file are never sent.</li>
+      <li class="hl">Everything is deleted when the session ends. Nothing is kept between sessions.</li>
+      <li class="hl">No content is logged.</li>
+      <li class="hl">The service runs in one US region at launch.</li>
+    </ol>
+
+    <h2 class="hl" id="how">How it works</h2>
+
+    <h3 id="key">Your OpenRouter key never leaves your laptop</h3>
+    <p>The sandbox sends each model request back over the session’s one encrypted connection. Your laptop adds the key, checks the run’s cost cap and forwards the request.</p>
+
+    <h3 id="network">What the sandbox can reach</h3>
+    <p>By default the sandbox can reach only package registries: npm, PyPI, crates.io, the Go module proxy and Maven Central. Full internet access is opt-in, per project.</p>
+
+    <h3 id="machine">What it learns about your machine</h3>
+    <p>Your laptop’s folder path is never sent. Only the repository’s name is.</p>
+
+    <h3 id="logs">What the host logs</h3>
+    <p>The host logs a session id, a shortened hash of the account id, the request type, the status, sizes, durations and why the session ended.</p>
+    <p>It never logs paths, file names, commands, prompts, model requests or diffs.</p>
+
+    <h3 id="secrets">Files skipped as secrets</h3>
+    <p>Files whose names look like secrets are left out of the upload. Each skipped file is named in the run’s result.</p>
+    <details class="first-run">
+      <summary>Show the names that are skipped</summary>
+      <ul class="skip-list">
+        <li><code>.env</code> and <code>.env.*</code></li>
+        <li><code>.envrc</code>, <code>.netrc</code>, <code>.pgpass</code>, <code>.git-credentials</code>, <code>.npmrc</code>, <code>.pypirc</code> and <code>htpasswd</code></li>
+        <li>SSH keys, such as <code>id_rsa</code> and <code>id_ed25519</code></li>
+        <li>Files ending in <code>.pem</code>, <code>.key</code>, <code>.p12</code>, <code>.pfx</code>, <code>.kdbx</code>, <code>.jks</code> or <code>.keystore</code></li>
+        <li>Names that start with <code>credentials</code></li>
+        <li>Names with <code>secret</code> or <code>secrets</code> as a word</li>
+        <li>Anything under <code>.ssh</code>, <code>.gnupg</code>, <code>.aws</code>, <code>.kube</code> or <code>.docker</code></li>
+      </ul>
+    </details>
+
+    <h2 class="hl" id="rest">Outside the sandbox</h2>
+    <p>This page covers the cloud sandbox only. What the plugin sends otherwise is in the <a href="../privacy/">privacy policy</a>.</p>
+  </article>
+</div>
+
+</main>
+
+<footer class="site-foot">
+<div class="wrap foot-in">
+  <img class="foot-g" src="../ghost.svg" alt="" width="32" height="32">
+  <div>
+    <nav class="foot-nav" aria-label="More pages"><a href="../pricing/">Pricing</a><a href="../business/">Business</a><a href="../terms/">Terms</a><a href="../privacy/">Privacy</a><a href="../data/" aria-current="page">Data</a><a href="../refunds/">Refunds</a></nav>
+    <p>p0ssess is MIT licensed. By s3ym0ur.</p>
+    <p class="small">Set in Obel Mono and IBM Plex Sans, both under the <a href="../fonts/OFL-obel-mono.txt">SIL Open Font License</a>.</p>
+  </div>
+</div>
+</footer>
+
+</body>
+</html>
