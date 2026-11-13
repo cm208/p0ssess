@@ -13,6 +13,7 @@ import (
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/pme/table"
 	"p0ssess/internal/rules"
+	"p0ssess/internal/team"
 )
 
 // Charge is one call about to spend OpenRouter money, as the direct tool or the relay sees it.
@@ -351,5 +352,8 @@ func (e *Engine) Reconcile(runID string, cost float64) error {
 	if math.IsNaN(cost) || math.IsInf(cost, 0) || cost < 0 {
 		return errors.New("cost must be a finite number, 0 or more")
 	}
-	return history.Append(e.Dirs.HistoryFile(), history.Entry{TS: e.Now().UTC(), Type: history.TypeSettle, RunID: runID, CashUSD: cost})
+	if err := history.Append(e.Dirs.HistoryFile(), history.Entry{TS: e.Now().UTC(), Type: history.TypeSettle, RunID: runID, CashUSD: cost}); err != nil {
+		return err
+	}
+	return team.Settle(e.Dirs, runID, cost)
 }

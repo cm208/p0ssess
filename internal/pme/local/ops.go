@@ -18,6 +18,7 @@ import (
 	"p0ssess/internal/history"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/rules"
+	"p0ssess/internal/team"
 	"p0ssess/internal/usage"
 )
 
@@ -118,7 +119,7 @@ func (e *Engine) RulesList(s Scope, kind string) ([]RuleView, error) {
 			out = append(out, RuleView{Rule: ig.Rule, Text: ig.Rule.String(), Ignored: ig.Why})
 		}
 	}
-	order := map[string]int{rules.ScopeSession: 0, rules.ScopeProject: 1, rules.ScopeGlobal: 2}
+	order := map[string]int{rules.ScopeSession: 0, rules.ScopeTeam: 1, rules.ScopeProject: 2, rules.ScopeGlobal: 3}
 	sort.SliceStable(out, func(i, j int) bool { return order[out[i].Scope] < order[out[j].Scope] })
 	return out, err
 }
@@ -133,6 +134,9 @@ func (e *Engine) RuleAdd(s Scope, r rules.Rule, dryRun bool, expiresIn int) (Rul
 	r.ID, r.Created = "", time.Time{}
 	if r.Scope == "" {
 		r.Scope = rules.ScopeGlobal
+	}
+	if r.Scope == rules.ScopeTeam {
+		return RuleView{}, errors.New("team rules are set by the team's owner (p0ssess team rules); add yours at session, project or global scope")
 	}
 	if expiresIn > 0 {
 		t := now.Add(time.Duration(expiresIn) * time.Minute).UTC().Truncate(time.Second)
@@ -258,9 +262,23 @@ func (e *Engine) RecordOutcome(o Outcome) (history.Entry, error) {
 			if err := history.Append(e.Dirs.HistoryFile(), run); err != nil {
 				return en, err
 			}
+			e.reportSpend(optionRoute(l.Offer(o.OfferID), o.Model), o.Model, en.UseCase, o.CashUSD, o.Cwd, "")
 		}
 	}
 	return en, history.Append(e.Dirs.HistoryFile(), en)
+}
+
+// optionRoute is the route an offer gave a model, or "".
+func optionRoute(off *history.Entry, model string) string {
+	if off == nil {
+		return ""
+	}
+	for _, o := range off.Options {
+		if o.Model == model {
+			return o.Route
+		}
+	}
+	return ""
 }
 
 // RunMatchWindow is how far back an outcome without a run id looks for its run.
@@ -294,11 +312,33 @@ func (e *Engine) RecordRun(r Run) error {
 	if uc := e.facts().UseCase(r.UseCase); uc != nil {
 		kind, family = uc.Kind, uc.Family
 	}
-	return history.Append(e.Dirs.HistoryFile(), history.Entry{TS: e.Now().UTC(), Type: history.TypeRun, RunID: r.ID,
+	err := history.Append(e.Dirs.HistoryFile(), history.Entry{TS: e.Now().UTC(), Type: history.TypeRun, RunID: r.ID,
 		Kind: kind, Family: family,
 		Route: r.Route, Model: r.Model, CashUSD: r.CashUSD, UpstreamUSD: r.UpstreamUSD, Status: r.Status,
 		OfferID: r.OfferID, UseCase: r.UseCase, Session: r.Session, Project: paths.ProjectRoot(r.Cwd),
 		ApprovalID: r.ApprovalID, Reserve: r.Reserve, Estimated: r.Estimated, Generations: r.Generations})
+	if err != nil {
+		return err
+	}
+	estimate := ""
+	if r.Estimated {
+		estimate = r.ID
+	}
+	e.reportSpend(r.Route, r.Model, r.UseCase, r.CashUSD, r.Cwd, estimate)
+	return nil
+}
+
+// reportSpend queues a paid run for the user's Team org, when a team policy asks for it. It carries the
+// day, use case, model, route and cost only. Runs from a repository with a .p0ssess-private file are not
+// reported. estimate is the run id of an estimated cost, kept locally so a measured one can replace it.
+func (e *Engine) reportSpend(route, model, useCase string, cost float64, cwd, estimate string) {
+	if !(cost > 0) || paths.Private(cwd) {
+		return
+	}
+	if t := e.facts(); !t.Empty() && t.UseCase(useCase) == nil {
+		useCase = ""
+	}
+	_ = team.Enqueue(e.Dirs, e.Table.Keys(), team.NewRun(e.Now(), useCase, model, route, cost), estimate)
 }
 
 type Learned struct {

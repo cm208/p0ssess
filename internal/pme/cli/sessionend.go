@@ -8,8 +8,10 @@ import (
 	"os/exec"
 	"time"
 
+	"p0ssess/internal/pme/local"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/proc"
+	"p0ssess/internal/team"
 )
 
 // sendTimeout bounds the upload that follows a session's end. The records stay pending when it runs out.
@@ -45,8 +47,8 @@ func sessionEnd(in io.Reader, d paths.Dirs) int {
 	return 0
 }
 
-// sendOutcomesNow is the detached half: it sends the pending outcome records, giving up after
-// sendTimeout. It is silent, since nobody is looking at its output.
+// sendOutcomesNow is the detached half: it sends the pending outcome records and the Team spend
+// queue, giving up after sendTimeout. It is silent, since nobody is looking at its output.
 func sendOutcomesNow(d paths.Dirs) int {
 	// A stuck lock or a slow disk must not leave this process around.
 	time.AfterFunc(sendTimeout+2*time.Second, func() { os.Exit(0) })
@@ -56,6 +58,17 @@ func sendOutcomesNow(d paths.Dirs) int {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
 	defer cancel()
-	_, _ = e.SendOutcomes(ctx)
+	sendAll(ctx, e)
 	return 0
+}
+
+// sendAll sends the outcome records and the Team spend queue side by side.
+func sendAll(ctx context.Context, e *local.Engine) {
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		_, _ = team.Flush(ctx, team.NewClient(e.Dirs, Version))
+	}()
+	_, _ = e.SendOutcomes(ctx)
+	<-done
 }

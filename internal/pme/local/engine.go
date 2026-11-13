@@ -22,6 +22,7 @@ import (
 	"p0ssess/internal/pme/remote"
 	"p0ssess/internal/pme/table"
 	"p0ssess/internal/rules"
+	"p0ssess/internal/team"
 	"p0ssess/internal/usage"
 )
 
@@ -100,8 +101,11 @@ func (e *Engine) Resolve(s Scope) Scope {
 	return s
 }
 
+// TeamPolicy is the team policy in force, or nil.
+func (e *Engine) TeamPolicy() *team.Policy { return team.Load(e.Dirs, e.Table.Keys()) }
+
 func (e *Engine) RuleFiles(s Scope) rules.Files {
-	f := rules.Files{Global: e.Dirs.RulesFile()}
+	f := rules.Files{Global: e.Dirs.RulesFile(), Team: e.TeamPolicy().LocalRules()}
 	if root := paths.ProjectRoot(s.Cwd); root != "" {
 		f.Project = paths.ProjectRulesFile(root)
 	}
@@ -122,9 +126,14 @@ func (e *Engine) IgnoredNotes(s Scope, set rules.Set) []string {
 		if _, seen := e.reported.LoadOrStore(key, true); seen {
 			continue
 		}
-		if ig.Rule.Scope == rules.ScopeProject && !strings.HasPrefix(ig.Why, "invalid") {
+		switch {
+		case strings.HasPrefix(ig.Why, "invalid"):
+			out = append(out, fmt.Sprintf("rule %s (%s) ignored: %s", ig.Rule.ID, ig.Rule.Scope, ig.Why))
+		case ig.Rule.Scope == rules.ScopeProject:
 			out = append(out, fmt.Sprintf("project rules tried to loosen a limit (%s: %s); ignored — add it yourself if you want it", ig.Rule.String(), ig.Why))
-		} else {
+		case ig.Rule.Scope == rules.ScopeTeam:
+			out = append(out, fmt.Sprintf("team rules tried to loosen a limit (%s: %s); ignored", ig.Rule.String(), ig.Why))
+		default:
 			out = append(out, fmt.Sprintf("rule %s (%s) ignored: %s", ig.Rule.ID, ig.Rule.Scope, ig.Why))
 		}
 	}
@@ -132,7 +141,8 @@ func (e *Engine) IgnoredNotes(s Scope, set rules.Set) []string {
 }
 
 // EffectiveBudget applies budget overrides from rules: the user's own (session, else global) set the
-// value; a project's only ever lowers it.
+// value; a team's or a project's only ever lowers it. The team's budget share is one such override on
+// monthly_usd, so the monthly cap is the lesser of the user's own and the share.
 func EffectiveBudget(b budget.Budget, d rules.Decision) (budget.Budget, []string) {
 	var notes []string
 	for field, r := range d.Budget {
@@ -170,11 +180,15 @@ func EffectiveBudget(b budget.Budget, d rules.Decision) (budget.Budget, []string
 	return b, notes
 }
 
-// ProjectRaises lists the project budget overrides that do not lower the user's own limit: a project
+// ProjectRaises lists the team and project budget overrides that do not lower the user's own limit: they
 // may only tighten, so these are ignored and reported. own is the budget with the user's overrides only.
+// A team budget share above the user's own cap is not reported: the user's cap is simply the lower one.
 func ProjectRaises(own budget.Budget, d rules.Decision) []rules.Ignored {
 	var out []rules.Ignored
 	for _, r := range d.ProjectCaps {
+		if r.Scope == rules.ScopeTeam && r.ID == team.ShareRuleID {
+			continue
+		}
 		cur := map[string]float64{"per_task_usd": own.PerTaskUSD, "monthly_usd": own.MonthlyUSD, "daily_usd": own.DailyUSD}[r.Field]
 		if r.Field == "daily_usd" && cur <= 0 {
 			continue // any positive project limit is below a paced or absent one
@@ -186,8 +200,8 @@ func ProjectRaises(own budget.Budget, d rules.Decision) []rules.Ignored {
 	return out
 }
 
-// effectiveBudget applies the overrides and adds project overrides that tried to raise a limit to the
-// set's ignored rules.
+// effectiveBudget applies the overrides and adds team and project overrides that tried to raise a limit
+// to the set's ignored rules.
 func effectiveBudget(b budget.Budget, d rules.Decision, set *rules.Set) (budget.Budget, []string) {
 	own, _ := EffectiveBudget(b, rules.Decision{Budget: d.Budget})
 	set.Ignored = append(set.Ignored, ProjectRaises(own, d)...)

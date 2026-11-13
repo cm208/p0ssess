@@ -221,7 +221,7 @@ func tools() []map[string]any {
 			"inputSchema": obj(withScope(map[string]any{}))},
 		{"name": "settings_set", "description": "Change one budget or engine setting permanently. Keys: " + fmt.Sprint(local.SettingKeys()) + ". Lists are comma-separated.",
 			"inputSchema": obj(map[string]any{"key": str, "value": str}, "key", "value")},
-		{"name": "rules_list", "description": "Every rule with its scope, expiry and one-line text.", "inputSchema": obj(withScope(map[string]any{}))},
+		{"name": "rules_list", "description": "Every rule with its scope, expiry and one-line text. Rules at team scope come from the user's Team org: read-only here, they only tighten.", "inputSchema": obj(withScope(map[string]any{}))},
 		{"name": "rules_add", "description": "Add a structured rule (forbid, allow, only, mix, approve, ask, budget). Use dry_run first and show the text to the user.", "inputSchema": obj(ruleProps(), "kind")},
 		{"name": "rules_remove", "description": "Remove a rule by id.", "inputSchema": obj(withScope(map[string]any{"id": str}), "id")},
 		{"name": "approvals_add", "description": "Add a standing approval: auto-approve a kind of task up to a per-run price, with optional count or total limits.", "inputSchema": obj(ruleProps(), "max_per_run_usd")},
