@@ -22,6 +22,7 @@ import (
 	"p0ssess/internal/config"
 	"p0ssess/internal/direct"
 	"p0ssess/internal/history"
+	"p0ssess/internal/jail"
 	"p0ssess/internal/mcp"
 	"p0ssess/internal/pme/catalog"
 	"p0ssess/internal/pme/engine"
@@ -154,8 +155,19 @@ func Serve(ctx context.Context, in io.Reader, out io.Writer, version string) err
 	return err
 }
 
-// AgentAvailable reports whether the jailed OpenCode path can run: Linux with podman and nft.
+// AgentAvailable reports whether the jailed OpenCode path can run: Linux with podman and nft, or the
+// cloud sandbox for an install linked to an account.
 func AgentAvailable() error {
+	err := localAgentAvailable()
+	if err != nil {
+		if cfg, cerr := config.Load(); cerr == nil && jail.CloudReady(cfg) {
+			return nil
+		}
+	}
+	return err
+}
+
+func localAgentAvailable() error {
 	if runtime.GOOS != "linux" {
 		return fmt.Errorf("it needs Linux with rootless podman (this is %s)", runtime.GOOS)
 	}

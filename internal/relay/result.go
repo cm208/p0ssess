@@ -165,6 +165,9 @@ func (e *Engine) result(w *watch, status string) (*Result, error) {
 	}
 	if rec.Worktree != "" {
 		r.Worktree = rec.Worktree
+		if err := e.syncCloud(rec); err != nil {
+			r.Note = strings.TrimSpace(r.Note + " fetching the cloud sandbox's changes failed: " + err.Error())
+		}
 		if stat, patch, err := worktreeDiff(rec.Repo, rec.Worktree, rec.BaseRev); err == nil {
 			r.DiffStat = stat
 			r.Files = worktreeFiles(rec.Repo, rec.Worktree, rec.BaseRev)

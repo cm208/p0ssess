@@ -37,6 +37,9 @@ type Config struct {
 	// BlockedCIDRs are more destinations the jail must never reach, for example the network's own public
 	// address when the router forwards ports back into it.
 	BlockedCIDRs []string `json:"blocked_cidrs,omitempty"`
+	// Sandbox picks where agent sessions run: "auto" (default: the local jail where rootless podman works,
+	// the cloud sandbox elsewhere for a linked account), "local" or "cloud". P0SSESS_SANDBOX overrides it.
+	Sandbox string `json:"sandbox,omitempty"`
 	// ZDR makes the jail's key proxy require zero-retention endpoints. Set per run from the budget's
 	// privacy mode, never read from config.json.
 	ZDR bool `json:"-"`
