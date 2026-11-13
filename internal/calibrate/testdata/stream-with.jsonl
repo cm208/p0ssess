@@ -1,0 +1,3 @@
+{"type":"system","subtype":"init","session_id":"5b0c0b8e-0000-4000-8000-000000000002","model":"claude-opus-5-5"}
+{"type":"rate_limit_event","rate_limit_info":{"status":"allowed","rateLimitType":"seven_day","utilization":41.70,"resetsAt":1763500000},"session_id":"5b0c0b8e-0000-4000-8000-000000000002"}
+{"type":"result","subtype":"success","is_error":false,"num_turns":3,"result":"There are six beeps.\nANSWER: 6","session_id":"5b0c0b8e-0000-4000-8000-000000000002","total_cost_usd":0.09,"modelUsage":{"claude-opus-5-5":{"inputTokens":3000,"outputTokens":400,"cacheReadInputTokens":20000,"cacheCreationInputTokens":2000,"costUSD":0.08}}}

@@ -191,6 +191,184 @@
     }
   }
 
+  // Savings: per task kind, Claude alone against Claude with p0ssess. Only measured numbers are shown.
+  const SVG = "http://www.w3.org/2000/svg";
+  const svg = (tag, attrs = {}, ...kids) => {
+    const n = document.createElementNS(SVG, tag);
+    for (const [k, v] of Object.entries(attrs)) if (v != null) n.setAttribute(k, v);
+    for (const k of kids) if (k != null) n.append(k);
+    return n;
+  };
+  const sig = (v) => Math.ceil(-Math.log10(v)) + 1;
+  const usd = (v) => {
+    if (v >= 1000) return "$" + Math.round(v).toLocaleString("en-US");
+    if (v >= 1) return "$" + v.toFixed(2);
+    if (v <= 0) return "$0";
+    if (v < 0.0001) return "<$0.0001";
+    return "$" + v.toFixed(sig(v));
+  };
+  const secs = (v) => (v < 10 ? v.toFixed(1) + " s" : v < 90 ? Math.round(v) + " s" : (v / 60).toFixed(1) + " min");
+  const share = (v) => {
+    const p = v * 100;
+    if (p >= 10) return Math.round(p) + "%";
+    if (p >= 1) return p.toFixed(1) + "%";
+    if (p <= 0) return "0%";
+    if (p < 0.001) return "<0.001%";
+    return p.toFixed(sig(p)) + "%";
+  };
+  const times = (r) => (r >= 10 ? Math.round(r) : r.toFixed(1)) + "×";
+  const compare = (a, b, less, more) => {
+    if (a <= 0 && b <= 0) return "the same";
+    if (b <= 0) return "nothing with p0ssess";
+    if (a / b >= 2) return times(a / b) + " " + less;
+    if (a / b >= 1.05) return Math.round((1 - b / a) * 100) + "% " + less;
+    if (b / a >= 2) return times(b / a) + " " + more;
+    if (b / a >= 1.05) return Math.round((b / a - 1) * 100) + "% " + more;
+    return "about the same";
+  };
+  const runsText = (n) => (n === 1 ? "1 run" : n + " runs");
+  const hasCost = (s) => !!s && s.correct > 0 && s.cost_per_correct_usd != null;
+  const costText = (s) => (!s ? "not measured" : hasCost(s) ? usd(s.cost_per_correct_usd) : "no correct answers in " + runsText(s.runs));
+  const dated = (iso) => {
+    const d = iso ? new Date(iso) : null;
+    return d && d.getFullYear() > 1 ? d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "";
+  };
+  const SIDES = [["alone", "Claude alone"], ["with", "With p0ssess"]];
+  let report = null;
+
+  // costBars draws one pair of bars on one shared linear axis, scaled to the larger of the two.
+  function costBars(k, width) {
+    const bar = 12, gap = 8, room = 76;
+    const vals = SIDES.map(([side]) => (hasCost(k[side]) ? k[side].cost_per_correct_usd : null));
+    const top = Math.max(0, ...vals.filter((v) => v != null));
+    const span = Math.max(40, width - room);
+    const h = SIDES.length * bar + (SIDES.length - 1) * gap;
+    const out = svg("svg", { class: "bars", width, height: h, viewBox: "0 0 " + width + " " + h, role: "img",
+      "aria-label": "Cost per correct answer: " + SIDES.map(([side, name]) => name + " " + costText(k[side])).join(", ") });
+    SIDES.forEach(([side, name], i) => {
+      const y = i * (bar + gap), v = vals[i];
+      if (v == null) {
+        out.append(svg("text", { class: "none", x: 6, y: y + bar - 2 }, costText(k[side])));
+        return;
+      }
+      const w = top > 0 ? Math.max(2, (v / top) * span) : 2, r = Math.min(4, w / 2);
+      const d = "M0 " + y + "h" + (w - r) + "a" + r + " " + r + " 0 0 1 " + r + " " + r + "v" + (bar - 2 * r) + "a" + r + " " + r + " 0 0 1 " + -r + " " + r + "H0z";
+      const s = k[side];
+      out.append(svg("path", { class: "bar " + side, d }, svg("title", {}, name + ": " + usd(v) + " per correct answer, " + s.correct + " of " + runsText(s.runs) + " right")));
+      out.append(svg("text", { x: w + 6, y: y + bar - 2 }, usd(v)));
+    });
+    out.append(svg("line", { class: "base", x1: 0.5, x2: 0.5, y1: -3, y2: h + 3 }));
+    return out;
+  }
+
+  function pairs(k, label, text, verdict) {
+    return el("div", { class: "metric" }, el("h3", { text: label }),
+      ...SIDES.map(([side]) => {
+        const t = text(k[side]);
+        return el("p", { class: "pair" + (t.plain ? " none" : "") }, el("span", { class: "key " + side, "aria-hidden": "true" }), t.text);
+      }),
+      verdict ? el("p", { class: "verdict", text: verdict }) : null);
+  }
+
+  function kindRow(k) {
+    const a = k.alone, w = k.with;
+    const saving = hasCost(a) && hasCost(w) ? compare(a.cost_per_correct_usd, w.cost_per_correct_usd, "cheaper", "more expensive") : "";
+    const fast = a && w && a.runs && w.runs ? compare(a.mean_seconds, w.mean_seconds, "faster", "slower") : "";
+    const ws = (s) => s && s.weekly_share_per_correct != null ? s.weekly_share_per_correct : null;
+    const less = ws(a) != null && ws(w) != null ? compare(ws(a), ws(w), "less", "more") : "";
+    const notes = [];
+    if (!a) notes.push("Claude alone was not measured yet.");
+    if (!w) notes.push("With p0ssess was not measured yet.");
+    if (w && w.source === "calibration") notes.push("With p0ssess: model call only. Claude's handoff is not counted.");
+    return el("li", { class: "kind" },
+      el("div", { class: "name" }, el("p", { class: "what", text: words(k.use_case) }),
+        k.task ? el("p", { class: "task", text: k.task }) : null,
+        k.model ? el("p", { class: "to", text: "to " + short(k.model), title: k.model }) : null),
+      el("div", { class: "chart" }, el("h3", { text: "Cost" }), el("div", { class: "bars-slot" }),
+        saving ? el("p", { class: "verdict", text: saving }) : null,
+        ...notes.map((n) => el("p", { class: "only", text: n }))),
+      pairs(k, "Mean time", (s) => (s && s.runs ? { text: secs(s.mean_seconds) } : { text: "not measured", plain: true }), fast),
+      pairs(k, "Weekly limit", (s) => (!s ? { text: "not measured", plain: true } : ws(s) == null ? { text: "not read", plain: true } : { text: share(ws(s)) }), less));
+  }
+
+  // modelTable groups the calibration rows under their task kind.
+  function modelTable(models) {
+    const head = el("tr", {}, ...["Model", "Correct", "Cost per correct", "Mean time"].map((t, i) => el("th", { class: i ? "num" : null, scope: "col", text: t })));
+    const rows = [];
+    models.forEach((m, i) => {
+      if (!i || models[i - 1].use_case !== m.use_case) rows.push(el("tr", { class: "group" }, el("th", { colspan: "4", scope: "rowgroup", text: words(m.use_case) })));
+      rows.push(el("tr", {},
+        el("td", { class: "model", title: m.model }, short(m.model), m.picked ? el("span", { class: "tag", text: "routed" }) : null),
+        el("td", { class: "num", text: m.correct + " of " + m.runs }),
+        el("td", { class: "num", text: m.correct > 0 && m.cost_per_correct_usd != null ? usd(m.cost_per_correct_usd) : "none correct" }),
+        el("td", { class: "num", text: secs(m.mean_seconds) })));
+    });
+    return el("div", { class: "table-wrap" }, el("table", { class: "models" }, el("thead", {}, head), el("tbody", {}, ...rows)));
+  }
+
+  const empty = (lead, ...hint) => el("div", { class: "savings-empty" }, el("p", { text: lead }), el("p", {}, ...hint));
+  const code = (t) => el("code", { text: t });
+
+  function renderSavings(r) {
+    const body = $("#savings-body"), notes = $("#savings-notes"), pdf = $("#savings-pdf"), when = $("#savings-when");
+    const kinds = list(r.kinds), models = list(r.models);
+    const any = kinds.length || models.length;
+    pdf.hidden = !(r.pro && any);
+    notes.replaceChildren();
+    if (!r.pro) {
+      when.textContent = "";
+      body.replaceChildren(empty("The savings report is part of p0ssess Pro.", "Run ", code("/p0ssess:pro"), " in Claude Code for details."));
+      return;
+    }
+    if (!any) {
+      when.textContent = "";
+      body.replaceChildren(empty("Nothing has been measured yet.",
+        "Calibration runs each task kind on samples with known answers, with Claude alone and with p0ssess, and records what a correct answer cost and how long it took. Run ",
+        code("/p0ssess:calibrate"), " to start. It shows what the runs will cost before anything runs."));
+      return;
+    }
+    const cal = dated(r.calibrated), base = dated(r.baselined);
+    when.textContent = [cal && "Calibrated " + cal, base ? "Claude baseline " + base : "Claude alone not measured yet"].filter(Boolean).join(" · ");
+    const kids = [];
+    const baseline = kinds.some((k) => k.alone);
+    if (kinds.length) {
+      kids.push(el("ul", { class: "legend", "aria-label": "Legend" }, ...SIDES.map(([side, name]) => el("li", {}, el("span", { class: "key " + side, "aria-hidden": "true" }), name)),
+        el("li", { class: "per", text: "Cost and weekly limit are per correct answer" })));
+      kids.push(el("ul", { class: "kinds" }, ...kinds.map(kindRow)));
+    }
+    if (!baseline) kids.push(el("p", { class: "note", text: "Claude alone has not been measured yet, so there is nothing to compare against." }));
+    const t = r.totals;
+    if (t && t.kinds > 0) {
+      let s = "Over the " + (t.kinds === 1 ? "1 kind" : t.kinds + " kinds") + " measured both ways, one correct answer of each cost " + usd(t.alone_usd) + " with Claude alone and " +
+        usd(t.with_usd) + " with p0ssess (" + compare(t.alone_usd, t.with_usd, "cheaper", "more expensive") + "). Time: " + secs(t.alone_seconds) + " alone, " + secs(t.with_seconds) + " with p0ssess.";
+      if (t.weekly_share_saved != null) s += " Weekly limit saved: " + share(t.weekly_share_saved) + ".";
+      kids.push(el("p", { class: "totals", text: s }));
+    }
+    if (models.length) kids.push(el("h3", { class: "next", text: "Models measured" }), modelTable(models));
+    body.replaceChildren(...kids);
+    body.querySelectorAll(".bars-slot").forEach((slot, i) => slot.append(costBars(kinds[i], Math.max(160, Math.floor(slot.clientWidth)))));
+    const prices = list(r.prices);
+    const small = list(r.notes).slice();
+    if (prices.length) small.push("Claude API prices used, per million tokens: " + prices.map((p) => p.model + " " + usd(p.in) + " in, " + usd(p.out) + " out, " + usd(p.cache_read) + " cache read").join("; ") + ".");
+    notes.replaceChildren(...small.map((n) => el("li", { text: n })));
+  }
+
+  async function loadSavings() {
+    try {
+      const r = await fetch("api/savings", { cache: "no-store" });
+      if (!r.ok) throw new Error(r.statusText);
+      report = await r.json();
+      renderSavings(report);
+    } catch (e) {
+      if (!report) $("#savings-body").replaceChildren(el("p", { class: "empty", text: "Couldn't load the savings report." }));
+    }
+  }
+  let lastWidth = 0;
+  new ResizeObserver(() => {
+    const w = $("#savings-body").clientWidth;
+    if (report && Math.abs(w - lastWidth) > 8) { lastWidth = w; renderSavings(report); }
+  }).observe($("#savings-body"));
+
   const saved = (text, err) => { const o = $("#saved"); o.textContent = text; o.classList.toggle("err", !!err); };
   const sheet = $("#settings-sheet");
   $("#open-settings").addEventListener("click", () => { saved(""); sheet.showModal(); });
@@ -249,5 +427,7 @@
   }
   load();
   setInterval(load, 10000);
+  loadSavings();
+  setInterval(loadSavings, 60000);
   if (location.hash === "#settings") sheet.showModal();
 })();

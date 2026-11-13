@@ -218,3 +218,25 @@ func (c *Client) PostOutcomes(ctx context.Context, body []byte) (status int, ret
 	io.Copy(io.Discard, io.LimitReader(r.Body, 8<<10))
 	return r.StatusCode, 0, nil
 }
+
+// PutCalibration sends the account's whole set of calibration scores (POST /v1/calibration); with an
+// empty body it forgets them (DELETE). Only a linked install calls it.
+func (c *Client) PutCalibration(ctx context.Context, body []byte) error {
+	if !c.Linked() {
+		return errors.New("calibration needs a linked Pro install")
+	}
+	method := http.MethodPost
+	if body == nil {
+		method = http.MethodDelete
+	}
+	r, err := c.do(ctx, method, "/v1/calibration", body, nil)
+	if err != nil {
+		return err
+	}
+	defer r.Body.Close()
+	if r.StatusCode/100 != 2 {
+		return apiError(r)
+	}
+	io.Copy(io.Discard, io.LimitReader(r.Body, 8<<10))
+	return nil
+}

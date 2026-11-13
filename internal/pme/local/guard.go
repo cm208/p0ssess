@@ -38,6 +38,10 @@ type Charge struct {
 	Edit bool
 	// Hold is how long the reservation holds before it counts as spent: the call's maximum runtime.
 	Hold time.Duration
+	// Confirmed means the user already said yes to this call's cost as part of a larger job they
+	// approved as a whole (a calibration run). It answers the per-task and first-use asks; a yes the
+	// call needs for itself (stakes 4, an ask rule) is still asked, and every cap still applies.
+	Confirmed bool
 	Scope
 }
 
@@ -206,6 +210,10 @@ func (e *Engine) Authorize(c Charge) (*Grant, error) {
 		}
 		if bud.Ask.FirstUse && !l.UsedModels()[c.Model] && d.Allowed[c.Model] == nil {
 			reasons = append(reasons, "it is the first run on this model and ask.first_use is on")
+		}
+		if len(reasons) > 0 && c.Confirmed && !strict {
+			reasons = nil
+			g.Notes = append(g.Notes, "covered by the yes for the whole job")
 		}
 		if len(reasons) > 0 {
 			r, why := d.Approval(c.Model, est, l.ApprovalUse(d.Approvals, now))
