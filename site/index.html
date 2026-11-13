@@ -64,14 +64,14 @@
 
   <div class="hero-cols">
     <div class="pitch">
-      <p class="lede">p0ssess is a Claude Code plugin. Tell it once which chores don’t need Claude’s rates, and Claude hands them to a cheaper model, checks what comes back and answers as usual. We measured it on unit tests against three ways of running Claude. It came out between 2.2 and 7.2 times cheaper, with every test file passing.</p>
+      <p class="lede">p0ssess is a Claude Code plugin. Tell it once which chores don’t need Claude’s rates, and Claude hands them to a cheaper model, checks what comes back and answers as usual. We measured it on unit tests against three ways of running Claude. It came out between 2.2 and 7.2 times cheaper, with every test file passing. The one setup that came close is on the chart too.</p>
       <p class="cta"><a class="btn" href="pricing/#pro">Get Pro, $4 a month</a><a class="btn quiet" href="pricing/#team">Get Team, $8 a seat</a></p>
       <p class="terms">The plugin itself is free and open source. <a href="#try">Install it</a> with your own OpenRouter key.</p>
     </div>
 
     <div class="meter" id="savings">
       <h2 class="sr-only" id="savings-h">What one rule did to the bill</h2>
-      <p class="ask rule"><span class="sr-only">The rule: </span>Team rule (p0ssess): always send unit test writing to deepseek/deepseek-v4.1-flash-1017.</p>
+      <p class="ask rule">Rule: always send unit test writing to deepseek/deepseek-v4.1-flash-1017.</p>
       <fieldset class="mode tri">
         <legend>The same job with the rule, against</legend>
         <span class="mode-thumb" aria-hidden="true"></span>
@@ -84,12 +84,12 @@
             <!--gen:hero-say-->
       <span class="v-haiku">Told to hand the bulk of the work to its own Haiku subagent, Claude Opus 5.5 spent $0.64 a run. With p0ssess it spent $0.28. All 15 test files pass both ways.</span>
             <span class="v-opus">Writing every test itself, Claude Opus 5.5 spent $1.26 a run. With p0ssess it spent $0.28. All 15 test files pass both ways.</span>
-            <span class="v-sonnet">Writing every test itself, Claude Sonnet 5.5 spent $0.70 a run. With p0ssess it spent $0.096. All 15 test files pass both ways. Sonnet’s own Haiku subagent came close: $0.09 to $0.22 a run, one run a test file short.</span>
+            <span class="v-sonnet">Writing every test itself, Claude Sonnet 5.5 spent $0.70 a run. With p0ssess it spent $0.10. All 15 test files pass both ways. Sonnet’s own Haiku subagent came within that spread: $0.09 to $0.22 a run, one run a test file short.</span>
       <!--/gen:hero-say-->
         </p>
         <p class="now">
           <!--gen:hero-now-->
-      <span class="sr-only">Down from </span><s class="old"><small>$</small><b class="v-haiku">0.64</b><b class="v-opus">1.26</b><b class="v-sonnet">0.70</b></s><span class="sr-only"> to </span><span class="num"><small>$</small><b class="v-haiku">0.28</b><b class="v-opus">0.28</b><b class="v-sonnet">0.096</b></span><span class="per">a run</span>
+      <span class="sr-only">Down from </span><s class="old"><small>$</small><b class="v-haiku">0.64</b><b class="v-opus">1.26</b><b class="v-sonnet">0.70</b></s><span class="sr-only"> to </span><span class="num"><small>$</small><b class="v-haiku">0.28</b><b class="v-opus">0.28</b><b class="v-sonnet">0.10</b></span><span class="per">a run</span>
       <!--/gen:hero-now-->
         </p>
       </div>
@@ -122,7 +122,11 @@
       </div>
       <div class="guides" aria-hidden="true"><i class="drop at"></i><i class="drop to"></i></div>
     </div>
-    <figcaption class="note" id="dline-cap">Every run of one job, on a line of dollars that starts at zero. The job: write unit tests for 15 small Python modules, three runs for each setup. A test file passes when it runs clean and catches at least four of five bugs planted in its module. All 15 passed in every run with p0ssess and in every run of Claude alone. The rule was a personal rule in p0ssess 0.6.0, with that one line in Claude’s standing instructions. Claude is priced at API list price from exact token counts, and the p0ssess runs include the other model’s bill. The modules were written for this benchmark and a script does the grading. <a href="business/#method">How it was measured, and what failed</a></figcaption>
+    <figcaption class="note" id="dline-cap">Every run of one job, on a line of dollars that starts at zero. The job: write unit tests for 15 small Python modules, three runs for each setup. A test file passes when it runs clean and catches at least four of five bugs planted in its module. All 15 passed in every run with p0ssess and in every run of Claude alone, and with Opus in charge a run took about as long either way. The rule was a personal rule in p0ssess 0.6.0, with one line saying the same in Claude’s standing instructions.
+      <!--gen:hero-rule-alone-->
+      In the 1.0 build the rule works alone, with no such line: $0.28 to $0.48 a run, 3.2 times cheaper than Claude Opus 5.5 alone, with every test file passing.
+      <!--/gen:hero-rule-alone-->
+      Claude is priced at API list price from exact token counts, and the p0ssess runs include the other model’s bill. The modules were written for this benchmark and a script does the grading. <a href="business/#method">How it was measured, and what failed</a></figcaption>
     <details class="runs">
       <summary>See every run</summary>
       <div class="tbl"><table role="table">
@@ -161,7 +165,7 @@
 <div class="wrap">
   <div class="sec-head">
     <h2 id="proof-h">The bar, and a second job</h2>
-    <p>We wrote down what would count before the first run. p0ssess wins a comparison only if its most expensive run costs less than Claude’s cheapest, with accuracy within three points, over at least three runs each way. To appear in an ad it also has to be at least twice as cheap. Unit tests cleared that bar three ways, and so did a second job.</p>
+    <p>We wrote down what would count before the first run. p0ssess wins a comparison only if its most expensive run costs less than Claude’s cheapest, with accuracy within three points, over at least three runs each way. To appear in an ad it also has to be at least twice as cheap. Unit tests cleared that bar, and so did a second job, this time by a team rule alone.</p>
   </div>
 
   <ol class="proof">
@@ -169,23 +173,28 @@
       <li class="prow hl">
       <div>
         <h3>Triaging support tickets</h3>
-        <p>Three hundred tickets a run, each sorted by category, priority, order and product against a written policy, with Claude Opus 5.5 in charge. All 300 were right in every run, both ways.</p>
+        <p>Three hundred tickets a run, each sorted by category, priority, order and product against a written policy, with Claude Opus 5.5 in charge. All 300 came out right in every run shown.</p>
+        <p>With nothing but a team rule, a run cost $0.36 instead of $0.73. With the rule also written out in Claude’s instructions it cost $0.33: 2.2 times cheaper than Claude alone, and 2.3 times cheaper than Claude with its own Haiku subagent, which saved nothing here.</p>
       </div>
-      <figure class="land" aria-label="Triaging support tickets, cost of each run. With p0ssess: $0.24 to $0.39. Claude Opus 5.5 alone: $0.64 to $0.90.">
-        <ul class="keys">
-          <li class="k-poss"><i aria-hidden="true"></i><b>With p0ssess</b> <span>$0.24 to $0.39</span></li>
-          <li class="k-alone"><i aria-hidden="true"></i><b>Claude Opus 5.5 alone</b> <span>$0.64 to $0.90</span></li>
-        </ul>
-        <div class="plot-box"><svg class="plot" width="100%" height="92" aria-hidden="true" focusable="false">
-        <rect class="band a" x="42.55%" width="17.41%" y="2" height="58" rx="4"/><rect class="band p" x="15.79%" width="10.23%" y="2" height="58" rx="4"/><circle class="pt a" cx="42.55%" cy="13" r="6"/><circle class="hit" cx="42.55%" cy="13" r="13" data-tip="Run 1: $0.6382 · 300 of 300 tickets right · 88 s"/><circle class="pt a" cx="59.95%" cy="31" r="6"/><circle class="hit" cx="59.95%" cy="31" r="13" data-tip="Run 2: $0.8993 · 300 of 300 tickets right · 169 s"/><circle class="pt a" cx="44.14%" cy="49" r="6"/><circle class="hit" cx="44.14%" cy="49" r="13" data-tip="Run 3: $0.6621 · 300 of 300 tickets right · 108 s"/><rect class="pt p" x="26.03%" y="7" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="26.03%" cy="13" r="13" data-tip="Run 1: $0.3904 · Claude $0.3123 + deepseek-v4.1-flash $0.0781 · 300 of 300 tickets right · 427 s"/><rect class="pt p" x="23.49%" y="25" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="23.49%" cy="31" r="13" data-tip="Run 2: $0.3524 · Claude $0.2871 + deepseek-v4.1-flash $0.0653 · 300 of 300 tickets right · 531 s"/><rect class="pt p" x="15.79%" y="43" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="15.79%" cy="49" r="13" data-tip="Run 3: $0.2369 · Claude $0.1780 + deepseek-v4.1-flash $0.0589 · 300 of 300 tickets right · 353 s"/><rect class="ax" x="0" y="68" width="100%" height="1"/><rect class="tk" x="0%" y="68" width="1" height="5"/><text x="0" y="88" text-anchor="start">$0</text><rect class="tk" x="16.67%" y="68" width="1" height="5"/><text class="odd" x="16.67%" y="88" text-anchor="middle">$0.25</text><rect class="tk" x="33.33%" y="68" width="1" height="5"/><text x="33.33%" y="88" text-anchor="middle">$0.50</text><rect class="tk" x="50%" y="68" width="1" height="5"/><text class="odd" x="50%" y="88" text-anchor="middle">$0.75</text><rect class="tk" x="66.67%" y="68" width="1" height="5"/><text x="66.67%" y="88" text-anchor="middle">$1.00</text><rect class="tk" x="83.33%" y="68" width="1" height="5"/><text class="odd" x="83.33%" y="88" text-anchor="middle">$1.25</text><rect class="tk" x="100%" y="68" width="1" height="5" transform="translate(-1 0)"/><text x="100%" y="88" text-anchor="end">$1.50</text>
-        </svg></div>
+      <figure class="land" aria-label="Ticket triage, cost of each run. Claude Opus 5.5 alone: $0.64 to $0.90. Claude Opus 5.5 with its Haiku subagent: $0.60 to $0.90. With p0ssess, the rule in words: $0.24 to $0.39. With a team rule alone: $0.20 to $0.56.">
+        <ol class="lanes">
+        <li class="lane "><p class="lane-name k-alone"><span><i aria-hidden="true"></i><b>Claude Opus 5.5 alone</b></span> <span>$0.64 to $0.90</span></p><div class="plot-box"><svg class="plot" width="100%" height="26" aria-hidden="true" focusable="false"><rect class="band a" x="42.55%" width="17.41%" y="1" height="24" rx="4"/><circle class="pt a" cx="42.55%" cy="8.0" r="6"/><circle class="hit" cx="42.55%" cy="8.0" r="13" data-tip="Run 1: $0.6382 · 300 of 300 tickets right · 88 s"/><circle class="pt a" cx="59.95%" cy="13.0" r="6"/><circle class="hit" cx="59.95%" cy="13.0" r="13" data-tip="Run 2: $0.8993 · 300 of 300 tickets right · 169 s"/><circle class="pt a" cx="44.14%" cy="18.0" r="6"/><circle class="hit" cx="44.14%" cy="18.0" r="13" data-tip="Run 3: $0.6621 · 300 of 300 tickets right · 108 s"/></svg></div></li>
+        <li class="lane "><p class="lane-name k-ctl"><span><i aria-hidden="true"></i><b>Claude Opus 5.5 with its Haiku</b></span> <span>$0.60 to $0.90</span></p><div class="plot-box"><svg class="plot" width="100%" height="26" aria-hidden="true" focusable="false"><rect class="band a" x="40.32%" width="19.51%" y="1" height="24" rx="4"/><circle class="pt c" cx="49.4%" cy="8.0" r="5"/><circle class="hit" cx="49.4%" cy="8.0" r="13" data-tip="Run 1: $0.7409 · 300 of 300 tickets right · 132 s"/><circle class="pt c" cx="59.83%" cy="13.0" r="5"/><circle class="hit" cx="59.83%" cy="13.0" r="13" data-tip="Run 2: $0.8975 · 300 of 300 tickets right · 1284 s"/><circle class="pt c" cx="40.32%" cy="18.0" r="5"/><circle class="hit" cx="40.32%" cy="18.0" r="13" data-tip="Run 3: $0.6048 · 300 of 300 tickets right · 146 s"/></svg></div></li>
+        <li class="lane "><p class="lane-name k-poss"><span><i aria-hidden="true"></i><b>With p0ssess, the rule in words</b></span> <span>$0.24 to $0.39</span></p><div class="plot-box"><svg class="plot" width="100%" height="26" aria-hidden="true" focusable="false"><rect class="band p" x="15.79%" width="10.23%" y="1" height="24" rx="4"/><rect class="pt p" x="26.03%" y="2.0" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="26.03%" cy="8.0" r="13" data-tip="Run 1: $0.3904 · Claude $0.3123 + deepseek-v4.1-flash $0.0781 · 300 of 300 tickets right · 427 s"/><rect class="pt p" x="23.49%" y="7.0" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="23.49%" cy="13.0" r="13" data-tip="Run 2: $0.3524 · Claude $0.2871 + deepseek-v4.1-flash $0.0653 · 300 of 300 tickets right · 531 s"/><rect class="pt p" x="15.79%" y="12.0" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="15.79%" cy="18.0" r="13" data-tip="Run 3: $0.2369 · Claude $0.1780 + deepseek-v4.1-flash $0.0589 · 300 of 300 tickets right · 353 s"/></svg></div></li>
+        <li class="lane "><p class="lane-name k-poss"><span><i aria-hidden="true"></i><b>With a team rule alone</b></span> <span>$0.20 to $0.56</span></p><div class="plot-box"><svg class="plot" width="100%" height="26" aria-hidden="true" focusable="false"><rect class="band p" x="13.43%" width="24.12%" y="1" height="24" rx="4"/><rect class="pt p" x="21.35%" y="2.0" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="21.35%" cy="8.0" r="13" data-tip="Run 1: $0.3202 · Claude $0.2374 + deepseek-v4.1-flash $0.0829 · 300 of 300 tickets right · 409 s"/><rect class="pt p" x="13.43%" y="7.0" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="13.43%" cy="13.0" r="13" data-tip="Run 2: $0.2014 · Claude $0.1536 + deepseek-v4.1-flash $0.0478 · 300 of 300 tickets right · 418 s"/><rect class="pt p" x="37.54%" y="12.0" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="37.54%" cy="18.0" r="13" data-tip="Run 3: $0.5632 · Claude $0.4899 + deepseek-v4.1-flash $0.0733 · 300 of 300 tickets right · 426 s"/></svg></div></li>
+        </ol>
+        <svg class="plot" width="100%" height="24" aria-hidden="true" focusable="false"><rect class="ax" x="0" y="0" width="100%" height="1"/><rect class="tk" x="0%" y="0" width="1" height="5"/><text x="0" y="20" text-anchor="start">$0</text><rect class="tk" x="16.67%" y="0" width="1" height="5"/><text class="odd" x="16.67%" y="20" text-anchor="middle">$0.25</text><rect class="tk" x="33.33%" y="0" width="1" height="5"/><text x="33.33%" y="20" text-anchor="middle">$0.50</text><rect class="tk" x="50%" y="0" width="1" height="5"/><text class="odd" x="50%" y="20" text-anchor="middle">$0.75</text><rect class="tk" x="66.67%" y="0" width="1" height="5"/><text x="66.67%" y="20" text-anchor="middle">$1.00</text><rect class="tk" x="83.33%" y="0" width="1" height="5"/><text class="odd" x="83.33%" y="20" text-anchor="middle">$1.25</text><rect class="tk" x="100%" y="0" width="1" height="5" transform="translate(-1 0)"/><text x="100%" y="20" text-anchor="end">$1.50</text></svg>
       </figure>
-      <p class="ratio"><b>2.2<span class="x">×</span></b><span>cheaper for each correct ticket</span></p>
+      <p class="ratio"><b>2.0<span class="x">×</span></b><span>cheaper for each correct ticket, by a team rule alone</span></p>
     </li>
       <!--/gen:proof-rows-->
   </ol>
 
-  <p class="proof-end">The chart is dollars for one run, on the same scale as the one at the top of the page, and deepseek-v4.1-flash did the delegated work here too. We tested other jobs as well, and most of them did not clear the bar. On small batches Claude Code’s fixed cost for each session swallows the saving, and on one job the cheaper model cost less and got more wrong, which counts as a loss. They are all on the method page with their numbers.</p>
+  <p class="proof-end">
+      <!--gen:proof-caveat-->
+      The 300 tickets and their triage policy were built for the benchmark, three runs for each setup, and deepseek-v4.1-flash did the delegated work. With p0ssess the job was about four times slower: 1.5 seconds a ticket against 0.4. At 60 tickets the hand-off cost as much as the work and there was no saving.
+      <!--/gen:proof-caveat-->
+      That was true of most of what we tested. Of nineteen pairings of a job with a model in charge, fifteen failed our bar and one passed by less than twice. They are all on the method page with their numbers.</p>
   <p class="next"><a class="btn quiet" href="business/#method">Read the method</a><a class="more" href="business/#results">See every job we tested</a></p>
 </div>
 </section>
@@ -232,12 +241,16 @@
 <div class="wrap">
   <div class="sec-head">
     <h2 id="team-h">Set the rule once for the whole team</h2>
-    <p>On Team, an owner writes the rule and every seat gets it. Nobody has to remember to route their test-writing. It happens when they ask Claude for tests.</p>
+    <p>
+      <!--gen:team-proof-->
+      On Team, an owner writes the rule and every seat gets it. We measured that with nothing else in play, no instructions on anyone’s machine: a team rule that always sends ticket triage to deepseek-v4.1-flash. Triaging a day’s 300 support tickets cost $0.36 instead of $0.73 with Claude Opus 5.5 in charge, and every ticket came out right.
+      <!--/gen:team-proof-->
+    </p>
   </div>
   <div class="split">
     <figure class="reach hl" aria-labelledby="reach-cap">
       <figcaption id="reach-cap">One command from the owner</figcaption>
-      <div class="cmd"><pre><code><span class="ln">p0ssess team rule add --kind only --models deepseek/deepseek-v4.1-flash-1017 --use-cases test-generation</span></code></pre><button class="copy-btn" type="button" aria-label="Copy the command" hidden>Copy</button></div>
+      <div class="cmd"><pre><code><span class="ln">p0ssess team rule add --kind only --models deepseek/deepseek-v4.1-flash-1017 --use-cases bulk-classify-tag</span></code></pre><button class="copy-btn" type="button" aria-label="Copy the command" hidden>Copy</button></div>
       <i class="stem" aria-hidden="true"></i>
       <ul class="seats" aria-label="The rule reaches every seat on the team">
         <li><img src="ghost.svg" alt="" width="32" height="32"><span>owner</span></li>
@@ -253,6 +266,11 @@
       <p>Each member gets a share of the monthly budget, and the tools that spend money enforce it on their machine. A spend dashboard shows the owner where it went.</p>
       <p>People join with an invite link. Team is $8 a seat each month, and every seat includes Pro.</p>
       <p class="next"><a class="btn" href="pricing/#team">Get Team, $8 a seat</a><a class="more" href="business/">The cost case for a team</a></p>
+      <p class="note">
+      <!--gen:team-caveat-->
+      The 300 tickets and their triage policy were built for the benchmark, three runs each way, and the runs with the rule were about four times slower (1.5 seconds a ticket against 0.4). At 60 tickets the hand-off cost as much as the work and there was no saving. On unit tests a team rule alone did not pass our bar: in two of its three runs one module’s tests caught three of five planted bugs, so the figures at the top of this page are from a rule set on the person’s own machine.
+      <!--/gen:team-caveat-->
+      </p>
     </div>
   </div>
 </div>

@@ -336,6 +336,7 @@ html.hero-go .hero { transition: --at 1.5s var(--io), --to 1.5s var(--io); }
 .tbl td::before { content: attr(data-l); content: attr(data-l) / ""; font-size: 0.86rem; color: var(--ink-2); }
 .tbl td small { color: var(--ink-2); }
 .tbl .rng { margin-left: 0.4em; font-size: 0.86rem; white-space: nowrap; }
+.tbl tr.win th, .tbl tr.win td:last-child { color: var(--ink); }
 
 /* Sections */
 .sec { padding-block: var(--sec-pad); }
@@ -380,7 +381,11 @@ html.hero-go .hero { transition: --at 1.5s var(--io), --to 1.5s var(--io); }
 .proof { list-style: none; margin: 0; padding: 0; display: grid; }
 .prow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.9rem; padding: 1.4rem 0 1.5rem; }
 .prow h3 { font-size: 1.14rem; }
-.prow h3 + p { margin-top: 0.35rem; font-size: 0.95rem; line-height: 1.5; }
+.prow h3 + p, .prow p + p { margin-top: 0.35rem; font-size: 0.95rem; line-height: 1.5; }
+.prow p + p { margin-top: 0.7rem; }
+/* The second job's lanes: every setup lit, each name over its runs. */
+.prow .lanes { row-gap: 8px; margin-bottom: 4px; }
+.prow .lane-name b { color: var(--ink); }
 .prow .keys { margin-bottom: 8px; }
 .ratio { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.15rem 0.6rem; }
 .ratio b { font: 700 clamp(2.6rem, 4.4vw, 3.6rem)/0.9 var(--mono); letter-spacing: -0.04em; color: var(--ink); }
@@ -480,6 +485,7 @@ p.swap .idle { color: inherit; }
 .seats li::before { content: ""; position: absolute; left: 50%; top: -12px; width: 1px; height: 12px; background: var(--violet); }
 .seats img { display: block; width: 32px; height: 32px; }
 .reach .stem { display: block; width: 1px; height: 10px; margin: 0 auto; background: var(--violet); }
+.copy > .note { margin-top: 1.4rem; }
 
 /* Plain rows on the frameless grid */
 .wont, .needs { list-style: none; padding: 0; }
@@ -801,7 +807,7 @@ code.seg { display: inline-block; padding: 0.3rem 0.85rem; background: var(--sur
   /* Names down the left, every lane on one scale. */
   .hero { --names: calc(25rem + 2rem); }
   .guides { display: block; }
-  .lane { grid-template-columns: 25rem minmax(0, 1fr); column-gap: 2rem; align-items: center; }
+  .hero .lane { grid-template-columns: 25rem minmax(0, 1fr); column-gap: 2rem; align-items: center; }
   .hero-cols { grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr); column-gap: clamp(40px, 5vw, 88px); align-items: end; }
 }
 

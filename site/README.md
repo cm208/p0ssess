@@ -7,9 +7,9 @@ Beside the home page are six pages, each an `index.html` in its own folder: `pri
 The home page is an advertisement, and its subject is cost. In order:
 
 1. **The hero.** The headline, what p0ssess is, the two paid plans, and beside them one rule and one job: what a run of it costs with the rule, against three ways of running Claude without it, with every measured run on a line of dollars. A three-way switch picks which Claude setup the saving is measured against.
-2. **The proof.** The bar a comparison has to clear, and a second job that cleared it, on the hero's scale.
+2. **The proof.** The bar a comparison has to clear, and a second job that cleared it by a team rule alone, on the hero's scale.
 3. **How it works.** The hand-off drawn as three stops, and where one run's money went.
-4. **For a team.** One rule from the owner reaching every seat.
+4. **For a team.** One rule from the owner reaching every seat, with the one measured result of a team rule alone.
 5. **New senses.** What Claude can't do alone: a film watched, a recording heard, an image made. It is here, and it is second.
 6. **Your limits.** Budgets, rules, the sandbox and what it won't do.
 7. **Pricing**, then **Install**.
@@ -24,6 +24,8 @@ The pages must keep saying these things, because they are true:
 
 - The benchmark's datasets were built for it, a script graded them, and Claude is priced at API list price. The note under the hero's chart says so and links to the method.
 - Most of the jobs tested did not clear the bar. The home page says so and the business page shows every one of them.
+- The hero's figures are not from a team rule. On unit tests a team rule alone failed on accuracy, so the hero calls it a rule, and its small print says it was a personal rule with one line of instructions. The only measured claim for a team rule alone is ticket triage at 300 tickets, and it is printed with its caveats: about four times slower, and no saving at 60 tickets.
+- The Sonnet result is against Sonnet doing the work itself. Its own Haiku subagent came within the spread, and the hero shows that lane and says so.
 - The savings runs used the free plugin. The pricing page says so.
 - On the film, p0ssess cost more in total and took longer. Only the cost for each point scored is lower. Do not write that it was cheaper.
 
@@ -52,7 +54,7 @@ Every animated part has a complete still state in the markup. With `prefers-redu
 
 The cost figures come from one benchmark, run on November 13, 2026. Its design was written and committed before the first measured run, with the criterion for a win. The business page's "How it was measured" is the public summary. The design, the generators, the graders and one line for every run are kept with the benchmark's records, not in this repository.
 
-In short: each run is one headless Claude Code 2.1.323 session handed a whole batch, from an empty configuration, with a prompt that never mentions models or cost. Arm A is Claude alone. Arm B adds the public p0ssess 0.6.0 plugin and one rule that sends the job's kind of work to one model, which the engine picked before any run. Arm C, the control, is Claude alone told to hand the bulk of the work to its own Haiku subagent. Cost is Claude Code's own figure at API list prices plus what OpenRouter charged. A job is a win when the most expensive p0ssess run costs less for each correct item than the cheapest Claude run, accuracy is within three points on average and five in the worst run, every p0ssess run delegated, and there are at least three runs each way. Only a win that is at least twice as cheap is advertised.
+In short: each run is one headless Claude Code 2.1.323 session handed a whole batch, from an empty configuration, with a prompt that never mentions models or cost. Arm A is Claude alone. Arm B adds the public p0ssess 0.6.0 plugin and one rule that sends the job's kind of work to one model, which the engine picked before any run, with the rule also written as one line in Claude's standing instructions. Arm C, the control, is Claude alone told to hand the bulk of the work to its own Haiku subagent. Arms R and T use the build that ships as 1.0 with the rule alone and no line of instructions: a personal rule (R), and a team rule synced from a server (T). Cost is Claude Code's own figure at API list prices plus what OpenRouter charged. A job is a win when the most expensive p0ssess run costs less for each correct item than the cheapest Claude run, accuracy is within three points on average and five in the worst run, every p0ssess run delegated, and there are at least three runs each way. Only a win that is at least twice as cheap is advertised.
 
 Every benchmark figure on the pages:
 
@@ -68,14 +70,21 @@ Every benchmark figure on the pages:
 | Hero, "cheaper": against Opus with its Haiku, Opus alone, Sonnet alone | 2.24, 4.45 and 7.25 times | mean cost per correct item of the Claude setup over p0ssess's, same lead model |
 | The hero's positions (`--p-opus` and the rest, in `style.css`) | --p-opus: 18.95; --p-sonnet: 6.41; --a-opus: 84.29; --c-opus: 42.42; --a-sonnet: 46.45; | each setup's mean as a share of the axis, $0 to $1.50 |
 | "Where one run's $0.2763 went" | Claude Opus 5.5 $0.2438, Claude Haiku 5.5 $0.0034, deepseek-v4.1-flash $0.0291 | arm B run 1: Claude Code's cost per model, and the OpenRouter ledger |
-| The proof, pricing: ticket triage, 300 tickets | alone mean $0.7332, $0.64 to $0.90; with p0ssess mean $0.3266, $0.24 to $0.39; 3 and 3 runs; all 300 right in each; 2.24 times cheaper | arms A and B, `ticket-triage` N=300, Opus |
+| Hero's small print, method: a personal rule alone, 1.0 build | mean $0.3996 a run, $0.28 to $0.48, 3 runs: $0.2794, $0.4828, $0.4366; 45 of 45 test files pass; mean 244 s | arm R, `unit-tests`, Opus | It is 3.16 times cheaper than Claude alone.
+| Team section's small print, method: a team rule alone on unit tests, which failed | mean $0.3365 a run, $0.18 to $0.48, 3 runs: $0.3429, $0.4834, $0.1832; 43 of 45 test files pass; mean 305 s | arm T, `unit-tests`, Opus |
+| The proof: ticket triage, 300 tickets, Claude Opus 5.5 alone | mean $0.7332 a run, $0.64 to $0.90, 3 runs: $0.6382, $0.8993, $0.6621; 900 of 900 tickets right; mean 122 s | arm A, `ticket-triage` N=300, Opus |
+| The proof: Claude Opus 5.5 with its own Haiku subagent | mean $0.7478 a run, $0.60 to $0.90, 3 runs: $0.7409, $0.8975, $0.6048; 900 of 900 tickets right; mean 521 s | arm C |
+| The proof: with p0ssess, the rule in words | mean $0.3266 a run, $0.24 to $0.39, 3 runs: $0.3904, $0.3524, $0.2369; 900 of 900 tickets right; mean 437 s | arm B | 2.24 times cheaper than alone, 2.29 than the Haiku route.
+| The proof, the Team section, pricing: a team rule alone | mean $0.3616 a run, $0.20 to $0.56, 3 runs: $0.3202, $0.2014, $0.5632; 900 of 900 tickets right; mean 418 s | arm T | 2.03 times cheaper than alone.
+| Method: a personal rule alone on ticket triage | mean $0.4536 a run, $0.29 to $0.56, 3 runs: $0.5082, $0.5582, $0.2944; 900 of 900 tickets right; mean 1090 s | arm R | 1.62 times cheaper than alone.
+| "About four times slower" | 0.41 s a ticket alone, 1.46 s with p0ssess (arm B), 1.39 s by a team rule alone | wall time of the session over 300 tickets |
 | The hand-off figure's two jobs on deepseek-v4.1-flash | $0.0291 for the tests of 15 modules, $0.0781 for 300 tickets | the OpenRouter part of arm B run 1 of each job |
-| Pricing, "less a run" | $0.98 and $0.41 | the difference of the two means, Opus in charge; the page says it is the mean |
+| Pricing, "less a run" | $0.98 and $0.37 | the difference of the two means, Opus in charge; the page says it is the mean |
 <!--/gen:readme-figures-->
 
-The business page's two charts and their tables hold every job that was tested, with Claude Opus 5.5 and with Claude Sonnet 5.5 in charge. A mark's position there is that run's cost for each correct item divided by the mean of Claude alone on the same job, so 1× is Claude's mean. The verdict beside each row is the criterion above applied to those runs. A run with nothing right has no cost for each right answer and is drawn at the right edge.
+The benchmark's own summary of what may be advertised, and with which caveats, is its MARKETING.md; the pages follow it. The business page's two charts and their tables hold every job that was tested, with Claude Opus 5.5 and with Claude Sonnet 5.5 in charge, and a third table holds every setup on the jobs that won. A mark's position there is that run's cost for each correct item divided by the mean of Claude alone on the same job, so 1× is Claude's mean. The verdict beside each row is the criterion above applied to those runs. A run with nothing right has no cost for each right answer and is drawn at the right edge.
 
-The hero opens on the comparison with Claude's own Haiku subagent, because it answers the first thing a skeptic asks. The rule in the hero is the line the p0ssess runs carried, word for word. In 0.6.0 a rule limited which model could be used but did not make Claude delegate, so arm B carried it in words as well. The business page says so.
+The hero opens on the comparison with Claude's own Haiku subagent, because it answers the first thing a skeptic asks. The rule in the hero is what the p0ssess runs carried. The line in Claude's instructions began "Team rule (p0ssess):"; the hero leaves those words out, because the result is not a team rule's, and the business page quotes the line whole. In 0.6.0 a rule limited which model could be used but did not make Claude delegate, so arm B carried it in words as well. The business page says so.
 
 ## The film test
 
@@ -111,7 +120,7 @@ magick strip.png -quality 78 -define webp:method=6 film-strip.webp
 | In the hand-off figure: $0.0162, a ten-minute film on qwen3.8-omni-flash | The film test's run B, the other model's part of $0.1140. |
 | In the hand-off figure: $0.0070, a 1024-pixel image on recraft-v4.1-flash | `../docs/MEDIA.md`, "Generate image (image API)", $0.007000, 1024×1024. |
 
-The rules in "Your limits" and the status line segment are from `../README.md` and `../docs/ENGINE.md`. What it won't do follows `../README.md` (Privacy, Respects a budget, Rates stakes) and `../docs/DESIGN.md`. The Team command is the client's own (`p0ssess team rule add`), and what Team includes follows the terms of service.
+The rules in "Your limits" and the status line segment are from `../README.md` and `../docs/ENGINE.md`. What it won't do follows `../README.md` (Privacy, Respects a budget, Rates stakes) and `../docs/DESIGN.md`. The Team command is the client's own (`p0ssess team rule add`), with the use case the benchmark's team rule named for ticket triage (`bulk-classify-tag`), and what Team includes follows the terms of service.
 
 ## Pricing, business and policy pages
 
@@ -240,7 +249,7 @@ Referrer-Policy: no-referrer
 X-Content-Type-Options: nosniff
 ```
 
-Serve `.woff2` as `font/woff2` and `.webp` as `image/webp`, and cache `fonts/` and the images for a long time. Outside addresses are only followed when someone clicks a link; the pages load nothing from them, except the pricing page's two calls to the cloud API once `offer.api` is set. Uncompressed, the home page and everything it loads come to about 180 KB.
+Serve `.woff2` as `font/woff2` and `.webp` as `image/webp`, and cache `fonts/` and the images for a long time. Outside addresses are only followed when someone clicks a link; the pages load nothing from them, except the pricing page's two calls to the cloud API once `offer.api` is set. Uncompressed, the home page and everything it loads come to about 190 KB.
 
 ## Fonts
 

@@ -56,7 +56,7 @@
 <div class="wrap">
   <div class="sec-head">
     <h2 id="results-h">Every job we tested</h2>
-    <p>Each mark is one run. Its position is what one correct answer cost, as a multiple of what Claude alone averaged on that job, so 1× is Claude’s own average and ½ is half the price. A job is a win when every square sits left of every circle and accuracy held.</p>
+    <p>The benchmark was 148 headless Claude Code runs, pilots and voided runs included: nine jobs, two models in charge and up to five setups. Of nineteen pairings of a job with a model in charge, three won, one won by less than twice, and fifteen failed. Each mark below is one run. Its position is what one correct answer cost, as a multiple of what Claude alone averaged on that job, so 1× is Claude’s own average and ½ is half the price. A job is a win when every square sits left of every circle and accuracy held.</p>
   </div>
 
   <figure class="tasks land" aria-labelledby="tasks-cap">
@@ -153,14 +153,39 @@
   </figure>
 
   <div class="sec-head sub">
+    <h3 id="arms-h">Every setup, on the jobs that won</h3>
+    <p>The charts above compare two setups. These jobs were also run against Claude’s own Haiku subagent, and with the rule alone in the build that ships as 1.0.</p>
+  </div>
+  <div class="tbl arms"><table role="table" aria-labelledby="arms-h">
+    <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Setup</th><th scope="col" role="columnheader">A run</th><th scope="col" role="columnheader">Right</th><th scope="col" role="columnheader">Cheaper than Claude alone</th><th scope="col" role="columnheader">By the criterion</th></tr></thead>
+    <tbody role="rowgroup">
+          <!--gen:arms-table-->
+      <tr class="" role="row"><th scope="row" role="rowheader">Claude Opus 5.5 alone <small>unit tests, Opus in charge</small></th><td role="cell" data-l="A run"><small>$</small>1.26 <small class="rng">1.10 to 1.45</small></td><td role="cell" data-l="Right">100%</td><td role="cell" data-l="Cheaper than Claude alone">the baseline</td><td role="cell" data-l="By the criterion"></td></tr>
+          <tr class="" role="row"><th scope="row" role="rowheader">Claude Opus 5.5 with its own Haiku subagent <small>unit tests, Opus in charge</small></th><td role="cell" data-l="A run"><small>$</small>0.64 <small class="rng">0.60 to 0.71</small></td><td role="cell" data-l="Right">100%</td><td role="cell" data-l="Cheaper than Claude alone">2.0×</td><td role="cell" data-l="By the criterion">The control</td></tr>
+          <tr class="win" role="row"><th scope="row" role="rowheader">p0ssess 0.6.0, the rule in words <small>unit tests, Opus in charge</small></th><td role="cell" data-l="A run"><small>$</small>0.28 <small class="rng">0.27 to 0.30</small></td><td role="cell" data-l="Right">100%</td><td role="cell" data-l="Cheaper than Claude alone">4.4×</td><td role="cell" data-l="By the criterion">A win</td></tr>
+          <tr class="win" role="row"><th scope="row" role="rowheader">p0ssess 1.0 build, a personal rule alone <small>unit tests, Opus in charge</small></th><td role="cell" data-l="A run"><small>$</small>0.40 <small class="rng">0.28 to 0.48</small></td><td role="cell" data-l="Right">100%</td><td role="cell" data-l="Cheaper than Claude alone">3.2×</td><td role="cell" data-l="By the criterion">A win</td></tr>
+          <tr class="fail" role="row"><th scope="row" role="rowheader">p0ssess 1.0 build, a team rule alone <small>unit tests, Opus in charge</small></th><td role="cell" data-l="A run"><small>$</small>0.34 <small class="rng">0.18 to 0.48</small></td><td role="cell" data-l="Right">95.6%</td><td role="cell" data-l="Cheaper than Claude alone">3.6×</td><td role="cell" data-l="By the criterion">Fails: accuracy fell</td></tr>
+          <tr class="" role="row"><th scope="row" role="rowheader">Claude Sonnet 5.5 alone <small>unit tests, Sonnet in charge</small></th><td role="cell" data-l="A run"><small>$</small>0.70 <small class="rng">0.60 to 0.86</small></td><td role="cell" data-l="Right">100%</td><td role="cell" data-l="Cheaper than Claude alone">the baseline</td><td role="cell" data-l="By the criterion"></td></tr>
+          <tr class="" role="row"><th scope="row" role="rowheader">Claude Sonnet 5.5 with its own Haiku subagent <small>unit tests, Sonnet in charge</small></th><td role="cell" data-l="A run"><small>$</small>0.16 <small class="rng">0.09 to 0.22</small></td><td role="cell" data-l="Right">97.8%</td><td role="cell" data-l="Cheaper than Claude alone">4.3×</td><td role="cell" data-l="By the criterion">The control, within p0ssess’s spread</td></tr>
+          <tr class="win" role="row"><th scope="row" role="rowheader">p0ssess 0.6.0, the rule in words <small>unit tests, Sonnet in charge</small></th><td role="cell" data-l="A run"><small>$</small>0.10 <small class="rng">0.09 to 0.10</small></td><td role="cell" data-l="Right">100%</td><td role="cell" data-l="Cheaper than Claude alone">7.2×</td><td role="cell" data-l="By the criterion">A win against Sonnet alone</td></tr>
+          <tr class="" role="row"><th scope="row" role="rowheader">Claude Opus 5.5 alone <small>300 tickets, Opus in charge</small></th><td role="cell" data-l="A run"><small>$</small>0.73 <small class="rng">0.64 to 0.90</small></td><td role="cell" data-l="Right">100%</td><td role="cell" data-l="Cheaper than Claude alone">the baseline</td><td role="cell" data-l="By the criterion"></td></tr>
+          <tr class="" role="row"><th scope="row" role="rowheader">Claude Opus 5.5 with its own Haiku subagent <small>300 tickets, Opus in charge</small></th><td role="cell" data-l="A run"><small>$</small>0.75 <small class="rng">0.60 to 0.90</small></td><td role="cell" data-l="Right">100%</td><td role="cell" data-l="Cheaper than Claude alone">1.0×</td><td role="cell" data-l="By the criterion">The control</td></tr>
+          <tr class="win" role="row"><th scope="row" role="rowheader">p0ssess 0.6.0, the rule in words <small>300 tickets, Opus in charge</small></th><td role="cell" data-l="A run"><small>$</small>0.33 <small class="rng">0.24 to 0.39</small></td><td role="cell" data-l="Right">100%</td><td role="cell" data-l="Cheaper than Claude alone">2.2×</td><td role="cell" data-l="By the criterion">A win</td></tr>
+          <tr class="small" role="row"><th scope="row" role="rowheader">p0ssess 1.0 build, a personal rule alone <small>300 tickets, Opus in charge</small></th><td role="cell" data-l="A run"><small>$</small>0.45 <small class="rng">0.29 to 0.56</small></td><td role="cell" data-l="Right">100%</td><td role="cell" data-l="Cheaper than Claude alone">1.6×</td><td role="cell" data-l="By the criterion">Passes, under the 2× bar</td></tr>
+          <tr class="win" role="row"><th scope="row" role="rowheader">p0ssess 1.0 build, a team rule alone <small>300 tickets, Opus in charge</small></th><td role="cell" data-l="A run"><small>$</small>0.36 <small class="rng">0.20 to 0.56</small></td><td role="cell" data-l="Right">100%</td><td role="cell" data-l="Cheaper than Claude alone">2.0×</td><td role="cell" data-l="By the criterion">A win</td></tr>
+      <!--/gen:arms-table-->
+    </tbody>
+  </table></div>
+
+  <div class="sec-head sub">
     <h3 id="why-h">Why most jobs didn’t pay</h3>
   </div>
   <div class="split">
     <div class="copy">
-      <p>Claude alone is already cheap and accurate on a small batch of text. Sixty tickets cost Claude Opus 5.5 about $0.24, which leaves little to save. And a hand-off has a cost of its own: Claude still pays for its session, for the Haiku relay and for a review of what comes back. On small batches that fixed cost ate the saving.</p>
+      <p>Claude alone is cheap and accurate on batches of text. Opus and Sonnet scored 99 to 100% on every text job, and sixty tickets cost Claude Opus 5.5 about $0.24, so there is little left to save. The hand-off also has a fixed cost that a small batch cannot carry: Claude still pays for its own session, for the Haiku relay and for a review of what comes back, and Opus reviews thoroughly.</p>
     </div>
     <div class="copy">
-      <p>On two jobs the cheaper model was simply worse. It lost accuracy on long contracts and on the strict normalizing of product listings. Routing voicemails was not a cost win either: Claude alone installed a local speech model and did about as well for about the same money.</p>
+      <p>The cheaper models lost accuracy on long, legalistic input and on strict normalizing: contract terms came out 96% right against 100%, and product listings 95% with Sonnet in charge. Sonnet reviews less than Opus, so it saved more when the other model was right and lost more when it was not. Audio was not a cost win either: Claude alone installed a local Whisper and did as well for the same money.</p>
     </div>
   </div>
 </div>
@@ -193,7 +218,17 @@
       <p>All four must hold, for at least three runs each way on the same data. The most expensive p0ssess run has to cost less for each correct item than the cheapest Claude run. Its average accuracy has to be within three points of Claude’s, and its worst run within five points of Claude’s worst. And every p0ssess run has to have actually delegated.</p>
       <p>A win goes in an ad only if it is also at least twice as cheap on average. Jobs that fail are reported here with their numbers.</p>
       <h3>The control: Claude’s own cheap model</h3>
-      <p>A skeptic’s first question is whether Claude Code’s own delegation does the same thing, since Claude Haiku 5.5 is cheap too. So on unit tests we ran a third setup: Claude alone, with one sentence added to the prompt telling it to hand the bulk of the work to a Haiku subagent and check what comes back. That cost $0.60 to $0.71 a run. The p0ssess runs cost $0.27 to $0.30, which is 2.2 times cheaper with no overlap, and every test file passed in both.</p>
+      <p>A skeptic’s first question is whether Claude Code’s own delegation does the same thing, since Claude Haiku 5.5 is cheap too. So on the jobs that won we ran a third setup: Claude alone, with one sentence added to the prompt telling it to hand the bulk of the work to a Haiku subagent and check what comes back.
+      <!--gen:control-->
+      On unit tests with Claude Opus 5.5 that cost $0.60 to $0.71 a run. The p0ssess runs cost $0.27 to $0.30, which is 2.2 times cheaper with no overlap, and every test file passed in both. On ticket triage the Haiku route saved nothing ($0.60 to $0.90 a run), and p0ssess was 2.3 times cheaper than it. With Claude Sonnet 5.5 in charge of the unit tests, its own Haiku subagent came within the spread of the p0ssess runs ($0.09 to $0.22 a run, with 97.8% of test files passing), so that result stands only against Sonnet doing the work itself.
+      <!--/gen:control-->
+      </p>
+      <h3>The rule alone, and a team rule</h3>
+      <p>The runs charted here used p0ssess 0.6.0, where the rule also had to be written out in Claude’s instructions. The build that ships as 1.0 has Claude hand matching work over from the rule alone, so we ran that too, with no line of instructions: once with a personal rule, and once with a real team rule, set by an owner on a server and synced to the member.
+      <!--gen:rule-alone-->
+      On unit tests the personal rule alone was 3.2 times cheaper than Claude alone ($0.28 to $0.48 a run), with every test file passing. The team rule alone failed there: in two of its three runs one module’s tests caught three of five planted bugs, 95.6% against 100%. On ticket triage the team rule alone was 2.0 times cheaper ($0.36 a run against $0.73) with every ticket right, and the personal rule alone 1.6 times, which passes the criterion and is under the 2× bar for an ad.
+      <!--/gen:rule-alone-->
+      </p>
       <h3>What changed along the way</h3>
       <p>Each change was written into the design when it was made, with its reason, and none changed a criterion after seeing the result it decides.</p>
       <p>Headless runs have nobody to answer a question, so when a session stopped to ask one, the harness answered “Yes, go ahead and finish”, at most twice, in every setup. Claude Code pays a fixed cost for each session whatever the work, so ticket triage was also run at a day’s volume of 300, and both sizes are reported.</p>

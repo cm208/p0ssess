@@ -81,8 +81,9 @@ main { flex: 1 0 auto; }
 .tasks > .keys { justify-content: flex-start; gap: 0.6rem 2.4rem; }
 .tasks > .keys li:last-child { text-align: left; }
 .tasks .runs { margin-top: 1.4rem; }
-.tbl tr.win th, .tbl tr.win td:last-child { color: var(--ink); }
 .method .copy { max-width: 38rem; }
+.tbl.arms { margin-top: 0; }
+.tbl.arms tbody th small { display: block; }
 .duel-t.under { margin-top: 1.6rem; }
 .foot-line { max-width: 44rem; margin-top: 2.4rem; font-size: 0.9rem; color: var(--ink-2); }
 
