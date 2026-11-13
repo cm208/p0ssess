@@ -63,6 +63,7 @@ Every benchmark figure on the pages:
 | Hero: Claude Opus 5.5 with its own Haiku subagent | mean $0.6362 a run, $0.60 to $0.71, 3 runs: $0.5985, $0.5956, $0.7147; 45 of 45 test files pass; mean 381 s | arm C, `unit-tests`, Opus |
 | Hero: with p0ssess, Opus in charge | mean $0.2842 a run, $0.27 to $0.30, 3 runs: $0.2763, $0.2739, $0.3024; 45 of 45 test files pass; mean 366 s | arm B, `unit-tests`, Opus |
 | Hero: Claude Sonnet 5.5 alone | mean $0.6968 a run, $0.60 to $0.86, 3 runs: $0.8650, $0.5973, $0.6280; 45 of 45 test files pass; mean 256 s | arm A, `unit-tests`, Sonnet |
+| Hero: Claude Sonnet 5.5 with its own Haiku subagent | mean $0.1565 a run, $0.09 to $0.22, 3 runs: $0.0947, $0.2243, $0.1504; 44 of 45 test files pass; mean 247 s | arm C, `unit-tests`, Sonnet |
 | Hero: with p0ssess, Sonnet in charge | mean $0.0961 a run, $0.09 to $0.10, 3 runs: $0.0969, $0.0911, $0.1004; 45 of 45 test files pass; mean 196 s | arm B, `unit-tests`, Sonnet |
 | Hero, "cheaper": against Opus with its Haiku, Opus alone, Sonnet alone | 2.24, 4.45 and 7.25 times | mean cost per correct item of the Claude setup over p0ssess's, same lead model |
 | The hero's positions (`--p-opus` and the rest, in `style.css`) | --p-opus: 18.95; --p-sonnet: 6.41; --a-opus: 84.29; --c-opus: 42.42; --a-sonnet: 46.45; | each setup's mean as a share of the axis, $0 to $1.50 |

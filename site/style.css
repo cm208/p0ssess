@@ -210,13 +210,13 @@ html.hero-go .hero { transition: --at 1.5s var(--io), --to 1.5s var(--io); }
 }
 .hero > .wrap > * { position: relative; z-index: 1; }
 .hero h1 { max-width: 30ch; font-size: clamp(2.1rem, 5vw, 4.5rem); line-height: 1.02; letter-spacing: -0.04em; }
-.hero-cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2.2rem; margin-top: clamp(1.3rem, 2.6vw, 2.2rem); }
+.hero-cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2.2rem; margin-top: clamp(1.2rem, 2vw, 1.6rem); }
 .lede { max-width: 36rem; font-size: 1.12rem; line-height: 1.55; }
 .cta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem 0.9rem; margin-top: 1.6rem; }
 .terms { margin-top: 1rem; font-size: 0.9rem; color: var(--ink-2); }
 
 /* The rule, the switch that turns it on, and what one run of the job then costs. */
-.meter { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 1.1rem; scroll-margin-top: 90px; }
+.meter { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 0.9rem; scroll-margin-top: 90px; }
 .meter-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 1rem 1.4rem; }
 .meter-ctl { display: grid; justify-items: start; gap: 0.75rem; min-width: 0; }
 /* A three-way switch: the same island, with the pill sliding a third at a time. */
@@ -225,7 +225,7 @@ html.hero-go .hero { transition: --at 1.5s var(--io), --to 1.5s var(--io); }
 .mode.tri .mode-thumb { width: calc((100% - 8px) / 3); }
 .mode.tri:has(label:nth-of-type(3) :checked) .mode-thumb { translate: 200% 0; }
 .mode.tri label { padding: 0 1.1rem; }
-.mode-say { max-width: 23rem; min-height: 6em; align-self: start; font-size: 0.95rem; line-height: 1.5; }
+.mode-say { max-width: 24rem; min-height: 7.5em; align-self: start; font-size: 0.95rem; line-height: 1.5; }
 .now { display: grid; grid-template-columns: auto auto; justify-content: end; align-items: baseline; column-gap: 0.5rem; white-space: nowrap; }
 /* What the same run cost before the rule, struck through beside what it costs now. */
 .now .old { grid-column: 1 / -1; justify-self: end; margin-bottom: 0.5rem; font: 400 clamp(1.3rem, 2.2vw, 1.7rem)/1 var(--mono); letter-spacing: -0.03em; color: var(--ink-2); text-decoration: line-through 2px var(--violet); }
@@ -241,7 +241,7 @@ html.hero-go .hero { transition: --at 1.5s var(--io), --to 1.5s var(--io); }
 /* A line of dollars. Every run is one mark: a violet square with p0ssess, a gray circle for
    Claude alone, one row a run so marks that land on the same cent stay apart. The band behind
    each group is its range. Percentages are positions on the axis, which starts at zero. */
-.dline { margin-top: clamp(1.8rem, 3.4vw, 2.6rem); }
+.dline { margin-top: clamp(1.4rem, 2.2vw, 1.8rem); }
 .keys { display: flex; justify-content: space-between; gap: 0.6rem 1.4rem; list-style: none; margin: 0 0 12px; padding: 0; font: 400 0.8rem/1.4 var(--mono); color: var(--ink-2); }
 .keys li { min-width: 0; }
 .keys li:last-child { text-align: right; }
@@ -266,9 +266,9 @@ html.hero-go .hero { transition: --at 1.5s var(--io), --to 1.5s var(--io); }
 /* The hero's lanes: one setup a lane, its name and range beside its runs. The lanes of the view
    in hand are lit and the others step back. */
 .lanes-box { position: relative; }
-.lanes { position: relative; z-index: 1; list-style: none; margin: 0; padding: 0; display: grid; row-gap: 6px; }
+.lanes { position: relative; z-index: 1; list-style: none; margin: 0; padding: 0; display: grid; row-gap: 3px; }
 .lane { display: grid; grid-template-columns: minmax(0, 1fr); row-gap: 3px; }
-.lane.gap { margin-top: 10px; }
+.lane.gap { margin-top: 8px; }
 .lane-name { display: flex; align-items: baseline; justify-content: space-between; gap: 0.2rem 1rem; font: 400 0.8rem/1.35 var(--mono); color: var(--ink-2); }
 .lane-name i { display: inline-block; width: 10px; height: 10px; margin-right: 0.5rem; border-radius: 2px; background: var(--violet); }
 .lane-name.k-alone i { border-radius: 50%; background: var(--ink-2); }
@@ -276,12 +276,13 @@ html.hero-go .hero { transition: --at 1.5s var(--io), --to 1.5s var(--io); }
 .lane-name b { font-weight: 400; transition: color 0.3s var(--out); }
 .lane-name > span:last-child { white-space: nowrap; }
 .lane .plot { transition: opacity 0.4s var(--out); }
-.hero:has(#vs-haiku:checked) :is(.l-a-opus, .l-a-sonnet, .l-p-sonnet) .plot,
-.hero:has(#vs-opus:checked) :is(.l-c-opus, .l-a-sonnet, .l-p-sonnet) .plot,
+.hero:has(#vs-haiku:checked) :is(.l-a-opus, .l-a-sonnet, .l-c-sonnet, .l-p-sonnet) .plot,
+.hero:has(#vs-opus:checked) :is(.l-c-opus, .l-a-sonnet, .l-c-sonnet, .l-p-sonnet) .plot,
 .hero:has(#vs-sonnet:checked) :is(.l-a-opus, .l-c-opus, .l-p-opus) .plot { opacity: 0.42; }
+/* With Sonnet in charge its own Haiku is lit too: it came within p0ssess's spread, and the chart says so. */
 .hero:has(#vs-haiku:checked) :is(.l-c-opus, .l-p-opus) b,
 .hero:has(#vs-opus:checked) :is(.l-a-opus, .l-p-opus) b,
-.hero:has(#vs-sonnet:checked) :is(.l-a-sonnet, .l-p-sonnet) b { color: var(--ink); }
+.hero:has(#vs-sonnet:checked) :is(.l-a-sonnet, .l-c-sonnet, .l-p-sonnet) b { color: var(--ink); }
 /* Under the lanes: the ghost on the axis at p0ssess's mean, and the distance from it to the mean
    of the Claude setup in view. Two hairlines carry both means up through the lanes. */
 .rail { position: relative; height: 66px; margin-left: var(--names); }
@@ -703,7 +704,7 @@ code.seg { display: inline-block; padding: 0.3rem 0.85rem; background: var(--sur
   .lede { font-size: 1.05rem; }
   .hero h1 { line-height: 1.06; }
   .meter-row { grid-template-columns: minmax(0, 1fr); }
-  .mode-say { max-width: none; min-height: 4.5em; }
+  .mode-say { max-width: none; min-height: 6em; }
   .mode.tri { width: 100%; }
   .lane-name { gap: 0.2rem 0.5rem; font-size: 0.72rem; }
   .lane-name i { margin-right: 0.35rem; }
