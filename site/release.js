@@ -1,4 +1,4 @@
-// Where p0ssess is published. This is the one place the page reads addresses from.
+// Where p0ssess is published. This is the one place the pages read addresses from.
 // While `repo` or `version` is empty, every download control stays disabled
 // and no outside link is shown. See README.md, "Going live".
 window.P0SSESS = {
@@ -17,5 +17,15 @@ window.P0SSESS = {
     "p0ssess-linux-arm64": "",
     "p0ssess-darwin-arm64": "",
     "p0ssess-windows-amd64.exe": "",
+  },
+  // What is for sale, read by the pricing page (pages.js). See README.md, "Pricing, business and policy pages".
+  offer: {
+    // The cloud API base, without a trailing slash: "https://cloud.p0ssess.me". "" until the server is
+    // hosted; while empty the buy buttons read "Opening soon" and the sign-up form stays off.
+    // The pricing page's Content-Security-Policy names this address in connect-src: change both together.
+    api: "",
+    // Prices in US cents, shown only while the API cannot be reached. null = not decided yet: the page
+    // shows a marked placeholder, never a number.
+    prices: { pro_month: null, pro_year: null, team_seat_month: null },
   },
 };
