@@ -24,7 +24,7 @@ func (e *Engine) SetOffline(failed bool) {
 	paths.WriteFileAtomic(p, nil, 0o600)
 }
 
-// RefreshTable asks the engine service for a newer route table now and says what happened in one line.
+// RefreshTable asks the engine service for a newer route table at once and says what happened in one line.
 func (e *Engine) RefreshTable(ctx context.Context) (string, error) {
 	if e.Remote == nil || e.Table == nil {
 		return "", errors.New("no engine client")
