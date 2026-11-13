@@ -38,6 +38,11 @@ func StartLink(ctx context.Context, d paths.Dirs, c *Client) (Link, error) {
 	if err != nil {
 		return Link{}, err
 	}
+	// The link is opened in a browser, so it must point at the service itself.
+	if !strings.HasPrefix(dc.VerificationURIComplete, c.Base+"/") ||
+		!(strings.HasPrefix(c.Base, "https://") || strings.HasPrefix(c.Base, "http://")) {
+		return Link{}, fmt.Errorf("the service sent a link outside %s", c.Base)
+	}
 	l := Link{DeviceCode: dc.DeviceCode, UserCode: dc.UserCode, URL: dc.VerificationURIComplete,
 		ExpiresAt: now().Add(time.Duration(dc.ExpiresIn) * time.Second), Interval: dc.Interval}
 	if l.Interval <= 0 {
