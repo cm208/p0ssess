@@ -64,7 +64,7 @@
 
   <div class="hero-cols">
     <div class="pitch">
-      <p class="lede">p0ssess is a Claude Code plugin. Tell it once which chores don’t need Claude’s rates, and Claude hands them to a cheaper model, checks what comes back and answers as usual. We measured it on unit tests against three ways of running Claude. It came out between 2.2 and 7.2 times cheaper, with every test file passing. The one setup that came close is on the chart too.</p>
+      <p class="lede">p0ssess is a Claude Code plugin. Tell it once which chores don’t need Claude’s rates, and Claude hands them to a cheaper model, checks what comes back and answers you as usual. We set it against three ways of running Claude on a unit-test job, and it came out between 2.2 and 7.2 times cheaper, with every test file passing. With Sonnet in charge, Claude’s own Haiku subagent came close, and it’s on the chart too.</p>
       <p class="cta"><a class="btn" href="pricing/#pro">Get Pro, $4 a month</a><a class="btn quiet" href="pricing/#team">Get Team, $8 a seat</a></p>
       <p class="terms">The plugin itself is free and open source. <a href="#try">Install it</a> with your own OpenRouter key.</p>
     </div>
@@ -122,7 +122,7 @@
       </div>
       <div class="guides" aria-hidden="true"><i class="drop at"></i><i class="drop to"></i></div>
     </div>
-    <figcaption class="note" id="dline-cap">Every run of one job, on a line of dollars that starts at zero. The job: write unit tests for 15 small Python modules, three runs for each setup. A test file passes when it runs clean and catches at least four of five bugs planted in its module. All 15 passed in every run with p0ssess and in every run of Claude alone, and with Opus in charge a run took about as long either way. The rule was a personal rule in p0ssess 0.6.0, with one line saying the same in Claude’s standing instructions.
+    <figcaption class="note" id="dline-cap">Each mark is one run of the same job, on a line of dollars that starts at zero. The job was to write unit tests for 15 small Python modules, and each setup ran it three times. A test file passes when it runs clean and catches at least four of five bugs planted in its module. All 15 passed in every run with p0ssess and in every run of Claude alone, and with Opus in charge a run took about as long either way. The rule was a personal rule in p0ssess 0.6.0, with one line saying the same in Claude’s standing instructions.
       <!--gen:hero-rule-alone-->
       In the 1.0 build the rule works alone, with no such line: $0.28 to $0.48 a run, 3.2 times cheaper than Claude Opus 5.5 alone, with every test file passing.
       <!--/gen:hero-rule-alone-->
@@ -164,8 +164,8 @@
 <section class="sec" id="proof" aria-labelledby="proof-h">
 <div class="wrap">
   <div class="sec-head">
-    <h2 id="proof-h">The bar, and a second job</h2>
-    <p>We wrote down what would count before the first run. p0ssess wins a comparison only if its most expensive run costs less than Claude’s cheapest, with accuracy within three points, over at least three runs each way. To appear in an ad it also has to be at least twice as cheap. Unit tests cleared that bar, and so did a second job, this time by a team rule alone.</p>
+    <h2 id="proof-h">A second job cleared the bar</h2>
+    <p>We wrote down what would count before the first run. p0ssess wins a comparison only if its most expensive run costs less than Claude’s cheapest, with accuracy within three points, over at least three runs each way. A win we advertise also has to be at least twice as cheap. Unit tests cleared that bar. So did ticket triage, with nothing but a team rule in place.</p>
   </div>
 
   <ol class="proof">
@@ -173,7 +173,7 @@
       <li class="prow hl">
       <div>
         <h3>Triaging support tickets</h3>
-        <p>Three hundred tickets a run, each sorted by category, priority, order and product against a written policy, with Claude Opus 5.5 in charge. All 300 came out right in every run shown.</p>
+        <p>Each run sorted 300 support tickets by category, priority, order and product against a written policy, with Claude Opus 5.5 in charge. Every ticket came out right in every run shown.</p>
         <p>With nothing but a team rule, a run cost $0.36 instead of $0.73. With the rule also written out in Claude’s instructions it cost $0.33: 2.2 times cheaper than Claude alone, and 2.3 times cheaper than Claude with its own Haiku subagent, which saved nothing here.</p>
       </div>
       <figure class="land" aria-label="Ticket triage, cost of each run. Claude Opus 5.5 alone: $0.64 to $0.90. Claude Opus 5.5 with its Haiku subagent: $0.60 to $0.90. With p0ssess, the rule in words: $0.24 to $0.39. With a team rule alone: $0.20 to $0.56.">
@@ -194,7 +194,7 @@
       <!--gen:proof-caveat-->
       The 300 tickets and their triage policy were built for the benchmark, three runs for each setup, and deepseek-v4.1-flash did the delegated work. With p0ssess the job was about four times slower: 1.5 seconds a ticket against 0.4. At 60 tickets the hand-off cost as much as the work and there was no saving.
       <!--/gen:proof-caveat-->
-      That was true of most of what we tested. Of nineteen pairings of a job with a model in charge, fifteen failed our bar and one passed by less than twice. They are all on the method page with their numbers.</p>
+      Most of what we tested went the same way. Of nineteen pairings of a job with a model in charge, fifteen failed our bar and one passed at less than twice as cheap. The method page lists every one with its numbers.</p>
   <p class="next"><a class="btn quiet" href="business/#method">Read the method</a><a class="more" href="business/#results">See every job we tested</a></p>
 </div>
 </section>
@@ -209,8 +209,8 @@
   <figure class="relay" aria-labelledby="relay-cap" data-jobs='[["deepseek-v4.1-flash","Wrote tests for 15 modules for $0.0291.","deepseek-v4.1-flash-1017, $0.0291"],["deepseek-v4.1-flash","Triaged 300 support tickets for $0.0781.","deepseek-v4.1-flash-1017, $0.0781"],["qwen3.8-omni-flash","Watched a ten-minute film for $0.0162.","qwen3.8-omni-flash, $0.0162"],["recraft-v4.1-flash","Drew a 1024-pixel image for $0.0070.","recraft-v4.1-flash, $0.0070"]]'>
     <figcaption class="sr-only" id="relay-cap">How a hand-off travels: Claude asks, a possessed Haiku subagent drives another model, and the answer comes back with the model and its price. On measured calls, deepseek-v4.1-flash wrote tests for 15 modules for $0.0291 and triaged 300 support tickets for $0.0781, qwen3.8-omni-flash watched a ten-minute film for $0.0162 and recraft-v4.1-flash drew a 1024-pixel image for $0.0070.</figcaption>
     <ol class="hops">
-      <li class="hop claude"><div class="at"><span class="pill"><span class="pip"></span>Claude</span><span class="after" aria-hidden="true"><span class="g rider"><img src="ghost.svg" alt="" width="48" height="48"><i class="lid"></i></span><span class="back">(deepseek-v4.1-flash-1017, $0.0291)</span></span></div><span class="wire" aria-hidden="true"><i></i></span><p>Plans, reviews and answers. It starts one subagent and reads only what comes back.</p></li>
-      <li class="hop haiku"><div class="at"><span class="pill"><img class="seat" src="ghost.svg" alt="" width="32" height="32">Haiku</span></div><span class="wire" aria-hidden="true"><i></i></span><p>A background subagent, possessed. It makes the call and hands the answer back unchanged.</p></li>
+      <li class="hop claude"><div class="at"><span class="pill"><span class="pip"></span>Claude</span><span class="after" aria-hidden="true"><span class="g rider"><img src="ghost.svg" alt="" width="48" height="48"><i class="lid"></i></span><span class="back">(deepseek-v4.1-flash-1017, $0.0291)</span></span></div><span class="wire" aria-hidden="true"><i></i></span><p>Claude plans, reviews and answers. It starts one subagent and reads only what comes back.</p></li>
+      <li class="hop haiku"><div class="at"><span class="pill"><img class="seat" src="ghost.svg" alt="" width="32" height="32">Haiku</span></div><span class="wire" aria-hidden="true"><i></i></span><p>A possessed subagent runs in the background. It makes the call and hands the answer back unchanged.</p></li>
       <li class="hop model"><div class="at"><span class="pill"><span class="swap"><span class="idle">a cheaper model</span><span class="live name" aria-hidden="true">deepseek-v4.1-flash</span></span></span></div><p class="swap"><span class="idle">Does the one job your rule names.</span><span class="live job" aria-hidden="true">Wrote tests for 15 modules for $0.0291.</span></p></li>
     </ol>
     <button class="replay" type="button" aria-label="Replay the hand-off" hidden>Replay</button>
@@ -243,7 +243,7 @@
     <h2 id="team-h">Set the rule once for the whole team</h2>
     <p>
       <!--gen:team-proof-->
-      On Team, an owner writes the rule and every seat gets it. We measured that with nothing else in play, no instructions on anyone’s machine: a team rule that always sends ticket triage to deepseek-v4.1-flash. Triaging a day’s 300 support tickets cost $0.36 instead of $0.73 with Claude Opus 5.5 in charge, and every ticket came out right.
+      On Team, an owner writes the rule and every seat gets it. We measured it with nothing else in play and no instructions on anyone’s machine, using a team rule that always sends ticket triage to deepseek-v4.1-flash. Triaging a day’s 300 support tickets cost $0.36 instead of $0.73 with Claude Opus 5.5 in charge, and every ticket came out right.
       <!--/gen:team-proof-->
     </p>
   </div>
@@ -280,7 +280,7 @@
 <div class="wrap">
   <div class="sec-head">
     <h2 id="senses-h">It also does what Claude can’t</h2>
-    <p>Claude can’t watch a video, hear a recording or make an image. It has a workaround for each: it pulls still frames, installs a local speech model, draws SVG. p0ssess sends the actual file to a model that can take it, through the same hand-off.</p>
+    <p>Claude can’t watch a video, hear a recording or make an image. It works around each one by pulling still frames, installing a local speech model or drawing SVG. p0ssess sends the actual file to a model that can take it, through the same hand-off.</p>
   </div>
   <div class="duels">
 
@@ -346,12 +346,12 @@
 <div class="wrap">
   <div class="sec-head">
     <h2 id="limits-h">You set the limits</h2>
-    <p>Routing work to other models only saves money if it can’t run away with it. The limits are yours, and the tools that spend are the ones that enforce them.</p>
+    <p>Sending work to other models only saves money if the spending can’t run away. You set the limits, and the tools that spend the money enforce them.</p>
   </div>
   <div class="grid two">
     <div class="cell hl">
       <h3>A budget it can’t overspend</h3>
-      <p>You set a monthly cap and a per-task limit. Under the limit a job just runs. Above it, Claude asks first, in one line with the cost. A quiet segment in your status line keeps the running total in view.</p>
+      <p>You set a monthly cap and a per-task limit. Under the limit a job just runs. Over it, Claude asks first in one line that names the cost. Your status line shows the running total.</p>
       <p><code class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  $0.14 today</code></p>
     </div>
     <div class="cell hl">
@@ -376,7 +376,7 @@
 <div class="wrap">
   <div class="sec-head">
     <h2 id="pricing-h">Free, $4 a month, or $8 a seat</h2>
-    <p>The routing that produced the numbers on this page is in the free plugin. Pro makes the same hand-off work on any laptop and measures what it saved you. Team puts one set of rules and one budget across every seat.</p>
+    <p>The routing behind every number on this page is in the free plugin. Pro runs coding hand-offs on a Mac or Windows laptop too, and measures what they saved you. Team puts one set of rules and one budget across every seat.</p>
   </div>
   <div class="tiers">
     <article class="tier hl" aria-labelledby="free-h">
@@ -406,7 +406,7 @@
 <div class="wrap">
   <div class="sec-head">
     <h2 id="try-h">Install the free plugin</h2>
-    <p>Two commands and an OpenRouter key. Releases are served from the project’s own repository, next to the source, so you can see exactly what you run.</p>
+    <p>You need two commands and an OpenRouter key. Releases are served from the project’s own repository, next to the source, so you can see exactly what you run.</p>
   </div>
   <div class="get-cols">
     <div class="get-col">

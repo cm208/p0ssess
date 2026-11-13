@@ -47,7 +47,7 @@
 <section class="page-head" aria-labelledby="page-h">
 <div class="wrap">
   <h1 id="page-h">The cost case, with every run shown.</h1>
-  <p class="lede">If you pay for Claude at work, some of what you pay Claude’s rates for is repetitive: writing tests, sorting tickets. p0ssess sends that work to a cheaper model under a rule you set, while Claude stays in charge and checks the result. This page has the measurements, the method, and the jobs where it didn’t pay.</p>
+  <p class="lede">If you pay for Claude at work, part of that bill goes to repetitive jobs like writing tests and sorting tickets. p0ssess sends that work to a cheaper model under a rule you set, and Claude stays in charge and checks the result. Below are our measurements, how we took them and the jobs where it didn’t pay.</p>
   <p class="cta"><a class="btn" href="../pricing/#team">Get Team, $8 a seat</a><a class="btn quiet" href="#method">Read the method</a></p>
 </div>
 </section>
@@ -185,7 +185,7 @@
       <p>Claude alone is cheap and accurate on batches of text. Opus and Sonnet scored 99 to 100% on every text job, and sixty tickets cost Claude Opus 5.5 about $0.24, so there is little left to save. The hand-off also has a fixed cost that a small batch cannot carry: Claude still pays for its own session, for the Haiku relay and for a review of what comes back, and Opus reviews thoroughly.</p>
     </div>
     <div class="copy">
-      <p>The cheaper models lost accuracy on long, legalistic input and on strict normalizing: contract terms came out 96% right against 100%, and product listings 95% with Sonnet in charge. Sonnet reviews less than Opus, so it saved more when the other model was right and lost more when it was not. Audio was not a cost win either: Claude alone installed a local Whisper and did as well for the same money.</p>
+      <p>The cheaper models lost accuracy on long, legalistic input and on strict normalizing: contract terms came out 96% right against 100%, and product listings 95% with Sonnet in charge. Sonnet reviews less than Opus, so it saved more when the other model was right and lost more when it was not. Audio wasn’t a cost win either. Claude alone installed a local Whisper, and with p0ssess the cost was the same on Opus and the accuracy lower on Sonnet.</p>
     </div>
   </div>
 </div>
@@ -218,7 +218,7 @@
       <p>All four must hold, for at least three runs each way on the same data. The most expensive p0ssess run has to cost less for each correct item than the cheapest Claude run. Its average accuracy has to be within three points of Claude’s, and its worst run within five points of Claude’s worst. And every p0ssess run has to have actually delegated.</p>
       <p>A win goes in an ad only if it is also at least twice as cheap on average. Jobs that fail are reported here with their numbers.</p>
       <h3>The control: Claude’s own cheap model</h3>
-      <p>A skeptic’s first question is whether Claude Code’s own delegation does the same thing, since Claude Haiku 5.5 is cheap too. So on the jobs that won we ran a third setup: Claude alone, with one sentence added to the prompt telling it to hand the bulk of the work to a Haiku subagent and check what comes back.
+      <p>Claude Haiku 5.5 is cheap too, so the obvious question is whether Claude Code’s own delegation does the same thing. On the jobs that won we ran a third setup to find out: Claude alone, with one sentence added to the prompt telling it to hand the bulk of the work to a Haiku subagent and check what comes back.
       <!--gen:control-->
       On unit tests with Claude Opus 5.5 that cost $0.60 to $0.71 a run. The p0ssess runs cost $0.27 to $0.30, which is 2.2 times cheaper with no overlap, and every test file passed in both. On ticket triage the Haiku route saved nothing ($0.60 to $0.90 a run), and p0ssess was 2.3 times cheaper than it. With Claude Sonnet 5.5 in charge of the unit tests, its own Haiku subagent came within the spread of the p0ssess runs ($0.09 to $0.22 a run, with 97.8% of test files passing), so that result stands only against Sonnet doing the work itself.
       <!--/gen:control-->
@@ -234,7 +234,7 @@
       <p>Headless runs have nobody to answer a question, so when a session stopped to ask one, the harness answered “Yes, go ahead and finish”, at most twice, in every setup. Claude Code pays a fixed cost for each session whatever the work, so ticket triage was also run at a day’s volume of 300, and both sizes are reported.</p>
       <p>Voicemail routing was added as a ninth job after the first runs. Its first runs were thrown out and repeated, because a bug in the harness had kept Claude alone from installing a speech model. Runs on Gemini were priced again from their token counts at the highest list price for the model, because the first cost figures for them were too low. The raw transcripts of the earliest runs were lost to another harness bug. Their costs and grades had been recorded before that. Six runs were in progress when the benchmark machine put itself to sleep. Their times and costs meant nothing after that, so they were thrown out and run again.</p>
       <h3>What we don’t claim</h3>
-      <p>We don’t claim anything about translation quality, since that job grades rule-following only. We don’t claim anything about subscription plans, since Claude is priced at API list price. And we don’t claim these numbers are yours: the datasets are constructed, and your work will differ. That is what Pro’s savings report is for.</p>
+      <p>The translation job grades rule-following only, so these results say nothing about translation quality. Claude is priced at API list price, so they say nothing about subscription plans either. The datasets are constructed, and your own work will give different numbers. Pro’s savings report measures them for you.</p>
     </div>
   </div>
 </div>
@@ -310,7 +310,7 @@
 <div class="wrap">
   <div class="sec-head">
     <h2 id="own-h">Then measure your own work</h2>
-    <p>The runs above are ours, on data we built. With Pro you measure your own work the same way and get a report you can forward.</p>
+    <p>The runs above are ours, on data we built. Pro measures your own work the same way and gives you a report you can forward.</p>
   </div>
   <div class="split">
     <div class="copy">
