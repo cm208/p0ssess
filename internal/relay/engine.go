@@ -206,6 +206,9 @@ func (e *Engine) Run(ctx context.Context, req RunRequest, progress func(float64,
 	if err := j.Keep(end.Add(e.idle()), end); err != nil {
 		return nil, fmt.Errorf("jail: %w", err)
 	}
+	if err := j.StartRun(grant.CapUSD, rec.Model); err != nil {
+		return nil, err
+	}
 	rec.Grant = grant
 	w, err := e.prompt(ctx, c, rec, req.Task, files, &sent)
 	if err != nil {
@@ -224,6 +227,9 @@ func (e *Engine) Run(ctx context.Context, req RunRequest, progress func(float64,
 	}
 	if res != nil && req.Session == "" && j.StartupS > 0 {
 		res.JailStartS = j.StartupS
+	}
+	if res != nil && req.Session == "" && j.Cloud {
+		res.Note = strings.TrimSpace(res.Note + " " + cloudNote(j))
 	}
 	return res, err
 }
@@ -277,7 +283,7 @@ func (e *Engine) startSession(ctx context.Context, rec *SessionRecord, req RunRe
 	}
 	c, err := j.Client()
 	if err == nil {
-		err = e.createSession(ctx, c, rec, req)
+		err = e.createSession(ctx, c, rec, req, j.RemotePath(rec.Location))
 	}
 	if err != nil {
 		j.Remove(context.Background())
@@ -519,11 +525,11 @@ func (e *Engine) newRecord(cwd string, req RunRequest) (*SessionRecord, error) {
 	return rec, nil
 }
 
-func (e *Engine) createSession(ctx context.Context, c *opencode.Client, rec *SessionRecord, req RunRequest) error {
+func (e *Engine) createSession(ctx context.Context, c *opencode.Client, rec *SessionRecord, req RunRequest, dir string) error {
 	m, _ := ParseModel(req.Model)
 	s, err := c.CreateSession(ctx, opencode.CreateSession{
 		Model:       &m,
-		Location:    &opencode.Location{Directory: rec.Location},
+		Location:    &opencode.Location{Directory: dir},
 		Metadata:    map[string]any{"p0ssess": e.version, "mode": rec.Mode, "kind": rec.Kind},
 		Permissions: Rules(rec.Mode, rec.ShellInternet),
 	})

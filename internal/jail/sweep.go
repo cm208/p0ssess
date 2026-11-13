@@ -120,6 +120,9 @@ func Sweep(ctx context.Context, log io.Writer) ([]string, error) {
 		if err == nil && j.Owner.Alive() && now.Sub(j.Created) < orphanAge {
 			continue // still being created
 		}
+		if err == nil && j.Cloud && j.Owner.Alive() {
+			continue // a cloud session has no pod; its owner removes it
+		}
 		if err != nil {
 			if st, serr := os.Stat(jailDir(e.Name())); serr == nil && now.Sub(st.ModTime()) < orphanAge {
 				continue

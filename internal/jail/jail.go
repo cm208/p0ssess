@@ -76,6 +76,12 @@ type Jail struct {
 	Detached  bool      `json:"detached,omitempty"`
 	KeepUntil time.Time `json:"keep_until"`
 	StartupS  float64   `json:"startup_s,omitempty"`
+	// Cloud jails run on a cloud sandbox host (cloud.go). LocalRoot is the tree that was uploaded and
+	// RemoteDir where the host shows it; UploadNote lists what the upload left out.
+	Cloud      bool   `json:"cloud,omitempty"`
+	LocalRoot  string `json:"local_root,omitempty"`
+	RemoteDir  string `json:"remote_dir,omitempty"`
+	UploadNote string `json:"upload_note,omitempty"`
 }
 
 // Dir is where jail records live.
@@ -417,6 +423,9 @@ func binary() (string, error) {
 // written before the pod exists, so a sweep in another process never takes a jail being built for an
 // orphan.
 func Start(ctx context.Context, spec Spec, cfg config.Config, log io.Writer) (*Jail, error) {
+	if UseCloud(cfg) {
+		return startCloud(ctx, spec, cfg, log)
+	}
 	t0 := time.Now()
 	repo, err := Canonical(spec.Repo)
 	if err != nil {
@@ -614,6 +623,9 @@ func (j *Jail) waitReady(ctx context.Context, d time.Duration) error {
 // LogTail is the end of the OpenCode server's log, on one line, for an error the server answered without a
 // body. The server's password and anything shaped like an OpenRouter key are masked.
 func (j *Jail) LogTail(ctx context.Context) string {
+	if j.Cloud {
+		return ""
+	}
 	cctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	out, _ := exec.CommandContext(cctx, "podman", "logs", "--tail", "15", j.Name+"-server").CombinedOutput()
@@ -646,6 +658,9 @@ func (j *Jail) Containers() []string {
 
 // Verify checks that the pod and its containers run and the egress filter is in place.
 func (j *Jail) Verify(ctx context.Context) error {
+	if j.Cloud {
+		return j.verifyCloud(ctx)
+	}
 	out, err := podman(ctx, nil, nil, append([]string{"inspect", "-f", "{{.Name}} {{.State.Status}}"}, j.Containers()...)...)
 	if err != nil {
 		return err
@@ -670,6 +685,9 @@ func (j *Jail) Verify(ctx context.Context) error {
 
 // Remove deletes the pod, its containers and the jail's record, password and sockets.
 func (j *Jail) Remove(ctx context.Context) error {
+	if j.Cloud {
+		return j.removeCloud(ctx)
+	}
 	_, err := podman(ctx, nil, nil, "pod", "rm", "-f", "-t", "0", "--ignore", j.Name)
 	if rerr := os.RemoveAll(jailDir(j.Name)); err == nil {
 		err = rerr
@@ -685,6 +703,9 @@ type Status struct {
 }
 
 func (j *Jail) Status(ctx context.Context) Status {
+	if j.Cloud {
+		return j.cloudStatus(ctx)
+	}
 	s := Status{Jail: j}
 	out, err := podman(ctx, nil, nil, "pod", "inspect", "-f", "{{.State}}", j.Name)
 	if err != nil {
