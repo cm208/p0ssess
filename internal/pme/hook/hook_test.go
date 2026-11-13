@@ -34,6 +34,7 @@ func TestHints(t *testing.T) {
 		{"what's said in https://www.youtube.com/watch?v=abc", "download the link first"},
 		{"transcribe interview.m4a", "audio-transcribe"},
 		{"listen to this and tell me the mood: ~/memo.ogg", "audio-tone"},
+		{"transcribe the scanner traffic in radio.mp3", "audio-transcribe-noisy for noisy or hard audio such as radio, phone or field recordings"},
 		{"generate an image of a lighthouse for the README", "image-generate"},
 		{"make a picture of a ghost holding a lantern", "Present the file"},
 		{"translate every string in locales/en.json", "bulk one-shot"},

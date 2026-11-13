@@ -69,7 +69,7 @@ func hint(in Input, d paths.Dirs, now time.Time, ready bool) string {
 		return media("the user wants a video watched; Claude cannot watch video.", how, "media")
 	case audioRe.MatchString(p) || audioAskRe.MatchString(p):
 		return media("the user wants audio heard; Claude cannot hear audio.",
-			` and the audio's absolute path (use case audio-transcribe; audio-tone for delivery, audio-events for sounds)`, "media")
+			` and the audio's absolute path (use case audio-transcribe; audio-transcribe-noisy for noisy or hard audio such as radio, phone or field recordings; audio-tone for delivery, audio-events for sounds)`, "media")
 	case genRe.MatchString(p):
 		return media("if the user wants an image made, Claude cannot draw one.",
 			` (use case image-generate; image-edit with a reference image's path). Present the file it returns and print its absolute path`, "generate")
