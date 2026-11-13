@@ -41,7 +41,7 @@ const srv = http.createServer((req, res) => {
 // The hero (its line of dollars), then each section.
 const ids = ["top", "savings", "proof", "how", "team", "senses", "limits", "pricing", "try", "end"];
 const sizes = [["desk", { width: 1440, height: 900 }], ["phone", { width: 390, height: 844 }]];
-// Moments of the hero's ride, in ms after the line of dollars is on screen: rule off, part-way, rule on.
+// Moments of the hero's ride, in ms after the line of dollars is on screen: at Claude, part-way, at p0ssess.
 const sweepAt = [600, 1700, 3400];
 const log = [];
 
@@ -133,7 +133,7 @@ srv.listen(0, "127.0.0.1", async () => {
       if (!want("hero")) continue;
       const { ctx, pg } = await open(viewport, "no-preference", "live-" + name);
       // The ride starts once the line of dollars is on screen; on a phone that takes a scroll.
-      if (name === "phone") await scrollTo(pg, ".dline .plot-box", "center");
+      if (name === "phone") await scrollTo(pg, ".lanes-box", "center");
       const t0 = Date.now();
       for (const [i, at] of sweepAt.entries()) {
         const wait = at - (Date.now() - t0);
@@ -242,10 +242,10 @@ srv.listen(0, "127.0.0.1", async () => {
     await pg.waitForTimeout(500);
     // The share image is the promise, the rule and the line of dollars. The paragraph, the page's
     // links and the small print are left out, so the line fits and nothing is cut mid-line.
-    // The page is drawn at four fifths, as on a 1500 px screen, so the whole line is in the frame.
+    // The page is drawn at three quarters, as on a 1600 px screen, so the whole chart is in the frame.
     await pg.evaluate(() => {
       document.querySelectorAll(".topnav, .lede, .terms, .dline .note, .dline .runs").forEach((el) => { el.style.display = "none"; });
-      document.documentElement.style.zoom = "0.8";
+      document.documentElement.style.zoom = "0.75";
     });
     await pg.waitForTimeout(300);
     await pg.screenshot({ path: path.resolve(og) });

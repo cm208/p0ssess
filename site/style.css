@@ -171,10 +171,11 @@ p { text-wrap: pretty; }
 .mode:has(label:nth-of-type(2) :checked) .mode-thumb { translate: 100% 0; }
 
 
-/* Where the ghost stands on the hero's dollar line, as a percentage of its length. --on is the
-   mean run with the rule on, --off the mean run with Claude alone; --at is the one in view.
-   Registered so the ride between them can be transitioned. */
+/* The hero's line of dollars. --at is where the ghost stands and --to is where the Claude setup
+   it is compared with stands, both as a percentage of the axis. They are registered, so the ride
+   between two views can be transitioned. */
 @property --at { syntax: "<number>"; inherits: true; initial-value: 18.95; }
+@property --to { syntax: "<number>"; inherits: true; initial-value: 42.41; }
 
 .btn.quiet { background: var(--surface); border: 1px solid var(--line); transition: scale 0.35s var(--spring), background 0.2s var(--out), border-color 0.2s var(--out); }
 .btn.quiet:hover { background: var(--violet-deep); border-color: var(--violet); }
@@ -187,20 +188,28 @@ p { text-wrap: pretty; }
 /* The hero is the page's claim and its proof on one sheet: the headline, the rule, and every
    measured run of one job on a line of dollars that starts at zero. The line's gridlines run up
    behind the headline and fade, so the whole hero reads as the chart. */
-.hero { --on: 18.95; --off: 84.29; --at: var(--on); padding-block: clamp(1.4rem, 3.4vw, 2.8rem) clamp(2.6rem, 5vw, 4rem); }
-/* The ride between the two. With a script it waits for html.hero-go, so that setting the first state does not ride. */
-html.hero-go .hero { transition: --at 1.5s var(--io); }
-@media (scripting: none) { .hero { transition: --at 1.5s var(--io); } }
-.hero:has(#rule-off:checked) { --at: var(--off); }
-.hero:has(#rule-off:checked) .v-on:not(.old), .hero:not(:has(#rule-off:checked)) .v-off { display: none; }
-.hero:has(#rule-off:checked) .old { visibility: hidden; }
+.hero {
+  /* Each setup's mean run, as a percentage of the axis ($0 to $1.50). */
+  --p-opus: 18.95; --p-sonnet: 6.41; --a-opus: 84.29; --c-opus: 42.42; --a-sonnet: 46.45;
+  --on: var(--p-opus); --to: var(--c-opus); --at: var(--on);
+  --names: 0px;  /* the width of the lanes' names, where they sit beside the chart */
+  padding-block: clamp(1.4rem, 3.4vw, 2.8rem) clamp(2.6rem, 5vw, 4rem);
+}
+.hero:has(#vs-opus:checked) { --to: var(--a-opus); }
+.hero:has(#vs-sonnet:checked) { --on: var(--p-sonnet); --to: var(--a-sonnet); }
+/* Before its first ride the ghost waits where Claude stands. */
+.hero.pre { --at: var(--to); }
+/* The ride between views. With a script it waits for html.hero-go, so that setting the first state does not ride. */
+html.hero-go .hero { transition: --at 1.5s var(--io), --to 1.5s var(--io); }
+@media (scripting: none) { .hero { transition: --at 1.5s var(--io), --to 1.5s var(--io); } }
+.hero:not(:has(#vs-haiku:checked)) .v-haiku, .hero:not(:has(#vs-opus:checked)) .v-opus, .hero:not(:has(#vs-sonnet:checked)) .v-sonnet { display: none; }
 .hero > .wrap::before {
-  content: ""; position: absolute; z-index: 0; inset: 0 var(--gutter) 3.2rem; pointer-events: none;
+  content: ""; position: absolute; z-index: 0; inset: 0 var(--gutter) 3.2rem calc(var(--gutter) + var(--names)); pointer-events: none;
   background: repeating-linear-gradient(to right, #1b1b1b 0 1px, transparent 1px calc(100% / 6));
   -webkit-mask-image: linear-gradient(to bottom, transparent 4%, #000 78%); mask-image: linear-gradient(to bottom, transparent 4%, #000 78%);
 }
 .hero > .wrap > * { position: relative; z-index: 1; }
-.hero h1 { max-width: 24ch; font-size: clamp(2.15rem, 5.6vw, 5rem); line-height: 1.02; letter-spacing: -0.04em; }
+.hero h1 { max-width: 30ch; font-size: clamp(2.1rem, 5vw, 4.5rem); line-height: 1.02; letter-spacing: -0.04em; }
 .hero-cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2.2rem; margin-top: clamp(1.3rem, 2.6vw, 2.2rem); }
 .lede { max-width: 36rem; font-size: 1.12rem; line-height: 1.55; }
 .cta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem 0.9rem; margin-top: 1.6rem; }
@@ -210,14 +219,22 @@ html.hero-go .hero { transition: --at 1.5s var(--io); }
 .meter { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 1.1rem; scroll-margin-top: 90px; }
 .meter-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 1rem 1.4rem; }
 .meter-ctl { display: grid; justify-items: start; gap: 0.75rem; min-width: 0; }
-.mode-say { max-width: 21rem; min-height: 4.5em; font-size: 0.95rem; line-height: 1.5; }
+/* A three-way switch: the same island, with the pill sliding a third at a time. */
+.mode.tri { justify-self: start; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 1.6rem; }
+.mode.tri legend { position: absolute; left: 4px; bottom: calc(100% + 0.45rem); padding: 0; font: 400 0.8rem/1.3 var(--mono); color: var(--ink-2); white-space: nowrap; }
+.mode.tri .mode-thumb { width: calc((100% - 8px) / 3); }
+.mode.tri:has(label:nth-of-type(3) :checked) .mode-thumb { translate: 200% 0; }
+.mode.tri label { padding: 0 1.1rem; }
+.mode-say { max-width: 23rem; min-height: 6em; align-self: start; font-size: 0.95rem; line-height: 1.5; }
 .now { display: grid; grid-template-columns: auto auto; justify-content: end; align-items: baseline; column-gap: 0.5rem; white-space: nowrap; }
 /* What the same run cost before the rule, struck through beside what it costs now. */
 .now .old { grid-column: 1 / -1; justify-self: end; margin-bottom: 0.5rem; font: 400 clamp(1.3rem, 2.2vw, 1.7rem)/1 var(--mono); letter-spacing: -0.03em; color: var(--ink-2); text-decoration: line-through 2px var(--violet); }
 .now .old small { font-size: 0.7em; margin-right: 0.06em; }
+.now .old b { font-weight: 400; }
+.hero.pre .now .old { visibility: hidden; }
 /* The multiplication sign is set in the text face: the display face draws it small. */
 .x { font-family: var(--sans); font-weight: 400; }
-.now .num { font: 700 clamp(3.7rem, 6.6vw, 5.8rem)/0.86 var(--mono); letter-spacing: -0.04em; color: var(--ink); }
+.now .num { font: 700 clamp(3.4rem, 5.6vw, 5rem)/0.86 var(--mono); letter-spacing: -0.04em; color: var(--ink); }
 .now .num small { font-size: 0.5em; font-weight: 400; color: var(--ink-2); margin-right: 0.06em; }
 .now .per { font: 400 0.84rem/1.2 var(--mono); color: var(--ink-body); }
 
@@ -246,17 +263,44 @@ html.hero-go .hero { transition: --at 1.5s var(--io); }
 /* Claude with its own Haiku subagent: a ring, so it is told from Claude alone by shape as well. */
 .plot .pt.c { fill: var(--ground); stroke: var(--ink-2); stroke-width: 2.5px; paint-order: normal; }
 .plot .hit { fill: transparent; pointer-events: all; }
-/* The distance between the two means, drawn from the ghost to where Claude alone stands. */
-.span { position: absolute; top: 73px; left: calc(var(--at) * 1%); right: calc((100 - var(--off)) * 1%); height: 2px; background: var(--violet); border-radius: 1px; }
+/* The hero's lanes: one setup a lane, its name and range beside its runs. The lanes of the view
+   in hand are lit and the others step back. */
+.lanes-box { position: relative; }
+.lanes { position: relative; z-index: 1; list-style: none; margin: 0; padding: 0; display: grid; row-gap: 6px; }
+.lane { display: grid; grid-template-columns: minmax(0, 1fr); row-gap: 3px; }
+.lane.gap { margin-top: 10px; }
+.lane-name { display: flex; align-items: baseline; justify-content: space-between; gap: 0.2rem 1rem; font: 400 0.8rem/1.35 var(--mono); color: var(--ink-2); }
+.lane-name i { display: inline-block; width: 10px; height: 10px; margin-right: 0.5rem; border-radius: 2px; background: var(--violet); }
+.lane-name.k-alone i { border-radius: 50%; background: var(--ink-2); }
+.lane-name.k-ctl i { border-radius: 50%; background: none; box-shadow: inset 0 0 0 2.5px var(--ink-2); }
+.lane-name b { font-weight: 400; transition: color 0.3s var(--out); }
+.lane-name > span:last-child { white-space: nowrap; }
+.lane .plot { transition: opacity 0.4s var(--out); }
+.hero:has(#vs-haiku:checked) :is(.l-a-opus, .l-a-sonnet, .l-p-sonnet) .plot,
+.hero:has(#vs-opus:checked) :is(.l-c-opus, .l-a-sonnet, .l-p-sonnet) .plot,
+.hero:has(#vs-sonnet:checked) :is(.l-a-opus, .l-c-opus, .l-p-opus) .plot { opacity: 0.42; }
+.hero:has(#vs-haiku:checked) :is(.l-c-opus, .l-p-opus) b,
+.hero:has(#vs-opus:checked) :is(.l-a-opus, .l-p-opus) b,
+.hero:has(#vs-sonnet:checked) :is(.l-a-sonnet, .l-p-sonnet) b { color: var(--ink); }
+/* Under the lanes: the ghost on the axis at p0ssess's mean, and the distance from it to the mean
+   of the Claude setup in view. Two hairlines carry both means up through the lanes. */
+.rail { position: relative; height: 66px; margin-left: var(--names); }
+.rail .plot { position: absolute; left: 0; right: 0; bottom: 0; }
+.span { position: absolute; top: 25px; left: calc(var(--at) * 1%); right: calc((100 - var(--to)) * 1%); height: 2px; background: var(--violet); border-radius: 1px; }
 .span::after { content: ""; position: absolute; right: -1px; top: -5px; width: 2px; height: 12px; background: var(--violet); border-radius: 1px; }
-.span b {
-  position: absolute; left: 50%; top: 50%; translate: -50% -50%; padding: 0.1rem 0.7rem 0.16rem;
-  background: var(--ground); font: 700 1rem/1.2 var(--mono); letter-spacing: -0.02em; color: var(--ink); white-space: nowrap;
+/* The saving in words, above its line: over the middle of a long line, beside the ghost on a short one. */
+.span-say {
+  position: absolute; top: 0; left: clamp(calc(var(--at) * 1% + 24px), calc((var(--at) + var(--to)) * 0.5% - 3.5rem), calc(100% - 7.2rem));
+  font: 700 1rem/1.2 var(--mono); letter-spacing: -0.02em; color: var(--ink); white-space: nowrap;
   transition: opacity 0.3s var(--out) 1.2s;
 }
-.hero:has(#rule-off:checked) .span b { opacity: 0; transition-delay: 0s; transition-duration: 0.1s; }
-.head { position: absolute; z-index: 2; left: calc(var(--at) * 1%); top: 62px; width: 0; pointer-events: none; }
+.hero.pre .span-say { opacity: 0; transition-delay: 0s; transition-duration: 0.1s; }
+.head { position: absolute; z-index: 2; left: calc(var(--at) * 1%); top: 10px; width: 0; pointer-events: none; }
 .head .rider { --u: 2px; position: absolute; left: -16px; top: 0; }
+.guides { display: none; position: absolute; z-index: 0; inset: 0 0 41px var(--names); pointer-events: none; }
+.drop { position: absolute; top: 0; bottom: 0; width: 1px; background: linear-gradient(to bottom, transparent, var(--violet) 40%); opacity: 0.4; }
+.drop.at { left: calc(var(--at) * 1%); }
+.drop.to { left: calc(var(--to) * 1%); }
 .tip {
   position: absolute; z-index: 5; left: 0; top: 0; max-width: min(22rem, 86vw); padding: 0.4rem 0.7rem 0.45rem;
   background: var(--surface-hi); border: 1px solid var(--line); border-radius: 4px; box-shadow: 0 8px 22px rgb(0 0 0 / 0.5);
@@ -659,7 +703,11 @@ code.seg { display: inline-block; padding: 0.3rem 0.85rem; background: var(--sur
   .lede { font-size: 1.05rem; }
   .hero h1 { line-height: 1.06; }
   .meter-row { grid-template-columns: minmax(0, 1fr); }
-  .mode-say { max-width: none; min-height: 3em; }
+  .mode-say { max-width: none; min-height: 4.5em; }
+  .mode.tri { width: 100%; }
+  .lane-name { gap: 0.2rem 0.5rem; font-size: 0.72rem; }
+  .lane-name i { margin-right: 0.35rem; }
+  .mode.tri label { padding: 0 0.3rem; font-size: 0.78rem; }
   .cta { margin-top: 1.3rem; }
   .cta .btn { flex: 1 1 100%; justify-content: center; }
   .get .cmd pre { font-size: 0.76rem; }
@@ -749,6 +797,10 @@ code.seg { display: inline-block; padding: 0.3rem 0.85rem; background: var(--sur
 }
 
 @media (min-width: 1024px) {
+  /* Names down the left, every lane on one scale. */
+  .hero { --names: calc(25rem + 2rem); }
+  .guides { display: block; }
+  .lane { grid-template-columns: 25rem minmax(0, 1fr); column-gap: 2rem; align-items: center; }
   .hero-cols { grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr); column-gap: clamp(40px, 5vw, 88px); align-items: end; }
 }
 
@@ -851,7 +903,7 @@ html.anim .relay:not(.play):not(.done) .rider { display: block; }
 html.anim .relay:not(.play):not(.done) .back { opacity: 0; }
 
 @media (prefers-reduced-motion: reduce) {
-  html.hero-go .hero, .hero, .span b, .mode-thumb, .island, .isl-label, .focus circle, .tip,
+  html.hero-go .hero, .hero, .span-say, .lane .plot, .lane-name b, .mode-thumb, .island, .isl-label, .focus circle, .tip,
   .btn, .btn.quiet, .dl-btn, .copy-btn, .isl-cta, .topnav .nav-cta, .island ol a::before, .island ol a::after { transition: none; }
   .now .num.tick { animation: none; }
 }

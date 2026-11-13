@@ -202,36 +202,45 @@
     }
   }
 
-  // The rule switch. The markup holds both measured results and CSS moves the ghost between
-  // them; this counts the figure down or up as it rides, says the result to a screen reader,
-  // and, with motion allowed, opens on "rule off" and turns the rule on once the line of
-  // dollars is on screen, so the first thing the page does is the saving.
+  // The hero's three views. The markup holds every measured result and CSS moves the ghost and
+  // lights the lanes; this counts the two figures to the view in hand, says the result to a
+  // screen reader, and, with motion allowed, opens with the ghost where Claude stands and lets it
+  // ride to p0ssess once the line of dollars is on screen, so the first thing the page does is
+  // the saving.
   const hero = $(".hero");
-  const on = $("#rule-on"), off = $("#rule-off");
-  if (hero && on && off) {
-    const num = $(".now .num", hero), bOn = $("b.v-on", num), bOff = $("b.v-off", num);
+  const views = hero ? $$('input[name="vs"]', hero) : [];
+  if (views.length) {
+    const num = $(".now .num", hero), old = $(".now .old", hero);
     const say = $("#rule-status"), rider = $(".head .rider", hero);
-    const cost = { on: parseFloat(bOn.textContent), off: parseFloat(bOff.textContent) };
-    const text = { on: bOn.textContent, off: bOff.textContent };
-    let raf = 0, auto = 0;
+    const cell = (box, key) => $("b.v-" + key, box);
+    // What each view's two figures read, taken from the markup before anything counts.
+    const text = {};
+    for (const v of views) text[v.value] = { num: cell(num, v.value).textContent, old: cell(old, v.value).textContent, say: $(".mode-say .v-" + v.value, hero).textContent };
+    const view = () => (views.find((v) => v.checked) || views[0]).value;
+    const figures = (key) => ({ num: parseFloat(text[key].num), old: parseFloat(text[key].old) });
+    // A figure counts with as many decimals as it ends on.
+    const places = (s) => (s.split(".")[1] || "").length;
+    let raf = 0, auto = 0, shown = figures(view());
     const blink = () => { if (!rider) return; rider.classList.remove("blink"); void rider.offsetWidth; rider.classList.add("blink"); };
-    const ride = () => {
-      const to = on.checked ? "on" : "off", from = on.checked ? "off" : "on";
-      const b = on.checked ? bOn : bOff;
+    const settle = (key) => { cell(num, key).textContent = text[key].num; cell(old, key).textContent = text[key].old; shown = figures(key); };
+    // Count both figures from what they show to the view's own, over the same 1.5 seconds and
+    // the same ease as the ghost's ride.
+    const ride = (from) => {
+      const key = view(), to = figures(key);
       cancelAnimationFrame(raf);
-      bOn.textContent = text.on;
-      bOff.textContent = text.off;
-      if (say) say.textContent = on.checked ? `Rule on: $${text.on} a run, and all 15 test files pass.` : `Rule off: $${text.off} a run, and all 15 test files pass.`;
-      if (reduce.matches) return;
-      // The figure follows the ghost: the same 1.5 seconds and the same ease as the --at transition.
+      for (const v of views) if (v.value !== key) { cell(num, v.value).textContent = text[v.value].num; cell(old, v.value).textContent = text[v.value].old; }
+      if (say) say.textContent = text[key].say;
+      if (reduce.matches) return settle(key);
       const t0 = performance.now(), ms = 1500;
       const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
       blink();
       const step = (now) => {
-        const t = Math.min(1, (now - t0) / ms);
-        b.textContent = (cost[from] + (cost[to] - cost[from]) * ease(t)).toFixed(2);
+        const t = Math.min(1, (now - t0) / ms), e = ease(t);
+        shown = { num: from.num + (to.num - from.num) * e, old: from.old + (to.old - from.old) * e };
+        cell(num, key).textContent = shown.num.toFixed(places(text[key].num));
+        cell(old, key).textContent = shown.old.toFixed(places(text[key].old));
         if (t < 1) { raf = requestAnimationFrame(step); return; }
-        b.textContent = text[to];
+        settle(key);
         num.classList.remove("tick");
         void num.offsetWidth;
         num.classList.add("tick");
@@ -239,16 +248,20 @@
       };
       raf = requestAnimationFrame(step);
     };
-    for (const r of [on, off]) r.addEventListener("change", () => { clearTimeout(auto); ride(); });
-    const line = $(".dline .plot-box", hero);
+    // The first ride starts from Claude's figure: both figures read what Claude spent.
+    const fromClaude = () => { const f = figures(view()); return { num: f.old, old: f.old }; };
+    const start = () => { clearTimeout(auto); if (!hero.classList.contains("pre")) return false; hero.classList.remove("pre"); return true; };
+    for (const v of views) v.addEventListener("change", () => ride(start() ? fromClaude() : shown));
+    const line = $(".lanes-box", hero);
     if (!reduce.matches && hasIO && line) {
-      off.checked = true;
-      const start = new IntersectionObserver(([e]) => {
+      hero.classList.add("pre");
+      cell(num, view()).textContent = text[view()].old;
+      const seen = new IntersectionObserver(([e]) => {
         if (!e.isIntersecting) return;
-        start.disconnect();
-        auto = setTimeout(() => { if (!off.checked) return; on.checked = true; ride(); }, 900);
-      }, { threshold: 0.9 });
-      start.observe(line);
+        seen.disconnect();
+        auto = setTimeout(() => { if (start()) ride(fromClaude()); }, 900);
+      }, { threshold: 0.6 });
+      seen.observe(line);
     }
     root.classList.add("hero-ready");
     // The ride is allowed from the second frame on, once the first state has been painted.

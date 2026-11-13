@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
-<title>p0ssess: stop paying Opus prices for repetitive work</title>
-<meta name="description" content="p0ssess is a Claude Code plugin that sends repetitive work to cheaper models while Claude stays in charge. Measured on unit-test writing: 4.4 times cheaper for each passing test file, at the same accuracy.">
-<meta property="og:title" content="p0ssess: stop paying Opus prices for repetitive work">
-<meta property="og:description" content="A Claude Code plugin that sends repetitive work to cheaper models under a rule you set. Measured on unit tests: $0.28 a run against $1.26, with every test file passing both ways.">
+<title>p0ssess: stop paying full Claude price for repetitive work</title>
+<meta name="description" content="p0ssess is a Claude Code plugin that sends repetitive work to cheaper models while Claude stays in charge. Measured on unit-test writing against three ways of running Claude: between 2.2 and 7.2 times cheaper, with every test file passing.">
+<meta property="og:title" content="p0ssess: stop paying full Claude price for repetitive work">
+<meta property="og:description" content="A Claude Code plugin that sends repetitive work to cheaper models under a rule you set. Measured on unit tests against three ways of running Claude: between 2.2 and 7.2 times cheaper, with every test file passing.">
 <meta property="og:type" content="website">
 <link rel="canonical" href="https://p0ssess.me/">
 <meta property="og:url" content="https://p0ssess.me/">
@@ -16,7 +16,7 @@
 <meta property="og:image" content="https://p0ssess.me/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="The p0ssess hero: stop paying Opus prices for repetitive work, above a line of dollars with every measured run on it. With p0ssess a run costs $0.28. With Claude Opus 5.5 alone it costs $1.26.">
+<meta property="og:image:alt" content="The p0ssess hero: stop paying full Claude price for repetitive work, above a line of dollars with every measured run of one job on it. The runs with p0ssess sit left of every way of running Claude alone.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#0b0b0b">
@@ -60,11 +60,11 @@
 
 <section class="hero" aria-labelledby="hero-h">
 <div class="wrap">
-  <h1 id="hero-h">Stop paying Opus prices for repetitive work.</h1>
+  <h1 id="hero-h">Stop paying full Claude price for repetitive work.</h1>
 
   <div class="hero-cols">
     <div class="pitch">
-      <p class="lede">p0ssess is a Claude Code plugin. Tell it once which chores don’t need your most expensive model, and Claude hands them to a cheaper one, checks what comes back and answers as usual. We measured it on unit tests: the same fifteen modules, the same pass bar, and a bill 4.4 times smaller.</p>
+      <p class="lede">p0ssess is a Claude Code plugin. Tell it once which chores don’t need Claude’s rates, and Claude hands them to a cheaper model, checks what comes back and answers as usual. We measured it on unit tests against three ways of running Claude. It came out between 2.2 and 7.2 times cheaper, with every test file passing.</p>
       <p class="cta"><a class="btn" href="pricing/#pro">Get Pro, $4 a month</a><a class="btn quiet" href="pricing/#team">Get Team, $8 a seat</a></p>
       <p class="terms">The plugin itself is free and open source. <a href="#try">Install it</a> with your own OpenRouter key.</p>
     </div>
@@ -72,82 +72,78 @@
     <div class="meter" id="savings">
       <h2 class="sr-only" id="savings-h">What one rule did to the bill</h2>
       <p class="ask rule"><span class="sr-only">The rule: </span>Team rule (p0ssess): always send unit test writing to deepseek/deepseek-v4.1-flash-1017.</p>
+      <fieldset class="mode tri">
+        <legend>The same job with the rule, against</legend>
+        <span class="mode-thumb" aria-hidden="true"></span>
+        <label><input type="radio" name="vs" id="vs-haiku" value="haiku" checked><span>Opus + Haiku</span></label>
+        <label><input type="radio" name="vs" id="vs-opus" value="opus"><span>Opus alone</span></label>
+        <label><input type="radio" name="vs" id="vs-sonnet" value="sonnet"><span>Sonnet alone</span></label>
+      </fieldset>
       <div class="meter-row">
-        <div class="meter-ctl">
-          <fieldset class="mode">
-            <legend class="sr-only">Run the job with the rule off or on</legend>
-            <span class="mode-thumb" aria-hidden="true"></span>
-            <label><input type="radio" name="rule" id="rule-off" value="off"><span>Rule off</span></label>
-            <label><input type="radio" name="rule" id="rule-on" value="on" checked><span>Rule on</span></label>
-          </fieldset>
-          <p class="mode-say">
-            <span class="v-off">Claude Opus 5.5 writes the tests for all fifteen modules itself. All 15 test files pass.</span>
-            <span class="v-on">Claude plans and checks, and deepseek-v4.1-flash writes the tests. All 15 test files pass.</span>
-          </p>
-        </div>
-        <p class="now"><span class="sr-only v-on">Down from </span><s class="old v-on"><small>$</small>1.26</s><span class="sr-only v-on"> to </span><span class="num" data-k="cost"><small>$</small><b class="v-off">1.26</b><b class="v-on">0.28</b></span><span class="per">a run</span></p>
+        <p class="mode-say">
+            <!--gen:hero-say-->
+      <span class="v-haiku">Told to hand the bulk of the work to its own Haiku subagent, Claude Opus 5.5 spent $0.64 a run. With p0ssess it spent $0.28. All 15 test files pass both ways.</span>
+            <span class="v-opus">Writing every test itself, Claude Opus 5.5 spent $1.26 a run. With p0ssess it spent $0.28. All 15 test files pass both ways.</span>
+            <span class="v-sonnet">Writing every test itself, Claude Sonnet 5.5 spent $0.70 a run. With p0ssess it spent $0.096. All 15 test files pass both ways.</span>
+      <!--/gen:hero-say-->
+        </p>
+        <p class="now">
+          <!--gen:hero-now-->
+      <span class="sr-only">Down from </span><s class="old"><small>$</small><b class="v-haiku">0.64</b><b class="v-opus">1.26</b><b class="v-sonnet">0.70</b></s><span class="sr-only"> to </span><span class="num"><small>$</small><b class="v-haiku">0.28</b><b class="v-opus">0.28</b><b class="v-sonnet">0.096</b></span><span class="per">a run</span>
+      <!--/gen:hero-now-->
+        </p>
       </div>
     </div>
   </div>
 
   <figure class="dline" aria-labelledby="dline-cap">
-    <ul class="keys">
-      <!--gen:hero-keys-->
-      <li class="k-poss"><i aria-hidden="true"></i><b>With p0ssess</b> <span>$0.27 to $0.30 a run</span></li>
-      <li class="k-alone"><i aria-hidden="true"></i><b>Claude Opus 5.5 alone</b> <span>$1.10 to $1.45 a run</span></li>
-      <!--/gen:hero-keys-->
-    </ul>
-    <div class="plot-box">
-      <svg class="plot" width="100%" height="118" aria-hidden="true" focusable="false">
-      <!--gen:hero-plot-->
-      <rect class="band a" x="73.11%" width="23.69%" y="2" height="58" rx="4"/>
-      <rect class="band p" x="18.26%" width="1.9%" y="2" height="58" rx="4"/>
-      <circle class="pt a" cx="73.11%" cy="13" r="6"/>
-      <circle class="hit" cx="73.11%" cy="13" r="13" data-tip="Run 1: $1.0966 · 15 of 15 test files pass · 276 s"/>
-      <circle class="pt a" cx="96.8%" cy="31" r="6"/>
-      <circle class="hit" cx="96.8%" cy="31" r="13" data-tip="Run 2: $1.4520 · 15 of 15 test files pass · 374 s"/>
-      <circle class="pt a" cx="82.98%" cy="49" r="6"/>
-      <circle class="hit" cx="82.98%" cy="49" r="13" data-tip="Run 3: $1.2446 · 15 of 15 test files pass · 317 s"/>
-      <rect class="pt p" x="18.42%" y="7" width="12" height="12" rx="2.5" transform="translate(-6 0)"/>
-      <circle class="hit" cx="18.42%" cy="13" r="13" data-tip="Run 1: $0.2763 · Claude $0.2472 + deepseek-v4.1-flash $0.0291 · 15 of 15 test files pass · 401 s"/>
-      <rect class="pt p" x="18.26%" y="25" width="12" height="12" rx="2.5" transform="translate(-6 0)"/>
-      <circle class="hit" cx="18.26%" cy="31" r="13" data-tip="Run 2: $0.2739 · Claude $0.2132 + deepseek-v4.1-flash $0.0608 · 15 of 15 test files pass · 470 s"/>
-      <rect class="pt p" x="20.16%" y="43" width="12" height="12" rx="2.5" transform="translate(-6 0)"/>
-      <circle class="hit" cx="20.16%" cy="49" r="13" data-tip="Run 3: $0.3024 · Claude $0.2801 + deepseek-v4.1-flash $0.0223 · 15 of 15 test files pass · 226 s"/>
-      <rect class="ax" x="0" y="94" width="100%" height="1"/>
-      <rect class="tk" x="0%" y="94" width="1" height="5"/>
-      <text x="0" y="114" text-anchor="start">$0</text>
-      <rect class="tk" x="16.67%" y="94" width="1" height="5"/>
-      <text class="odd" x="16.67%" y="114" text-anchor="middle">$0.25</text>
-      <rect class="tk" x="33.33%" y="94" width="1" height="5"/>
-      <text x="33.33%" y="114" text-anchor="middle">$0.50</text>
-      <rect class="tk" x="50%" y="94" width="1" height="5"/>
-      <text class="odd" x="50%" y="114" text-anchor="middle">$0.75</text>
-      <rect class="tk" x="66.67%" y="94" width="1" height="5"/>
-      <text x="66.67%" y="114" text-anchor="middle">$1.00</text>
-      <rect class="tk" x="83.33%" y="94" width="1" height="5"/>
-      <text class="odd" x="83.33%" y="114" text-anchor="middle">$1.25</text>
-      <rect class="tk" x="100%" y="94" width="1" height="5" transform="translate(-1 0)"/>
-      <text x="100%" y="114" text-anchor="end">$1.50</text>
-      <!--/gen:hero-plot-->
-      </svg>
-      <span class="span" aria-hidden="true"><b>4.4<span class="x">×</span> cheaper</b></span>
-      <span class="head" aria-hidden="true"><span class="g rider"><img src="ghost.svg" alt="" width="32" height="32"><i class="lid"></i></span></span>
+    <div class="lanes-box">
+      <ol class="lanes">
+      <!--gen:hero-lanes-->
+      <li class="lane l-a-opus"><p class="lane-name k-alone"><span><i aria-hidden="true"></i><b>Claude Opus 5.5 alone</b></span> <span>$1.10 to $1.45</span></p><div class="plot-box"><svg class="plot" width="100%" height="26" aria-hidden="true" focusable="false"><rect class="band a" x="73.11%" width="23.69%" y="1" height="24" rx="4"/><circle class="pt a" cx="73.11%" cy="8.0" r="6"/><circle class="hit" cx="73.11%" cy="8.0" r="13" data-tip="Run 1: $1.0966 · 15 of 15 test files pass · 276 s"/><circle class="pt a" cx="96.8%" cy="13.0" r="6"/><circle class="hit" cx="96.8%" cy="13.0" r="13" data-tip="Run 2: $1.4520 · 15 of 15 test files pass · 374 s"/><circle class="pt a" cx="82.98%" cy="18.0" r="6"/><circle class="hit" cx="82.98%" cy="18.0" r="13" data-tip="Run 3: $1.2446 · 15 of 15 test files pass · 317 s"/></svg></div></li>
+      <li class="lane l-c-opus"><p class="lane-name k-ctl"><span><i aria-hidden="true"></i><b>Claude Opus 5.5 with its Haiku</b></span> <span>$0.60 to $0.71</span></p><div class="plot-box"><svg class="plot" width="100%" height="26" aria-hidden="true" focusable="false"><rect class="band a" x="39.71%" width="7.94%" y="1" height="24" rx="4"/><circle class="pt c" cx="39.9%" cy="8.0" r="5"/><circle class="hit" cx="39.9%" cy="8.0" r="13" data-tip="Run 1: $0.5985 · 15 of 15 test files pass · 346 s"/><circle class="pt c" cx="39.71%" cy="13.0" r="5"/><circle class="hit" cx="39.71%" cy="13.0" r="13" data-tip="Run 2: $0.5956 · 15 of 15 test files pass · 390 s"/><circle class="pt c" cx="47.65%" cy="18.0" r="5"/><circle class="hit" cx="47.65%" cy="18.0" r="13" data-tip="Run 3: $0.7147 · 15 of 15 test files pass · 408 s"/></svg></div></li>
+      <li class="lane l-p-opus"><p class="lane-name k-poss"><span><i aria-hidden="true"></i><b>With p0ssess, Opus in charge</b></span> <span>$0.27 to $0.30</span></p><div class="plot-box"><svg class="plot" width="100%" height="26" aria-hidden="true" focusable="false"><rect class="band p" x="18.26%" width="1.9%" y="1" height="24" rx="4"/><rect class="pt p" x="18.42%" y="2.0" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="18.42%" cy="8.0" r="13" data-tip="Run 1: $0.2763 · Claude $0.2472 + deepseek-v4.1-flash $0.0291 · 15 of 15 test files pass · 401 s"/><rect class="pt p" x="18.26%" y="7.0" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="18.26%" cy="13.0" r="13" data-tip="Run 2: $0.2739 · Claude $0.2132 + deepseek-v4.1-flash $0.0608 · 15 of 15 test files pass · 470 s"/><rect class="pt p" x="20.16%" y="12.0" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="20.16%" cy="18.0" r="13" data-tip="Run 3: $0.3024 · Claude $0.2801 + deepseek-v4.1-flash $0.0223 · 15 of 15 test files pass · 226 s"/></svg></div></li>
+      <li class="lane l-a-sonnet gap"><p class="lane-name k-alone"><span><i aria-hidden="true"></i><b>Claude Sonnet 5.5 alone</b></span> <span>$0.60 to $0.86</span></p><div class="plot-box"><svg class="plot" width="100%" height="26" aria-hidden="true" focusable="false"><rect class="band a" x="39.82%" width="17.84%" y="1" height="24" rx="4"/><circle class="pt a" cx="57.66%" cy="8.0" r="6"/><circle class="hit" cx="57.66%" cy="8.0" r="13" data-tip="Run 1: $0.8650 · 15 of 15 test files pass · 329 s"/><circle class="pt a" cx="39.82%" cy="13.0" r="6"/><circle class="hit" cx="39.82%" cy="13.0" r="13" data-tip="Run 2: $0.5973 · 15 of 15 test files pass · 215 s"/><circle class="pt a" cx="41.87%" cy="18.0" r="6"/><circle class="hit" cx="41.87%" cy="18.0" r="13" data-tip="Run 3: $0.6280 · 15 of 15 test files pass · 224 s"/></svg></div></li>
+      <li class="lane l-p-sonnet"><p class="lane-name k-poss"><span><i aria-hidden="true"></i><b>With p0ssess, Sonnet in charge</b></span> <span>$0.09 to $0.10</span></p><div class="plot-box"><svg class="plot" width="100%" height="26" aria-hidden="true" focusable="false"><rect class="band p" x="6.07%" width="0.63%" y="1" height="24" rx="4"/><rect class="pt p" x="6.46%" y="2.0" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="6.46%" cy="8.0" r="13" data-tip="Run 1: $0.0969 · Claude $0.0613 + deepseek-v4.1-flash $0.0356 · 15 of 15 test files pass · 242 s"/><rect class="pt p" x="6.07%" y="7.0" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="6.07%" cy="13.0" r="13" data-tip="Run 2: $0.0911 · Claude $0.0695 + deepseek-v4.1-flash $0.0216 · 15 of 15 test files pass · 153 s"/><rect class="pt p" x="6.7%" y="12.0" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="6.7%" cy="18.0" r="13" data-tip="Run 3: $0.1004 · Claude $0.0716 + deepseek-v4.1-flash $0.0288 · 15 of 15 test files pass · 193 s"/></svg></div></li>
+      <!--/gen:hero-lanes-->
+      </ol>
+      <div class="rail">
+        <span class="span" aria-hidden="true"></span>
+        <span class="span-say" aria-hidden="true">
+      <!--gen:hero-span-->
+      <b class="v-haiku">2.2<span class="x">×</span> cheaper</b><b class="v-opus">4.4<span class="x">×</span> cheaper</b><b class="v-sonnet">7.2<span class="x">×</span> cheaper</b>
+      <!--/gen:hero-span-->
+        </span>
+        <span class="head" aria-hidden="true"><span class="g rider"><img src="ghost.svg" alt="" width="32" height="32"><i class="lid"></i></span></span>
+        <svg class="plot" width="100%" height="24" aria-hidden="true" focusable="false"><!--gen:hero-axis-->
+      <rect class="ax" x="0" y="0" width="100%" height="1"/><rect class="tk" x="0%" y="0" width="1" height="5"/><text x="0" y="20" text-anchor="start">$0</text><rect class="tk" x="16.67%" y="0" width="1" height="5"/><text class="odd" x="16.67%" y="20" text-anchor="middle">$0.25</text><rect class="tk" x="33.33%" y="0" width="1" height="5"/><text x="33.33%" y="20" text-anchor="middle">$0.50</text><rect class="tk" x="50%" y="0" width="1" height="5"/><text class="odd" x="50%" y="20" text-anchor="middle">$0.75</text><rect class="tk" x="66.67%" y="0" width="1" height="5"/><text x="66.67%" y="20" text-anchor="middle">$1.00</text><rect class="tk" x="83.33%" y="0" width="1" height="5"/><text class="odd" x="83.33%" y="20" text-anchor="middle">$1.25</text><rect class="tk" x="100%" y="0" width="1" height="5" transform="translate(-1 0)"/><text x="100%" y="20" text-anchor="end">$1.50</text>
+      <!--/gen:hero-axis--></svg>
+      </div>
+      <div class="guides" aria-hidden="true"><i class="drop at"></i><i class="drop to"></i></div>
     </div>
-    <figcaption class="note" id="dline-cap">Every run of one job, on a line of dollars that starts at zero. The job: write unit tests for 15 small Python modules with Claude Opus 5.5 in charge, three runs each way. A test file passes when it runs clean and catches at least four of five bugs planted in its module, and all 15 passed in all six runs. Claude is priced at API list price from exact token counts, and the p0ssess runs include the other model’s bill. The modules were written for this benchmark and a script does the grading. <a href="business/#method">How it was measured, and what failed</a></figcaption>
+    <figcaption class="note" id="dline-cap">Every run of one job, on a line of dollars that starts at zero. The job: write unit tests for 15 small Python modules, three runs for each setup. A test file passes when it runs clean and catches at least four of five bugs planted in its module, and all 15 passed in every run shown. Claude is priced at API list price from exact token counts, and the p0ssess runs include the other model’s bill. The modules were written for this benchmark and a script does the grading. <a href="business/#method">How it was measured, and what failed</a></figcaption>
     <details class="runs">
-      <summary>See the six runs</summary>
+      <summary>See every run</summary>
       <div class="tbl"><table role="table">
-        <caption>Writing unit tests for 15 modules, Claude Opus 5.5 in charge. Measured November 13, 2026.</caption>
+        <caption>Writing unit tests for 15 modules. Measured November 13, 2026.</caption>
         <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Run</th><th scope="col" role="columnheader">Total</th><th scope="col" role="columnheader">Claude’s part</th><th scope="col" role="columnheader">Other model</th><th scope="col" role="columnheader">Test files passing</th><th scope="col" role="columnheader">Time</th></tr></thead>
         <tbody role="rowgroup">
           <!--gen:hero-runs-->
-      <tr role="row"><th scope="row" role="rowheader">Claude alone, run 1</th><td role="cell" data-l="Total"><small>$</small>1.0966</td><td role="cell" data-l="Claude’s part"><small>$</small>1.0966</td><td role="cell" data-l="Other model">none</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">276 s</td></tr>
-          <tr role="row"><th scope="row" role="rowheader">Claude alone, run 2</th><td role="cell" data-l="Total"><small>$</small>1.4520</td><td role="cell" data-l="Claude’s part"><small>$</small>1.4520</td><td role="cell" data-l="Other model">none</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">374 s</td></tr>
-          <tr role="row"><th scope="row" role="rowheader">Claude alone, run 3</th><td role="cell" data-l="Total"><small>$</small>1.2446</td><td role="cell" data-l="Claude’s part"><small>$</small>1.2446</td><td role="cell" data-l="Other model">none</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">317 s</td></tr>
-          <tr role="row"><th scope="row" role="rowheader">With p0ssess, run 1</th><td role="cell" data-l="Total"><small>$</small>0.2763</td><td role="cell" data-l="Claude’s part"><small>$</small>0.2472</td><td role="cell" data-l="Other model"><small>$</small>0.0291</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">401 s</td></tr>
-          <tr role="row"><th scope="row" role="rowheader">With p0ssess, run 2</th><td role="cell" data-l="Total"><small>$</small>0.2739</td><td role="cell" data-l="Claude’s part"><small>$</small>0.2132</td><td role="cell" data-l="Other model"><small>$</small>0.0608</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">470 s</td></tr>
-          <tr role="row"><th scope="row" role="rowheader">With p0ssess, run 3</th><td role="cell" data-l="Total"><small>$</small>0.3024</td><td role="cell" data-l="Claude’s part"><small>$</small>0.2801</td><td role="cell" data-l="Other model"><small>$</small>0.0223</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">226 s</td></tr>
+      <tr role="row"><th scope="row" role="rowheader">Claude Opus 5.5 alone, run 1</th><td role="cell" data-l="Total"><small>$</small>1.0966</td><td role="cell" data-l="Claude’s part"><small>$</small>1.0966</td><td role="cell" data-l="Other model">none</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">276 s</td></tr>
+          <tr role="row"><th scope="row" role="rowheader">Claude Opus 5.5 alone, run 2</th><td role="cell" data-l="Total"><small>$</small>1.4520</td><td role="cell" data-l="Claude’s part"><small>$</small>1.4520</td><td role="cell" data-l="Other model">none</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">374 s</td></tr>
+          <tr role="row"><th scope="row" role="rowheader">Claude Opus 5.5 alone, run 3</th><td role="cell" data-l="Total"><small>$</small>1.2446</td><td role="cell" data-l="Claude’s part"><small>$</small>1.2446</td><td role="cell" data-l="Other model">none</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">317 s</td></tr>
+          <tr role="row"><th scope="row" role="rowheader">Claude Opus 5.5 with its own Haiku subagent, run 1</th><td role="cell" data-l="Total"><small>$</small>0.5985</td><td role="cell" data-l="Claude’s part"><small>$</small>0.5985</td><td role="cell" data-l="Other model">none</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">346 s</td></tr>
+          <tr role="row"><th scope="row" role="rowheader">Claude Opus 5.5 with its own Haiku subagent, run 2</th><td role="cell" data-l="Total"><small>$</small>0.5956</td><td role="cell" data-l="Claude’s part"><small>$</small>0.5956</td><td role="cell" data-l="Other model">none</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">390 s</td></tr>
+          <tr role="row"><th scope="row" role="rowheader">Claude Opus 5.5 with its own Haiku subagent, run 3</th><td role="cell" data-l="Total"><small>$</small>0.7147</td><td role="cell" data-l="Claude’s part"><small>$</small>0.7147</td><td role="cell" data-l="Other model">none</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">408 s</td></tr>
+          <tr role="row"><th scope="row" role="rowheader">With p0ssess, Opus in charge, run 1</th><td role="cell" data-l="Total"><small>$</small>0.2763</td><td role="cell" data-l="Claude’s part"><small>$</small>0.2472</td><td role="cell" data-l="Other model"><small>$</small>0.0291</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">401 s</td></tr>
+          <tr role="row"><th scope="row" role="rowheader">With p0ssess, Opus in charge, run 2</th><td role="cell" data-l="Total"><small>$</small>0.2739</td><td role="cell" data-l="Claude’s part"><small>$</small>0.2132</td><td role="cell" data-l="Other model"><small>$</small>0.0608</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">470 s</td></tr>
+          <tr role="row"><th scope="row" role="rowheader">With p0ssess, Opus in charge, run 3</th><td role="cell" data-l="Total"><small>$</small>0.3024</td><td role="cell" data-l="Claude’s part"><small>$</small>0.2801</td><td role="cell" data-l="Other model"><small>$</small>0.0223</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">226 s</td></tr>
+          <tr role="row"><th scope="row" role="rowheader">Claude Sonnet 5.5 alone, run 1</th><td role="cell" data-l="Total"><small>$</small>0.8650</td><td role="cell" data-l="Claude’s part"><small>$</small>0.8650</td><td role="cell" data-l="Other model">none</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">329 s</td></tr>
+          <tr role="row"><th scope="row" role="rowheader">Claude Sonnet 5.5 alone, run 2</th><td role="cell" data-l="Total"><small>$</small>0.5973</td><td role="cell" data-l="Claude’s part"><small>$</small>0.5973</td><td role="cell" data-l="Other model">none</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">215 s</td></tr>
+          <tr role="row"><th scope="row" role="rowheader">Claude Sonnet 5.5 alone, run 3</th><td role="cell" data-l="Total"><small>$</small>0.6280</td><td role="cell" data-l="Claude’s part"><small>$</small>0.6280</td><td role="cell" data-l="Other model">none</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">224 s</td></tr>
+          <tr role="row"><th scope="row" role="rowheader">With p0ssess, Sonnet in charge, run 1</th><td role="cell" data-l="Total"><small>$</small>0.0969</td><td role="cell" data-l="Claude’s part"><small>$</small>0.0613</td><td role="cell" data-l="Other model"><small>$</small>0.0356</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">242 s</td></tr>
+          <tr role="row"><th scope="row" role="rowheader">With p0ssess, Sonnet in charge, run 2</th><td role="cell" data-l="Total"><small>$</small>0.0911</td><td role="cell" data-l="Claude’s part"><small>$</small>0.0695</td><td role="cell" data-l="Other model"><small>$</small>0.0216</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">153 s</td></tr>
+          <tr role="row"><th scope="row" role="rowheader">With p0ssess, Sonnet in charge, run 3</th><td role="cell" data-l="Total"><small>$</small>0.1004</td><td role="cell" data-l="Claude’s part"><small>$</small>0.0716</td><td role="cell" data-l="Other model"><small>$</small>0.0288</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">193 s</td></tr>
       <!--/gen:hero-runs-->
         </tbody>
       </table></div>
@@ -160,69 +156,21 @@
 <section class="sec" id="proof" aria-labelledby="proof-h">
 <div class="wrap">
   <div class="sec-head">
-    <h2 id="proof-h">Every run, on one scale</h2>
-    <p>We wrote down what would count before the first run. p0ssess wins a job only if its most expensive run costs less than Claude’s cheapest, with accuracy within three points, over at least three runs each way. To appear in an ad it also has to be at least twice as cheap. These comparisons cleared that bar.</p>
+    <h2 id="proof-h">The bar it had to clear, and a second job</h2>
+    <p>We wrote down what would count before the first run. p0ssess wins a comparison only if its most expensive run costs less than Claude’s cheapest, with accuracy within three points, over at least three runs each way. To appear in an ad it also has to be at least twice as cheap. Unit tests cleared that bar three ways, and so did a second job.</p>
   </div>
 
   <ol class="proof">
     <!--gen:proof-rows-->
       <li class="prow hl">
       <div>
-        <h3>Writing unit tests</h3>
-        <p>Fifteen Python modules a run, with Claude Opus 5.5 in charge. All 15 test files passed in every run, both ways.</p>
-      </div>
-      <figure class="land" aria-label="Writing unit tests, cost of each run. With p0ssess: $0.27 to $0.30. Claude alone: $1.10 to $1.45.">
-        <ul class="keys">
-          <li class="k-poss"><i aria-hidden="true"></i><b>With p0ssess</b> <span>$0.27 to $0.30</span></li>
-          <li class="k-alone"><i aria-hidden="true"></i><b>Claude alone</b> <span>$1.10 to $1.45</span></li>
-        </ul>
-        <div class="plot-box"><svg class="plot" width="100%" height="92" aria-hidden="true" focusable="false">
-        <rect class="band a" x="73.11%" width="23.69%" y="2" height="58" rx="4"/><rect class="band p" x="18.26%" width="1.9%" y="2" height="58" rx="4"/><circle class="pt a" cx="73.11%" cy="13" r="6"/><circle class="hit" cx="73.11%" cy="13" r="13" data-tip="Run 1: $1.0966 · 15 of 15 test files pass · 276 s"/><circle class="pt a" cx="96.8%" cy="31" r="6"/><circle class="hit" cx="96.8%" cy="31" r="13" data-tip="Run 2: $1.4520 · 15 of 15 test files pass · 374 s"/><circle class="pt a" cx="82.98%" cy="49" r="6"/><circle class="hit" cx="82.98%" cy="49" r="13" data-tip="Run 3: $1.2446 · 15 of 15 test files pass · 317 s"/><rect class="pt p" x="18.42%" y="7" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="18.42%" cy="13" r="13" data-tip="Run 1: $0.2763 · Claude $0.2472 + deepseek-v4.1-flash $0.0291 · 15 of 15 test files pass · 401 s"/><rect class="pt p" x="18.26%" y="25" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="18.26%" cy="31" r="13" data-tip="Run 2: $0.2739 · Claude $0.2132 + deepseek-v4.1-flash $0.0608 · 15 of 15 test files pass · 470 s"/><rect class="pt p" x="20.16%" y="43" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="20.16%" cy="49" r="13" data-tip="Run 3: $0.3024 · Claude $0.2801 + deepseek-v4.1-flash $0.0223 · 15 of 15 test files pass · 226 s"/><rect class="ax" x="0" y="68" width="100%" height="1"/><rect class="tk" x="0%" y="68" width="1" height="5"/><text x="0" y="88" text-anchor="start">$0</text><rect class="tk" x="16.67%" y="68" width="1" height="5"/><text class="odd" x="16.67%" y="88" text-anchor="middle">$0.25</text><rect class="tk" x="33.33%" y="68" width="1" height="5"/><text x="33.33%" y="88" text-anchor="middle">$0.50</text><rect class="tk" x="50%" y="68" width="1" height="5"/><text class="odd" x="50%" y="88" text-anchor="middle">$0.75</text><rect class="tk" x="66.67%" y="68" width="1" height="5"/><text x="66.67%" y="88" text-anchor="middle">$1.00</text><rect class="tk" x="83.33%" y="68" width="1" height="5"/><text class="odd" x="83.33%" y="88" text-anchor="middle">$1.25</text><rect class="tk" x="100%" y="68" width="1" height="5" transform="translate(-1 0)"/><text x="100%" y="88" text-anchor="end">$1.50</text>
-        </svg></div>
-      </figure>
-      <p class="ratio"><b>4.4<span class="x">×</span></b><span>cheaper for each passing test file</span></p>
-    </li>
-    <li class="prow hl">
-      <div>
-        <h3>The same job, against Claude’s own Haiku</h3>
-        <p>The obvious objection is that Claude has a cheap model of its own. So we also told Claude Opus 5.5 to hand the bulk of the work to its own Haiku subagent and check what came back. All 15 test files passed there too.</p>
-      </div>
-      <figure class="land" aria-label="The same job, against Claude’s own Haiku, cost of each run. With p0ssess: $0.27 to $0.30. Claude with its Haiku subagent: $0.60 to $0.71.">
-        <ul class="keys">
-          <li class="k-poss"><i aria-hidden="true"></i><b>With p0ssess</b> <span>$0.27 to $0.30</span></li>
-          <li class="k-ctl"><i aria-hidden="true"></i><b>Claude with its Haiku subagent</b> <span>$0.60 to $0.71</span></li>
-        </ul>
-        <div class="plot-box"><svg class="plot" width="100%" height="92" aria-hidden="true" focusable="false">
-        <rect class="band a" x="39.71%" width="7.94%" y="2" height="58" rx="4"/><rect class="band p" x="18.26%" width="1.9%" y="2" height="58" rx="4"/><circle class="pt c" cx="39.9%" cy="13" r="5"/><circle class="hit" cx="39.9%" cy="13" r="13" data-tip="Run 1: $0.5985 · 15 of 15 test files pass · 346 s"/><circle class="pt c" cx="39.71%" cy="31" r="5"/><circle class="hit" cx="39.71%" cy="31" r="13" data-tip="Run 2: $0.5956 · 15 of 15 test files pass · 390 s"/><circle class="pt c" cx="47.65%" cy="49" r="5"/><circle class="hit" cx="47.65%" cy="49" r="13" data-tip="Run 3: $0.7147 · 15 of 15 test files pass · 408 s"/><rect class="pt p" x="18.42%" y="7" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="18.42%" cy="13" r="13" data-tip="Run 1: $0.2763 · Claude $0.2472 + deepseek-v4.1-flash $0.0291 · 15 of 15 test files pass · 401 s"/><rect class="pt p" x="18.26%" y="25" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="18.26%" cy="31" r="13" data-tip="Run 2: $0.2739 · Claude $0.2132 + deepseek-v4.1-flash $0.0608 · 15 of 15 test files pass · 470 s"/><rect class="pt p" x="20.16%" y="43" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="20.16%" cy="49" r="13" data-tip="Run 3: $0.3024 · Claude $0.2801 + deepseek-v4.1-flash $0.0223 · 15 of 15 test files pass · 226 s"/><rect class="ax" x="0" y="68" width="100%" height="1"/><rect class="tk" x="0%" y="68" width="1" height="5"/><text x="0" y="88" text-anchor="start">$0</text><rect class="tk" x="16.67%" y="68" width="1" height="5"/><text class="odd" x="16.67%" y="88" text-anchor="middle">$0.25</text><rect class="tk" x="33.33%" y="68" width="1" height="5"/><text x="33.33%" y="88" text-anchor="middle">$0.50</text><rect class="tk" x="50%" y="68" width="1" height="5"/><text class="odd" x="50%" y="88" text-anchor="middle">$0.75</text><rect class="tk" x="66.67%" y="68" width="1" height="5"/><text x="66.67%" y="88" text-anchor="middle">$1.00</text><rect class="tk" x="83.33%" y="68" width="1" height="5"/><text class="odd" x="83.33%" y="88" text-anchor="middle">$1.25</text><rect class="tk" x="100%" y="68" width="1" height="5" transform="translate(-1 0)"/><text x="100%" y="88" text-anchor="end">$1.50</text>
-        </svg></div>
-      </figure>
-      <p class="ratio"><b>2.2<span class="x">×</span></b><span>cheaper than Claude using its own cheap model</span></p>
-    </li>
-    <li class="prow hl">
-      <div>
-        <h3>Writing unit tests, with Sonnet in charge</h3>
-        <p>The same fifteen modules with Claude Sonnet 5.5 leading instead of Opus. All 15 test files passed in every run, both ways.</p>
-      </div>
-      <figure class="land" aria-label="Writing unit tests, with Sonnet in charge, cost of each run. With p0ssess: $0.09 to $0.10. Claude Sonnet 5.5 alone: $0.60 to $0.86.">
-        <ul class="keys">
-          <li class="k-poss"><i aria-hidden="true"></i><b>With p0ssess</b> <span>$0.09 to $0.10</span></li>
-          <li class="k-alone"><i aria-hidden="true"></i><b>Claude Sonnet 5.5 alone</b> <span>$0.60 to $0.86</span></li>
-        </ul>
-        <div class="plot-box"><svg class="plot" width="100%" height="92" aria-hidden="true" focusable="false">
-        <rect class="band a" x="39.82%" width="17.84%" y="2" height="58" rx="4"/><rect class="band p" x="6.07%" width="0.63%" y="2" height="58" rx="4"/><circle class="pt a" cx="57.66%" cy="13" r="6"/><circle class="hit" cx="57.66%" cy="13" r="13" data-tip="Run 1: $0.8650 · 15 of 15 test files pass · 329 s"/><circle class="pt a" cx="39.82%" cy="31" r="6"/><circle class="hit" cx="39.82%" cy="31" r="13" data-tip="Run 2: $0.5973 · 15 of 15 test files pass · 215 s"/><circle class="pt a" cx="41.87%" cy="49" r="6"/><circle class="hit" cx="41.87%" cy="49" r="13" data-tip="Run 3: $0.6280 · 15 of 15 test files pass · 224 s"/><rect class="pt p" x="6.46%" y="7" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="6.46%" cy="13" r="13" data-tip="Run 1: $0.0969 · Claude $0.0613 + deepseek-v4.1-flash $0.0356 · 15 of 15 test files pass · 242 s"/><rect class="pt p" x="6.07%" y="25" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="6.07%" cy="31" r="13" data-tip="Run 2: $0.0911 · Claude $0.0695 + deepseek-v4.1-flash $0.0216 · 15 of 15 test files pass · 153 s"/><rect class="pt p" x="6.7%" y="43" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="6.7%" cy="49" r="13" data-tip="Run 3: $0.1004 · Claude $0.0716 + deepseek-v4.1-flash $0.0288 · 15 of 15 test files pass · 193 s"/><rect class="ax" x="0" y="68" width="100%" height="1"/><rect class="tk" x="0%" y="68" width="1" height="5"/><text x="0" y="88" text-anchor="start">$0</text><rect class="tk" x="16.67%" y="68" width="1" height="5"/><text class="odd" x="16.67%" y="88" text-anchor="middle">$0.25</text><rect class="tk" x="33.33%" y="68" width="1" height="5"/><text x="33.33%" y="88" text-anchor="middle">$0.50</text><rect class="tk" x="50%" y="68" width="1" height="5"/><text class="odd" x="50%" y="88" text-anchor="middle">$0.75</text><rect class="tk" x="66.67%" y="68" width="1" height="5"/><text x="66.67%" y="88" text-anchor="middle">$1.00</text><rect class="tk" x="83.33%" y="68" width="1" height="5"/><text class="odd" x="83.33%" y="88" text-anchor="middle">$1.25</text><rect class="tk" x="100%" y="68" width="1" height="5" transform="translate(-1 0)"/><text x="100%" y="88" text-anchor="end">$1.50</text>
-        </svg></div>
-      </figure>
-      <p class="ratio"><b>7.2<span class="x">×</span></b><span>cheaper for each passing test file</span></p>
-    </li>
-    <li class="prow hl">
-      <div>
         <h3>Triaging support tickets</h3>
         <p>Three hundred tickets a run, each sorted by category, priority, order and product against a written policy, with Claude Opus 5.5 in charge. All 300 were right in every run, both ways.</p>
       </div>
-      <figure class="land" aria-label="Triaging support tickets, cost of each run. With p0ssess: $0.24 to $0.39. Claude alone: $0.64 to $0.90.">
+      <figure class="land" aria-label="Triaging support tickets, cost of each run. With p0ssess: $0.24 to $0.39. Claude Opus 5.5 alone: $0.64 to $0.90.">
         <ul class="keys">
           <li class="k-poss"><i aria-hidden="true"></i><b>With p0ssess</b> <span>$0.24 to $0.39</span></li>
-          <li class="k-alone"><i aria-hidden="true"></i><b>Claude alone</b> <span>$0.64 to $0.90</span></li>
+          <li class="k-alone"><i aria-hidden="true"></i><b>Claude Opus 5.5 alone</b> <span>$0.64 to $0.90</span></li>
         </ul>
         <div class="plot-box"><svg class="plot" width="100%" height="92" aria-hidden="true" focusable="false">
         <rect class="band a" x="42.55%" width="17.41%" y="2" height="58" rx="4"/><rect class="band p" x="15.79%" width="10.23%" y="2" height="58" rx="4"/><circle class="pt a" cx="42.55%" cy="13" r="6"/><circle class="hit" cx="42.55%" cy="13" r="13" data-tip="Run 1: $0.6382 · 300 of 300 tickets right · 88 s"/><circle class="pt a" cx="59.95%" cy="31" r="6"/><circle class="hit" cx="59.95%" cy="31" r="13" data-tip="Run 2: $0.8993 · 300 of 300 tickets right · 169 s"/><circle class="pt a" cx="44.14%" cy="49" r="6"/><circle class="hit" cx="44.14%" cy="49" r="13" data-tip="Run 3: $0.6621 · 300 of 300 tickets right · 108 s"/><rect class="pt p" x="26.03%" y="7" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="26.03%" cy="13" r="13" data-tip="Run 1: $0.3904 · Claude $0.3123 + deepseek-v4.1-flash $0.0781 · 300 of 300 tickets right · 427 s"/><rect class="pt p" x="23.49%" y="25" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="23.49%" cy="31" r="13" data-tip="Run 2: $0.3524 · Claude $0.2871 + deepseek-v4.1-flash $0.0653 · 300 of 300 tickets right · 531 s"/><rect class="pt p" x="15.79%" y="43" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="15.79%" cy="49" r="13" data-tip="Run 3: $0.2369 · Claude $0.1780 + deepseek-v4.1-flash $0.0589 · 300 of 300 tickets right · 353 s"/><rect class="ax" x="0" y="68" width="100%" height="1"/><rect class="tk" x="0%" y="68" width="1" height="5"/><text x="0" y="88" text-anchor="start">$0</text><rect class="tk" x="16.67%" y="68" width="1" height="5"/><text class="odd" x="16.67%" y="88" text-anchor="middle">$0.25</text><rect class="tk" x="33.33%" y="68" width="1" height="5"/><text x="33.33%" y="88" text-anchor="middle">$0.50</text><rect class="tk" x="50%" y="68" width="1" height="5"/><text class="odd" x="50%" y="88" text-anchor="middle">$0.75</text><rect class="tk" x="66.67%" y="68" width="1" height="5"/><text x="66.67%" y="88" text-anchor="middle">$1.00</text><rect class="tk" x="83.33%" y="68" width="1" height="5"/><text class="odd" x="83.33%" y="88" text-anchor="middle">$1.25</text><rect class="tk" x="100%" y="68" width="1" height="5" transform="translate(-1 0)"/><text x="100%" y="88" text-anchor="end">$1.50</text>
@@ -233,7 +181,7 @@
       <!--/gen:proof-rows-->
   </ol>
 
-  <p class="proof-end">Every chart is dollars for one run, on the same scale as the one at the top of the page, and deepseek-v4.1-flash did the delegated work in all of them. We tested other jobs too, and most of them did not clear the bar. On small batches Claude Code’s fixed cost per session swallows the saving, and on one job the cheaper model cost less and got more wrong, which counts as a loss. They are all on the method page with their numbers.</p>
+  <p class="proof-end">The chart is dollars for one run, on the same scale as the one at the top of the page, and deepseek-v4.1-flash did the delegated work here too. We tested other jobs as well, and most of them did not clear the bar. On small batches Claude Code’s fixed cost for each session swallows the saving, and on one job the cheaper model cost less and got more wrong, which counts as a loss. They are all on the method page with their numbers.</p>
   <p class="next"><a class="btn quiet" href="business/#method">Read the method</a><a class="more" href="business/#results">See every job we tested</a></p>
 </div>
 </section>

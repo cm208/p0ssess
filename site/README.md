@@ -6,8 +6,8 @@ Beside the home page are six pages, each an `index.html` in its own folder: `pri
 
 The home page is an advertisement, and its subject is cost. In order:
 
-1. **The hero.** The headline, what p0ssess is, the two paid plans, and beside them one rule with a switch: the same job run with the rule off and on, what a run costs each way, and every measured run on a line of dollars.
-2. **The proof.** Each comparison that cleared the benchmark's bar, as one row on the hero's scale.
+1. **The hero.** The headline, what p0ssess is, the two paid plans, and beside them one rule and one job: what a run of it costs with the rule, against three ways of running Claude without it, with every measured run on a line of dollars. A three-way switch picks which Claude setup the saving is measured against.
+2. **The proof.** The bar a comparison has to clear, and a second job that cleared it, on the hero's scale.
 3. **How it works.** The hand-off drawn as three stops, and where one run's money went.
 4. **For a team.** One rule from the owner reaching every seat.
 5. **New senses.** What Claude can't do alone: a film watched, a recording heard, an image made. It is here, and it is second.
@@ -41,12 +41,12 @@ Then open <http://127.0.0.1:8000/>, or a page beside it such as <http://127.0.0.
 
 One motion language: arrivals ease out (`--out`), travel that stays on screen eases in and out (`--io`), and the spring (`--spring`) is kept for the island, the two-way switches and a press. Nothing fades up as it scrolls in. What moves:
 
-- **The ride**, the page's one authored moment. With motion allowed the hero opens on "Rule off" and, once the line of dollars is on screen, the rule turns on: the ghost rides from Claude's mean run to p0ssess's in 1.5 seconds, the line it leaves behind is the saving, and the figure counts down beside it.
+- **The ride**, the page's one authored moment. With motion allowed the hero opens with the ghost where Claude stands and, once the line of dollars is on screen, it rides to p0ssess's mean run in 1.5 seconds. The line it leaves behind is the saving, and the figure counts down beside it. Choosing another view rides again, between the two views.
 - **Hairlines** draw out of their 24 px violet start when they scroll into view, a chart's **marks** land, and the bars of a side-by-side grow from the baseline, each once.
 - **The hand-off** plays once when it scrolls into view (4.8 seconds) and again on Replay.
 - **The island** slides its violet dot to the part in view and resizes to its name.
 
-Every animated part has a complete still state in the markup. With `prefers-reduced-motion: reduce`, or with scripts off, the page shows that: the rule on, both groups of runs on the line, the hand-off possessed with one measured job named, marks and bars in place. With scripts off the switch still changes the figure and moves the ghost, through `:has()`. If scripting is on but `page.js` never runs, the hero's proof shows itself after 2.5 seconds.
+Every animated part has a complete still state in the markup. With `prefers-reduced-motion: reduce`, or with scripts off, the page shows that: the ghost at p0ssess's mean, every run on its lane, the hand-off possessed with one measured job named, marks and bars in place. With scripts off the switch still changes the figures, lights the lanes and moves the ghost, through `:has()`. If scripting is on but `page.js` never runs, the hero's proof shows itself after 2.5 seconds.
 
 ## The savings benchmark
 
@@ -59,21 +59,22 @@ Every benchmark figure on the pages:
 <!--gen:readme-figures-->
 | On the pages | Figure | From |
 |---|---|---|
-| Hero, proof row 1, pricing: unit tests, Claude Opus 5.5 alone | mean $1.2644 a run, $1.10 to $1.45, 3 runs: $1.0966, $1.4520, $1.2446; 45 of 45 test files pass; mean 322 s | arm A, `unit-tests`, Opus |
-| The same, with p0ssess | mean $0.2842 a run, $0.27 to $0.30, 3 runs: $0.2763, $0.2739, $0.3024; 45 of 45 pass; mean 366 s | arm B, `unit-tests`, Opus |
-| "4.4× cheaper", for each passing test file | $0.08429 / $0.01895 = 4.45 | mean cost per correct item, A over B |
-| The ghost's two positions (`--on`, `--off` in `style.css`) | 18.95% and 84.29% | the two means as shares of the axis, $0 to $1.50 |
+| Hero: unit tests, Claude Opus 5.5 alone | mean $1.2644 a run, $1.10 to $1.45, 3 runs: $1.0966, $1.4520, $1.2446; 45 of 45 test files pass; mean 322 s | arm A, `unit-tests`, Opus |
+| Hero: Claude Opus 5.5 with its own Haiku subagent | mean $0.6362 a run, $0.60 to $0.71, 3 runs: $0.5985, $0.5956, $0.7147; 45 of 45 test files pass; mean 381 s | arm C, `unit-tests`, Opus |
+| Hero: with p0ssess, Opus in charge | mean $0.2842 a run, $0.27 to $0.30, 3 runs: $0.2763, $0.2739, $0.3024; 45 of 45 test files pass; mean 366 s | arm B, `unit-tests`, Opus |
+| Hero: Claude Sonnet 5.5 alone | mean $0.6968 a run, $0.60 to $0.86, 3 runs: $0.8650, $0.5973, $0.6280; 45 of 45 test files pass; mean 256 s | arm A, `unit-tests`, Sonnet |
+| Hero: with p0ssess, Sonnet in charge | mean $0.0961 a run, $0.09 to $0.10, 3 runs: $0.0969, $0.0911, $0.1004; 45 of 45 test files pass; mean 196 s | arm B, `unit-tests`, Sonnet |
+| Hero, "cheaper": against Opus with its Haiku, Opus alone, Sonnet alone | 2.24, 4.45 and 7.25 times | mean cost per correct item of the Claude setup over p0ssess's, same lead model |
+| The hero's positions (`--p-opus` and the rest, in `style.css`) | --p-opus: 18.95; --p-sonnet: 6.41; --a-opus: 84.29; --c-opus: 42.42; --a-sonnet: 46.45; | each setup's mean as a share of the axis, $0 to $1.50 |
 | "Where one run's $0.2763 went" | Claude Opus 5.5 $0.2438, Claude Haiku 5.5 $0.0034, deepseek-v4.1-flash $0.0291 | arm B run 1: Claude Code's cost per model, and the OpenRouter ledger |
-| Proof row 2 and the method's control: Claude with its own Haiku subagent | mean $0.6362 a run, $0.60 to $0.71, 3 runs; 45 of 45 pass; p0ssess is 2.24 times cheaper | arm C, `unit-tests`, Opus |
-| Proof row 3: unit tests with Claude Sonnet 5.5 in charge | alone mean $0.6968, $0.60 to $0.86; with p0ssess mean $0.0961, $0.09 to $0.10; 3 and 3 runs; all pass; 7.25 times cheaper | arms A and B, `unit-tests`, Sonnet |
-| Proof row 4, pricing: ticket triage, 300 tickets | alone mean $0.7332, $0.64 to $0.90; with p0ssess mean $0.3266, $0.24 to $0.39; 3 and 3 runs; all 300 right in each; 2.24 times cheaper | arms A and B, `ticket-triage` N=300, Opus |
+| The proof, pricing: ticket triage, 300 tickets | alone mean $0.7332, $0.64 to $0.90; with p0ssess mean $0.3266, $0.24 to $0.39; 3 and 3 runs; all 300 right in each; 2.24 times cheaper | arms A and B, `ticket-triage` N=300, Opus |
 | The hand-off figure's two jobs on deepseek-v4.1-flash | $0.0291 for the tests of 15 modules, $0.0781 for 300 tickets | the OpenRouter part of arm B run 1 of each job |
-| Pricing, "less a run" | $0.98 and $0.41 | the difference of the two means; the page says it is the mean |
+| Pricing, "less a run" | $0.98 and $0.41 | the difference of the two means, Opus in charge; the page says it is the mean |
 <!--/gen:readme-figures-->
 
 The business page's two charts and their tables hold every job that was tested, with Claude Opus 5.5 and with Claude Sonnet 5.5 in charge. A mark's position there is that run's cost for each correct item divided by the mean of Claude alone on the same job, so 1× is Claude's mean. The verdict beside each row is the criterion above applied to those runs. A run with nothing right has no cost for each right answer and is drawn at the right edge.
 
-The rule in the hero is the line the p0ssess runs carried, word for word. In 0.6.0 a rule limited which model could be used but did not make Claude delegate, so arm B carried it in words as well. The business page says so.
+The hero opens on the comparison with Claude's own Haiku subagent, because it answers the first thing a skeptic asks. The rule in the hero is the line the p0ssess runs carried, word for word. In 0.6.0 a rule limited which model could be used but did not make Claude delegate, so arm B carried it in words as well. The business page says so.
 
 ## The film test
 
@@ -170,9 +171,9 @@ The text is the policy's Markdown, set mechanically: headings get an id from the
 
 A chart is an inline SVG with no `viewBox`, so its text keeps its size and every horizontal position is a percentage of the chart's width: the CSP forbids inline styles, and attributes are not styles. The axis starts at zero.
 
-Every run is one mark. A violet square is a run with p0ssess, a gray circle is Claude alone and a gray ring is Claude with its own Haiku subagent, so the three are told apart by shape as well as color. Marks sit one row a run, so runs that land on the same cent stay apart, and each carries a 2 px ring of the ground. The band behind a group is its range, lowest run to highest. Each chart has a legend with the range in words, and the hero's and the business page's charts have a table of the same runs under them, so nothing is readable only from a mark. With a pointer on a mark, `page.js` and `pages.js` show that run's figures beside it (`data-tip`).
+Every run is one mark. A violet square is a run with p0ssess, a gray circle is Claude alone and a gray ring is Claude with its own Haiku subagent, so the three are told apart by shape as well as color. Runs that land on the same cent are stepped apart, and each mark carries a 2 px ring of the ground. The band behind a group is its range, lowest run to highest. Each group has its name and its range in words beside it, and the hero's and the business page's charts have a table of the same runs under them, so nothing is readable only from a mark. With a pointer on a mark, `page.js` and `pages.js` show that run's figures beside it (`data-tip`).
 
-The hero's line also carries two parts that are HTML over the SVG: the ghost (`.head`), which stands on the axis at the mean of whichever state the switch is in, and the saving (`.span`), drawn from the ghost to where Claude alone stands. `--at` is the ghost's position as a percentage of the axis; it is a registered custom property, so the ride between `--on` and `--off` can be transitioned.
+The hero's chart is five lanes on one axis, a lane for each setup (`ol.lanes`). The lanes of the view in hand are lit and the others step back. Under them, as HTML, are the ghost (`.head`), which stands on the axis at p0ssess's mean, the saving (`.span`), drawn from the ghost to the mean of the Claude setup in view, and the saving in words above it (`.span-say`). `--at` is the ghost's position and `--to` the other end, as percentages of the axis. Both are registered custom properties, so the ride between two views can be transitioned. The five means are in `.hero` in `style.css` (`--p-opus` and the rest).
 
 The marks, the legends' ranges and the tables of runs sit between `<!--gen:NAME-->` comments in the HTML, as does the table of figures above. A script kept with the benchmark writes them from its run records, so the charts and the numbers cannot drift apart. To change one by hand, change it between its comments and in the table above.
 
