@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"p0ssess/internal/account"
+	"p0ssess/internal/calibrate"
 	"p0ssess/internal/config"
 	"p0ssess/internal/history"
 	"p0ssess/internal/pme/paths"
@@ -143,9 +144,34 @@ func Run(raw []byte, d paths.Dirs, now time.Time) string {
 		})
 		markMainCalls(d, in.SessionID, in.Prompt)
 	}
+	if os.Getenv(calibrate.BaselineEnv) == calibrate.ModeAlone {
+		// A Claude-alone baseline run: p0ssess stays out of it.
+		return ""
+	}
 	out := strings.TrimSpace(Hint(in, d, now))
 	if n := account.Notice(d); n != "" {
 		out = strings.TrimSpace(out + " p0ssess: tell the user this once, in one line, as written: " + n)
+	} else if n := calibrationOffer(d); n != "" {
+		out = strings.TrimSpace(out + " p0ssess: tell the user this once, in one line, as written: " + n)
 	}
 	return out
+}
+
+// calibrationOffer is said once after Pro turns on, when nothing has been calibrated yet (D37).
+func calibrationOffer(d paths.Dirs) string {
+	if !account.Current(d).Pro() {
+		return ""
+	}
+	m := calibrate.LoadMeta(d)
+	if m.Offered {
+		return ""
+	}
+	m.Offered = true
+	if calibrate.SaveMeta(d, m) != nil {
+		return ""
+	}
+	if rs, err := calibrate.LoadResults(d); err != nil || len(rs.List) > 0 {
+		return ""
+	}
+	return "p0ssess Pro can tune its routes to how models do on your own key, with a short calibration run; /p0ssess:calibrate shows the cost before anything runs."
 }

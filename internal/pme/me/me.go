@@ -23,6 +23,8 @@ import (
 	"time"
 
 	"p0ssess"
+	"p0ssess/internal/account"
+	"p0ssess/internal/calibrate"
 	"p0ssess/internal/history"
 	"p0ssess/internal/pme/local"
 	"p0ssess/internal/pme/statusline"
@@ -37,8 +39,10 @@ type Server struct {
 	Scope local.Scope
 	Token string
 	Addr  string // host:port actually bound
-	srv   *http.Server
-	ln    net.Listener
+	// Savings builds the savings report; nil serves the free-plan empty report.
+	Savings func() (calibrate.Report, error)
+	srv     *http.Server
+	ln      net.Listener
 }
 
 // Start listens on 127.0.0.1:port (0 picks a free port).
@@ -52,6 +56,9 @@ func Start(e *local.Engine, scope local.Scope, port int) (*Server, error) {
 		return nil, err
 	}
 	s := &Server{E: e, Scope: scope, Token: hex.EncodeToString(b[:]), Addr: ln.Addr().String(), ln: ln}
+	s.Savings = func() (calibrate.Report, error) {
+		return calibrate.ReportFor(e.Dirs, e.Table.Table(), account.Current(e.Dirs).Pro(), e.Now())
+	}
 	s.srv = &http.Server{Handler: s.Handler(), ReadHeaderTimeout: 5 * time.Second}
 	go s.srv.Serve(ln)
 	return s, nil
@@ -88,6 +95,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET "+prefix+"/fonts/obel-mono.woff2", file("fonts/obel-mono.woff2", "font/woff2", static))
 	mux.HandleFunc("GET "+prefix+"/fonts/plex-sans-400.woff2", file("fonts/plex-sans-400.woff2", "font/woff2", static))
 	mux.HandleFunc("GET "+prefix+"/api/state", s.state)
+	mux.HandleFunc("GET "+prefix+"/api/savings", s.savings)
+	mux.HandleFunc("GET "+prefix+"/savings.pdf", s.savingsPDF)
 	mux.HandleFunc("POST "+prefix+"/api/settings", s.post(s.settings))
 	mux.HandleFunc("POST "+prefix+"/api/rules/remove", s.post(s.removeRule))
 	mux.HandleFunc("POST "+prefix+"/api/rules/add", s.post(s.addRule))

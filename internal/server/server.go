@@ -19,6 +19,8 @@ import (
 	"sync"
 	"time"
 
+	"p0ssess/internal/account"
+	"p0ssess/internal/calibrate"
 	"p0ssess/internal/config"
 	"p0ssess/internal/direct"
 	"p0ssess/internal/history"
@@ -27,6 +29,7 @@ import (
 	"p0ssess/internal/pme/local"
 	"p0ssess/internal/pme/mcpserver"
 	"p0ssess/internal/pme/paths"
+	"p0ssess/internal/pme/remote"
 	"p0ssess/internal/relay"
 	"p0ssess/internal/usage"
 )
@@ -138,6 +141,8 @@ func New(opt Options) (s *mcp.Server, closeFn func(), err error) {
 		case <-time.After(10 * time.Second):
 			ctx, cancel := context.WithTimeout(refreshCtx, 30*time.Second)
 			eng.SendOutcomes(ctx)
+			d := eng.Dirs
+			calibrate.SendPending(ctx, d, account.Current(d).Pro(), remote.New(d).PutCalibration)
 			cancel()
 		}
 	}()
@@ -275,6 +280,11 @@ type DirectJob struct {
 	OfferID string
 	UseCase string
 	Stakes  int
+	// Route is the ledger route; "" is "direct". Calibration runs use "calibrate", so they count as
+	// spend but never as accepted work in the history or the outcome records.
+	Route string
+	// Confirmed passes the user's yes for a whole job to the guard (local.Charge.Confirmed).
+	Confirmed bool
 }
 
 // RunDirect runs one direct-path job under every limit. With no model it picks one for the use case
@@ -461,7 +471,8 @@ func runAuthorized(ctx context.Context, cfg config.Config, eng *local.Engine, c 
 			req.MaxCostUSD = math.Ceil(est.CostUSD*1e6) / 1e6
 		}
 		g, err := eng.Authorize(local.Charge{Route: "direct", Model: req.Model, UseCase: job.UseCase, Stakes: job.Stakes,
-			MaxUSD: req.MaxCostUSD, ExplicitMax: true, EstimateUSD: est.CostUSD, Hold: DirectHold, Scope: local.Scope{Cwd: cwd}})
+			MaxUSD: req.MaxCostUSD, ExplicitMax: true, EstimateUSD: est.CostUSD, Hold: DirectHold, Confirmed: job.Confirmed,
+			Scope: local.Scope{Cwd: cwd}})
 		if err != nil {
 			return nil, "", err
 		}
@@ -501,7 +512,11 @@ func runAuthorized(ctx context.Context, cfg config.Config, eng *local.Engine, c 
 	} else if err != nil {
 		status = "failed"
 	}
-	run := local.Run{ID: runID, Route: "direct", Model: req.Model, CashUSD: res.Usage.CostUSD,
+	route := job.Route
+	if route == "" {
+		route = "direct"
+	}
+	run := local.Run{ID: runID, Route: route, Model: req.Model, CashUSD: res.Usage.CostUSD,
 		UpstreamUSD: res.Usage.UpstreamUSD, Status: status, OfferID: job.OfferID, UseCase: job.UseCase, Cwd: cwd}
 	if !res.Measured() {
 		run.CashUSD, run.Estimated = max(grant.MaxUSD, res.Usage.CostUSD), true

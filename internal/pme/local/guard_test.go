@@ -449,3 +449,23 @@ func TestApprovalAskArgsWork(t *testing.T) {
 		}
 	}
 }
+
+// TestAuthorizeConfirmed checks that a yes for a whole job answers the per-task and first-use asks, but
+// not a yes a call needs for itself, and that the caps still apply.
+func TestAuthorizeConfirmed(t *testing.T) {
+	e, proj := setup(t, "monthly_usd = 1\nper_task_usd = 0.001\ndaily_usd = -1\n[ask]\nfirst_use = true\n")
+	c := charge(proj, 0.01)
+	_, err := e.Authorize(c)
+	refused(t, err, true, "auto-approve limit")
+	c.Confirmed = true
+	if _, err := e.Authorize(c); err != nil {
+		t.Fatalf("confirmed call refused: %v", err)
+	}
+	addRule(t, e, proj, rules.Rule{Kind: rules.KindAsk, Models: []string{cheap}})
+	_, err = e.Authorize(c)
+	refused(t, err, true, "your rule says to ask")
+	os.Remove(e.Dirs.RulesFile())
+	c.MaxUSD = 2
+	_, err = e.Authorize(c)
+	refused(t, err, false, "monthly cap")
+}

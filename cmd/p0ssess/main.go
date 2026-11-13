@@ -36,6 +36,7 @@ usage:
   p0ssess me --brief                  a few lines: spend, limits, running jobs; starts the local page if none runs
   p0ssess me [--open]                 the local page: spend, Claude usage, rules, settings
   p0ssess account pro|status|notify|signout   p0ssess Pro: upgrade, check the plan, get notified, sign out
+  p0ssess calibrate [plan|run|status|baseline|report|forget]   Pro: measure models on samples with known answers
   p0ssess engine COMMAND ...          the routing engine (recommend, status, set, rules, outcome, ...)
   p0ssess direct COMMAND ...          one-shot OpenRouter calls with local files, and ffmpeg helpers
   p0ssess setup COMMAND ...           show, allow, statusline, summaries, undo (changes Claude Code settings)
@@ -118,6 +119,8 @@ func main() {
 		err = server.Serve(ctx, os.Stdin, os.Stdout, version)
 	case "account":
 		err = accountCmd(ctx, args)
+	case "calibrate":
+		err = calibrateCmd(ctx, args)
 	case "direct":
 		err = directCmd(ctx, args)
 	case "setup":
