@@ -86,6 +86,84 @@ func TestRules(t *testing.T) {
 	}
 }
 
+// denied reports whether the jail's global policies deny a shell command whatever the session allows.
+func denied(cmd string) bool {
+	for _, p := range jail.HardDenyShell {
+		if globMatch(p, cmd) {
+			return true
+		}
+	}
+	return false
+}
+
+// Ordinary test-writing work must not stop an unattended edit run for a yes; network, writes outside the
+// worktree and dangerous commands stay gated.
+func TestEditModeRunsTestWork(t *testing.T) {
+	edit := Rules("edit", false)
+	for _, c := range []struct{ action, resource string }{
+		{"edit", "tests/test_parser.py"},
+		{"edit", "tests/__init__.py"},
+		{"shell", "python3 -m unittest discover -s tests -t ."},
+		{"shell", "python3 -m pytest -q tests"},
+		{"shell", "pytest -q"},
+		{"shell", "go test ./..."},
+		{"shell", "npm test"},
+		{"shell", "npx jest --ci"},
+		{"shell", "cargo test"},
+		{"shell", "mkdir -p tests"},
+		{"shell", "touch tests/.probe"},
+		{"shell", "rm tests/.probe"},
+		{"shell", "id"},
+		{"shell", "whoami"},
+		{"shell", "true"},
+		{"shell", "test -w tests"},
+		{"shell", "printf '%s\\n' done"},
+		{"shell", "nl -ba src/parser.py"},
+		{"shell", "sha256sum tests/test_parser.py"},
+		{"shell", "git status --short"},
+		{"shell", "git worktree list"},
+		{"shell", "git branch --show-current"},
+		{"shell", "git -C /work/repo status --short"},
+		{"shell", "git add tests"},
+		{"shell", "git commit -m 'add tests'"},
+		{"shell", "git reset -q -- tests"},
+	} {
+		if got := lastMatch(edit, c.action, c.resource); got != "allow" || denied(c.resource) {
+			t.Errorf("edit mode %s %q: %s (denied by policy %v), want allow", c.action, c.resource, got, denied(c.resource))
+		}
+	}
+	for _, cmd := range []string{"curl https://example.com", "wget https://example.com", "pip install requests",
+		"npm install left-pad", "git fetch origin", "nc example.com 80", "env", "printenv"} {
+		if lastMatch(edit, "shell", cmd) != "ask" {
+			t.Errorf("edit mode %q must still ask", cmd)
+		}
+	}
+	for _, cmd := range []string{"sudo make install", "ssh host", "sh -c 'id'", "bash -c id", "git push origin main",
+		"git -C /work/repo push origin main", "docker run x", "rm -rf /"} {
+		if !denied(cmd) {
+			t.Errorf("%q must be denied by the jail policy", cmd)
+		}
+	}
+	if lastMatch(edit, "external_directory", "/etc/*") != "deny" {
+		t.Error("writes outside the worktree must stay denied")
+	}
+	// Read mode gains only the orientation checks, never writes or running code.
+	ro := Rules("read", false)
+	for _, cmd := range []string{"id", "true", "nl -ba x.py", "git worktree list"} {
+		if lastMatch(ro, "shell", cmd) != "allow" {
+			t.Errorf("read mode %q: want allow", cmd)
+		}
+	}
+	for _, cmd := range []string{"touch x", "python3 x.py", "git commit -m x", "git -C . status", "./run.sh"} {
+		if lastMatch(ro, "shell", cmd) == "allow" {
+			t.Errorf("read mode %q must not be allowed", cmd)
+		}
+	}
+	if lastMatch(ro, "edit", "tests/test_x.py") != "deny" {
+		t.Error("read mode must not edit")
+	}
+}
+
 func TestParseModel(t *testing.T) {
 	for in, want := range map[string]string{
 		"deepseek/deepseek-v4.1-flash":            "openrouter/deepseek/deepseek-v4.1-flash",

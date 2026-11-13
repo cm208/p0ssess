@@ -213,7 +213,7 @@ func (e *Engine) Run(ctx context.Context, req RunRequest, progress func(float64,
 		return nil, err
 	}
 	rec.Grant = grant
-	w, err := e.prompt(ctx, c, rec, req.Task, files, &sent)
+	w, err := e.prompt(ctx, c, rec, req.Task, orient(rec, j, req.Task), files, &sent)
 	if err != nil {
 		e.idleAfter(rec.SessionID)
 		var ae *opencode.APIError
@@ -564,7 +564,8 @@ func lastSeq(ctx context.Context, c *opencode.Client, sid string) (int64, error)
 
 // prompt records the session totals, subscribes to events, then sends the task. The global event feed has
 // no replay, so the subscription must be live before the prompt is admitted.
-func (e *Engine) prompt(ctx context.Context, c *opencode.Client, rec *SessionRecord, task string, files []opencode.FileAttachment, sent *bool) (*watch, error) {
+// task is the caller's text (hashed for the history); send is what the model receives.
+func (e *Engine) prompt(ctx context.Context, c *opencode.Client, rec *SessionRecord, task, send string, files []opencode.FileAttachment, sent *bool) (*watch, error) {
 	seq, err := lastSeq(ctx, c, rec.SessionID)
 	if err != nil {
 		return nil, fmt.Errorf("reading session log: %w", err)
@@ -583,7 +584,7 @@ func (e *Engine) prompt(ctx context.Context, c *opencode.Client, rec *SessionRec
 		w.stop()
 		return nil, errors.New("could not subscribe to OpenCode events")
 	}
-	item, err := c.Prompt(ctx, rec.SessionID, opencode.Prompt{Text: task, Files: files})
+	item, err := c.Prompt(ctx, rec.SessionID, opencode.Prompt{Text: send, Files: files})
 	if err != nil {
 		w.stop()
 		var ae *opencode.APIError

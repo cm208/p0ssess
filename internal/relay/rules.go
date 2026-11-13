@@ -11,14 +11,32 @@ var readShell = []string{
 	"rg *", "grep *", "find *", "sort *", "uniq *", "cut *", "diff *", "echo *", "which *", "basename *", "dirname *",
 	"git status", "git status *", "git diff", "git diff *", "git log", "git log *", "git show", "git show *",
 	"git --no-pager *", "git grep *", "git ls-files", "git ls-files *", "git blame *", "git rev-parse *",
-	"git branch", "git branch --list*", "git branch -a", "git branch -v*",
+	"git branch", "git branch --list*", "git branch -a", "git branch -v*", "git branch --show-current",
+	"git worktree list", "git worktree list *",
+	// Checks models run on their own to orient themselves; none of them changes anything.
+	"id", "id *", "whoami", "true", "false", "test *", "[ *", "printf *", "nl *", "od *", "cmp *", "comm *",
+	"sha256sum *", "sha1sum *", "md5sum *", "du *", "df", "df *", "realpath *", "readlink *", "date", "date *",
+	"mount", "findmnt", "findmnt *", "column *", "jq *", "python3 --version", "python --version",
 }
 
+// editShell is what edit mode runs without asking: writing in the session's worktree and running the
+// project's own build and test commands. Edit mode already runs the project's code (python3, node, make),
+// so these widen nothing; the jail stays the boundary (no network unless the project opted in, the
+// repository itself mounted read-only, the global policies). Network fetches and installs stay in
+// netShell, and anything else still asks.
 var editShell = []string{
-	"python3 *", "python *", "pytest", "pytest *", "go test*", "go build*", "go vet*", "gofmt *",
-	"node *", "npm test*", "npm run *", "npx vitest*", "cargo test*", "cargo build*", "cargo check*",
+	"python3 *", "python *", "pytest", "pytest *", "go test*", "go build*", "go vet*", "gofmt *", "go run *",
+	"node *", "npm test*", "npm run *", "npx vitest*", "npx jest*", "npx mocha*", "npx tsc*", "npx eslint*",
+	"yarn test*", "yarn run *", "pnpm test*", "pnpm run *", "bun test*", "deno test*",
+	"cargo test*", "cargo build*", "cargo check*", "cargo clippy*", "cargo fmt*", "cargo nextest*",
+	"mvn test*", "mvn -q test*", "gradle test*", "./gradlew test*", "dotnet test*", "dotnet build*",
+	"bundle exec rspec*", "rspec*", "rake test*", "ruby *", "phpunit*", "vendor/bin/phpunit*", "php *",
+	"mix test*", "swift test*", "swift build*", "ctest*", "uv run *", "tox*", "./*",
 	"make", "make *", "mkdir *", "touch *", "cp *", "mv *", "rm *", "sed *", "awk *", "tr *", "xargs *",
-	"git add *", "git restore *", "git checkout -- *", "git stash*", "patch *", "chmod +x *",
+	"tee *", "ln -s *", "chmod +x *", "patch *",
+	"git add *", "git restore *", "git checkout -- *", "git stash*", "git rm *", "git reset *", "git commit *",
+	"git -C * status", "git -C * status *", "git -C * diff*", "git -C * log*", "git -C * show*",
+	"git -C * rev-parse *", "git -C * ls-files*", "git -C * worktree list*",
 }
 
 // netShell are package installs and fetches, allowed in edit mode only when the project has shell

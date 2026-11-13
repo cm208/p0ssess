@@ -112,9 +112,15 @@ Rules are set when the relay creates a session. The last matching rule wins, so 
 |---|---|---|
 | read, glob, grep, todo | allow | allow |
 | edit | deny | allow (inside the worktree; policies still protect `.git`, `.ssh`, `.env`) |
-| shell | allowlist of read-only commands (`ls`, `cat`, `rg`, `git status/diff/log/show` …), anything else asks | the same plus build and test tools (`python3`, `pytest`, `go test`, `npm test`, `make`, `mkdir`, `mv`, `rm`, `sed` …), plus fetch and install commands with shell internet; anything else asks |
+| shell | allowlist of read-only commands (`ls`, `cat`, `rg`, `git status/diff/log/show`, and the checks models run to orient themselves: `id`, `true`, `test`, `printf`, `nl`, `sha256sum`, `mount`, `findmnt` …), anything else asks | the same plus writing and the project's own build and test commands (`python3`, `pytest`, `go test`, `npm test`, `npx jest`, `cargo test`, `mvn test`, `dotnet test`, `make`, `./script`, `mkdir`, `touch`, `mv`, `rm`, `sed`, `git add/commit/reset`, `git -C <dir> status/diff/log` …), plus fetch and install commands with shell internet; anything else asks |
 | webfetch, websearch | ask | ask |
 | question, subagent, skill, image generation, external directories | deny | deny |
+
+Edit mode already runs the project's code, so allowing its test runners and in-tree writes widens nothing; the jail is the boundary. What still asks or is denied: network fetches and installs without shell internet, `env`/`printenv`, anything not listed; the global policies deny `sudo`, `ssh`, nested shells, container tools, `git push` and writes to `.git`, `.ssh` and `.env`; the repository itself is mounted read-only and other directories are denied. Each task also gets a short note (see Task orientation) so models stop probing.
+
+### Task orientation
+
+Claude names paths in the repository, but an edit run works in a worktree (a cloud run under another root) where the repository is read-only or absent. In the 2026-11-13 savings benchmark cheap models spent edit runs testing mounts and write access and stopped for permission. So before sending, the relay rewrites paths under the repository root to the copy the model works in (not paths already under `.p0ssess/`), and appends a note: where the copy is, that changes are collected without committing, that the project's tests may be run, and that the run ends with a short report (each file changed, the test command and its counts, no file contents or diff). A read run's note says it is read-only and not to probe.
 
 An ask in read mode is rejected at once with feedback ("not allowed in this delegated read-only task … continue without it"), and the model carries on. An ask in edit mode pauses the run and comes back to Claude as `needs_permission`. The relay answers only `once` or `reject`; `always` is refused, because it would save a project-wide allow rule.
 
@@ -128,7 +134,7 @@ An ask in read mode is rejected at once with feedback ("not allowed in this dele
 | `answer_permission` | `once` or `reject` for a paused edit task, then blocks like `wait`. |
 | `models` | Models with context, price per million tokens and modalities, from the route table's model facts (or `P0SSESS_REGISTRY`, or `registry_file` in the config) or, with `live: true`, from OpenRouter. |
 
-Results are JSON with `answer` first, then `status` (`done`, `failed`, `interrupted`, `needs_permission`, `still_running`, `tampered`), `session_id`, `model`, `mode`, `cost_usd`, `tokens`, `duration_s`, `transcript_path`, `shell_internet` when it was on, `jail_start_s` on a session's first run, and for edit mode `worktree`, `diff_stat`, `diff_path` and `diff`.
+Results are JSON with `answer` first, then `status` (`done`, `failed`, `interrupted`, `needs_permission`, `still_running`, `tampered`), `session_id`, `model`, `mode`, `cost_usd`, `tokens`, `duration_s`, `transcript_path`, `shell_internet` when it was on, `jail_start_s` on a session's first run, and for edit mode `worktree`, `diff_stat`, `diff_path` and `apply` (the `git -C <repo> apply <diff_path>` command). The patch itself is not in the result (the agent passes on its path, so it only cost tokens), and an edit run's answer is capped at 4,000 characters (the model is asked for a short report: files changed and the test command with its counts; the full text stays in the run directory).
 
 ### Model ids
 
@@ -169,7 +175,7 @@ The OpenRouter key is read from `openrouter_key_file` (default `~/.config/p0sses
 
 ## The relay agent
 
-`agents/p0ssess.md` is the possession agent: it runs on Haiku, in the background, with `omitClaudeMd: true` and only the routed MCP tools (`direct`, `run`, `wait`, `answer_permission`, `abort`, `models`, `recommend`). Every routed task goes through it; main Claude never calls those tools itself (a `PreToolUse` hook refuses them outside a subagent, see DESIGN.md, Agents). For the agent path it calls `run` (and `wait` while the run is going), then replies with the other model's answer in one `<answer>` block and a `via: <model> · <cost> · <session>` line, plus, only when present, `files:`, `diff: <diff_path> (<diff stat>)` (never the diff itself; Claude reads the file when it reviews), `session:`, `permission:`, `shell internet: on` and `note:`. Results also list the media and office files an edit run added to its worktree (`files`, regular files inside the worktree only).
+`agents/p0ssess.md` is the possession agent: it runs on Haiku, in the background, with `omitClaudeMd: true` and only the routed MCP tools (`direct`, `run`, `wait`, `answer_permission`, `abort`, `models`, `recommend`). Every routed task goes through it; main Claude never calls those tools itself (a `PreToolUse` hook refuses them outside a subagent, see DESIGN.md, Agents). For the agent path it calls `run` (and `wait` while the run is going), then replies with the other model's answer in one `<answer>` block and a `via: <model> · <cost> · <session>` line, plus, only when present, `files:`, `diff: <diff_path> (<diff stat>)` (never the diff itself; Claude reads the file when the stakes call for it), `apply:`, `session:`, `permission:`, `shell internet: on` and `note:`. Results also list the media and office files an edit run added to its worktree (`files`, regular files inside the worktree only).
 
 The plugin installs it. Background subagents cannot ask for permission, and Claude Code ignores a project's `permissions.allow` in a folder you have not trusted, so the relay's tools must be allowed at user level: `p0ssess setup allow` adds those rules (with your consent, through `/p0ssess:p0ssess-me`). Named shortcut agents with a fixed model can be generated as well (see [ENGINE.md](ENGINE.md#shortcut-agents)).
 
