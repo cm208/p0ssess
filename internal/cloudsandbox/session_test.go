@@ -261,6 +261,8 @@ func TestReadModelRequestRejectsMalformed(t *testing.T) {
 		`{"id":"r_1","method":"POST","path":"/etc/passwd","body_bytes":0}`,
 		`{"id":"../x","method":"POST","path":"/api/v1/chat/completions","body_bytes":0}`,
 		`{"id":"r_1","method":"POST","path":"/api/v1/chat/completions","body_bytes":999999999}`,
+		`{"id":"r_1","method":"GET","path":"/api/v1/models/../key","body_bytes":0}`,
+		`{"id":"r_1","method":"GET","path":"/api/v1/models/x?y","body_bytes":0}`,
 		`not json`,
 	} {
 		if _, err := readModelRequest(context.Background(), bufio.NewReader(strings.NewReader(env+"\n"))); err == nil {

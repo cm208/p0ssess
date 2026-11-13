@@ -18,6 +18,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"path"
 	"regexp"
 	"strings"
 	"sync"
@@ -342,7 +343,7 @@ func readModelRequest(ctx context.Context, r io.Reader) (*http.Request, error) {
 		return nil, err
 	}
 	if env.ID == "" || strings.ContainsAny(env.ID, "/?#%") || env.BodyBytes < 0 || env.BodyBytes > maxModelBody ||
-		!strings.HasPrefix(env.Path, "/api/v1/") {
+		!strings.HasPrefix(env.Path, "/api/v1/") || strings.ContainsAny(env.Path, "%?#\\") || path.Clean(env.Path) != env.Path {
 		return nil, errors.New("malformed model request")
 	}
 	body := make([]byte, env.BodyBytes)
