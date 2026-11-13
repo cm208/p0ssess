@@ -151,3 +151,15 @@ func TestGenerationLookup(t *testing.T) {
 		t.Fatalf("%v %v", c, ok)
 	}
 }
+
+func TestMeterChargesCancelledCalls(t *testing.T) {
+	m := NewMeter()
+	m.StartRun(0.3, "x/y")
+	h := m.Guard(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadGateway) // what the key proxy answers when the upstream call breaks
+	}))
+	call(t, h, "POST", "/api/v1/chat/completions", `{"model":"x/y"}`)
+	if m.Spent() != 0.3 {
+		t.Fatalf("a call that broke after it was sent must count as the rest of the cap, spent %v", m.Spent())
+	}
+}

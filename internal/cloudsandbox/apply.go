@@ -3,8 +3,10 @@ package cloudsandbox
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -14,11 +16,28 @@ import (
 func CheckPatch(patch []byte) error {
 	sc := bufio.NewScanner(bytes.NewReader(patch))
 	sc.Buffer(make([]byte, 1<<20), 64<<20)
-	inHunk := false
+	oldLeft, newLeft := 0, 0
 	for sc.Scan() {
 		l := sc.Text()
+		if oldLeft > 0 || newLeft > 0 {
+			switch {
+			case strings.HasPrefix(l, " ") || l == "":
+				oldLeft--
+				newLeft--
+			case strings.HasPrefix(l, "-"):
+				oldLeft--
+			case strings.HasPrefix(l, "+"):
+				newLeft--
+			case strings.HasPrefix(l, "\\"):
+			default:
+				return fmt.Errorf("malformed hunk in the sandbox diff near %q", clipLine(l))
+			}
+			if oldLeft < 0 || newLeft < 0 {
+				return errors.New("malformed hunk in the sandbox diff")
+			}
+			continue
+		}
 		if strings.HasPrefix(l, "diff --git ") {
-			inHunk = false
 			rest := strings.TrimPrefix(l, "diff --git ")
 			a, b, ok := splitGitPair(rest)
 			if !ok {
@@ -31,14 +50,14 @@ func CheckPatch(patch []byte) error {
 			}
 			continue
 		}
-		if strings.HasPrefix(l, "@@") {
-			inHunk = true
+		if strings.HasPrefix(l, "@@ ") {
+			m := hunkRE.FindStringSubmatch(l)
+			if m == nil {
+				return fmt.Errorf("malformed hunk header %q", clipLine(l))
+			}
+			oldLeft, newLeft = hunkCount(m[1]), hunkCount(m[2])
 			continue
 		}
-		if inHunk && (strings.HasPrefix(l, "+") || strings.HasPrefix(l, "-") || strings.HasPrefix(l, " ") || l == "" || strings.HasPrefix(l, "\\")) {
-			continue
-		}
-		inHunk = false
 		for _, pre := range []string{"--- ", "+++ ", "rename from ", "rename to ", "copy from ", "copy to "} {
 			if p, ok := strings.CutPrefix(l, pre); ok {
 				if p == "/dev/null" {
@@ -60,6 +79,20 @@ func CheckPatch(patch []byte) error {
 		}
 	}
 	return sc.Err()
+}
+
+var hunkRE = regexp.MustCompile(`^@@ -\d+(?:,(\d+))? \+\d+(?:,(\d+))? @@`)
+
+// hunkCount is a hunk range's line count; a range without one counts one line.
+func hunkCount(s string) int {
+	if s == "" {
+		return 1
+	}
+	n, err := strconv.Atoi(s)
+	if err != nil || n < 0 || n > 1<<26 {
+		return 1 << 26
+	}
+	return n
 }
 
 func clipLine(s string) string {

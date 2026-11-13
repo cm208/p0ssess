@@ -172,6 +172,10 @@ func (m *Meter) settle(ctx context.Context, tw *teeWriter) {
 	switch {
 	case found:
 		m.add(cost)
+	case ctx.Err() != nil, tw.status == http.StatusBadGateway && !tw.wroteBody:
+		// Cancelled, or the upstream connection failed, after the request may have reached OpenRouter:
+		// the call may have been billed, so it counts as the rest of the cap.
+		m.chargeRest()
 	case tw.status >= 400 && !tw.wroteBody:
 		// An upstream refusal with no body bills nothing.
 	case tw.status >= 400 && id == "":

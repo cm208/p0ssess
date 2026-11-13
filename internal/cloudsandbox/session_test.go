@@ -284,6 +284,8 @@ func TestCheckPatch(t *testing.T) {
 		"diff --git \"a/.git/x\" \"b/.git/x\"\n",
 		"diff --git a/x b/x\n--- a/x\n+++ \"b/.git/config\"\n",
 		"diff --git a/.git. b/.git.\n",
+		// A traditional header straight after a finished hunk is a header, not hunk content.
+		"diff --git a/x b/x\n--- a/x\n+++ b/x\n@@ -1 +1 @@\n-a\n+b\n--- a/.git/config\n+++ b/.git/config\n@@ -1 +1 @@\n-x\n+y\n",
 	} {
 		if err := CheckPatch([]byte(bad)); err == nil {
 			t.Errorf("accepted %q", bad)
