@@ -9,7 +9,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -18,17 +17,15 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"p0ssess/internal/pme/catalog"
-	"p0ssess/internal/pme/engine"
 	"p0ssess/internal/pme/hook"
+	"p0ssess/internal/pme/local"
 	"p0ssess/internal/pme/me"
 	"p0ssess/internal/pme/paths"
-	"p0ssess/internal/pme/registry"
 	"p0ssess/internal/pme/statusline"
 	"p0ssess/internal/rules"
 )
 
-const usage = `p0ssess engine: the Predictive Model Engine
+const usage = `p0ssess engine: routing, limits and history
 
   recommend   rank routes for a task (--use-case ID or --text/--in/--out ...)
   status      spend, limits, Claude pressure and λ
@@ -36,13 +33,16 @@ const usage = `p0ssess engine: the Predictive Model Engine
   rules       list | add '<json>' [--dry-run] | remove ID
   outcome     record what happened to an offer
   tendencies  learned patterns and rule suggestions
-  usecases    list the catalog
-  refresh     fetch OpenRouter's public model list (cached a day)
+  usecases    list the use case ids
+  refresh     fetch the signed route table now
   statusline  status line wrapper (reads Claude Code's JSON on stdin)
   hook        UserPromptSubmit hook (reads the hook JSON on stdin)
   me          open the local settings page
   version
 `
+
+// loadEngine is swapped in tests.
+var loadEngine = local.Load
 
 // Version is the binary's version; the main command sets it.
 var Version = "dev"
@@ -86,7 +86,7 @@ func Run(args []string, s IO) int {
 		fmt.Fprintln(s.Out, "p0ssess", Version)
 		return 0
 	}
-	e, err := engine.Load(d)
+	e, err := loadEngine(d)
 	if err != nil {
 		fmt.Fprintln(s.Err, "p0ssess:", err)
 		return 1
@@ -99,7 +99,7 @@ func Run(args []string, s IO) int {
 		runErr = status(e, rest, s)
 	case "set":
 		if len(rest) != 2 {
-			runErr = fmt.Errorf("usage: set KEY VALUE (keys: %s)", strings.Join(engine.SettingKeys(), ", "))
+			runErr = fmt.Errorf("usage: set KEY VALUE (keys: %s)", strings.Join(local.SettingKeys(), ", "))
 			break
 		}
 		var msg string
@@ -114,10 +114,15 @@ func Run(args []string, s IO) int {
 	case "tendencies":
 		runErr = tendencies(e, rest, s)
 	case "usecases":
+		t := e.Table.Table()
+		if t.Empty() {
+			runErr = errors.New("no route table yet; run p0ssess engine refresh")
+			break
+		}
 		tw := tabwriter.NewWriter(s.Out, 0, 2, 2, ' ', 0)
-		for _, u := range e.Cat.UseCases {
+		for _, u := range t.UseCases {
 			lo, hi := u.StakesBounds()
-			fmt.Fprintf(tw, "%d\t%s\t%s\tstakes %d-%d\t%s\t%s\n", u.N, u.ID, u.Kind(), lo, hi, u.Path, u.Task)
+			fmt.Fprintf(tw, "%d\t%s\t%s\tstakes %d-%d\t%s\t%s\n", u.N, u.ID, u.Kind, lo, hi, u.Path, u.Task)
 		}
 		tw.Flush()
 	case "refresh":
@@ -154,7 +159,7 @@ func list(v string) []string {
 	return out
 }
 
-func recommend(e *engine.Engine, args []string, s IO) error {
+func recommend(e *local.Engine, args []string, s IO) error {
 	fs := flags("recommend", s)
 	uc := fs.String("use-case", "", "catalog id")
 	text := fs.String("text", "", "short task description")
@@ -163,7 +168,7 @@ func recommend(e *engine.Engine, args []string, s IO) error {
 	path := fs.String("path", "", "direct or agent")
 	stakes := fs.Int("stakes", 0, "1-4")
 	size := fs.String("size", "", "T, S, M, R or L")
-	var p catalog.Profile
+	var p local.Profile
 	fs.IntVar(&p.InTokens, "in-tokens", 0, "")
 	fs.IntVar(&p.OutTokens, "out-tokens", 0, "")
 	fs.IntVar(&p.Bytes, "bytes", 0, "input size in bytes")
@@ -184,7 +189,7 @@ func recommend(e *engine.Engine, args []string, s IO) error {
 		return err
 	}
 	p.Text, p.Inputs, p.Outputs, p.Path, p.Size, p.Stakes = *text, list(*in), list(*out), *path, *size, *stakes
-	req := engine.Request{UseCase: *uc, Profile: &p, Stakes: *stakes, Lead: *lead, Top: *top, Record: *record, Scope: engine.Scope{Cwd: *cwd}}
+	req := local.Request{UseCase: *uc, Profile: &p, Stakes: *stakes, Lead: *lead, Top: *top, Record: *record, Scope: local.Scope{Cwd: *cwd}}
 	rec, err := e.Recommend(req)
 	if err != nil {
 		return err
@@ -197,7 +202,7 @@ func recommend(e *engine.Engine, args []string, s IO) error {
 }
 
 // PrintRecommendation is the terminal view of a recommendation.
-func PrintRecommendation(w io.Writer, r *engine.Recommendation) {
+func PrintRecommendation(w io.Writer, r *local.Recommendation) {
 	fmt.Fprintf(w, "%s (#%d, %s) · stakes %d · λ %.2f (%s)\n", r.UseCase.ID, r.UseCase.N, r.UseCase.Kind, r.Stakes, r.Lambda.Value, r.Lambda.Note)
 	if len(r.Classification) > 1 {
 		var alts []string
@@ -253,14 +258,14 @@ func shortID(id string) string {
 	return id
 }
 
-func status(e *engine.Engine, args []string, s IO) error {
+func status(e *local.Engine, args []string, s IO) error {
 	fs := flags("status", s)
 	asJSON := fs.Bool("json", false, "print JSON")
 	cwd := fs.String("cwd", "", "project directory")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
-	st, err := e.Status(engine.Scope{Cwd: *cwd})
+	st, err := e.Status(local.Scope{Cwd: *cwd})
 	if err != nil {
 		return err
 	}
@@ -274,7 +279,7 @@ func status(e *engine.Engine, args []string, s IO) error {
 	}
 	fmt.Fprintf(s.Out, "spent $%.2f today, $%.2f of $%.2f this month (daily limit %s, per task $%.2f)\n", st.Spend.Today, st.Spend.Month, b.MonthlyUSD, daily, b.PerTaskUSD)
 	fmt.Fprintf(s.Out, "plan %s · λ %.2f · %s\n", st.Plan, st.Lambda.Value, st.Lambda.Note)
-	fmt.Fprintf(s.Out, "privacy %s · save Claude %v · live models: %s\n", b.Privacy.Mode, b.SaveClaude, st.LiveModels)
+	fmt.Fprintf(s.Out, "privacy %s · save Claude %v · route table %s\n", b.Privacy.Mode, b.SaveClaude, st.RouteTable)
 	for _, j := range st.Running {
 		fmt.Fprintf(s.Out, "running: %s %s\n", shortID(j.Model), j.UseCase)
 	}
@@ -284,7 +289,7 @@ func status(e *engine.Engine, args []string, s IO) error {
 	return nil
 }
 
-func rulesCmd(e *engine.Engine, args []string, s IO) error {
+func rulesCmd(e *local.Engine, args []string, s IO) error {
 	sub := "list"
 	if len(args) > 0 {
 		sub, args = args[0], args[1:]
@@ -298,7 +303,7 @@ func rulesCmd(e *engine.Engine, args []string, s IO) error {
 	if err != nil {
 		return err
 	}
-	scope := engine.Scope{Cwd: *cwd, Session: *session}
+	scope := local.Scope{Cwd: *cwd, Session: *session}
 	switch sub {
 	case "list":
 		rs, err := e.RulesList(scope, "")
@@ -347,9 +352,9 @@ func rulesCmd(e *engine.Engine, args []string, s IO) error {
 	return fmt.Errorf("unknown rules command %q", sub)
 }
 
-func outcome(e *engine.Engine, args []string, s IO) error {
+func outcome(e *local.Engine, args []string, s IO) error {
 	fs := flags("outcome", s)
-	var o engine.Outcome
+	var o local.Outcome
 	fs.StringVar(&o.OfferID, "offer", "", "offer id from recommend")
 	fs.StringVar(&o.Model, "model", "", "model that ran (or was offered)")
 	fs.StringVar(&o.Outcome, "outcome", "", "accepted, redo, overridden or declined")
@@ -367,13 +372,13 @@ func outcome(e *engine.Engine, args []string, s IO) error {
 	return err
 }
 
-func tendencies(e *engine.Engine, args []string, s IO) error {
+func tendencies(e *local.Engine, args []string, s IO) error {
 	fs := flags("tendencies", s)
 	asJSON := fs.Bool("json", false, "print JSON")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
-	l := e.Learned(engine.Scope{})
+	l := e.Learned(local.Scope{})
 	if *asJSON {
 		return writeJSON(s.Out, l)
 	}
@@ -389,34 +394,22 @@ func tendencies(e *engine.Engine, args []string, s IO) error {
 	return nil
 }
 
-func refresh(e *engine.Engine, args []string, s IO) error {
+func refresh(e *local.Engine, args []string, s IO) error {
 	fs := flags("refresh", s)
-	force := fs.Bool("force", false, "ignore the cache age")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
-	age := registry.LiveMaxAge
-	if *force {
-		age = 0
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	fetched, err := registry.Refresh(ctx, &http.Client{Timeout: 30 * time.Second}, e.Dirs.ModelsCache(), age, "")
+	line, err := e.RefreshTable(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("route table not refreshed: %w", err)
 	}
-	if err := e.Reg.MergeLive(e.Dirs.ModelsCache()); err != nil {
-		return err
-	}
-	verb := "cached list is fresh"
-	if fetched {
-		verb = "fetched"
-	}
-	fmt.Fprintf(s.Out, "%s: %d models as of %s\n", verb, e.Reg.LiveCount, e.Reg.LiveAsOf)
+	fmt.Fprintln(s.Out, line)
 	return nil
 }
 
-func serveMe(e *engine.Engine, args []string, s IO) error {
+func serveMe(e *local.Engine, args []string, s IO) error {
 	fs := flags("me", s)
 	port := fs.Int("port", 0, "port on 127.0.0.1 (0 picks one)")
 	open := fs.Bool("open", false, "open the page in a browser")
@@ -426,7 +419,7 @@ func serveMe(e *engine.Engine, args []string, s IO) error {
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
-	srv, err := me.Start(e, engine.Scope{Cwd: *cwd}, *port)
+	srv, err := me.Start(e, local.Scope{Cwd: *cwd}, *port)
 	if err != nil {
 		return err
 	}

@@ -10,8 +10,7 @@
   "mcpServers": {
     "p0ssess": {
       "command": "${CLAUDE_PLUGIN_ROOT}/bin/p0ssess",
-      "args": ["mcp"],
-      "env": { "P0SSESS_REGISTRY": "${CLAUDE_PLUGIN_ROOT}/registry/models.json" }
+      "args": ["mcp"]
     }
   }
 }

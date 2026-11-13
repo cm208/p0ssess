@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"p0ssess/internal/pme/table"
 )
 
 // Live tests make real, paid OpenRouter calls. They run only with P0SSESS_LIVE=1 and a key file in
@@ -31,8 +33,8 @@ func liveClient(t *testing.T) *Client {
 	}
 	c := New(strings.TrimSpace(string(b)))
 	c.StateDir = t.TempDir()
-	if err := c.Catalog.LoadRegistry("../../registry/models.json"); err != nil {
-		t.Log("no registry snapshot; using live prices:", err)
+	if p, err := table.Open(t.TempDir()).ModelsFile(); err != nil || c.Catalog.LoadRegistry(p) != nil {
+		t.Log("no route table models; using live prices")
 	}
 	return c
 }

@@ -21,10 +21,11 @@ import (
 	"p0ssess/internal/direct"
 	"p0ssess/internal/history"
 	"p0ssess/internal/opencode"
-	"p0ssess/internal/pme/engine"
 	"p0ssess/internal/pme/hook"
+	"p0ssess/internal/pme/local"
 	"p0ssess/internal/pme/mcpserver"
 	"p0ssess/internal/pme/paths"
+	"p0ssess/internal/pme/table/tabletest"
 	"p0ssess/internal/relay"
 	"p0ssess/internal/usage"
 )
@@ -74,7 +75,7 @@ func withFake(t *testing.T, f *fakeRouter) {
 	t.Cleanup(func() { newClient = old })
 }
 
-func directEnv(t *testing.T, budgetTOML string) (config.Config, *engine.Engine, string) {
+func directEnv(t *testing.T, budgetTOML string) (config.Config, *local.Engine, string) {
 	home := t.TempDir()
 	t.Setenv("P0SSESS_HOME", home)
 	t.Setenv("P0SSESS_OPENROUTER_KEY_FILE", filepath.Join(home, "key"))
@@ -94,14 +95,17 @@ func directEnv(t *testing.T, budgetTOML string) (config.Config, *engine.Engine, 
 	if err != nil {
 		t.Fatal(err)
 	}
-	eng, err := engine.Load(paths.Default())
+	tabletest.Down(t)
+	eng, err := local.Load(paths.Default())
 	if err != nil {
 		t.Fatal(err)
 	}
+	eng.Table = tabletest.Store(eng.Dirs.Cache)
+	eng.Table.Checked(time.Now())
 	return cfg, eng, proj
 }
 
-func ledger(t *testing.T, eng *engine.Engine) (*history.Ledger, history.Spend) {
+func ledger(t *testing.T, eng *local.Engine) (*history.Ledger, history.Spend) {
 	es, err := history.Read(eng.Dirs.HistoryFile())
 	if err != nil {
 		t.Fatal(err)
@@ -165,7 +169,7 @@ func TestRunDirectEnforcesAtTheTool(t *testing.T) {
 	cfg, eng, proj := directEnv(t, "monthly_usd = 1\nper_task_usd = 0\ndaily_usd = -1\n[privacy]\nmode = \"zdr\"\n")
 	req := direct.Request{Model: testModel, Prompt: "hi", MaxTokens: 10}
 	_, _, err := RunDirect(context.Background(), cfg, eng, req, DirectJob{})
-	var r *engine.Refusal
+	var r *local.Refusal
 	if !errors.As(err, &r) || !r.NeedsApproval || !strings.Contains(err.Error(), `"max_count":1`) {
 		t.Errorf("an estimate above the per-task limit: %v", err)
 	}
@@ -338,7 +342,7 @@ func TestDirectPicksTheModel(t *testing.T) {
 	if err != nil || res == nil || res.Model == "" {
 		t.Fatalf("picked: %+v %v", res, err)
 	}
-	if m := eng.Reg.Get(res.Model); m == nil || !m.HasInput("video") {
+	if m := eng.Table.Table().Model(res.Model); m == nil || !m.HasInput("video") {
 		t.Errorf("picked %s, which does not take video", res.Model)
 	}
 	l, _ := ledger(t, eng)
@@ -404,7 +408,7 @@ func TestApprovalFromTheMessageCoversTheCall(t *testing.T) {
 			if err != nil {
 				t.Fatalf("approvals_add %s: %v", m[1], err)
 			}
-			saved := out.(map[string]any)["rule"].(engine.RuleView)
+			saved := out.(map[string]any)["rule"].(local.RuleView)
 			if !strings.HasSuffix(saved.Text, ", 1 run (session, until "+saved.Expires.Local().Format("Jan 2 15:04")+")") {
 				t.Errorf("rule text: %q", saved.Text)
 			}
@@ -485,7 +489,7 @@ func TestDirectFallsBackOnProviderFailure(t *testing.T) {
 	// The fallback stays within the caller's ceiling: it reserves at most what is left of it.
 	models = nil
 	capped := req
-	capped.MaxCostUSD, capped.MaxGiven = 0.0002, true
+	capped.MaxCostUSD, capped.MaxGiven = 0.002, true
 	res, _, err = RunDirect(context.Background(), cfg, eng, capped, DirectJob{UseCase: "video-understand", Stakes: 1})
 	l, _ = ledger(t, eng)
 	var last history.Entry
@@ -494,7 +498,7 @@ func TestDirectFallsBackOnProviderFailure(t *testing.T) {
 			last = e
 		}
 	}
-	if err != nil || len(models) != 2 || last.Model != models[1] || last.CashUSD > 0.0002 {
+	if err != nil || len(models) != 2 || last.Model != models[1] || last.CashUSD > 0.002 {
 		t.Errorf("under a ceiling: %v, models %v, reserved %+v", err, models, last)
 	}
 	// With no other option that runs without asking, nothing else is tried, and the note says so.

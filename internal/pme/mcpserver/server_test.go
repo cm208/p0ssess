@@ -6,9 +6,12 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
-	"p0ssess/internal/pme/engine"
+	"p0ssess/internal/pme/local"
 	"p0ssess/internal/pme/paths"
+	"p0ssess/internal/pme/remote"
+	"p0ssess/internal/pme/table/tabletest"
 )
 
 // run answers each tools/call line through Call, in the shape the MCP server returns.
@@ -20,10 +23,16 @@ func run(t *testing.T, lines ...string) []map[string]any {
 	os.MkdirAll(filepath.Join(proj, ".git"), 0o755)
 	t.Setenv("CLAUDE_PROJECT_DIR", proj)
 	t.Setenv("CLAUDE_CODE_SESSION_ID", "")
-	e, err := engine.Load(paths.Default())
+	e, err := local.Load(paths.Default())
 	if err != nil {
 		t.Fatal(err)
 	}
+	e.Table = tabletest.Store(e.Dirs.Cache)
+	e.Table.Checked(time.Now())
+	tabletest.Serve(t, func(req remote.Request) (int, any) {
+		return 200, remote.Response{V: 1, UseCase: remote.UseCase{ID: req.UseCase, Kind: "media", Task: "Fake task"}, Stakes: max(req.Stakes, 1),
+			Options: []remote.Option{{Route: "direct", Model: "google/gemini-3.8-flash", Total: 0.01, Breakdown: remote.Breakdown{Cash: 0.002}, CashMax: 0.003, EstimateUSD: 0.002}}}
+	})
 	s := &Server{E: e}
 	var res []map[string]any
 	for _, line := range lines {
@@ -96,7 +105,7 @@ func TestToolsRoundTrip(t *testing.T) {
 	if err := json.Unmarshal([]byte(text(t, res[0])), &rec); err != nil {
 		t.Fatal(err)
 	}
-	if rec.OfferID == "" || len(rec.Options) == 0 || !strings.HasPrefix(rec.Options[0], "direct ") || len(text(t, res[0])) > 2000 {
+	if rec.OfferID == "" || len(rec.Options) == 0 || rec.Options[0] != "direct google/gemini-3.8-flash · total $0.0100 · about $0.0020 cash · p_fail 0.00" || len(text(t, res[0])) > 2000 {
 		t.Fatalf("recommend = %+v (%d bytes)", rec, len(text(t, res[0])))
 	}
 	if dry := text(t, res[1]); !strings.Contains(dry, "never use glm-5.3-flash for media work (project)") || !strings.Contains(dry, "not saved") {

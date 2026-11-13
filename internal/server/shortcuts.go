@@ -15,7 +15,7 @@ import (
 
 	"p0ssess/internal/history"
 	"p0ssess/internal/mcp"
-	"p0ssess/internal/pme/engine"
+	"p0ssess/internal/pme/local"
 	"p0ssess/internal/pme/paths"
 )
 
@@ -83,7 +83,7 @@ func ListShortcuts(dir string) []Shortcut {
 
 // SuggestShortcuts proposes shortcuts for routes the user reliably accepts (three or more outcomes,
 // mostly accepted) that have no shortcut yet.
-func SuggestShortcuts(e *engine.Engine, dir string) []Shortcut {
+func SuggestShortcuts(e *local.Engine, dir string) []Shortcut {
 	have := map[string]bool{}
 	for _, s := range ListShortcuts(dir) {
 		have[s.Model] = true
@@ -190,7 +190,7 @@ func yamlQuote(s string) string {
 	return string(b)
 }
 
-func addShortcutTools(s *mcp.Server, e *engine.Engine) {
+func addShortcutTools(s *mcp.Server, e *local.Engine) {
 	obj := func(props map[string]any, req ...string) json.RawMessage {
 		m := map[string]any{"type": "object", "properties": props}
 		if len(req) > 0 {

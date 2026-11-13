@@ -23,7 +23,7 @@ import (
 
 	"p0ssess"
 	"p0ssess/internal/history"
-	"p0ssess/internal/pme/engine"
+	"p0ssess/internal/pme/local"
 	"p0ssess/internal/pme/statusline"
 	"p0ssess/internal/rules"
 )
@@ -32,8 +32,8 @@ import (
 var web embed.FS
 
 type Server struct {
-	E     *engine.Engine
-	Scope engine.Scope
+	E     *local.Engine
+	Scope local.Scope
 	Token string
 	Addr  string // host:port actually bound
 	srv   *http.Server
@@ -41,7 +41,7 @@ type Server struct {
 }
 
 // Start listens on 127.0.0.1:port (0 picks a free port).
-func Start(e *engine.Engine, scope engine.Scope, port int) (*Server, error) {
+func Start(e *local.Engine, scope local.Scope, port int) (*Server, error) {
 	ln, err := net.Listen("tcp", net.JoinHostPort("127.0.0.1", strconv.Itoa(port)))
 	if err != nil {
 		return nil, err
@@ -146,12 +146,12 @@ type window struct {
 }
 
 type state struct {
-	Status     *engine.Status      `json:"status"`
+	Status     *local.Status       `json:"status"`
 	Windows    []window            `json:"windows"`
 	ReadingAge int64               `json:"reading_age_seconds"`
-	Learned    engine.Learned      `json:"learned"`
+	Learned    local.Learned       `json:"learned"`
 	Runs       []history.Entry     `json:"runs"`
-	Rules      []engine.RuleView   `json:"rules"`
+	Rules      []local.RuleView    `json:"rules"`
 	Preset     string              `json:"lambda_preset"`
 	Presets    []string            `json:"presets"`
 	Statusline statusline.Settings `json:"statusline"`
@@ -196,7 +196,7 @@ func (s *Server) settings(body json.RawMessage) (any, error) {
 		return nil, err
 	}
 	var saved []string
-	for _, k := range engine.SettingKeys() {
+	for _, k := range local.SettingKeys() {
 		v, ok := req.Changes[k]
 		if !ok {
 			continue
@@ -208,7 +208,7 @@ func (s *Server) settings(body json.RawMessage) (any, error) {
 		saved = append(saved, msg)
 	}
 	for k := range req.Changes {
-		if !contains(engine.SettingKeys(), k) {
+		if !contains(local.SettingKeys(), k) {
 			return map[string]any{"saved": saved}, fmt.Errorf("unknown setting %q", k)
 		}
 	}

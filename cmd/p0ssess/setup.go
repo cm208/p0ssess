@@ -21,7 +21,7 @@ import (
 
 	"p0ssess/internal/config"
 	"p0ssess/internal/jail"
-	"p0ssess/internal/pme/engine"
+	"p0ssess/internal/pme/local"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/proc"
 	"p0ssess/internal/server"
@@ -229,7 +229,7 @@ func setupStatusLine(st setupState, dry bool) error {
 		}
 		json.Unmarshal(cur, &prev)
 		if !dry {
-			e, err := engine.Load(paths.Default())
+			e, err := local.Load(paths.Default())
 			if err != nil {
 				return err
 			}
@@ -275,7 +275,7 @@ func setupUndo(st setupState, what string, dry bool) error {
 		if (what == "all" || what == "statusline") && st.StatusLine != nil {
 			restore(o, "statusLine", st.StatusLine)
 			if !dry {
-				if e, err := engine.Load(paths.Default()); err == nil {
+				if e, err := local.Load(paths.Default()); err == nil {
 					e.SetSetting("statusline.command", "")
 				}
 			}

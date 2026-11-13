@@ -19,6 +19,8 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"p0ssess/internal/pme/table"
 )
 
 const testKey = "test-key-not-real-0123456789"
@@ -665,11 +667,16 @@ func TestLiveCatalogLookup(t *testing.T) {
 	}
 }
 
-func TestRegistrySnapshotLoads(t *testing.T) {
+// TestRouteTableModelsLoad: the model facts of the route table built into the binary price direct calls.
+func TestRouteTableModelsLoad(t *testing.T) {
 	cat := NewCatalog("http://127.0.0.1:0", http.DefaultClient)
 	cat.NoLive = true
-	if err := cat.LoadRegistry("../../registry/models.json"); err != nil {
-		t.Skip("registry snapshot not available:", err)
+	p, err := table.Open(t.TempDir()).ModelsFile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := cat.LoadRegistry(p); err != nil {
+		t.Fatal(err)
 	}
 	m, err := cat.Lookup(context.Background(), "google/gemini-3.8-flash")
 	if err != nil {

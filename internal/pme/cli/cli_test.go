@@ -7,6 +7,12 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
+
+	"p0ssess/internal/pme/local"
+	"p0ssess/internal/pme/paths"
+	"p0ssess/internal/pme/remote"
+	"p0ssess/internal/pme/table/tabletest"
 )
 
 func run(t *testing.T, stdin string, args ...string) (int, string, string) {
@@ -16,9 +22,24 @@ func run(t *testing.T, stdin string, args ...string) (int, string, string) {
 	return code, out.String(), errb.String()
 }
 
+func useFixture(t *testing.T) {
+	old := loadEngine
+	loadEngine = func(d paths.Dirs) (*local.Engine, error) {
+		e, err := old(d)
+		if err == nil {
+			e.Table = tabletest.Store(d.Cache)
+			e.Table.Checked(time.Now())
+		}
+		return e, err
+	}
+	t.Cleanup(func() { loadEngine = old })
+}
+
 func TestCLI(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("P0SSESS_HOME", home)
+	useFixture(t)
+	tabletest.Down(t)
 	proj := filepath.Join(home, "proj")
 	os.MkdirAll(filepath.Join(proj, ".git"), 0o755)
 
@@ -59,8 +80,15 @@ func TestCLI(t *testing.T) {
 	if code, out, _ := run(t, `{"session_id":"s","model":{"id":"claude-sonnet-5-5"}}`, "statusline"); code != 0 || strings.TrimSpace(out) != "ᗣ p0ssess  $0.04 today" {
 		t.Errorf("statusline: %q", out)
 	}
-	if code, out, _ := run(t, "", "usecases"); code != 0 || strings.Count(out, "\n") != 104 {
+	if code, out, _ := run(t, "", "usecases"); code != 0 || strings.Count(out, "\n") != len(tabletest.UseCases()) {
 		t.Errorf("usecases lines = %d", strings.Count(out, "\n"))
+	}
+	tabletest.Serve(t, func(remote.Request) (int, any) { return 503, nil })
+	if code, out, errs := run(t, "", "refresh"); code != 0 || !strings.HasPrefix(out, "fetched route table ") {
+		t.Errorf("refresh: %d %q %q", code, out, errs)
+	}
+	if code, out, _ := run(t, "", "refresh"); code != 0 || !strings.Contains(out, "is current") {
+		t.Errorf("refresh again: %q", out)
 	}
 	if code, _, _ := run(t, "", "bogus"); code != 2 {
 		t.Error("unknown command exit code")

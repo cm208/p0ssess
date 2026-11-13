@@ -1,10 +1,8 @@
-// Package config resolves p0ssess's files under ~/.config/p0ssess, the OpenRouter key and the registry
-// snapshot. Every command and the MCP server use it, so they agree on where things are.
+// Package config resolves p0ssess's files under ~/.config/p0ssess, the OpenRouter key and the model
+// facts. Every command and the MCP server use it, so they agree on where things are.
 package config
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,8 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"p0ssess"
 	"p0ssess/internal/pme/paths"
+	"p0ssess/internal/pme/table"
 )
 
 type Config struct {
@@ -117,9 +115,8 @@ func (c Config) OpenRouterKey() (string, error) {
 	return k, nil
 }
 
-// RegistryPath finds the models.json snapshot: $P0SSESS_REGISTRY, registry_file in config.json,
-// registry/models.json next to the binary's parent directory, or the snapshot built into the binary,
-// written once to the cache directory.
+// RegistryPath finds the model facts in the models.json shape: $P0SSESS_REGISTRY, registry_file in
+// config.json, or the route table's models section, written once to the cache directory.
 func (c Config) RegistryPath() (string, error) {
 	if p := os.Getenv("P0SSESS_REGISTRY"); p != "" {
 		return p, nil
@@ -127,31 +124,7 @@ func (c Config) RegistryPath() (string, error) {
 	if c.RegistryFile != "" {
 		return c.RegistryFile, nil
 	}
-	if exe, err := os.Executable(); err == nil {
-		if real, err := filepath.EvalSymlinks(exe); err == nil {
-			p := filepath.Join(filepath.Dir(real), "..", "registry", "models.json")
-			if _, err := os.Stat(p); err == nil {
-				return p, nil
-			}
-		}
-	}
-	b, err := p0ssess.Data.ReadFile("registry/models.json")
-	if err != nil {
-		return "", err
-	}
-	sum := sha256.Sum256(b)
-	p := filepath.Join(CacheDir(), "registry-"+hex.EncodeToString(sum[:6])+".json")
-	if _, err := os.Stat(p); err == nil {
-		return p, nil
-	}
-	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
-		return "", err
-	}
-	tmp := p + ".tmp"
-	if err := os.WriteFile(tmp, b, 0o600); err != nil {
-		return "", err
-	}
-	return p, paths.Rename(tmp, p)
+	return table.Open(CacheDir()).ModelsFile()
 }
 
 // CacheDir is ~/.cache/p0ssess ($XDG_CACHE_HOME honored), or $P0SSESS_HOME/cache.

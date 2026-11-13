@@ -23,7 +23,7 @@ die() { echo "build-release: $*" >&2; exit 1; }
 [ -n "$version" ] || die "no version in bin/p0ssess"
 grep -q "\"version\": \"$version\"" .claude-plugin/plugin.json || die ".claude-plugin/plugin.json is not at $version"
 grep -q "^var version = \"$version\"" cmd/p0ssess/main.go || die "cmd/p0ssess/main.go is not at $version"
-if [ -n "$(git status --porcelain -- '*.go' go.mod go.sum vendor bin data.go registry catalog assets)" ]; then
+if [ -n "$(git status --porcelain -- '*.go' go.mod go.sum vendor bin data.go assets internal/pme/table/default.json)" ]; then
   echo "build-release: note: uncommitted changes are not in the build (it uses HEAD)" >&2
 fi
 

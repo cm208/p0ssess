@@ -1,6 +1,7 @@
-package engine
+package local
 
 import (
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,8 +11,7 @@ import (
 
 	"p0ssess/internal/history"
 	"p0ssess/internal/pme/paths"
-	"p0ssess/internal/pme/registry"
-	"p0ssess/internal/pme/score"
+	"p0ssess/internal/pme/table"
 	"p0ssess/internal/rules"
 )
 
@@ -19,8 +19,8 @@ import (
 type Charge struct {
 	Route   string // "direct" or "agent"
 	Model   string
-	UseCase string // catalog id; empty when the caller did not say
-	// Stakes 1-4; 0 takes the use case's catalog stakes, or 3 when the use case is unknown.
+	UseCase string // use-case id; empty when the caller did not say
+	// Stakes 1-4; 0 takes the use case's default stakes, or 3 when the use case is unknown.
 	Stakes int
 	// MaxUSD is the most the call may spend: what is reserved and what the limits are checked against.
 	MaxUSD float64
@@ -95,16 +95,21 @@ func (e *Engine) Authorize(c Charge) (*Grant, error) {
 	if err != nil {
 		return nil, refuse("cannot read the rules, so they cannot be enforced: %v", err)
 	}
+	t := e.facts()
 	ucID, kind := "", ""
 	stakes := c.Stakes
 	if c.UseCase != "" {
-		uc := e.Cat.Get(c.UseCase)
-		if uc == nil {
+		// Before any route table is verified, use cases are not known here: the call is then checked as
+		// one that names none, which every forbid, only and mix rule meets.
+		uc := t.UseCase(c.UseCase)
+		switch {
+		case uc != nil:
+			ucID, kind = uc.ID, uc.Kind
+			if stakes == 0 {
+				stakes = uc.DefaultStakes
+			}
+		case !t.Empty():
 			return nil, refuse("unknown use case %q", c.UseCase)
-		}
-		ucID, kind = uc.ID, uc.Kind()
-		if stakes == 0 {
-			stakes = uc.DefaultStakes()
 		}
 	}
 	if stakes == 0 {
@@ -117,7 +122,7 @@ func (e *Engine) Authorize(c Charge) (*Grant, error) {
 	bud, _ = effectiveBudget(bud, d, &rs)
 	g := &Grant{MaxUSD: c.MaxUSD, Stakes: stakes, Session: c.Session, Cwd: c.Cwd, Notes: e.IgnoredNotes(c.Scope, rs)}
 
-	m := e.Reg.Get(c.Model)
+	m := t.Model(c.Model)
 	switch {
 	case d.ForbidDelegation != nil:
 		return nil, refuse("rule: %s", d.ForbidDelegation)
@@ -129,14 +134,10 @@ func (e *Engine) Authorize(c Charge) (*Grant, error) {
 	if ok, r := d.OnlyAllows(c.Model); !ok {
 		return nil, refuse("rule: %s", r)
 	}
-	var providers []string
-	if m != nil && m.Endpoints != nil {
-		providers = m.Endpoints.Providers
-	}
-	if ok, why := bud.ModelAllowed(c.Model, providers); !ok {
+	if ok, why := bud.ModelAllowed(c.Model, m.Providers()); !ok {
 		return nil, refuse("%s is %s", c.Model, why)
 	}
-	claude := strings.HasPrefix(c.Model, "anthropic/") || (m != nil && m.IsClaude())
+	claude := strings.HasPrefix(c.Model, "anthropic/") || m.IsClaude()
 	if stakes >= 4 && !claude && d.MaxStakesFor(c.Model) < 4 {
 		return nil, refuse("stakes 4 stays on Claude unless an allow rule with max_stakes = 4 names %s", c.Model)
 	}
@@ -226,7 +227,7 @@ func (e *Engine) Authorize(c Charge) (*Grant, error) {
 		g.ReserveID = "rsv-" + history.NewOfferID()[2:]
 		exp := now.Add(hold).UTC()
 		return []history.Entry{{TS: now.UTC(), Type: history.TypeReserve, RunID: g.ReserveID, Route: c.Route, Model: c.Model,
-			CashUSD: g.MaxUSD, ApprovalID: g.ApprovalID, UseCase: ucID, Stakes: stakes, Session: c.Session,
+			CashUSD: g.MaxUSD, ApprovalID: g.ApprovalID, UseCase: cmp.Or(ucID, c.UseCase), Stakes: stakes, Session: c.Session,
 			Project: paths.ProjectRoot(c.Cwd), Expires: &exp}}, nil
 	})
 	if err != nil {
@@ -242,21 +243,34 @@ func (e *Engine) Authorize(c Charge) (*Grant, error) {
 // DefaultAgentTurns sizes the estimate of an agent run whose use case gives no turns.
 const DefaultAgentTurns = 10
 
-// AgentEstimate is the expected cash of an agent session on model: the use case's catalog turns
+// Agent sessions are priced as turns of 40k context read from cache, 3k new input and 1k output, with
+// OpenRouter's 5.5% credit fee.
+const (
+	agentContext = 40000
+	agentNewIn   = 3000
+	agentOut     = 1000
+	creditFee    = 0.055
+)
+
+// AgentEstimate is the expected cash of an agent session on model: the use case's turns
 // (DefaultAgentTurns when it has none) at list price, with OpenRouter's fee.
 func (e *Engine) AgentEstimate(model, useCase string) (float64, bool) {
-	cfg, err := e.Config()
-	if err != nil {
-		return 0, false
-	}
+	t := e.facts()
 	turns := DefaultAgentTurns
-	if uc := e.Cat.Get(useCase); uc != nil {
-		if t := uc.WorkFor(nil).Turns; t > 0 {
-			turns = t
-		}
+	if uc := t.UseCase(useCase); uc != nil && uc.Turns > 0 {
+		turns = uc.Turns
 	}
 	bud, _ := e.Budget()
-	return score.AgentEstimate(e.Reg.Get(model), turns, cfg, bud.Privacy.Mode == "zdr")
+	m := t.Model(model)
+	tp, ok := m.Prices(bud.Privacy.Mode == "zdr", false)
+	if !ok {
+		return 0, false
+	}
+	v := float64(turns) * (agentContext*tp.CacheRead + agentNewIn*tp.In + agentOut*tp.Out) / 1e6 * (1 + creditFee)
+	if v <= 0 && !m.Free() {
+		return 0, false
+	}
+	return v, true
 }
 
 // approvalAsk words a call that needs the user's yes: the cost, why, and the exact one-run approval
@@ -286,7 +300,7 @@ func approvalAsk(model, session string, strict bool, est, maxUSD float64, reason
 // zdrBlock says why a model cannot run in zero-retention mode, or "" when it can. A model with no
 // endpoint data is let through: the call is sent with zdr = true, and OpenRouter refuses it when no
 // zero-retention endpoint exists.
-func zdrBlock(m *registry.Model, allowSafety bool) string {
+func zdrBlock(m *table.Model, allowSafety bool) string {
 	switch {
 	case m == nil || m.Endpoints == nil:
 		return ""
@@ -294,7 +308,7 @@ func zdrBlock(m *registry.Model, allowSafety bool) string {
 		return "batch endpoints are never zero-retention"
 	case m.Endpoints.HasZDR:
 		return ""
-	case allowSafety && m.Policy() == registry.PolicySafetyRetention:
+	case allowSafety && m.Policy() == table.PolicySafetyRetention:
 		return ""
 	}
 	return m.ID + " has no zero-retention endpoint"

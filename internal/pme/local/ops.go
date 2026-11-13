@@ -1,4 +1,4 @@
-package engine
+package local
 
 import (
 	"errors"
@@ -17,27 +17,26 @@ import (
 	"p0ssess/internal/budget"
 	"p0ssess/internal/history"
 	"p0ssess/internal/pme/paths"
-	"p0ssess/internal/pme/score"
 	"p0ssess/internal/rules"
 	"p0ssess/internal/usage"
 )
 
 type Status struct {
-	Budget      budget.Budget     `json:"budget"`
-	Overrides   []string          `json:"overrides,omitempty"`
-	Spend       history.Spend     `json:"spend"`
-	DailyLimit  float64           `json:"daily_limit_usd"`
-	MonthLeft   float64           `json:"month_left_usd"`
-	NearBudget  bool              `json:"near_budget"`
-	Plan        string            `json:"plan"`
-	Lambda      score.Lambda      `json:"lambda"`
-	Running     []usage.Job       `json:"running"`
-	LeadModel   string            `json:"lead_model"`
-	LiveModels  string            `json:"live_models"`
-	RegistryAge string            `json:"registry_as_of"`
-	Files       map[string]string `json:"files"`
-	Scope       Scope             `json:"scope"`
-	Notes       []string          `json:"notes,omitempty"`
+	Budget     budget.Budget     `json:"budget"`
+	Overrides  []string          `json:"overrides,omitempty"`
+	Spend      history.Spend     `json:"spend"`
+	DailyLimit float64           `json:"daily_limit_usd"`
+	MonthLeft  float64           `json:"month_left_usd"`
+	NearBudget bool              `json:"near_budget"`
+	Plan       string            `json:"plan"`
+	Lambda     Lambda            `json:"lambda"`
+	Running    []usage.Job       `json:"running"`
+	LeadModel  string            `json:"lead_model"`
+	RouteTable string            `json:"route_table"`
+	Outcomes   bool              `json:"outcomes_send"`
+	Files      map[string]string `json:"files"`
+	Scope      Scope             `json:"scope"`
+	Notes      []string          `json:"notes,omitempty"`
 }
 
 func (e *Engine) Status(s Scope) (*Status, error) {
@@ -74,17 +73,17 @@ func (e *Engine) Status(s Scope) (*Status, error) {
 	daily := b.DailyLimit(sp.MonthBeforeToday, now)
 	st := &Status{Budget: b, Overrides: notes, Spend: sp, DailyLimit: finite(daily), Notes: e.IgnoredNotes(s, rs),
 		MonthLeft: max(0, b.MonthlyUSD-sp.Month-sp.Reserved), NearBudget: b.MonthlyUSD > 0 && sp.Month+sp.Reserved >= 0.8*b.MonthlyUSD,
-		Plan: plan, Lambda: score.LambdaFor(plan, b.UsageCredits, b.SaveClaude, pr, cfg.Lambda),
-		Running: usage.Running(e.Dirs.RunningDir(), now), LeadModel: us.LeadModel, RegistryAge: e.Reg.AsOf, Scope: s,
+		Plan: plan, Lambda: LambdaFor(plan, b.UsageCredits, b.SaveClaude, pr, cfg.Lambda),
+		Running: usage.Running(e.Dirs.RunningDir(), now), LeadModel: us.LeadModel, Outcomes: b.Outcomes.Send, Scope: s,
 		Files: map[string]string{"budget": e.Dirs.BudgetFile(), "engine": e.Dirs.EngineFile(),
 			"rules_global": e.Dirs.RulesFile(), "history": e.Dirs.HistoryFile(), "usage": e.Dirs.UsageFile()}}
 	if f := e.RuleFiles(s); f.Project != "" {
 		st.Files["rules_project"] = f.Project
 	}
-	if e.Reg.LiveAsOf != "" {
-		st.LiveModels = fmt.Sprintf("%d models, fetched %s", e.Reg.LiveCount, e.Reg.LiveAsOf)
+	if t := e.facts(); t.Empty() {
+		st.RouteTable = "none yet"
 	} else {
-		st.LiveModels = "not fetched; using the shipped snapshot"
+		st.RouteTable = fmt.Sprintf("%s: %d use cases, %d models", t.ID, len(t.UseCases), len(t.Models))
 	}
 	return st, nil
 }
@@ -142,14 +141,17 @@ func (e *Engine) RuleAdd(s Scope, r rules.Rule, dryRun bool, expiresIn int) (Rul
 		t := now.Add(12 * time.Hour).UTC().Truncate(time.Second)
 		r.Expires = &t
 	}
-	for _, m := range r.Models {
-		if e.Reg.Get(m) == nil {
-			return RuleView{}, fmt.Errorf("unknown model %q", m)
+	// Ids are checked against the route table once one is verified.
+	if t := e.facts(); !t.Empty() {
+		for _, m := range r.Models {
+			if t.Model(m) == nil {
+				return RuleView{}, fmt.Errorf("unknown model %q", m)
+			}
 		}
-	}
-	for _, u := range r.UseCases {
-		if e.Cat.Get(u) == nil {
-			return RuleView{}, fmt.Errorf("unknown use case %q", u)
+		for _, u := range r.UseCases {
+			if t.UseCase(u) == nil {
+				return RuleView{}, fmt.Errorf("unknown use case %q", u)
+			}
 		}
 	}
 	if err := r.Validate(); err != nil {
@@ -226,11 +228,12 @@ func (e *Engine) RecordOutcome(o Outcome) (history.Entry, error) {
 		}
 	}
 	if en.UseCase != "" {
-		uc := e.Cat.Get(en.UseCase)
-		if uc == nil {
+		t := e.facts()
+		if uc := t.UseCase(en.UseCase); uc != nil {
+			en.Kind, en.Family = uc.Kind, uc.Family
+		} else if !t.Empty() {
 			return en, fmt.Errorf("unknown use case %q", en.UseCase)
 		}
-		en.Kind, en.Family = uc.Kind(), uc.Family
 	}
 	if o.CashUSD < 0 {
 		return en, errors.New("cash_usd must be 0 or more")
@@ -288,8 +291,8 @@ func (e *Engine) RecordRun(r Run) error {
 		r.CashUSD = 0
 	}
 	kind, family := "", ""
-	if uc := e.Cat.Get(r.UseCase); uc != nil {
-		kind, family = uc.Kind(), uc.Family
+	if uc := e.facts().UseCase(r.UseCase); uc != nil {
+		kind, family = uc.Kind, uc.Family
 	}
 	return history.Append(e.Dirs.HistoryFile(), history.Entry{TS: e.Now().UTC(), Type: history.TypeRun, RunID: r.ID,
 		Kind: kind, Family: family,
@@ -316,7 +319,7 @@ func (e *Engine) Learned(s Scope) Learned {
 var settingKeys = []string{"monthly_usd", "per_task_usd", "daily_usd", "save_claude", "plan", "usage_credits",
 	"privacy.mode", "privacy.allow_safety_retention", "models.allow", "models.deny", "providers.allow", "providers.deny",
 	"sandbox.shell_internet", "sandbox.shell_internet.add", "sandbox.shell_internet.remove",
-	"ask.first_use", "ask.code_edits", "lambda.preset", "statusline.command", "statusline.mark", "statusline.width"}
+	"ask.first_use", "ask.code_edits", "outcomes.send", "lambda.preset", "statusline.command", "statusline.mark", "statusline.width"}
 
 func SettingKeys() []string { return append([]string(nil), settingKeys...) }
 
@@ -402,6 +405,8 @@ func (e *Engine) setBudget(key, value string) (string, error) {
 		b.Ask.FirstUse, err = flag()
 	case "ask.code_edits":
 		b.Ask.CodeEdits, err = flag()
+	case "outcomes.send":
+		b.Outcomes.Send, err = flag()
 	case "models.allow":
 		b.Models.Allow = list()
 	case "models.deny":
@@ -473,7 +478,7 @@ func (e *Engine) setEngine(key, value string) (string, error) {
 	}
 	switch key {
 	case "lambda.preset":
-		if _, ok := score.Presets[value]; !ok && value != "custom" {
+		if _, ok := Presets[value]; !ok && value != "custom" {
 			return "", fmt.Errorf("lambda.preset must be list, gentle, balanced, eager or custom")
 		}
 		tab[field] = value
@@ -494,7 +499,7 @@ func (e *Engine) setEngine(key, value string) (string, error) {
 	if err := toml.NewEncoder(&buf).Encode(doc); err != nil {
 		return "", err
 	}
-	if _, err := score.LoadConfigFrom([]byte(buf.String())); err != nil {
+	if _, err := LoadConfigFrom([]byte(buf.String())); err != nil {
 		return "", err
 	}
 	if err := paths.WriteFileAtomic(path, []byte(buf.String()), 0o600); err != nil {

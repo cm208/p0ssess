@@ -12,7 +12,7 @@ import (
 
 	"p0ssess/internal/config"
 	"p0ssess/internal/direct"
-	"p0ssess/internal/pme/engine"
+	"p0ssess/internal/pme/local"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/server"
 )
@@ -100,7 +100,7 @@ func directRun(ctx context.Context, mode string, args []string) error {
 	if err != nil {
 		return err
 	}
-	eng, err := engine.Load(paths.Default())
+	eng, err := local.Load(paths.Default())
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func directTool(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	eng, err := engine.Load(paths.Default())
+	eng, err := local.Load(paths.Default())
 	if err != nil {
 		return err
 	}

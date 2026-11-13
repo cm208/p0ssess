@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"p0ssess/internal/config"
-	"p0ssess/internal/pme/engine"
+	"p0ssess/internal/pme/local"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/proc"
 )
@@ -35,11 +35,11 @@ func meBrief(args []string) error {
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
-	eng, err := engine.Load(paths.Default())
+	eng, err := local.Load(paths.Default())
 	if err != nil {
 		return err
 	}
-	st, err := eng.Status(engine.Scope{})
+	st, err := eng.Status(local.Scope{})
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func meBrief(args []string) error {
 }
 
 // brief renders the summary: spend against the cap, what runs, the limits, and how to change them.
-func brief(st *engine.Status, eng *engine.Engine, url string, gaps []string) string {
+func brief(st *local.Status, eng *local.Engine, url string, gaps []string) string {
 	b, sp := st.Budget, st.Spend
 	var out strings.Builder
 	frac := 0.0

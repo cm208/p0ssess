@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"p0ssess/internal/pme/engine"
+	"p0ssess/internal/pme/local"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/relay"
 	"p0ssess/internal/usage"
@@ -126,7 +126,7 @@ func TestServerAgentUnavailableAndDirectCap(t *testing.T) {
 
 func TestObserverRecordsRuns(t *testing.T) {
 	t.Setenv("P0SSESS_HOME", t.TempDir())
-	e, err := engine.Load(paths.Default())
+	e, err := local.Load(paths.Default())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -140,7 +140,7 @@ func TestObserverRecordsRuns(t *testing.T) {
 	if n := len(usage.Running(e.Dirs.RunningDir(), time.Now())); n != 0 {
 		t.Fatalf("running after finish = %d", n)
 	}
-	st, _ := e.Status(engine.Scope{})
+	st, _ := e.Status(local.Scope{})
 	if st.Spend.Runs != 1 || st.Spend.Today != 0.0019 {
 		t.Errorf("spend = %+v", st.Spend)
 	}

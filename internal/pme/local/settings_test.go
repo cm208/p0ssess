@@ -1,4 +1,4 @@
-package engine
+package local
 
 import (
 	"os"
@@ -8,7 +8,6 @@ import (
 	"sync"
 	"testing"
 
-	"p0ssess/internal/pme/score"
 	"p0ssess/internal/pme/statusline"
 )
 
@@ -38,7 +37,7 @@ func TestConcurrentSettingsAreAllKept(t *testing.T) {
 		len(b.Models.Deny) != 1 || len(b.Providers.Deny) != 1 || !b.Privacy.AllowSafetyRetention {
 		t.Errorf("budget lost a concurrent change: %+v", b)
 	}
-	cfg, err := score.LoadConfig(e.Dirs.EngineFile())
+	cfg, err := LoadConfig(e.Dirs.EngineFile())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,5 +76,49 @@ func TestShellInternetSetting(t *testing.T) {
 	b, _ = e.Budget()
 	if len(b.Sandbox.ShellInternet) != 0 {
 		t.Errorf("still on: %v", b.Sandbox.ShellInternet)
+	}
+}
+
+func TestTuningKeysAreValidatedAndSentOnlyWhenSet(t *testing.T) {
+	e, _ := setup(t, "")
+	if Tuning(e.Dirs.EngineFile()) != nil {
+		t.Error("no engine.toml, no tuning")
+	}
+	if _, err := e.SetSetting("lambda.preset", "eager"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.SetSetting("lambda.preset", "wild"); err == nil {
+		t.Error("an unknown preset was saved")
+	}
+	if Tuning(e.Dirs.EngineFile()) != nil {
+		t.Error("[lambda] never leaves the machine")
+	}
+	os.WriteFile(e.Dirs.EngineFile(), []byte("candidates = \"catalog\"\n[harm]\ns3 = 2.0\n[lambda]\npreset = \"eager\"\n[statusline]\nmark = \"*\"\n"), 0o600)
+	tu := Tuning(e.Dirs.EngineFile())
+	if tu["candidates"] != "catalog" || tu["harm"] == nil || tu["lambda"] != nil || tu["statusline"] != nil || len(tu) != 2 {
+		t.Errorf("tuning = %v", tu)
+	}
+	os.WriteFile(e.Dirs.EngineFile(), []byte("candidates = \"everything\"\n"), 0o600)
+	if Tuning(e.Dirs.EngineFile()) != nil {
+		t.Error("an invalid engine.toml must send nothing")
+	}
+	if _, err := e.SetSetting("statusline.width", "80"); err == nil {
+		t.Error("a write over an invalid engine.toml should fail its validation")
+	}
+}
+
+func TestOutcomesSetting(t *testing.T) {
+	e, _ := setup(t, "")
+	if !e.OutcomesEnabled() {
+		t.Error("outcome records are on by default")
+	}
+	if _, err := e.SetSetting("outcomes.send", "false"); err != nil {
+		t.Fatal(err)
+	}
+	if e.OutcomesEnabled() {
+		t.Error("outcomes.send = false")
+	}
+	if _, err := e.SetSetting("outcomes.send", "maybe"); err == nil {
+		t.Error("not a boolean")
 	}
 }

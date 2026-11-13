@@ -18,8 +18,9 @@ import (
 	"p0ssess/internal/egress"
 	"p0ssess/internal/jail"
 	"p0ssess/internal/pme/cli"
-	"p0ssess/internal/pme/engine"
+	"p0ssess/internal/pme/local"
 	"p0ssess/internal/pme/paths"
+	"p0ssess/internal/pme/remote"
 	"p0ssess/internal/proxy"
 	"p0ssess/internal/relay"
 	"p0ssess/internal/server"
@@ -54,6 +55,7 @@ The OpenRouter key is read from ~/.config/p0ssess/secrets/openrouter_key, or $P0
 
 func main() {
 	cli.Version = version
+	remote.Version = version
 	if len(os.Args) < 2 {
 		fmt.Fprintf(os.Stderr, usage, version)
 		os.Exit(2)
@@ -337,7 +339,7 @@ func runCmd(ctx context.Context, name string, args []string) error {
 	}
 	e := relay.NewEngine(cfg, version, os.Stderr)
 	e.Sweep(ctx)
-	eng, err := engine.Load(paths.Default())
+	eng, err := local.Load(paths.Default())
 	if err != nil {
 		return err
 	}

@@ -1,4 +1,4 @@
-package engine
+package local
 
 import (
 	"errors"
@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"p0ssess/internal/history"
-	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/rules"
 )
 
@@ -343,10 +342,7 @@ func TestHelperAuthorize(t *testing.T) {
 	if os.Getenv("P0SSESS_HELPER_AUTH") != "1" {
 		t.Skip("helper process")
 	}
-	e, err := Load(paths.Default())
-	if err != nil {
-		t.Fatal(err)
-	}
+	e := load(t)
 	if _, err := e.Authorize(charge(os.Getenv("P0SSESS_HELPER_PROJ"), 0.1)); err != nil {
 		fmt.Fprintln(os.Stderr, "refused:", err)
 	}

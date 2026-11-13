@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"p0ssess/internal/pme/engine"
+	"p0ssess/internal/pme/local"
 	"p0ssess/internal/pme/paths"
 )
 
@@ -20,11 +20,11 @@ func start(t *testing.T) (*Server, string) {
 	t.Setenv("P0SSESS_HOME", home)
 	proj := filepath.Join(home, "proj")
 	os.MkdirAll(filepath.Join(proj, ".git"), 0o755)
-	e, err := engine.Load(paths.Default())
+	e, err := local.Load(paths.Default())
 	if err != nil {
 		t.Fatal(err)
 	}
-	s, err := Start(e, engine.Scope{Cwd: proj}, 0)
+	s, err := Start(e, local.Scope{Cwd: proj}, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -134,7 +134,7 @@ func TestScriptMatchesPage(t *testing.T) {
 		}
 	}
 	for _, m := range regexp.MustCompile(`<(?:input|select)[^>]*name="([a-z_.]+)"`).FindAllStringSubmatch(string(html), -1) {
-		if !contains(engine.SettingKeys(), m[1]) {
+		if !contains(local.SettingKeys(), m[1]) {
 			t.Errorf("form field %s is not a setting key", m[1])
 		}
 		if !strings.Contains(string(js), `"`+m[1]+`"`) && !strings.Contains(string(js), m[1]+":") {

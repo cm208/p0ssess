@@ -1,12 +1,4 @@
-// Package score is the Predictive Model Engine's cost model. For every
-// candidate route it computes the expected cost per accepted result,
-//
-//	cost = cash + λ·claude + λ·(overhead + review) + p_fail·(redo + harm(stakes))
-//
-// applies the fit, privacy, rule, budget and stakes filters, and ranks what is
-// left. Every number here is a preset the user can override in engine.toml;
-// docs/ENGINE.md explains each one.
-package score
+package local
 
 import (
 	"errors"
@@ -15,6 +7,8 @@ import (
 	"os"
 
 	"github.com/BurntSushi/toml"
+
+	"p0ssess/internal/pme/remote"
 )
 
 // Levels holds one value per stakes level, 1 to 4.
@@ -37,24 +31,12 @@ func (l Levels) At(stakes int) float64 {
 	return l.S4
 }
 
-// ByVerify holds one value per catalog verification level.
+// ByVerify holds one value per verification level.
 type ByVerify struct {
 	None       float64 `toml:"none" json:"none"`
 	Mechanical float64 `toml:"mechanical" json:"mechanical"`
 	Spot       float64 `toml:"spot" json:"spot"`
 	Full       float64 `toml:"full" json:"full"`
-}
-
-func (v ByVerify) At(level string) float64 {
-	switch level {
-	case "none":
-		return v.None
-	case "mechanical":
-		return v.Mechanical
-	case "full":
-		return v.Full
-	}
-	return v.Spot
 }
 
 type LambdaConfig struct {
@@ -69,19 +51,8 @@ type LambdaConfig struct {
 	StaleMinutes int     `toml:"stale_minutes" json:"stale_minutes"`
 }
 
-type SessionShape struct {
-	ContextTokens int `toml:"context_tokens" json:"context_tokens"`
-	NewInTokens   int `toml:"new_in_tokens" json:"new_in_tokens"`
-	OutTokens     int `toml:"out_tokens" json:"out_tokens"`
-}
-
-type Media struct {
-	AudioTokensPerSec float64 `toml:"audio_tokens_per_sec" json:"audio_tokens_per_sec"`
-	VideoTokensPerSec float64 `toml:"video_tokens_per_sec" json:"video_tokens_per_sec"`
-	ImageTokens       int     `toml:"image_tokens" json:"image_tokens"`
-	PageTokens        int     `toml:"page_tokens" json:"page_tokens"`
-}
-
+// Config is engine.toml: the λ curve, which stays on this machine, and the scoring keys, which are
+// sent to the engine only when the user set them.
 type Config struct {
 	Lambda LambdaConfig `toml:"lambda" json:"lambda"`
 	// Harm is the cost of a bad result beyond redoing it, in dollars.
@@ -89,53 +60,25 @@ type Config struct {
 	// Ceilings are the highest p_fail (upper bound) a route may have.
 	Ceilings Levels `toml:"ceilings" json:"ceilings"`
 	// Escape is the share of failures that get past review and cause harm.
-	Escape ByVerify `toml:"escape" json:"escape"`
-	// ReviewUSD is Claude's fixed checking cost per level (Sonnet list price).
-	ReviewUSD ByVerify `toml:"review_usd" json:"review_usd"`
-	// ReviewRead is the share of the result Claude reads at each level.
-	ReviewRead ByVerify `toml:"review_read" json:"review_read"`
-	// OverheadUSD is the lead model's hand-off cost per delegation at Sonnet
-	// list price; it scales with the lead model's output price.
-	OverheadUSD  float64 `toml:"overhead_usd" json:"overhead_usd"`
-	LocalToolUSD float64 `toml:"local_tool_usd" json:"local_tool_usd"`
-	// MechanicalRetries is how often a mechanically checked job is retried.
-	MechanicalRetries int `toml:"mechanical_retries" json:"mechanical_retries"`
-	// ReasoningFactor adds this share of the output as hidden reasoning tokens
-	// for models whose reasoning cannot be turned off.
-	ReasoningFactor float64 `toml:"reasoning_factor" json:"reasoning_factor"`
-	// CashHeadroom multiplies list-price cash for the approval check.
-	CashHeadroom float64 `toml:"cash_headroom" json:"cash_headroom"`
-	CreditFee    float64 `toml:"credit_fee" json:"credit_fee"`
-	// AgentResultTokens is what Claude reads back from an agent session.
-	AgentResultTokens int          `toml:"agent_result_tokens" json:"agent_result_tokens"`
-	Lead              SessionShape `toml:"lead_session" json:"lead_session"`
-	Agent             SessionShape `toml:"agent_session" json:"agent_session"`
-	Media             Media        `toml:"media" json:"media"`
-	// Candidates is "evidence" (catalog-named or benchmarked models),
-	// "catalog" (only the use case's own list) or "all".
-	Candidates    string `toml:"candidates" json:"candidates"`
-	SubagentModel string `toml:"subagent_model" json:"subagent_model"`
-	DefaultLead   string `toml:"default_lead" json:"default_lead"`
+	Escape            ByVerify `toml:"escape" json:"escape"`
+	OverheadUSD       float64  `toml:"overhead_usd" json:"overhead_usd"`
+	MechanicalRetries int      `toml:"mechanical_retries" json:"mechanical_retries"`
+	// CashHeadroom multiplies list-price cash for the ceiling.
+	CashHeadroom  float64 `toml:"cash_headroom" json:"cash_headroom"`
+	Candidates    string  `toml:"candidates" json:"candidates"`
+	SubagentModel string  `toml:"subagent_model" json:"subagent_model"`
+	DefaultLead   string  `toml:"default_lead" json:"default_lead"`
 }
 
-func Default() Config {
+func DefaultConfig() Config {
 	return Config{
 		Lambda:            LambdaConfig{Preset: "balanced", EMin: 0.15, Beta: 1.0, StaleMinutes: 120},
 		Harm:              Levels{S1: 0.01, S2: 0.10, S3: 1.00, S4: 10.00},
 		Ceilings:          Levels{S1: 0.80, S2: 0.65, S3: 0.40, S4: 0.20},
 		Escape:            ByVerify{None: 1.0, Spot: 0.5, Mechanical: 0.1, Full: 0.2},
-		ReviewUSD:         ByVerify{None: 0.005, Mechanical: 0.01, Spot: 0.03, Full: 0.06},
-		ReviewRead:        ByVerify{None: 0, Mechanical: 0.1, Spot: 0.5, Full: 1.0},
 		OverheadUSD:       0.05,
-		LocalToolUSD:      0.02,
 		MechanicalRetries: 2,
-		ReasoningFactor:   1.0,
 		CashHeadroom:      1.5,
-		CreditFee:         0.055,
-		AgentResultTokens: 4000,
-		Lead:              SessionShape{ContextTokens: 40000, NewInTokens: 3000, OutTokens: 1000},
-		Agent:             SessionShape{ContextTokens: 40000, NewInTokens: 3000, OutTokens: 1000},
-		Media:             Media{AudioTokensPerSec: 32, VideoTokensPerSec: 290, ImageTokens: 1500, PageTokens: 2000},
 		Candidates:        "evidence",
 		SubagentModel:     "anthropic/claude-haiku-5.5",
 		DefaultLead:       "anthropic/claude-sonnet-5.5",
@@ -172,23 +115,23 @@ func (l LambdaConfig) Shape(saveClaude bool) (floor, exponent float64, name stri
 func LoadConfig(path string) (Config, error) {
 	b, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
-		return Default(), nil
+		return DefaultConfig(), nil
 	}
 	if err != nil {
-		return Default(), err
+		return DefaultConfig(), err
 	}
 	c, err := LoadConfigFrom(b)
 	if err != nil {
-		return Default(), fmt.Errorf("%s: %w", path, err)
+		return DefaultConfig(), fmt.Errorf("%s: %w", path, err)
 	}
 	return c, nil
 }
 
 // LoadConfigFrom decodes engine.toml content over the defaults.
 func LoadConfigFrom(b []byte) (Config, error) {
-	c := Default()
+	c := DefaultConfig()
 	if _, err := toml.Decode(string(b), &c); err != nil {
-		return Default(), err
+		return DefaultConfig(), err
 	}
 	return c, c.Validate()
 }
@@ -196,13 +139,18 @@ func LoadConfigFrom(b []byte) (Config, error) {
 func (c Config) Validate() error {
 	for _, l := range []Levels{c.Harm, c.Ceilings} {
 		for _, v := range []float64{l.S1, l.S2, l.S3, l.S4} {
-			if v < 0 || math.IsNaN(v) {
-				return errors.New("harm and ceilings must be 0 or more")
+			if v < 0 || math.IsNaN(v) || math.IsInf(v, 0) {
+				return errors.New("harm and ceilings must be finite numbers, 0 or more")
 			}
 		}
 	}
 	if c.Ceilings.S1 > 1 || c.Ceilings.S2 > 1 || c.Ceilings.S3 > 1 || c.Ceilings.S4 > 1 {
 		return errors.New("ceilings are probabilities (0-1)")
+	}
+	for _, v := range []float64{c.Escape.None, c.Escape.Mechanical, c.Escape.Spot, c.Escape.Full} {
+		if v < 0 || v > 1 || math.IsNaN(v) {
+			return errors.New("escape shares are probabilities (0-1)")
+		}
 	}
 	if c.Lambda.Preset == "custom" && (c.Lambda.Floor < 0 || c.Lambda.Floor > 1 || c.Lambda.Exponent <= 0) {
 		return errors.New("custom lambda needs 0 <= floor <= 1 and exponent > 0")
@@ -210,8 +158,11 @@ func (c Config) Validate() error {
 	if !(c.CashHeadroom >= 1) || math.IsInf(c.CashHeadroom, 0) {
 		return errors.New("cash_headroom must be a finite number, 1 or more")
 	}
-	if !(c.CreditFee >= 0) || math.IsInf(c.CreditFee, 0) {
-		return errors.New("credit_fee must be a finite number, 0 or more")
+	if !(c.OverheadUSD >= 0) || math.IsInf(c.OverheadUSD, 0) {
+		return errors.New("overhead_usd must be a finite number, 0 or more")
+	}
+	if c.MechanicalRetries < 0 {
+		return errors.New("mechanical_retries must be 0 or more")
 	}
 	switch c.Candidates {
 	case "evidence", "catalog", "all":
@@ -219,4 +170,36 @@ func (c Config) Validate() error {
 		return fmt.Errorf("candidates must be evidence, catalog or all, not %q", c.Candidates)
 	}
 	return nil
+}
+
+// tuningKeys are the engine.toml keys the engine scores with.
+var tuningKeys = []string{"harm", "ceilings", "escape", "overhead_usd", "mechanical_retries", "cash_headroom",
+	"candidates", "subagent_model", "default_lead"}
+
+// Tuning returns the scoring keys present in engine.toml, as written there. [lambda] and [statusline]
+// never leave the machine. An invalid file yields nothing.
+func Tuning(path string) remote.Tuning {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	if _, err := LoadConfigFrom(b); err != nil {
+		return nil
+	}
+	doc := map[string]any{}
+	if _, err := toml.Decode(string(b), &doc); err != nil {
+		return nil
+	}
+	var out remote.Tuning
+	for _, k := range tuningKeys {
+		v, ok := doc[k]
+		if !ok {
+			continue
+		}
+		if out == nil {
+			out = remote.Tuning{}
+		}
+		out[k] = v
+	}
+	return out
 }

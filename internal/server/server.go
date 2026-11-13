@@ -23,11 +23,9 @@ import (
 	"p0ssess/internal/direct"
 	"p0ssess/internal/history"
 	"p0ssess/internal/mcp"
-	"p0ssess/internal/pme/catalog"
-	"p0ssess/internal/pme/engine"
+	"p0ssess/internal/pme/local"
 	"p0ssess/internal/pme/mcpserver"
 	"p0ssess/internal/pme/paths"
-	"p0ssess/internal/pme/score"
 	"p0ssess/internal/relay"
 	"p0ssess/internal/usage"
 )
@@ -49,6 +47,9 @@ type Options struct {
 	Agent func() error
 }
 
+// loadEngine is swapped in tests.
+var loadEngine = local.Load
+
 // New builds the server. close stops background work and interrupts active relay runs.
 func New(opt Options) (s *mcp.Server, closeFn func(), err error) {
 	if opt.Log == nil {
@@ -63,7 +64,7 @@ func New(opt Options) (s *mcp.Server, closeFn func(), err error) {
 			os.Setenv("P0SSESS_REGISTRY", p)
 		}
 	}
-	eng, err := engine.Load(enginePaths())
+	eng, err := loadEngine(enginePaths())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -167,13 +168,13 @@ func AgentAvailable() error {
 
 // NewObserver returns the relay observer that enforces the user's limits before each prompt and records
 // its cost after. The command line's relay commands use it too.
-func NewObserver(eng *engine.Engine) relay.Observer {
+func NewObserver(eng *local.Engine) relay.Observer {
 	return &observer{eng: eng, jobs: map[string]string{}}
 }
 
 // observer authorizes relay runs, turns them into running-job files and records their cost.
 type observer struct {
-	eng  *engine.Engine
+	eng  *local.Engine
 	mu   sync.Mutex
 	jobs map[string]string // session id -> job id
 }
@@ -181,9 +182,9 @@ type observer struct {
 // Authorize applies every limit to one relay prompt and reserves its cost cap.
 func (o *observer) Authorize(a relay.RunAuth) (relay.Grant, error) {
 	// The default ceiling (max_run_cost_usd) may shrink to the room left; a caller's own maximum is kept.
-	g, err := o.eng.Authorize(engine.Charge{Route: "agent", Model: a.Model, UseCase: a.UseCase, Stakes: a.Stakes,
+	g, err := o.eng.Authorize(local.Charge{Route: "agent", Model: a.Model, UseCase: a.UseCase, Stakes: a.Stakes,
 		MaxUSD: a.MaxCostUSD, ExplicitMax: a.ExplicitMax, Fit: !a.ExplicitMax, Edit: a.Mode == "edit",
-		Hold: a.MaxRuntime + 15*time.Minute, Scope: engine.Scope{Cwd: a.Cwd}})
+		Hold: a.MaxRuntime + 15*time.Minute, Scope: local.Scope{Cwd: a.Cwd}})
 	if err != nil {
 		return relay.Grant{}, err
 	}
@@ -197,7 +198,7 @@ func (o *observer) Authorize(a relay.RunAuth) (relay.Grant, error) {
 }
 
 func (o *observer) Release(g relay.Grant) {
-	o.eng.Release(&engine.Grant{ReserveID: g.ReserveID})
+	o.eng.Release(&local.Grant{ReserveID: g.ReserveID})
 }
 
 func (o *observer) RunStarted(r relay.RunInfo) {
@@ -220,7 +221,7 @@ func (o *observer) RunFinished(r relay.RunInfo, res *relay.Result) error {
 		delete(o.jobs, r.SessionID)
 	}
 	o.mu.Unlock()
-	run := engine.Run{ID: fmt.Sprintf("%s/%d", r.SessionID, r.Turn), Route: "agent", Model: r.Model,
+	run := local.Run{ID: fmt.Sprintf("%s/%d", r.SessionID, r.Turn), Route: "agent", Model: r.Model,
 		CashUSD: res.CostUSD, Status: res.Status, UseCase: r.UseCase, Cwd: r.Repo}
 	if res.CostEstimated {
 		// The session's cost could not be read: count the run at its cap until a measured figure exists.
@@ -230,7 +231,7 @@ func (o *observer) RunFinished(r relay.RunInfo, res *relay.Result) error {
 		run.CashUSD, run.Estimated = r.Grant.CapUSD, true
 		res.CostEstimated = true
 	}
-	return o.eng.Settle(&engine.Grant{ReserveID: r.Grant.ReserveID, ApprovalID: r.Grant.ApprovalID, Session: r.Grant.Session}, run)
+	return o.eng.Settle(&local.Grant{ReserveID: r.Grant.ReserveID, ApprovalID: r.Grant.ApprovalID, Session: r.Grant.Session}, run)
 }
 
 func (o *observer) finishAll() {
@@ -263,7 +264,7 @@ type DirectJob struct {
 // its provider fails (a timeout or server error OpenRouter did not bill), the next-ranked option gets
 // the unanswered part once, as a call of its own under the same limits. runID is empty for dry runs and
 // calls that were never sent.
-func RunDirect(ctx context.Context, cfg config.Config, eng *engine.Engine, req direct.Request, job DirectJob) (*direct.Result, string, error) {
+func RunDirect(ctx context.Context, cfg config.Config, eng *local.Engine, req direct.Request, job DirectJob) (*direct.Result, string, error) {
 	cwd, _ := os.Getwd()
 	if v := os.Getenv("CLAUDE_PROJECT_DIR"); v != "" {
 		cwd = v
@@ -303,7 +304,7 @@ func RunDirect(ctx context.Context, cfg config.Config, eng *engine.Engine, req d
 // fallback sends the part of req that failed to model alt, under every limit, and merges the answers.
 // Without a caller's ceiling it runs only if what was spent plus its estimate stays within the per-task
 // auto-approve limit; with one, only within what is left of it.
-func fallback(ctx context.Context, cfg config.Config, eng *engine.Engine, c *direct.Client, req direct.Request, job DirectJob, cwd, alt string,
+func fallback(ctx context.Context, cfg config.Config, eng *local.Engine, c *direct.Client, req direct.Request, job DirectJob, cwd, alt string,
 	res *direct.Result, runID string, cause error) (*direct.Result, string, error) {
 	first := req.Model
 	spent := 0.0
@@ -415,8 +416,8 @@ func uniqueAppend(have []string, add ...string) []string {
 }
 
 // runAuthorized is one call: authorize, run, then settle or release.
-func runAuthorized(ctx context.Context, cfg config.Config, eng *engine.Engine, c *direct.Client, req direct.Request, job DirectJob, cwd string) (*direct.Result, string, error) {
-	var grant *engine.Grant
+func runAuthorized(ctx context.Context, cfg config.Config, eng *local.Engine, c *direct.Client, req direct.Request, job DirectJob, cwd string) (*direct.Result, string, error) {
+	var grant *local.Grant
 	if !req.DryRun {
 		dry := req
 		dry.DryRun = true
@@ -434,8 +435,8 @@ func runAuthorized(ctx context.Context, cfg config.Config, eng *engine.Engine, c
 		case !req.MaxGiven:
 			req.MaxCostUSD = math.Ceil(est.CostUSD*1e6) / 1e6
 		}
-		g, err := eng.Authorize(engine.Charge{Route: "direct", Model: req.Model, UseCase: job.UseCase, Stakes: job.Stakes,
-			MaxUSD: req.MaxCostUSD, ExplicitMax: true, EstimateUSD: est.CostUSD, Hold: DirectHold, Scope: engine.Scope{Cwd: cwd}})
+		g, err := eng.Authorize(local.Charge{Route: "direct", Model: req.Model, UseCase: job.UseCase, Stakes: job.Stakes,
+			MaxUSD: req.MaxCostUSD, ExplicitMax: true, EstimateUSD: est.CostUSD, Hold: DirectHold, Scope: local.Scope{Cwd: cwd}})
 		if err != nil {
 			return nil, "", err
 		}
@@ -475,7 +476,7 @@ func runAuthorized(ctx context.Context, cfg config.Config, eng *engine.Engine, c
 	} else if err != nil {
 		status = "failed"
 	}
-	run := engine.Run{ID: runID, Route: "direct", Model: req.Model, CashUSD: res.Usage.CostUSD,
+	run := local.Run{ID: runID, Route: "direct", Model: req.Model, CashUSD: res.Usage.CostUSD,
 		UpstreamUSD: res.Usage.UpstreamUSD, Status: status, OfferID: job.OfferID, UseCase: job.UseCase, Cwd: cwd}
 	if !res.Measured() {
 		run.CashUSD, run.Estimated = max(grant.MaxUSD, res.Usage.CostUSD), true
@@ -521,8 +522,8 @@ func inferUseCase(out direct.Output, kinds map[direct.Kind]int) string {
 // the use case, sized from the files. It prefers an option that runs without asking when one costs at
 // most half again as much as the best. The other direct options that run without asking follow in rank
 // order, as fallbacks. The offer is recorded, and job gets its id and the use case.
-func pickModels(eng *engine.Engine, c *direct.Client, req direct.Request, job *DirectJob, cwd string) ([]string, error) {
-	prof := catalog.Profile{Text: "direct call"}
+func pickModels(eng *local.Engine, c *direct.Client, req direct.Request, job *DirectJob, cwd string) ([]string, error) {
+	prof := local.Profile{Text: "direct call"}
 	kinds := map[direct.Kind]int{}
 	for _, f := range req.Files {
 		in, err := direct.Inspect(f, c.Limits)
@@ -550,14 +551,14 @@ func pickModels(eng *engine.Engine, c *direct.Client, req direct.Request, job *D
 	if uc == "" {
 		return nil, errors.New("name a model, or a use_case (for example video-understand, audio-transcribe, image-generate), so p0ssess can pick one")
 	}
-	rec, err := eng.Recommend(engine.Request{UseCase: uc, Profile: &prof, Stakes: job.Stakes, Record: true, Scope: engine.Scope{Cwd: cwd}})
+	rec, err := eng.Recommend(local.Request{UseCase: uc, Profile: &prof, Stakes: job.Stakes, Record: true, Scope: local.Scope{Cwd: cwd}})
 	if err != nil {
 		return nil, err
 	}
-	var best *score.Option
+	var best *local.Option
 	for i := range rec.Options {
 		o := &rec.Options[i]
-		if o.Route != score.RouteDirect {
+		if o.Route != local.RouteDirect {
 			continue
 		}
 		switch {
@@ -570,7 +571,7 @@ func pickModels(eng *engine.Engine, c *direct.Client, req direct.Request, job *D
 			break
 		}
 	}
-	if rec.Pick != nil && rec.Pick.Route == score.RouteDirect && rec.Pick.MixNext {
+	if rec.Pick != nil && rec.Pick.Route == local.RouteDirect && rec.Pick.MixNext {
 		best = rec.Pick
 	}
 	if best == nil {
@@ -583,7 +584,7 @@ func pickModels(eng *engine.Engine, c *direct.Client, req direct.Request, job *D
 	job.UseCase, job.OfferID = uc, rec.OfferID
 	out := []string{best.Model}
 	for _, o := range rec.Options {
-		if o.Route == score.RouteDirect && !o.NeedsApproval && !slices.Contains(out, o.Model) {
+		if o.Route == local.RouteDirect && !o.NeedsApproval && !slices.Contains(out, o.Model) {
 			out = append(out, o.Model)
 		}
 	}
@@ -591,7 +592,7 @@ func pickModels(eng *engine.Engine, c *direct.Client, req direct.Request, job *D
 }
 
 // Reconcile looks up the measured cost of recent estimated direct runs and records it.
-func Reconcile(ctx context.Context, cfg config.Config, eng *engine.Engine) {
+func Reconcile(ctx context.Context, cfg config.Config, eng *local.Engine) {
 	es, err := history.Read(eng.Dirs.HistoryFile())
 	if err != nil {
 		return
@@ -619,7 +620,7 @@ func Reconcile(ctx context.Context, cfg config.Config, eng *engine.Engine) {
 	}
 }
 
-func reconcileRun(ctx context.Context, key string, eng *engine.Engine, runID string, ids []string) {
+func reconcileRun(ctx context.Context, key string, eng *local.Engine, runID string, ids []string) {
 	c := newClient(key)
 	c.GenerationWait = 2 * time.Second
 	total := 0.0
@@ -636,7 +637,7 @@ func reconcileRun(ctx context.Context, key string, eng *engine.Engine, runID str
 // directTool is the direct path as an MCP tool, with the engine's budget cap and measured spend.
 type directTool struct {
 	cfg config.Config
-	eng *engine.Engine
+	eng *local.Engine
 }
 
 func (d *directTool) schema() json.RawMessage {

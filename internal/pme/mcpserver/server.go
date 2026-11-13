@@ -5,17 +5,12 @@
 package mcpserver
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"strings"
-	"time"
 
-	"p0ssess/internal/pme/catalog"
-	"p0ssess/internal/pme/engine"
-	"p0ssess/internal/pme/registry"
+	"p0ssess/internal/pme/local"
 	"p0ssess/internal/rules"
 )
 
@@ -28,7 +23,7 @@ const Instructions = `- Hand every routed task to the p0ssess agent; no recommen
 
 // Server answers the engine tools; the plugin's one MCP server (internal/server) carries them.
 type Server struct {
-	E *engine.Engine
+	E *local.Engine
 }
 
 var errUnknownTool = errors.New("unknown tool")
@@ -44,7 +39,7 @@ type scopeArgs struct {
 	Session string `json:"session_id"`
 }
 
-func (a scopeArgs) scope() engine.Scope { return engine.Scope{Cwd: a.Cwd, Session: a.Session} }
+func (a scopeArgs) scope() local.Scope { return local.Scope{Cwd: a.Cwd, Session: a.Session} }
 
 type ruleArgs struct {
 	scopeArgs
@@ -67,17 +62,17 @@ func (s *Server) call(name string, raw json.RawMessage) (any, error) {
 	case "recommend":
 		var a struct {
 			scopeArgs
-			UseCase string           `json:"use_case"`
-			Profile *catalog.Profile `json:"profile"`
-			Stakes  int              `json:"stakes"`
-			Lead    string           `json:"lead_model"`
-			Top     int              `json:"top"`
-			Detail  bool             `json:"detail"`
+			UseCase string         `json:"use_case"`
+			Profile *local.Profile `json:"profile"`
+			Stakes  int            `json:"stakes"`
+			Lead    string         `json:"lead_model"`
+			Top     int            `json:"top"`
+			Detail  bool           `json:"detail"`
 		}
 		if err := decode(raw, &a); err != nil {
 			return nil, err
 		}
-		rec, err := e.Recommend(engine.Request{UseCase: a.UseCase, Profile: a.Profile, Stakes: a.Stakes, Lead: a.Lead, Top: a.Top, Record: true, Scope: a.scope()})
+		rec, err := e.Recommend(local.Request{UseCase: a.UseCase, Profile: a.Profile, Stakes: a.Stakes, Lead: a.Lead, Top: a.Top, Record: true, Scope: a.scope()})
 		if err != nil || a.Detail {
 			return rec, err
 		}
@@ -141,7 +136,7 @@ func (s *Server) call(name string, raw json.RawMessage) (any, error) {
 	case "history_record_outcome":
 		var a struct {
 			scopeArgs
-			engine.Outcome
+			local.Outcome
 		}
 		if err := decode(raw, &a); err != nil {
 			return nil, err
@@ -224,7 +219,7 @@ func tools() []map[string]any {
 			}))},
 		{"name": "budget_status", "description": "Spend against the monthly cap and daily limit, Claude limit pressure and λ, running jobs, and where the config files are.",
 			"inputSchema": obj(withScope(map[string]any{}))},
-		{"name": "settings_set", "description": "Change one budget or engine setting permanently. Keys: " + fmt.Sprint(engine.SettingKeys()) + ". Lists are comma-separated.",
+		{"name": "settings_set", "description": "Change one budget or engine setting permanently. Keys: " + fmt.Sprint(local.SettingKeys()) + ". Lists are comma-separated.",
 			"inputSchema": obj(map[string]any{"key": str, "value": str}, "key", "value")},
 		{"name": "rules_list", "description": "Every rule with its scope, expiry and one-line text.", "inputSchema": obj(withScope(map[string]any{}))},
 		{"name": "rules_add", "description": "Add a structured rule (forbid, allow, only, mix, approve, ask, budget). Use dry_run first and show the text to the user.", "inputSchema": obj(ruleProps(), "kind")},
@@ -244,30 +239,24 @@ func tools() []map[string]any {
 	}
 }
 
-// BackgroundRefresh refreshes the live model list if the cache is stale.
-func BackgroundRefresh(e *engine.Engine) func() {
-	return func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-		if fetched, err := registry.Refresh(ctx, &http.Client{Timeout: 25 * time.Second}, e.Dirs.ModelsCache(), registry.LiveMaxAge, ""); err == nil && fetched {
-			e.Reg.MergeLive(e.Dirs.ModelsCache())
-		}
-	}
+// BackgroundRefresh fetches a newer route table when the last check is a day old, without blocking.
+func BackgroundRefresh(e *local.Engine) func() {
+	return e.RefreshInBackground
 }
 
 // CompactRecommendation is recommend's default answer: the pick and one line per option.
 type CompactRecommendation struct {
-	OfferID  string                `json:"offer_id,omitempty"`
-	UseCase  string                `json:"use_case"`
-	Stakes   int                   `json:"stakes"`
-	Announce string                `json:"announce"`
-	Options  []string              `json:"options"`
-	Second   *engine.SecondOpinion `json:"second_opinion,omitempty"`
-	Notes    []string              `json:"notes,omitempty"`
+	OfferID  string               `json:"offer_id,omitempty"`
+	UseCase  string               `json:"use_case"`
+	Stakes   int                  `json:"stakes"`
+	Announce string               `json:"announce"`
+	Options  []string             `json:"options"`
+	Second   *local.SecondOpinion `json:"second_opinion,omitempty"`
+	Notes    []string             `json:"notes,omitempty"`
 }
 
 // Compact shortens a recommendation to what Claude acts on.
-func Compact(r *engine.Recommendation) CompactRecommendation {
+func Compact(r *local.Recommendation) CompactRecommendation {
 	c := CompactRecommendation{OfferID: r.OfferID, UseCase: r.UseCase.ID, Stakes: r.Stakes, Announce: r.Announce, Second: r.SecondOpinion}
 	for i, o := range r.Options {
 		if i == 3 {
