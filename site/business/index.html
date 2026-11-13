@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>p0ssess: The things Claude can’t do, for less</title>
+<meta name="description" content="What p0ssess costs at work, measured: the same files run on Claude alone and with p0ssess, with the time, the cost and whether the answer was right.">
+<meta property="og:title" content="p0ssess: The things Claude can’t do, for less">
+<meta property="og:description" content="What p0ssess costs at work, measured: the same files run on Claude alone and with p0ssess, with the time, the cost and whether the answer was right.">
+<meta property="og:type" content="website">
+<link rel="canonical" href="https://p0ssess.me/business/">
+<meta property="og:url" content="https://p0ssess.me/business/">
+<meta property="og:site_name" content="p0ssess">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0b0b0b">
+<link rel="icon" href="../ghost.svg" type="image/svg+xml">
+<link rel="preload" href="../fonts/obel-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../fonts/plex-sans-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pages.css">
+<script src="../release.js" defer></script>
+<script src="../pages.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the page</a>
+
+<header class="top" id="top">
+  <div class="wrap topbar">
+    <a class="lockup" href="../" aria-label="p0ssess, home">
+      <span class="g"><img src="../ghost.svg" alt="" width="64" height="64"><i class="lid"></i></span>
+      <svg class="wordmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 9" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path class="wm-ink" d="M0 2h3v1h-3zM0 3h1v1h-1zM3 3h1v1h-1zM0 4h1v1h-1zM3 4h1v1h-1zM0 5h3v1h-3zM0 6h1v1h-1zM0 7h1v1h-1zM0 8h1v1h-1zM11 2h3v1h-3zM10 3h1v1h-1zM11 4h2v1h-2zM13 5h1v1h-1zM10 6h3v1h-3zM16 2h3v1h-3zM15 3h1v1h-1zM16 4h2v1h-2zM18 5h1v1h-1zM15 6h3v1h-3zM21 2h2v1h-2zM20 3h1v1h-1zM23 3h1v1h-1zM20 4h4v1h-4zM20 5h1v1h-1zM21 6h3v1h-3zM26 2h3v1h-3zM25 3h1v1h-1zM26 4h2v1h-2zM28 5h1v1h-1zM25 6h3v1h-3zM31 2h3v1h-3zM30 3h1v1h-1zM31 4h2v1h-2zM33 5h1v1h-1zM30 6h3v1h-3z"/><path class="wm-zero" d="M6 0h2v1h-2zM5 1h1v1h-1zM8 1h1v1h-1zM5 2h1v1h-1zM8 2h1v1h-1zM5 3h1v1h-1zM8 3h1v1h-1zM5 4h1v1h-1zM8 4h1v1h-1zM5 5h1v1h-1zM8 5h1v1h-1zM6 6h2v1h-2z"/></svg>
+    </a>
+    <nav class="topnav" aria-label="Site">
+      <a href="../pricing/">Pricing</a>
+      <a href="../business/" aria-current="page">Business</a>
+      <a data-link="docs" hidden>Docs</a>
+      <a data-link="repo" hidden>Source</a>
+      <a class="nav-cta" href="../#try">Install</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<section class="page-head" aria-labelledby="page-h">
+<div class="wrap">
+  <h1 id="page-h">The things Claude can’t do, for less.</h1>
+  <p class="lede">Claude can’t watch a video, hear a recording or make an image. p0ssess hands those jobs to a model that can, and Claude answers from what comes back. This page shows what that costs, measured on the same files with and without it.</p>
+  <p class="cta"><a class="btn" href="../pricing/">See pricing</a><a class="more" href="#measured">Go to the measurements</a></p>
+</div>
+</section>
+
+<section class="sec" id="already" aria-labelledby="already-h">
+<div class="wrap">
+  <div class="sec-head">
+    <h2 id="already-h">“Claude can already do that”</h2>
+    <p>It has a workaround for each. The workaround stands in for input or output that Claude doesn’t have. p0ssess sends the actual file to a model that watches video with its sound, hears audio or makes images.</p>
+  </div>
+  <ul class="grid three">
+    <li class="cell hl">
+      <svg class="px" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path fill="#7457e0" d="M5 3h6v1h-6zM3 4h2v1h-2zM11 4h2v1h-2zM2 5h1v1h-1zM13 5h1v1h-1zM1 6h1v1h-1zM14 6h1v1h-1zM1 7h1v1h-1zM14 7h1v1h-1zM1 8h1v1h-1zM14 8h1v1h-1zM2 9h1v1h-1zM13 9h1v1h-1zM3 10h2v1h-2zM11 10h2v1h-2zM5 11h6v1h-6z"/><path fill="#2a1b4e" d="M5 4h6v1h-6zM3 5h2v1h-2zM11 5h2v1h-2zM2 6h2v1h-2zM12 6h2v1h-2zM2 7h1v1h-1zM13 7h1v1h-1zM2 8h2v1h-2zM12 8h2v1h-2zM3 9h2v1h-2zM11 9h2v1h-2zM5 10h6v1h-6z"/><path fill="#eef1ff" d="M5 5h6v1h-6zM4 6h3v1h-3zM9 6h3v1h-3zM3 7h4v1h-4zM9 7h4v1h-4zM4 8h3v1h-3zM9 8h3v1h-3zM5 9h6v1h-6z"/><path fill="#0b0b0b" d="M7 6h2v1h-2zM7 7h2v1h-2zM7 8h2v1h-2z"/></svg>
+      <h3>Video</h3>
+      <dl class="said-by">
+        <div class="by-alone"><dt>Claude alone</dt><dd>Pulls still frames from the video with ffmpeg. It never hears the soundtrack.</dd></div>
+        <div class="by-poss"><dt>With p0ssess</dt><dd>A model watches the video itself, with its sound.</dd></div>
+      </dl>
+    </li>
+    <li class="cell hl">
+      <svg class="px" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path fill="#7457e0" d="M7 2h2v1h-2zM4 4h2v1h-2zM10 4h2v1h-2zM1 6h2v1h-2zM13 6h2v1h-2zM1 9h2v1h-2zM13 9h2v1h-2zM4 11h2v1h-2zM10 11h2v1h-2zM7 13h2v1h-2z"/><path fill="#eef1ff" d="M7 3h2v1h-2zM7 4h2v1h-2zM4 5h2v1h-2zM7 5h2v1h-2zM10 5h2v1h-2zM4 6h2v1h-2zM7 6h2v1h-2zM10 6h2v1h-2zM1 7h2v1h-2zM4 7h2v1h-2zM7 7h2v1h-2zM10 7h2v1h-2zM13 7h2v1h-2zM1 8h2v1h-2zM4 8h2v1h-2zM7 8h2v1h-2zM10 8h2v1h-2zM13 8h2v1h-2zM4 9h2v1h-2zM7 9h2v1h-2zM10 9h2v1h-2zM4 10h2v1h-2zM7 10h2v1h-2zM10 10h2v1h-2zM7 11h2v1h-2zM7 12h2v1h-2z"/></svg>
+      <h3>Audio</h3>
+      <dl class="said-by">
+        <div class="by-alone"><dt>Claude alone</dt><dd>Installs a local Whisper and transcribes with that.</dd></div>
+        <div class="by-poss"><dt>With p0ssess</dt><dd>A model that hears audio gets the recording itself.</dd></div>
+      </dl>
+    </li>
+    <li class="cell hl">
+      <svg class="px" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path fill="#7457e0" d="M1 2h14v1h-14zM1 3h1v1h-1zM14 3h1v1h-1zM1 4h1v1h-1zM14 4h1v1h-1zM1 5h1v1h-1zM14 5h1v1h-1zM1 6h1v1h-1zM14 6h1v1h-1zM1 7h1v1h-1zM14 7h1v1h-1zM1 8h1v1h-1zM14 8h1v1h-1zM1 9h1v1h-1zM14 9h1v1h-1zM1 10h1v1h-1zM14 10h1v1h-1zM1 11h1v1h-1zM14 11h1v1h-1zM1 12h14v1h-14z"/><path fill="#2a1b4e" d="M2 3h12v1h-12zM2 4h9v1h-9zM13 4h1v1h-1zM2 5h9v1h-9zM13 5h1v1h-1zM2 6h12v1h-12zM2 7h4v1h-4zM7 7h7v1h-7zM2 8h3v1h-3zM8 8h3v1h-3zM12 8h2v1h-2zM2 9h2v1h-2zM9 9h1v1h-1zM13 9h1v1h-1zM2 10h1v1h-1z"/><path fill="#eef1ff" d="M11 4h2v1h-2zM11 5h2v1h-2zM6 7h1v1h-1zM5 8h3v1h-3zM11 8h1v1h-1zM4 9h5v1h-5zM10 9h3v1h-3zM3 10h11v1h-11zM2 11h12v1h-12z"/></svg>
+      <h3>Images</h3>
+      <dl class="said-by">
+        <div class="by-alone"><dt>Claude alone</dt><dd>Draws SVG when asked for a picture.</dd></div>
+        <div class="by-poss"><dt>With p0ssess</dt><dd>A model that makes images makes the picture.</dd></div>
+      </dl>
+    </li>
+  </ul>
+</div>
+</section>
+
+<section class="sec" id="measured" aria-labelledby="measured-h">
+<div class="wrap">
+  <div class="sec-head">
+    <h2 id="measured-h">The same file, run both ways</h2>
+    <p>Each test is one file, run on Claude alone and then with p0ssess. The rows show how long each took, what it cost and whether the answer was right.</p>
+  </div>
+  <div class="duels">
+
+    <figure class="duel hl" aria-labelledby="t-audio-h">
+      <div class="duel-head">
+        <h3 id="t-audio-h">A speech recording, transcribed</h3>
+        <p>Claude Sonnet 5.5 was asked to transcribe one speech recording. Alone, it installed faster-whisper with the base.en model and ran it. With p0ssess, the recording went to whisper-large-v3-turbo.</p>
+        <p class="duel-read">p0ssess was faster and cheaper, and its transcript was correct.</p>
+        <p class="duel-meta">Measured November 11, 2026.</p>
+      </div>
+      <table class="duel-t m3" role="table">
+        <caption class="sr-only">The speech recording: time, total cost and whether the transcript was right</caption>
+        <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader"><span class="sr-only">Run</span></th><th scope="col" role="columnheader">Time</th><th scope="col" role="columnheader">Total cost</th><th scope="col" role="columnheader">Transcript</th></tr></thead>
+        <tbody role="rowgroup">
+          <tr role="row" class="alone"><th scope="row" role="rowheader">Claude alone <small>faster-whisper, base.en</small></th><td role="cell" class="lead" data-l="Time"><b><small>about</small> 7<small class="u">min</small></b><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="100%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span></td><td role="cell" data-l="Total cost"><b><small>$</small>0.0845</b></td><td role="cell" data-l="Transcript"><b>Wrong</b></td></tr>
+          <tr role="row" class="poss"><th scope="row" role="rowheader">With p0ssess <small>whisper-large-v3-turbo</small></th><td role="cell" class="lead" data-l="Time"><b>8<small class="u">s</small></b><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="1.9%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span></td><td role="cell" data-l="Total cost"><b><small>$</small>0.0519</b></td><td role="cell" data-l="Transcript"><b>Correct</b></td></tr>
+        </tbody>
+      </table>
+    </figure>
+
+    <figure class="duel hl" aria-labelledby="t-film-h">
+      <div class="duel-head">
+        <h3 id="t-film-h">A ten-minute film, described</h3>
+        <p>The film test from the home page, on Claude Sonnet 5.5. Alone, Claude pulled stills with ffmpeg and measured the loudness. With p0ssess, qwen3.8-omni-flash watched the whole film with its sound. Each answer was scored by hand out of 25.</p>
+        <p class="duel-read">p0ssess cost more in total and took longer on this job. For each point scored it cost less.</p>
+        <p class="duel-meta">Cost per point is derived from the two totals: $0.0999 / 15 and $0.1140 / 25. One run each. <a href="../#film">See the film test</a></p>
+      </div>
+      <table class="duel-t m4" role="table">
+        <caption class="sr-only">The film: cost per point scored, score, total cost and time</caption>
+        <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader"><span class="sr-only">Run</span></th><th scope="col" role="columnheader">Cost per point</th><th scope="col" role="columnheader">Score</th><th scope="col" role="columnheader">Total cost</th><th scope="col" role="columnheader">Time</th></tr></thead>
+        <tbody role="rowgroup">
+          <tr role="row" class="alone"><th scope="row" role="rowheader">Claude alone <small>stills and loudness</small></th><td role="cell" class="lead" data-l="Cost per point"><b><small>$</small>0.0067</b><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="100%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span></td><td role="cell" data-l="Score"><b>15<small class="u">of 25</small></b></td><td role="cell" data-l="Total cost"><b><small>$</small>0.0999</b></td><td role="cell" data-l="Time"><b>40<small class="u">s</small></b></td></tr>
+          <tr role="row" class="poss"><th scope="row" role="rowheader">With p0ssess <small>qwen3.8-omni-flash</small></th><td role="cell" class="lead" data-l="Cost per point"><b><small>$</small>0.0046</b><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="68.47%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span></td><td role="cell" data-l="Score"><b>25<small class="u">of 25</small></b></td><td role="cell" data-l="Total cost"><b><small>$</small>0.1140</b></td><td role="cell" data-l="Time"><b>262<small class="u">s</small></b></td></tr>
+        </tbody>
+      </table>
+    </figure>
+
+    <figure class="duel hl" aria-labelledby="t-apollo-h">
+      <div class="duel-head">
+        <h3 id="t-apollo-h">A noisy tape from Apollo 11, transcribed</h3>
+        <p>Three minutes of the Apollo 11 onboard recording, scored as words right against NASA’s Apollo Flight Journal transcript. Alone, Claude ran a local Whisper large-v3 with audio filtering. With p0ssess, the tape went to gemini-3.8-flash, for $0.03.</p>
+        <p class="duel-read">p0ssess was faster, at about the same accuracy. Claude alone got 2 points more of the words right.</p>
+        <p class="duel-meta">Measured November 12, 2026. The tape is highlight 2 of NasaApollo11OnboardRecordings, on the Internet Archive.</p>
+      </div>
+      <table class="duel-t m2" role="table">
+        <caption class="sr-only">The Apollo 11 tape: time and the share of words that were right</caption>
+        <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader"><span class="sr-only">Run</span></th><th scope="col" role="columnheader">Time</th><th scope="col" role="columnheader">Words right</th></tr></thead>
+        <tbody role="rowgroup">
+          <tr role="row" class="alone"><th scope="row" role="rowheader">Claude alone <small>local Whisper large-v3, with audio filtering</small></th><td role="cell" class="lead" data-l="Time"><b>404<small class="u">s</small></b><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="100%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span></td><td role="cell" data-l="Words right"><b>68%</b></td></tr>
+          <tr role="row" class="poss"><th scope="row" role="rowheader">With p0ssess <small>gemini-3.8-flash</small></th><td role="cell" class="lead" data-l="Time"><b><small>about</small> 30<small class="u">s</small></b><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="7.43%" height="100%" rx="3"/><rect class="sq" width="4" height="100%"/></svg></span></td><td role="cell" data-l="Words right"><b>66%</b></td></tr>
+        </tbody>
+      </table>
+    </figure>
+
+    <p class="slots-say">Two more tests are being recorded. Their results will go here.</p>
+
+    <!-- DEMO SLOT: sarcasm, the same words said sincerely and sarcastically. Fill with measured time, cost, right/wrong for Claude alone and with p0ssess, as a table like the three above; then drop the "slot" class and the tag. -->
+    <figure class="duel slot hl" aria-labelledby="t-sarcasm-h">
+      <div class="duel-head">
+        <h3 id="t-sarcasm-h">Sarcasm <span class="ph-tag">Coming</span></h3>
+        <p>One sentence, said once sincerely and once sarcastically. The two transcripts are identical, so a transcript alone can only guess which is which.</p>
+      </div>
+      <div class="slot-frame">
+        <p class="slot-say">Being recorded. No result yet.</p>
+        <ul class="slot-rows" aria-hidden="true">
+          <li class="cols"><span></span><span>Time</span><span>Cost</span><span>Right or wrong</span></li>
+          <li><span>Claude alone</span><i class="blank"></i><i class="blank"></i><i class="blank"></i></li>
+          <li><span>With p0ssess</span><i class="blank"></i><i class="blank"></i><i class="blank"></i></li>
+        </ul>
+      </div>
+    </figure>
+
+    <!-- DEMO SLOT: a spoken number against fingers held up. Fill with measured time, cost, right/wrong for Claude alone and with p0ssess, as a table like the three above; then drop the "slot" class and the tag. -->
+    <figure class="duel slot hl" aria-labelledby="t-fingers-h">
+      <div class="duel-head">
+        <h3 id="t-fingers-h">A spoken number against fingers held up <span class="ph-tag">Coming</span></h3>
+        <p>Someone says a number on camera while holding up a different number of fingers. The question needs the sound and the picture together. Still frames carry no sound, so the workaround can’t answer it even in principle.</p>
+      </div>
+      <div class="slot-frame">
+        <p class="slot-say">Being recorded. No result yet.</p>
+        <ul class="slot-rows" aria-hidden="true">
+          <li class="cols"><span></span><span>Time</span><span>Cost</span><span>Right or wrong</span></li>
+          <li><span>Claude alone</span><i class="blank"></i><i class="blank"></i><i class="blank"></i></li>
+          <li><span>With p0ssess</span><i class="blank"></i><i class="blank"></i><i class="blank"></i></li>
+        </ul>
+      </div>
+    </figure>
+
+  </div>
+</div>
+</section>
+
+<section class="sec" id="own" aria-labelledby="own-h">
+<div class="wrap">
+  <div class="sec-head">
+    <h2 id="own-h">Your own numbers</h2>
+    <p>The runs above are p0ssess’s own. With Pro you measure your work the same way and get a report you can forward.</p>
+  </div>
+  <div class="split">
+    <div class="copy">
+      <h3>Calibration</h3>
+      <p>Calibration runs built-in tasks with known answers on your own OpenRouter key, and your own samples if you add them. It shows the cost first.</p>
+      <p>The results tune which model p0ssess picks for each kind of job.</p>
+    </div>
+    <div class="copy">
+      <h3>The savings report</h3>
+      <ul class="needs own-rows">
+        <li class="hl">Cost per correct answer, for each kind of task.</li>
+        <li class="hl">Time, for each kind of task.</li>
+        <li class="hl">Claude alone against Claude with p0ssess.</li>
+        <li class="hl">The Claude side in API dollars, and as the share of your weekly limit saved.</li>
+        <li class="hl">A PDF export.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="sec" id="team" aria-labelledby="team-h">
+<div class="wrap">
+  <div class="sec-head">
+    <h2 id="team-h">For a team <span class="soon-tag">Coming right after 1.0</span></h2>
+    <p>Team is Pro for every seat, with an org on top.</p>
+  </div>
+  <ul class="needs trio">
+    <li class="hl">Shared rules that can only tighten.</li>
+    <li class="hl">Per-member budget shares.</li>
+    <li class="hl">A spend dashboard.</li>
+  </ul>
+  <p class="next"><a class="btn" href="../pricing/">See pricing</a><a class="more" href="../data/">What the cloud sandbox does with your code</a></p>
+  <p class="foot-line">Every figure on this page is a measured run. The sources are in the site’s README. <a data-link="repo" hidden>View the source</a></p>
+</div>
+</section>
+
+</main>
+
+<footer class="site-foot">
+<div class="wrap foot-in">
+  <img class="foot-g" src="../ghost.svg" alt="" width="32" height="32">
+  <div>
+    <nav class="foot-nav" aria-label="More pages"><a href="../pricing/">Pricing</a><a href="../business/" aria-current="page">Business</a><a href="../terms/">Terms</a><a href="../privacy/">Privacy</a><a href="../data/">Data</a><a href="../refunds/">Refunds</a></nav>
+    <p>p0ssess is MIT licensed. By s3ym0ur.</p>
+    <p class="small">The film is <cite>Big Buck Bunny</cite>, © Blender Foundation, CC BY 3.0, peach.blender.org. Apollo 11 onboard recording: NASA, from the Internet Archive. Set in Obel Mono and IBM Plex Sans, both under the <a href="../fonts/OFL-obel-mono.txt">SIL Open Font License</a>.</p>
+  </div>
+</div>
+</footer>
+
+</body>
+</html>
