@@ -4,9 +4,9 @@
 // other request. Console errors, failed requests, outside requests and horizontal overflow
 // are printed.
 // --full adds a full-page capture at each size.
-// --live also captures the motion: the hero's sweep at fixed moments after it starts (desktop
-// and phone), the two answers under the abilities and the hand-off figure part-way through,
-// and the island over a later section.
+// --live also captures the motion: the hero's rule turning on at fixed moments after the line
+// of dollars is on screen (desktop and phone), the hand-off figure part-way through, and the
+// island over a later section.
 // --pages adds full-page captures of the pages beside the home page (pricing, business, data,
 // terms, privacy, refunds) at each size, and of the pricing page in each state: as it ships,
 // then against a cloud API that this file answers itself (nothing leaves the machine): opening
@@ -38,24 +38,23 @@ const srv = http.createServer((req, res) => {
   fs.createReadStream(file).pipe(res);
 });
 
-// The hero (its film test), then each section.
-const ids = ["top", "film", "can", "how", "engine", "more", "limits", "try", "end"];
+// The hero (its line of dollars), then each section.
+const ids = ["top", "savings", "proof", "how", "team", "senses", "limits", "pricing", "try", "end"];
 const sizes = [["desk", { width: 1440, height: 900 }], ["phone", { width: 390, height: 844 }]];
-// Moments of the hero's sweep, in ms after the timeline is on screen: Claude alone, part-way, done.
-const sweepAt = [700, 2300, 5200];
+// Moments of the hero's ride, in ms after the line of dollars is on screen: rule off, part-way, rule on.
+const sweepAt = [600, 1700, 3400];
 const log = [];
 
 // The pages beside the home page.
 const pages = ["pricing", "business", "data", "terms", "privacy", "refunds"];
 // The cloud API, mocked. The address is the one the pricing page's CSP allows. These amounts
-// are test values that exist only here: no price has been decided, and none is in the site's files.
+// are test values that exist only here, so a capture can show that the page paints what the API says.
 const CLOUD = "https://cloud.p0ssess.me";
 const TEST = { year: 12345, month: 1234, seat: 567, hours: 7 };
 const releaseWithApi = () => {
   const src = fs.readFileSync(path.join(root, "release.js"), "utf8");
-  const out = src.replace(/(\n\s*api:\s*)""/, `$1"${CLOUD}"`);
-  if (out === src) log.push("release.js: no empty offer.api to replace");
-  return out;
+  if (!/\n\s*api:\s*"[^"]*"/.test(src)) log.push("release.js: no offer.api to replace");
+  return src.replace(/(\n\s*api:\s*)"[^"]*"/, `$1"${CLOUD}"`);
 };
 const plan = (id, tier, interval, amount, placeholder, more) => ({ id, tier, interval, name: id, available: true, placeholder,
   price: { amount_cents: amount, currency: "usd", display: "test" }, ...more });
@@ -85,20 +84,25 @@ srv.listen(0, "127.0.0.1", async () => {
     args: ["--no-first-run", "--disable-background-networking", "--proxy-server=127.0.0.1:9"] });
   // `at` is the page to open. `cloud`, when given, answers the cloud API, and release.js is served
   // with that API's address in place of the empty one, which is how the pricing page turns it on.
-  const open = async (viewport, motion, tag, { at = "/index.html", cloud = null } = {}) => {
+  const open = async (viewport, motion, tag, { at = "/index.html", cloud = null, expectFail = false } = {}) => {
     const ctx = await b.newContext({ viewport, colorScheme: "dark", reducedMotion: motion, deviceScaleFactor: 1 });
     await ctx.route("**/*", (r) => {
       const u = r.request().url();
       if (cloud && u === origin + "/release.js") return r.fulfill({ contentType: types[".js"], body: releaseWithApi() });
+      // As it ships: release.js with no API, whatever the file names, so nothing leaves the machine.
+      if (!cloud && u === origin + "/release.js") return r.fulfill({ contentType: types[".js"], body: fs.readFileSync(path.join(root, "release.js"), "utf8").replace(/(\n\s*api:\s*)"[^"]*"/, '$1""') });
       if (u.startsWith(origin + "/")) return r.continue();
       if (cloud && u.startsWith(CLOUD + "/")) return r.fulfill(cloud(r.request(), tag));
       log.push(`${tag}: outside request blocked: ${u}`);
       return r.abort();
     });
     const pg = await ctx.newPage();
-    pg.on("console", (m) => { if (["error", "warning"].includes(m.type())) log.push(`${tag}: ${m.type()}: ${m.text()}`); });
+    // A capture that answers the cloud API with a failure on purpose expects that one failure, and the
+    // browser's own line about it; anything else is still printed.
+    const meant = (url) => expectFail && url.startsWith(CLOUD + "/");
+    pg.on("console", (m) => { if (["error", "warning"].includes(m.type()) && !(expectFail && /Failed to load resource/.test(m.text()))) log.push(`${tag}: ${m.type()}: ${m.text()}`); });
     pg.on("pageerror", (e) => log.push(`${tag}: pageerror: ${e}`));
-    pg.on("response", (r) => { if (r.status() >= 400) log.push(`${tag}: ${r.status()} ${r.url()}`); });
+    pg.on("response", (r) => { if (r.status() >= 400 && !meant(r.url())) log.push(`${tag}: ${r.status()} ${r.url()}`); });
     await pg.goto(origin + at);
     await pg.evaluate(() => document.fonts.ready.then(() => true));
     return { ctx, pg };
@@ -128,8 +132,8 @@ srv.listen(0, "127.0.0.1", async () => {
     for (const [name, viewport] of sizes) {
       if (!want("hero")) continue;
       const { ctx, pg } = await open(viewport, "no-preference", "live-" + name);
-      // The sweep starts once the timeline is on screen; on a phone that takes a scroll.
-      if (name === "phone") await scrollTo(pg, ".lanes", "center");
+      // The ride starts once the line of dollars is on screen; on a phone that takes a scroll.
+      if (name === "phone") await scrollTo(pg, ".dline .plot-box", "center");
       const t0 = Date.now();
       for (const [i, at] of sweepAt.entries()) {
         const wait = at - (Date.now() - t0);
@@ -139,21 +143,15 @@ srv.listen(0, "127.0.0.1", async () => {
       await ctx.close();
     }
     const { ctx, pg } = await open(sizes[0][1], "no-preference", "live");
-    if (want("can")) {
-      // The two answers under the abilities, part-way through coming back.
-      await scrollTo(pg, "#can .grid", "center");
-      await pg.waitForTimeout(1300);
-      await shot(pg, "live-can.png");
-    }
     if (want("how")) {
       await scrollTo(pg, ".relay", "center");
       await pg.waitForTimeout(2200);
       await shot(pg, "live-how.png");
     }
-    if (want("engine")) {
-      await scrollTo(pg, "#engine", "start");
+    if (want("team")) {
+      await scrollTo(pg, "#team", "start");
       await pg.waitForTimeout(700);
-      await shot(pg, "live-engine.png");
+      await shot(pg, "live-team.png");
     }
     await ctx.close();
   }
@@ -178,7 +176,7 @@ srv.listen(0, "127.0.0.1", async () => {
       // As it ships, and with an API that cannot answer: the buttons are links that open an email.
       for (const [label, cloud] of [["as shipped", null], ["API unreachable", () => ({ status: 503, headers: cors })]]) {
         const t = `${name} pricing, ${label}`;
-        const o = await open(viewport, "reduce", t, cloud ? { at: "/pricing/", cloud } : { at: "/pricing/" });
+        const o = await open(viewport, "reduce", t, cloud ? { at: "/pricing/", cloud, expectFail: true } : { at: "/pricing/" });
         await o.pg.waitForTimeout(600);
         await check(o.pg, t, "Pro and Team are mailto links to support, with no form shown", `(() => {
           const m = (plan, word) => { const a = document.querySelector('[data-buy="' + plan + '"] [data-mail]');
@@ -194,8 +192,9 @@ srv.listen(0, "127.0.0.1", async () => {
       let { ctx, pg } = await open(viewport, "reduce", tag, { at: "/pricing/", cloud: cloudApi("opening_soon", true) });
       await pg.waitForSelector('[data-buy="pro"] [data-open]:not([hidden])');
       await pg.waitForTimeout(400);
-      await check(pg, tag, "a placeholder price is never shown as a number", `(() => { const t = document.querySelector(".tiers").textContent;
-        return ${JSON.stringify(digits)}.every((d) => !t.includes(d)) && [...document.querySelectorAll("[data-price]")].every((el) => el.querySelector(".ph-tag")); })()`);
+      await check(pg, tag, "a price the API marks as not decided is never shown as a number", `(() => { const t = document.querySelector(".tiers").textContent;
+        return ${JSON.stringify(digits)}.every((d) => !t.includes(d)) && [...document.querySelectorAll("[data-price]")].every((el) => el.hidden)
+          && [...document.querySelectorAll(".price-unset")].every((el) => !el.hidden); })()`);
       await check(pg, tag, "the Pro button reads as agreed", `document.querySelector('[data-buy="pro"] [data-open]').textContent === "Opening soon, get notified"`);
       await overflow(pg, tag);
       await full(pg, "pricing-mock-soon");
@@ -228,7 +227,7 @@ srv.listen(0, "127.0.0.1", async () => {
       await overflow(pg, tag);
       await pg.evaluate(() => {
         const note = document.createElement("p");
-        note.textContent = "Screenshot harness: a mocked offer with test prices. No price has been decided.";
+        note.textContent = "Screenshot harness: a mocked offer with test prices. These are not the prices.";
         Object.assign(note.style, { margin: "0", padding: "8px 16px", background: "#ffaf00", color: "#000", font: "13px/1.4 monospace", textAlign: "center" });
         document.body.prepend(note);
       });
@@ -241,8 +240,14 @@ srv.listen(0, "127.0.0.1", async () => {
   if (og) {
     const { ctx, pg } = await open({ width: 1200, height: 630 }, "reduce", "og");
     await pg.waitForTimeout(500);
-    // The share image is the promise and the frame; what sits below them would be cut mid-line.
-    await pg.evaluate(() => document.querySelectorAll(".readout, .tracks, .film-note").forEach((el) => { el.style.visibility = "hidden"; }));
+    // The share image is the promise, the rule and the line of dollars. The paragraph, the page's
+    // links and the small print are left out, so the line fits and nothing is cut mid-line.
+    // The page is drawn at four fifths, as on a 1500 px screen, so the whole line is in the frame.
+    await pg.evaluate(() => {
+      document.querySelectorAll(".topnav, .lede, .terms, .dline .note, .dline .runs").forEach((el) => { el.style.display = "none"; });
+      document.documentElement.style.zoom = "0.8";
+    });
+    await pg.waitForTimeout(300);
     await pg.screenshot({ path: path.resolve(og) });
     await ctx.close();
   }

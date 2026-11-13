@@ -1,5 +1,5 @@
-// The page's script: release links, copy buttons, the hairlines and chart bars that draw when
-// they scroll into view, the island, the hand-off figure and the film test in the hero.
+// The home page's script: release links, copy buttons, the hairlines and chart marks that draw
+// when they scroll into view, the island, the hand-off figure and the rule switch in the hero.
 // Everything it animates has a complete still state in the markup; with scripts off or with
 // reduced motion the page shows that.
 (() => {
@@ -68,49 +68,52 @@
     });
   });
 
-  // Hairlines draw out of their violet start, and chart bars grow from the baseline, once each,
-  // when they scroll into view. Bars move at one speed, so the shortest lands first and then says it won.
-  const growBars = (chart) => {
-    for (const bar of $$("rect.b", chart)) {
-      const ms = 240 + parseFloat(bar.getAttribute("width")) * 9;
-      bar.style.transitionDuration = ms + "ms";
-      bar.closest("li").style.setProperty("--tag-delay", ms - 120 + "ms");
-    }
-    chart.classList.add("in");
+  // Hairlines draw out of their violet start, a chart's marks land and the bars of a
+  // side-by-side grow from the baseline, once each, when they scroll into view. Bars move at
+  // one speed, so the shorter one lands first.
+  const grow = (table) => {
+    for (const bar of $$("rect.b", table)) bar.style.transitionDuration = 240 + parseFloat(bar.getAttribute("width")) * 9 + "ms";
+    table.classList.add("in");
   };
-  const lines = $$(".hl, .sec > .wrap");
+  const lines = $$(".hl, .sec > .wrap, .land, .duel-t");
   if (hasIO) {
     const seen = new IntersectionObserver((entries) => {
       for (const e of entries) {
         if (!e.isIntersecting) continue;
         seen.unobserve(e.target);
-        if (e.target.classList.contains("chart")) growBars(e.target); else e.target.classList.add("in");
+        if (e.target.classList.contains("duel-t")) grow(e.target); else e.target.classList.add("in");
       }
     }, { rootMargin: "0px 0px -8% 0px", threshold: 0.05 });
     lines.forEach((el) => seen.observe(el));
   } else {
     lines.forEach((el) => el.classList.add("in"));
   }
-  // The two answers under the abilities play once their box is mostly on screen.
-  const results = $$(".result");
-  if (hasIO) {
-    const back = new IntersectionObserver((entries) => {
-      for (const e of entries) if (e.isIntersecting) { back.unobserve(e.target); e.target.classList.add("in"); }
-    }, { threshold: 0.6 });
-    results.forEach((el) => back.observe(el));
-  } else {
-    results.forEach((el) => el.classList.add("in"));
-  }
-  // The usage chart has two readings; the bars of the one just chosen grow again.
-  const usage = $(".usage");
-  if (usage) {
-    usage.addEventListener("change", () => {
-      if (reduce.matches || !usage.classList.contains("in")) return;
-      usage.classList.remove("in");
-      void usage.offsetWidth;
-      growBars(usage);
-    });
-  }
+
+  // What a mark stands for, shown beside it while the pointer is on it. The same figures are in
+  // the table under each chart, so nothing is readable only here.
+  let tip = null, tipBox = null;
+  const hideTip = () => { if (tip) tip.classList.remove("on"); };
+  doc.addEventListener("pointerover", (e) => {
+    const hit = e.target.closest && e.target.closest(".hit[data-tip]");
+    if (!hit) return hideTip();
+    const box = hit.closest(".plot-box") || hit.closest("li") || hit.parentElement.parentElement;
+    if (box !== tipBox) {
+      if (tip) tip.remove();
+      tip = doc.createElement("span");
+      tip.className = "tip";
+      tip.setAttribute("aria-hidden", "true");
+      if (getComputedStyle(box).position === "static") box.style.position = "relative";
+      box.append(tip);
+      tipBox = box;
+    }
+    tip.textContent = hit.dataset.tip;
+    const b = box.getBoundingClientRect(), h = hit.getBoundingClientRect();
+    const x = h.left + h.width / 2 - b.left, w = tip.offsetWidth;
+    tip.style.left = Math.max(0, Math.min(b.width - w, x - w / 2)) + "px";
+    tip.style.top = h.top - b.top - tip.offsetHeight - 4 + "px";
+    tip.classList.add("on");
+  });
+  doc.addEventListener("pointerdown", (e) => { if (!(e.target.closest && e.target.closest(".hit[data-tip]"))) hideTip(); });
 
   // The island: shown once the top bar has scrolled away. Its violet dot slides to the section
   // in view (a slower twin makes the stretch) and the pill resizes to that section's name.
@@ -122,7 +125,7 @@
       dots.forEach((d) => d.setAttribute("aria-current", d === a ? "true" : "false"));
       focus.style.setProperty("--x", a.offsetLeft + a.offsetWidth / 2 + "px");
       island.classList.add("ready");
-      island.classList.toggle("end", a.getAttribute("href") === "#try");
+      island.classList.toggle("end", ["#pricing", "#try"].includes(a.getAttribute("href")));
       if (text.textContent !== a.getAttribute("aria-label")) {
         text.textContent = a.getAttribute("aria-label");
         label.style.setProperty("--lw", text.offsetWidth + "px");
@@ -180,7 +183,7 @@
       if (jobs.length) {
         n = (n + 1) % jobs.length;
         [name.textContent, job.textContent] = jobs[n];
-        back.textContent = `(${jobs[n][0]}, ${jobs[n][2]})`;
+        back.textContent = `(${jobs[n][2]})`;
       }
       play();
     });
@@ -199,249 +202,56 @@
     }
   }
 
-  // The film test. One prompt was run twice on a film of 596.46 seconds. The markup holds both
-  // results and the ten scored events; this turns the events into tabs, lets the pointer scrub
-  // the film, and plays the sweep from "Claude alone" to "with p0ssess" once the timeline is in view.
-  const film = $(".film");
-  if (!film) return;
-  const DUR = 596.46, COLS = 8, FW = 96, FH = 54, STEP = 15, FIRST = 7.5, UNIFORM = 40;
-  const alone = $("#mode-alone", film), poss = $("#mode-poss", film);
-  const tracks = $(".tracks", film), screen = $(".screen", film), lanes = $(".lanes", film), panel = $(".said", film), tc = $(".tc", film);
-  const canvas = $(".reel", film), still = $(".still", film), ghost = $(".head .g", film);
-  const replayFilm = $(".readout .replay", film), statusLine = $("#film-status", film);
-  const evs = $$(".moments > .ev", film), lit = $$(".evs-lit > i", film);
-  const fmt = (t) => Math.floor(t / 60) + ":" + String(Math.floor(t % 60)).padStart(2, "0");
-  const io = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
-
-  // Each event, read from its list item.
-  const items = evs.map((li, i) => ({
-    li, lit: lit[i], miss: li.classList.contains("miss"), featured: li.hasAttribute("data-featured"),
-    at: +li.dataset.at, frame: +li.dataset.f, qt: li.dataset.qt,
-    when: $(".ev-when", li).textContent, what: $(".ev-what", li).textContent,
-    alone: $(".ev-alone", li).textContent, quote: $(".ev-poss", li).textContent,
-    note: $(".ev-note", li)?.textContent || "",
-  }));
-  // Where each event begins, from the same shares the lanes are drawn with.
-  const shares = [30, 25, 60, 35, 35, 40, 75, 70, 115, 111.5];
-  const starts = shares.map((_, i) => shares.slice(0, i).reduce((a, b) => a + b, 0));
-  const eventAt = (t) => { let k = 0; starts.forEach((s, i) => { if (t >= s) k = i; }); return k; };
-
-  // What the sweep recovers, and when the playhead passes it: two sound cues Claude alone could
-  // only guess at (one point each) and the four events between its stills (two points each).
-  const gains = [[6, 0, 1], [20, 0, 1], [150, 2, 0], [185, 2, 0], [300, 2, 0], [370, 2, 0]];
-  const tally = (t, full) => {
-    let ev = 12, snd = 3;
-    for (const [at, e, s] of gains) if (full || t >= at) { ev += e; snd += s; }
-    return { ev, snd, score: ev + snd };
-  };
-
-  // The readouts the script takes over. Each starts as a pair of values, one per mode.
-  const out = {};
-  $$("[data-k]", film).forEach((el) => { out[el.dataset.k] = el; });
-  const put = (k, v) => { if (out[k].textContent !== String(v)) { out[k].textContent = v; return true; } return false; };
-  let shown = -1;
-  const readout = (t, full, quiet) => {
-    const s = full ? tally(DUR, true) : tally(t, false);
-    put("ev", s.ev);
-    put("snd", s.snd);
-    if (put("score", s.score) && !quiet && shown !== -1 && s.score > shown) {
-      out.score.classList.remove("tick");
-      void out.score.offsetWidth;
-      out.score.classList.add("tick");
-    }
-    shown = s.score;
-    put("cost", full ? "$0.1140" : "$0.0999");
-  };
-
-  // Frames come from one sprite: 40 at an even 15 seconds, then a poster for each event.
-  const ctx = canvas.getContext("2d");
-  const sprite = new Image();
-  let spriteOk = false, frame = -1;
-  const draw = (i) => {
-    if (!spriteOk || i === frame) return;
-    frame = i;
-    ctx.drawImage(sprite, (i % COLS) * FW, Math.floor(i / COLS) * FH, FW, FH, 0, 0, FW, FH);
-    canvas.hidden = false;
-    still.hidden = true;
-  };
-  const frameAt = (t) => Math.max(0, Math.min(UNIFORM - 1, Math.round((t - FIRST) / STEP)));
-
-  let sel = Math.max(0, items.findIndex((it) => it.featured)), run = 0, sweeping = false, scrubbing = false;
-  // The numbers are set on the parts that draw with them, not on the whole hero.
-  const setHead = (pct) => tracks.style.setProperty("--h", pct.toFixed(3));
-  const setP = (pct) => { for (const el of [tracks, screen]) el.style.setProperty("--p", pct.toFixed(3)); };
-  const blink = () => { if (reduce.matches) return; ghost.classList.remove("blink"); void ghost.offsetWidth; ghost.classList.add("blink"); };
-
-  function fill(i) {
-    const it = items[i];
-    $(".when", panel).textContent = it.when;
-    $(".what", panel).textContent = it.what;
-    const a = $(".by-alone", panel);
-    a.classList.toggle("miss", it.miss);
-    $("dd", a).textContent = it.alone;
-    $(".by-poss q", panel).textContent = it.quote;
-    $(".qt", panel).textContent = it.qt;
-    const note = $(".said-note", panel);
-    note.textContent = it.note;
-    note.hidden = !it.note;
-    film.toggleAttribute("data-miss", it.miss);
-    panel.setAttribute("aria-labelledby", "ev-tab-" + i);
-  }
-  // Choose an event: its tab, its panel, and (unless the pointer is scrubbing) its poster frame.
-  function select(i, opts = {}) {
-    sel = i;
-    items.forEach((it, k) => {
-      const on = k === i;
-      it.li.classList.toggle("sel", on);
-      it.lit.classList.toggle("sel", on);
-      it.tab.setAttribute("aria-selected", on ? "true" : "false");
-      it.tab.tabIndex = on ? 0 : -1;
-    });
-    fill(i);
-    if (opts.park !== false) {
-      const it = items[i];
-      setHead((it.at / DUR) * 100);
-      tc.textContent = fmt(it.at);
-      draw(it.frame);
-    }
-  }
-
-  // The events become tabs for one panel.
-  const list = $(".moments", film);
-  list.setAttribute("role", "tablist");
-  list.setAttribute("aria-orientation", "horizontal");
-  panel.setAttribute("role", "tabpanel");
-  items.forEach((it, i) => {
-    it.li.setAttribute("role", "presentation");
-    $$(":scope > span, :scope > q", it.li).forEach((el) => { el.hidden = true; });
-    const b = doc.createElement("button");
-    b.type = "button";
-    b.id = "ev-tab-" + i;
-    b.setAttribute("role", "tab");
-    b.setAttribute("aria-controls", "said");
-    b.setAttribute("aria-label", `${it.when}. ${it.what}. Claude alone ${it.miss ? "missed it" : "found it"}.`);
-    b.addEventListener("click", () => select(i));
-    it.li.append(b);
-    it.tab = b;
-  });
-  list.addEventListener("keydown", (e) => {
-    const move = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
-    let i = sel;
-    if (move) i = (sel + move + items.length) % items.length;
-    else if (e.key === "Home") i = 0;
-    else if (e.key === "End") i = items.length - 1;
-    else return;
-    e.preventDefault();
-    select(i);
-    items[i].tab.focus();
-  });
-  const step = $(".step", film);
-  step.hidden = false;
-  step.addEventListener("click", (e) => {
-    const b = e.target.closest("[data-step]");
-    if (b) select((sel + +b.dataset.step + items.length) % items.length);
-  });
-
-  // Scrubbing: the playhead follows the pointer along the film and the frame follows the playhead.
-  const timeAt = (e) => {
-    const r = lanes.getBoundingClientRect();
-    return Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * DUR;
-  };
-  const scrub = (e) => {
-    if (sweeping) return;
-    const t = timeAt(e);
-    if (!scrubbing) { scrubbing = true; film.classList.add("live"); }
-    setHead((t / DUR) * 100);
-    tc.textContent = fmt(t);
-    draw(frameAt(t));
-    const k = eventAt(t);
-    if (k !== sel) select(k, { park: false });
-  };
-  const settle = () => {
-    if (!scrubbing) return;
-    scrubbing = false;
-    film.classList.remove("live");
-    select(sel);
-  };
-  lanes.addEventListener("pointermove", (e) => { if (e.pointerType === "mouse" || e.buttons) scrub(e); });
-  lanes.addEventListener("pointerdown", (e) => { if (e.pointerType !== "mouse") scrub(e); });
-  lanes.addEventListener("pointerleave", settle);
-  lanes.addEventListener("pointerup", (e) => { if (e.pointerType !== "mouse") settle(); });
-  lanes.addEventListener("pointercancel", settle);
-
-  // The two modes. Going to "with p0ssess" is the sweep: the ghost rides the playhead across
-  // the film, the lit layers follow it, and the score ticks up as it passes what was missed.
-  function say() {
-    const s = tally(DUR, poss.checked);
-    statusLine.textContent = poss.checked
-      ? `With p0ssess: ${s.score} of 25. Events ${s.ev} of 20, sound cues ${s.snd} of 5, total cost $0.1140.`
-      : `Claude alone: ${s.score} of 25. Events ${s.ev} of 20, sound cues ${s.snd} of 5, total cost $0.0999.`;
-  }
-  function rest(full) {
-    run++;
-    sweeping = false;
-    film.classList.remove("live");
-    setP(full ? 100 : 0);
-    readout(0, full, true);
-    select(sel);
-  }
-  function sweep() {
-    const id = ++run, t0 = performance.now(), ms = 2400;
-    sweeping = true;
-    film.classList.add("live");
-    blink();
-    const tick = (now) => {
-      if (id !== run) return;
-      const x = Math.min(1, (now - t0) / ms), pct = io(x) * 100, t = (pct / 100) * DUR;
-      setP(pct);
-      setHead(pct);
-      tc.textContent = fmt(t);
-      draw(frameAt(t));
-      readout(t, x === 1);
-      if (x < 1) return requestAnimationFrame(tick);
-      // The ghost has seen the film through; it walks back to the featured event.
-      sweeping = false;
-      setTimeout(() => {
-        if (id !== run) return;
-        film.classList.remove("live");
-        select(sel);
+  // The rule switch. The markup holds both measured results and CSS moves the ghost between
+  // them; this counts the figure down or up as it rides, says the result to a screen reader,
+  // and, with motion allowed, opens on "rule off" and turns the rule on once the line of
+  // dollars is on screen, so the first thing the page does is the saving.
+  const hero = $(".hero");
+  const on = $("#rule-on"), off = $("#rule-off");
+  if (hero && on && off) {
+    const num = $(".now .num", hero), bOn = $("b.v-on", num), bOff = $("b.v-off", num);
+    const say = $("#rule-status"), rider = $(".head .rider", hero);
+    const cost = { on: parseFloat(bOn.textContent), off: parseFloat(bOff.textContent) };
+    const text = { on: bOn.textContent, off: bOff.textContent };
+    let raf = 0, auto = 0;
+    const blink = () => { if (!rider) return; rider.classList.remove("blink"); void rider.offsetWidth; rider.classList.add("blink"); };
+    const ride = () => {
+      const to = on.checked ? "on" : "off", from = on.checked ? "off" : "on";
+      const b = on.checked ? bOn : bOff;
+      cancelAnimationFrame(raf);
+      bOn.textContent = text.on;
+      bOff.textContent = text.off;
+      if (say) say.textContent = on.checked ? `Rule on: $${text.on} a run, and all 15 test files pass.` : `Rule off: $${text.off} a run, and all 15 test files pass.`;
+      if (reduce.matches) return;
+      // The figure follows the ghost: the same 1.5 seconds and the same ease as the --at transition.
+      const t0 = performance.now(), ms = 1500;
+      const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+      blink();
+      const step = (now) => {
+        const t = Math.min(1, (now - t0) / ms);
+        b.textContent = (cost[from] + (cost[to] - cost[from]) * ease(t)).toFixed(2);
+        if (t < 1) { raf = requestAnimationFrame(step); return; }
+        b.textContent = text[to];
+        num.classList.remove("tick");
+        void num.offsetWidth;
+        num.classList.add("tick");
         blink();
-        say();
-      }, 320);
+      };
+      raf = requestAnimationFrame(step);
     };
-    requestAnimationFrame(tick);
+    for (const r of [on, off]) r.addEventListener("change", () => { clearTimeout(auto); ride(); });
+    const line = $(".dline .plot-box", hero);
+    if (!reduce.matches && hasIO && line) {
+      off.checked = true;
+      const start = new IntersectionObserver(([e]) => {
+        if (!e.isIntersecting) return;
+        start.disconnect();
+        auto = setTimeout(() => { if (!off.checked) return; on.checked = true; ride(); }, 900);
+      }, { threshold: 0.9 });
+      start.observe(line);
+    }
+    root.classList.add("hero-ready");
+    // The ride is allowed from the second frame on, once the first state has been painted.
+    requestAnimationFrame(() => requestAnimationFrame(() => root.classList.add("hero-go")));
   }
-  const onMode = () => {
-    if (poss.checked && !reduce.matches) sweep(); else { rest(poss.checked); say(); }
-  };
-  alone.addEventListener("change", onMode);
-  poss.addEventListener("change", onMode);
-
-  // Start. With motion allowed the film opens on "Claude alone" and sweeps once its timeline is
-  // on screen; with reduced motion it stays on the finished frame.
-  film.classList.add("js");
-  $$("[data-k]", film).forEach((el) => { el.textContent = $(".v-poss", el).textContent; });
-  sprite.addEventListener("load", () => { spriteOk = true; frame = -1; if (!sweeping && !scrubbing) draw(items[sel].frame); });
-  sprite.src = "film-frames.webp";
-  const intro = () => {
-    alone.checked = true;
-    rest(false);
-    root.classList.add("film-ready");
-    const go = () => { if (!alone.checked) return; poss.checked = true; sweep(); };
-    if (!hasIO) return void setTimeout(go, 1100);
-    const when = new IntersectionObserver(([e]) => {
-      if (!e.isIntersecting) return;
-      when.disconnect();
-      setTimeout(go, 1100);
-    }, { threshold: 0.75 });
-    when.observe(lanes);
-  };
-  if (reduce.matches) { rest(true); root.classList.add("film-ready"); } else intro();
-  replayFilm.hidden = reduce.matches;
-  replayFilm.addEventListener("click", () => {
-    alone.checked = true;
-    rest(false);
-    setTimeout(() => { if (alone.checked) { poss.checked = true; sweep(); } }, 700);
-  });
-  reduce.addEventListener("change", () => { replayFilm.hidden = reduce.matches; if (reduce.matches) { poss.checked = true; rest(true); } });
 })();

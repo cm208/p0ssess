@@ -17,12 +17,6 @@
   font-display: block;
 }
 
-/* The film widget's two numbers. --p is how much of the film has been watched through p0ssess
-   (0 is Claude alone, 100 is the whole film); --h is where the playhead stands. Both are
-   percentages of the film's length, registered so they can be transitioned. */
-@property --p { syntax: "<number>"; inherits: true; initial-value: 100; }
-@property --h { syntax: "<number>"; inherits: true; initial-value: 75.11; }
-
 /* Dark only: black ground, one violet. */
 :root {
   color-scheme: dark;
@@ -166,7 +160,7 @@ p { text-wrap: pretty; }
   transition: color 0.2s var(--out);
 }
 .mode label:hover { color: var(--ink); }
-.mode input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.mode input { position: absolute; inset: -4px 0; width: 100%; height: calc(100% + 8px); margin: 0; opacity: 0; cursor: pointer; }
 .mode label:has(:checked) { color: var(--ink); }
 .mode label:has(:focus-visible) { outline: 2px solid var(--violet-ink); outline-offset: 2px; }
 .mode-thumb {
@@ -176,142 +170,135 @@ p { text-wrap: pretty; }
 }
 .mode:has(label:nth-of-type(2) :checked) .mode-thumb { translate: 100% 0; }
 
-/* The hero: the promise on the left, the proof beside and under it. One prompt was run twice
-   on a ten-minute film; the widget shows what each run caught. */
-.hero { padding-block: clamp(1rem, 2vw, 1.5rem) clamp(2.6rem, 5vw, 4rem); }
-.hero-grid { display: grid; grid-template-columns: minmax(0, 1fr); row-gap: 1.6rem; }
-.lede { max-width: 38rem; margin-top: 1.25rem; font-size: 1.12rem; line-height: 1.55; }
-.cta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.9rem 1.7rem; margin-top: 1.7rem; }
-.terms { margin-top: 0.9rem; font-size: 0.9rem; color: var(--ink-2); }
 
-.film { --p: 100; --h: 75.11; }
-.film:has(#mode-alone:checked) { --p: 0; }
-.tracks { transition: --p 1.6s var(--io), --h 0.6s var(--io); }
-.film.js .tracks { transition: --h 0.6s var(--io); }
-.film.live .tracks { transition: none; }
-.film:has(#mode-alone:checked) .v-poss, .film:not(:has(#mode-alone:checked)) .v-alone { display: none; }
+/* Where the ghost stands on the hero's dollar line, as a percentage of its length. --on is the
+   mean run with the rule on, --off the mean run with Claude alone; --at is the one in view.
+   Registered so the ride between them can be transitioned. */
+@property --at { syntax: "<number>"; inherits: true; initial-value: 18.95; }
 
-.screen { position: relative; align-self: start; width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; scroll-margin-top: 80px; transition: --p 1.6s var(--io); }
-.film.js .screen { transition: none; }
-/* The grid's violet start on the screen's top edge; it runs the full width once the film has been watched. */
-.screen::after {
-  content: ""; position: absolute; z-index: 1; left: -1px; top: -1px; height: 1px; width: calc(24px + (100% - 22px) * var(--p) / 100);
-  background: var(--violet);
-}
-.frame { position: relative; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 3px 3px 0 0; background: #000; }
-.frame img, .frame canvas {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  image-rendering: pixelated; image-rendering: crisp-edges; image-rendering: pixelated;
-  transition: filter 0.5s var(--out);
-}
-.tc {
-  position: absolute; left: 10px; bottom: 10px; padding: 0.22rem 0.6rem;
-  background: rgb(11 11 11 / 0.84); border-radius: 999px; font: 400 0.78rem/1.3 var(--mono); color: var(--ink);
-  font-variant-numeric: tabular-nums;
-}
-.unseen {
-  position: absolute; inset: 0; display: grid; place-items: center; padding: 1rem; text-align: center;
-  font: 400 0.92rem/1.4 var(--mono); color: var(--ink-body); opacity: 0; transition: opacity 0.3s var(--out);
-}
-.film[data-miss]:has(#mode-alone:checked) .frame :is(img, canvas) { filter: grayscale(1) brightness(0.2); }
-.film[data-miss]:has(#mode-alone:checked) .unseen { opacity: 1; }
+.btn.quiet { background: var(--surface); border: 1px solid var(--line); transition: scale 0.35s var(--spring), background 0.2s var(--out), border-color 0.2s var(--out); }
+.btn.quiet:hover { background: var(--violet-deep); border-color: var(--violet); }
+.topnav .nav-cta { position: relative; background: var(--violet); border-color: var(--violet); }
+/* 44 px to touch, for the pill in the top bar and the two ends of the island. */
+.topnav .nav-cta::after, .isl-home::after, .isl-cta::after { content: ""; position: absolute; inset: -5px 0; }
+.topnav .nav-cta:hover { background: #6346d4; border-color: #6346d4; }
+.topnav a[aria-current="page"] { color: var(--ink); text-decoration: underline 2px var(--violet); text-underline-offset: 0.55em; }
 
-.said { display: flow-root; min-height: 13.6rem; padding: 0.85rem 1.1rem 1rem; }
-.said-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.1rem 0.8rem; }
-.said .when { font: 400 0.78rem/1.4 var(--mono); color: var(--ink-2); font-variant-numeric: tabular-nums; }
-.said .what { font: 700 1.02rem/1.3 var(--mono); letter-spacing: -0.015em; color: var(--ink); }
-.said-by > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.1rem; margin-top: 0.55rem; }
-.said-by dt { font: 400 0.76rem/1.5 var(--mono); color: var(--ink-2); }
-.said-by dd { font-size: 0.95rem; line-height: 1.5; }
-.said-by .by-poss dt { color: var(--violet-ink); }
-.said-by q { color: var(--ink); }
-.qt { margin-left: 0.6em; color: var(--ink-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.credit { font: 400 0.76rem/1.5 var(--mono); color: var(--ink-2); white-space: nowrap; }
-.said-note { margin-top: 0.6rem; font-size: 0.84rem; line-height: 1.45; color: var(--ink-2); }
+/* The hero is the page's claim and its proof on one sheet: the headline, the rule, and every
+   measured run of one job on a line of dollars that starts at zero. The line's gridlines run up
+   behind the headline and fade, so the whole hero reads as the chart. */
+.hero { --on: 18.95; --off: 84.29; --at: var(--on); padding-block: clamp(1.4rem, 3.4vw, 2.8rem) clamp(2.6rem, 5vw, 4rem); }
+/* The ride between the two. With a script it waits for html.hero-go, so that setting the first state does not ride. */
+html.hero-go .hero { transition: --at 1.5s var(--io); }
+@media (scripting: none) { .hero { transition: --at 1.5s var(--io); } }
+.hero:has(#rule-off:checked) { --at: var(--off); }
+.hero:has(#rule-off:checked) .v-on:not(.old), .hero:not(:has(#rule-off:checked)) .v-off { display: none; }
+.hero:has(#rule-off:checked) .old { visibility: hidden; }
+.hero > .wrap::before {
+  content: ""; position: absolute; z-index: 0; inset: 0 var(--gutter) 3.2rem; pointer-events: none;
+  background: repeating-linear-gradient(to right, #1b1b1b 0 1px, transparent 1px calc(100% / 6));
+  -webkit-mask-image: linear-gradient(to bottom, transparent 4%, #000 78%); mask-image: linear-gradient(to bottom, transparent 4%, #000 78%);
+}
+.hero > .wrap > * { position: relative; z-index: 1; }
+.hero h1 { max-width: 24ch; font-size: clamp(2.15rem, 5.6vw, 5rem); line-height: 1.02; letter-spacing: -0.04em; }
+.hero-cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2.2rem; margin-top: clamp(1.3rem, 2.6vw, 2.2rem); }
+.lede { max-width: 36rem; font-size: 1.12rem; line-height: 1.55; }
+.cta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem 0.9rem; margin-top: 1.6rem; }
+.terms { margin-top: 1rem; font-size: 0.9rem; color: var(--ink-2); }
 
-.readout {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 1rem 1.4rem;
-  grid-template-areas: "ctl ctl" "say say" "score parts";
-}
-.ctl { grid-area: ctl; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.8rem; }
-.mode-say { grid-area: say; max-width: 34rem; font-size: 0.95rem; line-height: 1.5; min-height: 4.5em; }
-.tally { grid-area: score; }
-.parts { grid-area: parts; }
-.tally { display: flex; align-items: baseline; gap: 0.5rem; }
-.tally .num { font: 700 clamp(3.4rem, 15vw, 4.4rem)/0.86 var(--mono); letter-spacing: -0.055em; color: var(--ink); font-variant-numeric: tabular-nums; }
-.tally .num b { font-weight: inherit; }
-.tally small { font: 400 1rem/1 var(--mono); color: var(--ink-2); white-space: nowrap; }
-.tally .num.tick { animation: tick 0.32s var(--out); }
-@keyframes tick { from { translate: 0 -0.08em; color: var(--violet-ink); } }
-.parts { list-style: none; padding: 0; display: grid; gap: 0.3rem; justify-self: end; min-width: 11.5rem; }
-.parts li { display: flex; align-items: baseline; justify-content: space-between; gap: 1.1rem; }
-.parts .k { font-size: 0.8rem; color: var(--ink-2); }
-.parts .v { font: 400 0.84rem/1.3 var(--mono); color: var(--ink-body); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.parts [data-k] { font-weight: 700; color: var(--ink); }
-.parts .v b { font-weight: inherit; }
+/* The rule, the switch that turns it on, and what one run of the job then costs. */
+.meter { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 1.1rem; scroll-margin-top: 90px; }
+.meter-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 1rem 1.4rem; }
+.meter-ctl { display: grid; justify-items: start; gap: 0.75rem; min-width: 0; }
+.mode-say { max-width: 21rem; min-height: 4.5em; font-size: 0.95rem; line-height: 1.5; }
+.now { display: grid; grid-template-columns: auto auto; justify-content: end; align-items: baseline; column-gap: 0.5rem; white-space: nowrap; }
+/* What the same run cost before the rule, struck through beside what it costs now. */
+.now .old { grid-column: 1 / -1; justify-self: end; margin-bottom: 0.5rem; font: 400 clamp(1.3rem, 2.2vw, 1.7rem)/1 var(--mono); letter-spacing: -0.03em; color: var(--ink-2); text-decoration: line-through 2px var(--violet); }
+.now .old small { font-size: 0.7em; margin-right: 0.06em; }
+/* The multiplication sign is set in the text face: the display face draws it small. */
+.x { font-family: var(--sans); font-weight: 400; }
+.now .num { font: 700 clamp(3.7rem, 6.6vw, 5.8rem)/0.86 var(--mono); letter-spacing: -0.04em; color: var(--ink); }
+.now .num small { font-size: 0.5em; font-weight: 400; color: var(--ink-2); margin-right: 0.06em; }
+.now .per { font: 400 0.84rem/1.2 var(--mono); color: var(--ink-body); }
 
-/* The timeline: the film's picture, its measured loudness and the ten scored events on one
-   scale. Each lane has a dim layer (what Claude alone had) and a lit layer clipped to --p. */
-.lanes { position: relative; container-type: inline-size; margin-top: 40px; touch-action: pan-y; }
-.lane { position: relative; }
-.lane + .lane { margin-top: 8px; }
-.tl { display: block; margin-bottom: 4px; font: 400 0.75rem/1.2 var(--mono); color: var(--ink-2); }
-.lane-in { position: relative; }
-.strip .lane-in { height: 46px; overflow: hidden; border-radius: 4px; background: var(--surface); }
-.strip i { position: absolute; inset: 0; background: url("film-strip.webp") 0 0 / 100% 100% no-repeat; }
-.s-dim { filter: grayscale(1) brightness(0.3); }
-/* Twenty stills, one every 30 seconds of 596.46: all that Claude alone looked at. */
-.s-slits {
-  -webkit-mask-image: repeating-linear-gradient(to right, #000 0 3px, transparent 3px 5.0297%);
-  mask-image: repeating-linear-gradient(to right, #000 0 3px, transparent 3px 5.0297%);
+/* A line of dollars. Every run is one mark: a violet square with p0ssess, a gray circle for
+   Claude alone, one row a run so marks that land on the same cent stay apart. The band behind
+   each group is its range. Percentages are positions on the axis, which starts at zero. */
+.dline { margin-top: clamp(1.8rem, 3.4vw, 2.6rem); }
+.keys { display: flex; justify-content: space-between; gap: 0.6rem 1.4rem; list-style: none; margin: 0 0 12px; padding: 0; font: 400 0.8rem/1.4 var(--mono); color: var(--ink-2); }
+.keys li { min-width: 0; }
+.keys li:last-child { text-align: right; }
+.keys b { font-weight: 400; color: var(--ink); }
+.keys i { display: inline-block; width: 10px; height: 10px; margin-right: 0.5rem; border-radius: 2px; background: var(--violet); }
+.keys .k-alone i { border-radius: 50%; background: var(--ink-2); }
+.keys .k-ctl i { border-radius: 50%; background: none; box-shadow: inset 0 0 0 2.5px var(--ink-2); }
+.keys span { display: block; }
+.plot-box { position: relative; }
+.plot { display: block; overflow: visible; }
+.plot .ax { fill: var(--line); }
+.plot .tk { fill: var(--dot); }
+.plot text { font: 400 12px var(--mono); fill: var(--ink-2); }
+.plot .band.a { fill: #1c1c1c; }
+.plot .band.p { fill: var(--violet-deep); }
+.plot .pt { stroke: var(--ground); stroke-width: 2px; paint-order: stroke; }
+.plot .pt.a { fill: var(--ink-2); }
+.plot .pt.p { fill: var(--violet); }
+/* Claude with its own Haiku subagent: a ring, so it is told from Claude alone by shape as well. */
+.plot .pt.c { fill: var(--ground); stroke: var(--ink-2); stroke-width: 2.5px; paint-order: normal; }
+.plot .hit { fill: transparent; pointer-events: all; }
+/* The distance between the two means, drawn from the ghost to where Claude alone stands. */
+.span { position: absolute; top: 73px; left: calc(var(--at) * 1%); right: calc((100 - var(--off)) * 1%); height: 2px; background: var(--violet); border-radius: 1px; }
+.span::after { content: ""; position: absolute; right: -1px; top: -5px; width: 2px; height: 12px; background: var(--violet); border-radius: 1px; }
+.span b {
+  position: absolute; left: 50%; top: 50%; translate: -50% -50%; padding: 0.1rem 0.7rem 0.16rem;
+  background: var(--ground); font: 700 1rem/1.2 var(--mono); letter-spacing: -0.02em; color: var(--ink); white-space: nowrap;
+  transition: opacity 0.3s var(--out) 1.2s;
 }
-.s-lit, .w-lit { clip-path: inset(0 calc((100 - var(--p)) * 1%) 0 0); }
-.wave .lane-in { height: 34px; }
-.wave svg { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke-width: 0.56; }
-.w-dim { stroke: var(--bar); }
-.w-lit { stroke: var(--violet); }
-/* A few of the sounds the answer names, at the times it gives them. Wide screens only. */
-.cues { display: none; }
-.evs .lane-in { height: 28px; }
-.moments, .evs-lit { position: absolute; inset: 0; display: flex; gap: 3px; margin: 0; padding: 0; list-style: none; }
-.ev, .evs-lit i { position: relative; min-width: 0; }
-.e1 { flex: 30 1 0; } .e2 { flex: 25 1 0; } .e3 { flex: 60 1 0; } .e4 { flex: 35 1 0; } .e5 { flex: 35 1 0; }
-.e6 { flex: 40 1 0; } .e7 { flex: 75 1 0; } .e8 { flex: 70 1 0; } .e9 { flex: 115 1 0; } .e10 { flex: 111.5 1 0; }
-.ev > span, .ev > q { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.ev::before, .evs-lit i::before {
-  content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 8px; translate: 0 -50%; border-radius: 2px;
-  transition: height 0.35s var(--spring);
-}
-.ev.hit::before { background: var(--ink-2); }
-.ev.miss::before { border: 1px dashed var(--bar); }
-.evs-lit { pointer-events: none; clip-path: inset(-8px calc((100 - var(--p)) * 1%) -8px 0); }
-.evs-lit i::before { background: var(--violet); }
-.ev.sel::before, .evs-lit i.sel::before { height: 16px; }
-.ev button { position: absolute; inset: 0; width: 100%; padding: 0; background: none; border: 0; border-radius: 3px; cursor: pointer; }
-.axis { display: block; overflow: visible; margin-top: 6px; }
-.axis .tk { fill: var(--dot); }
-.axis text { font: 400 12px var(--mono); fill: var(--ink-2); }
-/* The playhead: the ghost rides it. */
-.head { position: absolute; z-index: 3; left: 0; top: -40px; bottom: 26px; width: 0; translate: calc(var(--h) * 1cqw) 0; pointer-events: none; }
-.head-line { position: absolute; left: -1px; top: 35px; bottom: 0; width: 2px; background: var(--ink); border-radius: 1px; }
+.hero:has(#rule-off:checked) .span b { opacity: 0; transition-delay: 0s; transition-duration: 0.1s; }
+.head { position: absolute; z-index: 2; left: calc(var(--at) * 1%); top: 62px; width: 0; pointer-events: none; }
 .head .rider { --u: 2px; position: absolute; left: -16px; top: 0; }
-.step { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
-.step-btn {
-  display: grid; place-items: center; width: 44px; height: 44px; padding: 0;
-  background: var(--surface); border: 1px solid var(--line); border-radius: 999px; color: var(--ink); cursor: pointer;
-  transition: border-color 0.2s var(--out), scale 0.35s var(--spring);
+.tip {
+  position: absolute; z-index: 5; left: 0; top: 0; max-width: min(22rem, 86vw); padding: 0.4rem 0.7rem 0.45rem;
+  background: var(--surface-hi); border: 1px solid var(--line); border-radius: 4px; box-shadow: 0 8px 22px rgb(0 0 0 / 0.5);
+  font: 400 0.76rem/1.45 var(--mono); color: var(--ink); pointer-events: none;
+  opacity: 0; transition: opacity 0.12s var(--out);
 }
-.step-btn:hover { border-color: var(--violet); }
-.step-btn:active { scale: 0.94; }
-.step-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-.film-note { max-width: 62rem; font-size: 0.84rem; line-height: 1.55; color: var(--ink-2); }
-.film-note a { white-space: nowrap; }
+.tip.on { opacity: 1; }
+.note { max-width: 62rem; margin-top: 1rem; font-size: 0.86rem; line-height: 1.5; color: var(--ink-2); }
+.note a { white-space: nowrap; }
+
+/* The runs behind a chart, as a table: one card to a row on a phone, a table from 720 px up. */
+.runs { margin-top: 0.9rem; }
+.runs > summary, .first-run > summary {
+  display: inline-flex; align-items: center; gap: 0.6ch; min-height: 44px; padding: 0 1.1rem;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+  font: 400 0.84rem/1.2 var(--mono); color: var(--ink); cursor: pointer; list-style: none;
+  transition: background 0.2s var(--out), border-color 0.2s var(--out);
+}
+.runs > summary::-webkit-details-marker, .first-run > summary::-webkit-details-marker { display: none; }
+.runs > summary::before, .first-run > summary::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--violet); }
+.runs > summary:hover, .first-run > summary:hover { background: var(--surface-hi); }
+.runs[open] > summary, .first-run[open] > summary { border-color: var(--violet); }
+.tbl { margin-top: 0.9rem; }
+.tbl table { width: 100%; border-collapse: collapse; font-size: 0.93rem; line-height: 1.5; font-variant-numeric: tabular-nums; }
+.tbl caption { padding-bottom: 0.6rem; text-align: left; font-size: 0.86rem; color: var(--ink-2); }
+.tbl thead { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.tbl tbody, .tbl tr, .tbl th, .tbl td { display: block; }
+.tbl tr { padding: 0.9rem 0 1rem; border-bottom: 1px solid var(--line); }
+.tbl tbody th { padding: 0; text-align: left; font-weight: 400; color: var(--ink); }
+.tbl tbody th small { display: block; font-size: 0.86rem; color: var(--ink-2); }
+.tbl td { display: flex; justify-content: space-between; gap: 1rem; padding: 0.3rem 0 0; color: var(--ink-body); }
+.tbl td::before { content: attr(data-l); content: attr(data-l) / ""; font-size: 0.86rem; color: var(--ink-2); }
+.tbl td small { color: var(--ink-2); }
+.tbl .rng { margin-left: 0.4em; font-size: 0.86rem; white-space: nowrap; }
 
 /* Sections */
 .sec { padding-block: var(--sec-pad); }
-.sec-head { display: grid; gap: 1.1rem; margin-bottom: clamp(2rem, 4.5vw, 3.6rem); padding-top: 1.6rem; }
-.sec-head h2 { max-width: 19ch; }
-.sec-head p { max-width: 36rem; font-size: 1.1rem; line-height: 1.58; }
+.sec-head { display: grid; gap: 1.1rem; margin-bottom: clamp(2rem, 4.5vw, 3.4rem); padding-top: 1.6rem; }
+.sec-head h2 { max-width: 20ch; }
+.sec-head p { max-width: 38rem; font-size: 1.1rem; line-height: 1.58; }
+.sec-head.sub { margin-top: clamp(2.6rem, 5vw, 4rem); padding-top: 0; }
+.sec-head.sub h3 { font-size: 1.5rem; line-height: 1.2; letter-spacing: -0.03em; }
 .copy { max-width: 36rem; }
 :where(.copy) > * + * { margin-top: var(--flow); }
 :where(.copy) > h3 { margin-top: 2.2rem; }
@@ -319,66 +306,43 @@ p { text-wrap: pretty; }
 :where(.copy) > h3 + * { margin-top: 0.7rem; }
 .split { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2.6rem; }
 .aside { max-width: 44rem; margin-top: 2.4rem; font-size: 0.95rem; color: var(--ink-2); }
+.next { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem 0.9rem; margin-top: 2.2rem; }
+.more { padding-block: 0.95rem; font: 400 0.92rem/1.3 var(--mono); }
 
 /* Cells on the frameless grid */
 .grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2.4rem clamp(28px, 4vw, 64px); margin: 0; padding: 0; list-style: none; }
 .cell { display: flex; flex-direction: column; padding-top: 1.5rem; }
 .cell > * + * { margin-top: 0.85rem; }
 .cell > .fig { margin-top: auto; padding-top: 1.2rem; }
-.px { display: block; width: 48px; height: 48px; }
-.px + h3 { margin-top: 1.1rem; }
-/* A real output, shown as it came back (cropped) */
-.shot { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
-/* A real answer, in a box the height of the image beside it: the media, the times the answer
-   gives marked on it, and the answer's own words. */
-.result {
-  display: grid; grid-template-rows: minmax(0, 1fr) auto auto; aspect-ratio: 4 / 3; overflow: hidden;
-  background: var(--surface); border: 1px solid var(--line); border-radius: 4px;
-}
-.vid-frame { position: relative; min-height: 0; overflow: hidden; background: #000; }
-.vid-frame img, .vid-scan { position: absolute; inset: 0; width: 100%; height: 100%; }
-/* The frame keeps its lower part, where the countdown clock is. */
-.vid-frame img { object-fit: cover; object-position: 50% 100%; }
-/* Fifteen small frames, one every two seconds up to 0:28; the last one sits under the still. */
-.vid-scan { background: url("apollo-scan.webp") 100% 100% / 1500% auto no-repeat; image-rendering: pixelated; }
-.vid-lane { position: relative; z-index: 1; height: 26px; }
-.vid-strip { position: absolute; inset: 0; background: url("apollo-strip.webp") 0 0 / 100% 100% no-repeat; }
-/* The pin stands at 28 of the clip's 45 seconds. */
-.vid-run { position: absolute; inset: 0; transform: translateX(62.22%); }
-.vid-pin { position: absolute; z-index: 1; left: -1px; top: 0; bottom: 0; width: 2px; background: var(--ink); }
-.vid-pin::before { content: ""; position: absolute; left: -4px; bottom: -5px; width: 10px; height: 10px; background: var(--violet); border: 1px solid var(--ink); border-radius: 50%; }
-.vid-said { padding: 0.6rem 0.8rem 0.7rem; font-size: 0.86rem; line-height: 1.45; }
-.vid-said q { color: var(--ink); }
-.vid-said b { font-weight: 400; color: var(--violet-ink); white-space: nowrap; }
-.aud { padding: 0.8rem 0.8rem 0.7rem; }
-.aud-wave { position: relative; min-height: 44px; }
-.aud-wave svg { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke-width: 0.6; }
-.aud-dim { stroke: var(--bar); }
-.aud-lit { stroke: var(--violet); }
-.aud-head { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
-.aud-head i { position: absolute; left: -1px; top: 0; bottom: 0; width: 2px; background: var(--ink); }
-/* The two time ranges the answer gives, on the same scale: 3 s and 2 s of 5.35. */
-.aud-marks { display: flex; gap: 3px; height: 4px; margin-top: 7px; padding-right: 6.54%; }
-.aud-marks i { background: var(--violet); border-radius: 2px; }
-.aud-marks .m1 { flex: 3 1 0; }
-.aud-marks .m2 { flex: 2 1 0; }
-.aud-lines { list-style: none; margin: 0.6rem 0 0; padding: 0; display: grid; gap: 0.15rem; }
-.aud-lines li { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 0.7rem; align-items: baseline; font-size: 0.9rem; line-height: 1.45; color: var(--ink); }
-.ts { font: 400 0.75rem/1.45 var(--mono); color: var(--violet-ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.shot { display: block; width: 100%; max-width: 30rem; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 4px; background: var(--surface); }
 /* What you say to Claude, set as a prompt line */
 .ask {
   position: relative; padding: 0.55rem 0.8rem 0.6rem 2rem;
   background: var(--surface); border: 1px solid var(--line); border-radius: 4px;
-  font: 400 0.84rem/1.5 var(--mono); color: var(--ink);
+  font: 400 0.84rem/1.5 var(--mono); color: var(--ink); overflow-wrap: anywhere;
 }
 .ask::before { content: ">"; position: absolute; left: 0.8rem; color: var(--violet-ink); }
-.says { list-style: none; padding: 0; display: grid; gap: 0.45rem; }
+.rule { border-color: var(--violet); background: linear-gradient(to right, var(--violet-deep), var(--surface) 62%); }
 /* A big number with its unit beside it */
 .fig { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.75rem; }
-.fig b { font: 700 2.15rem/1 var(--mono); letter-spacing: -0.045em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.fig b { font: 700 2.15rem/1 var(--mono); letter-spacing: -0.04em; color: var(--ink); }
 .fig b small { font-size: 0.56em; font-weight: 400; color: var(--ink-2); margin-right: 0.1em; }
+.fig b .u { margin: 0 0 0 0.2em; }
 .amt small { font-size: 0.62em; font-weight: 400; color: var(--ink-2); margin-right: 0.1em; }
 .fig span { flex-basis: 100%; font: 400 0.76rem/1.4 var(--mono); color: var(--ink-2); }
+
+/* The proof: one row a job, both on the hero's scale, with how much cheaper at the end. */
+.proof { list-style: none; margin: 0; padding: 0; display: grid; }
+.prow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.9rem; padding: 1.4rem 0 1.5rem; }
+.prow h3 { font-size: 1.14rem; }
+.prow h3 + p { margin-top: 0.35rem; font-size: 0.95rem; line-height: 1.5; }
+.prow .keys { margin-bottom: 8px; }
+.ratio { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.15rem 0.6rem; }
+.ratio b { font: 700 clamp(2.6rem, 4.4vw, 3.6rem)/0.9 var(--mono); letter-spacing: -0.04em; color: var(--ink); }
+.ratio b .x { font-size: 0.6em; color: var(--ink-2); margin-left: 0.04em; }
+.ratio span { font: 400 0.8rem/1.35 var(--mono); color: var(--ink-2); }
+.proof-end { max-width: 44rem; margin-top: 1.6rem; }
+.proof-end + .next { margin-top: 1.2rem; }
 
 /* The hand-off: Claude, the possessed Haiku, the other model. One hairline runs through the
    three pills; the violet wires, the reply and the riding ghost are the moving parts. The
@@ -421,11 +385,11 @@ p.swap .idle { color: inherit; }
 .wire i::after { content: ""; position: absolute; left: -3px; top: -4px; width: 8px; height: 8px; border-radius: 50%; background: var(--ink); }
 .relay .replay { position: absolute; right: -12px; bottom: 0; }
 
-/* Where one run's money went: one bar, three parts */
+/* Where one run's money went: one bar in three parts, with a gap of the ground between them. */
 .bill { align-self: start; padding-top: 1.3rem; }
 .bill figcaption { font: 700 1.02rem/1.3 var(--mono); letter-spacing: -0.015em; color: var(--ink); }
-.bill-bar { display: block; margin-top: 1.1rem; border-radius: 3px; }
-.bill-bar .b1 { fill: var(--bar); }
+.bill-bar { display: block; margin-top: 1.1rem; border-radius: 4px; }
+.bill-bar .b1 { fill: var(--ink-2); }
 .bill-bar .b2 { fill: var(--ink); }
 .bill-bar .b3 { fill: var(--violet); }
 .bill-bar .gap { fill: var(--ground); }
@@ -433,10 +397,11 @@ p.swap .idle { color: inherit; }
 .bill-rows li { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding: 0.5rem 0; border-top: 1px solid var(--line); }
 .bill-rows li:first-child { border-top: 0; }
 .bill-rows .who { position: relative; padding-left: 1.2rem; font-size: 0.95rem; }
-.bill-rows .who::before { content: ""; position: absolute; left: 0; top: 0.55em; width: 8px; height: 8px; border-radius: 2px; background: var(--bar); }
+.bill-rows .who::before { content: ""; position: absolute; left: 0; top: 0.55em; width: 8px; height: 8px; border-radius: 2px; background: var(--ink-2); }
 .bill-rows .r2 .who::before { background: var(--ink); }
 .bill-rows .r3 .who::before { background: var(--violet); }
 .amt { font: 700 1.25rem/1 var(--mono); letter-spacing: -0.03em; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.bill .note { margin-top: 0.8rem; }
 
 /* A command with its copy button */
 .cmd {
@@ -459,72 +424,78 @@ p.swap .idle { color: inherit; }
 .copy-btn:active { transform: scale(0.965); }
 .copy-btn::after { content: ""; position: absolute; inset: -9px -7px; }  /* a 44 px touch target */
 
+/* Team: the rule an owner sets, and the seats it reaches. One hairline runs from the rule down
+   to each seat; the seats are the ghost's own pixels. */
+.reach { align-self: start; padding-top: 1.3rem; }
+.reach figcaption { font: 700 1.02rem/1.3 var(--mono); letter-spacing: -0.015em; color: var(--ink); }
+.reach .cmd { margin-top: 1rem; border-color: var(--violet); }
+.seats { position: relative; list-style: none; margin: 0; padding: 22px 0 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.seats::before { content: ""; position: absolute; left: 8.33%; right: 8.33%; top: 10px; height: 1px; background: var(--violet); }
+.seats li { position: relative; display: grid; justify-items: center; gap: 0.4rem; font: 400 0.75rem/1.2 var(--mono); color: var(--ink-2); }
+.seats li::before { content: ""; position: absolute; left: 50%; top: -12px; width: 1px; height: 12px; background: var(--violet); }
+.seats img { display: block; width: 32px; height: 32px; }
+.reach .stem { display: block; width: 1px; height: 10px; margin: 0 auto; background: var(--violet); }
+
 /* Plain rows on the frameless grid */
 .wont, .needs { list-style: none; padding: 0; }
 .wont li, .needs li { padding: 0.62rem 0; }
 .wont code { white-space: nowrap; }
+.needs { font-size: 0.95rem; }
 
-/* Gates: one row per level of stakes. The rule under each row is the 0 to 100 score,
-   and its violet part is the scores that clear that gate. */
-table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
-th, td { text-align: left; font-weight: 400; padding: 0; }
-.gates { display: block; margin-top: 1.2rem; }
-.gates thead, .gates tbody { display: block; }
-.gates tr { display: grid; grid-template-columns: minmax(0, 1fr) 3.2rem 7.4rem; column-gap: 0.6rem; align-items: baseline; }
-.gates thead tr { padding-bottom: 0.4rem; border-bottom: 1px solid var(--line); }
-.gates thead th { font-size: 0.84rem; color: var(--ink-2); }
-.gates thead th:nth-child(n + 3), .gates .gate, .gates .harm { text-align: right; white-space: nowrap; }
-.gates tbody tr { position: relative; padding: 0.55rem 0 0.9rem; border-bottom: 1px solid var(--line); }
-.gates tbody tr::before, .gates tbody tr::after { content: ""; position: absolute; left: var(--g); bottom: -1px; background: var(--violet); }
-.gates tbody tr::before { width: 2px; height: 11px; }
-.gates tbody tr::after { right: 0; height: 3px; }
-.g20 { --g: 20%; } .g35 { --g: 35%; } .g60 { --g: 60%; } .g80 { --g: 80%; }
-.gates tbody th, .gates .gate, .gates .harm { font-family: var(--mono); font-weight: 700; color: var(--ink); letter-spacing: -0.02em; }
-.gates tbody th { grid-column: 1; grid-row: 1; font-size: 1.02rem; }
-.gates .gate { grid-column: 2; grid-row: 1; font-size: 1.45rem; line-height: 1; }
-.gates .harm { grid-column: 3; grid-row: 1; font-size: 1.05rem; }
-.gates .harm small { font-size: 0.74em; font-weight: 400; color: var(--ink-2); margin-right: 0.1em; }
-.bars .tot small { font-size: 0.62em; font-weight: 400; color: var(--ink-2); margin-right: 0.1em; }
-.gates .eg { grid-column: 1 / -1; grid-row: 2; font-size: 0.93rem; line-height: 1.4; }
-.scale { display: flex; justify-content: space-between; margin-top: 0.35rem; font: 400 0.75rem/1.3 var(--mono); color: var(--ink-2); }
+/* A measured side-by-side: one file, run on Claude alone and again with p0ssess. The first
+   figure of each row is also drawn as a bar under it, both rows on one scale from zero. */
+.duels { display: grid; gap: clamp(2.6rem, 4.5vw, 3.6rem); }
+.duel { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 1.5rem clamp(40px, 5vw, 88px); padding-top: 1.5rem; }
+.duel-head > * + * { margin-top: 0.7rem; }
+.duel-head p { max-width: 36rem; font-size: 0.95rem; line-height: 1.55; }
+.duel-head .duel-read { color: var(--ink); }
+.duel-head .duel-meta { font-size: 0.86rem; line-height: 1.5; color: var(--ink-2); }
+.duel-t { display: block; font-size: 1rem; }
+.duel-t thead { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.duel-t tbody { display: grid; gap: 1.5rem; }
+.duel-t tr { display: grid; grid-template-columns: minmax(0, 1fr); }
+.duel-t tbody th { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.8rem; padding-bottom: 0.5rem; text-align: left; font: 400 0.84rem/1.4 var(--mono); color: var(--ink); }
+.duel-t tbody th small { font-size: 0.75rem; color: var(--ink-2); }
+.duel-t td { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: 1rem; padding: 0.5rem 0; border-top: 1px solid var(--line); }
+.duel-t td::before { content: attr(data-l); content: attr(data-l) / ""; font-size: 0.86rem; color: var(--ink-2); }
+.duel-t td b { font: 700 1.25rem/1 var(--mono); letter-spacing: -0.03em; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; text-align: right; }
+.duel-t td b small { font-size: 0.62em; font-weight: 400; color: var(--ink-2); margin-right: 0.1em; }
+.duel-t td.lead b { font-size: 2.15rem; letter-spacing: -0.04em; font-variant-numeric: normal; }
+.duel-t td.lead b small { font-size: 0.5em; }
+.duel-t td b .u { margin: 0 0 0 0.22em; }
+.duel-t .len { grid-column: 1 / -1; display: block; height: 8px; margin-top: 0.55rem; }
+.duel-t svg { display: block; overflow: visible; }
+.duel-t rect { fill: var(--ink-2); }
+.duel-t .poss rect { fill: var(--violet); }
+.duel-t .poss th::before, .duel-t .alone th::before { content: ""; align-self: center; width: 10px; height: 10px; margin-right: -0.2rem; border-radius: 2px; background: var(--violet); }
+.duel-t .alone th::before { border-radius: 50%; background: var(--ink-2); }
 
-/* Cost charts: rows sorted by total, the bar is the total, the shortest bar wins.
-   Bars grow from one baseline; the winner is violet and says so, the rest are one gray. */
-.chart { align-self: start; padding-top: 1.3rem; }
-.est {
-  display: inline-block; padding: 0.14rem 0.62rem 0.18rem; margin-bottom: 0.85rem;
-  background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
-  font: 400 0.75rem/1.4 var(--mono); color: var(--ink);
+/* The film test: the film's own picture as a strip, once as Claude alone saw it (twenty stills,
+   one every thirty seconds) and once whole. Under each, the ten scored events: filled if found. */
+.reel { display: grid; align-content: start; gap: 1.5rem; }
+.reel-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 0.5rem 1.2rem; }
+.reel-who { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.8rem; font: 400 0.84rem/1.4 var(--mono); color: var(--ink); }
+.reel-who small { font-size: 0.75rem; color: var(--ink-2); }
+.reel-who::before { content: ""; align-self: center; width: 10px; height: 10px; margin-right: -0.2rem; border-radius: 50%; background: var(--ink-2); }
+.reel-row.poss .reel-who::before { border-radius: 2px; background: var(--violet); }
+.reel-lanes { min-width: 0; }
+.strip { position: relative; height: 46px; overflow: hidden; border-radius: 4px; background: var(--surface); }
+.strip i { position: absolute; inset: 0; background: url("film-strip.webp") 0 0 / 100% 100% no-repeat; }
+.strip .s-dim { filter: grayscale(1) brightness(0.28); }
+/* Twenty stills, one every 30 seconds of 596.46 */
+.strip .s-slits {
+  -webkit-mask-image: repeating-linear-gradient(to right, #000 0 3px, transparent 3px 5.0297%);
+  mask-image: repeating-linear-gradient(to right, #000 0 3px, transparent 3px 5.0297%);
 }
-.chart .task { color: var(--ink); font-size: 1rem; }
-.chart .def { font-size: 0.86rem; line-height: 1.5; color: var(--ink-2); margin-top: 0.35rem; }
-.chart figcaption { margin-top: 0.9rem; font-size: 0.8rem; line-height: 1.5; color: var(--ink-2); }
-.bars { list-style: none; padding: 0; margin: 0; display: grid; row-gap: 0.7rem; }
-.def + .bars { margin-top: 1.1rem; }
-.bars li {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; column-gap: 0.6rem; align-items: baseline;
-  grid-template-areas: "who tag tot" "len len len" "score score call";
-}
-.bars .who { grid-area: who; color: var(--ink); font-size: 0.95rem; line-height: 1.25; }
-.bars .who small { margin-left: 0.2em; font-size: 0.84em; color: var(--ink-2); white-space: nowrap; }
-.bars .tot { grid-area: tot; text-align: right; font: 700 1.25rem/1 var(--mono); letter-spacing: -0.03em; color: var(--ink-body); font-variant-numeric: tabular-nums; }
-.bars .win .tot { color: var(--ink); }
-.bars .len { grid-area: len; display: block; height: 8px; margin: 0.32rem 0 0.26rem; }
-.bars svg { display: block; overflow: visible; }
-.bars rect { fill: var(--bar); }
-.bars .win rect { fill: var(--violet); }
-.bars .score, .bars .call { font: 400 0.75rem/1.3 var(--mono); color: var(--ink-2); }
-.bars .score { grid-area: score; }
-.bars .call { grid-area: call; text-align: right; }
-.tag {
-  grid-area: tag; align-self: center; padding: 0.08rem 0.5rem 0.12rem;
-  background: var(--violet-deep); border: 1px solid var(--violet); border-radius: 999px;
-  font: 400 0.75rem/1.3 var(--mono); color: var(--ink); white-space: nowrap;
-}
-.usage .mode { align-self: flex-start; margin-top: 1.1rem; }
-.usage .bars { margin-top: 1.1rem; min-height: 7.4rem; align-content: start; }
-.usage:has(#when-late:checked) .u-early, .usage:not(:has(#when-late:checked)) .u-late { display: none; }
-.usage figcaption { margin-top: 0.6rem; }
+.evs { display: flex; gap: 3px; height: 8px; margin-top: 6px; list-style: none; padding: 0; }
+.evs li { min-width: 0; border-radius: 2px; background: var(--ink-2); }
+.evs .miss { background: none; border: 1px dashed var(--bar); }
+.reel-row.poss .evs li { background: var(--violet); }
+.e1 { flex: 30 1 0; } .e2 { flex: 25 1 0; } .e3 { flex: 60 1 0; } .e4 { flex: 35 1 0; } .e5 { flex: 35 1 0; }
+.e6 { flex: 40 1 0; } .e7 { flex: 75 1 0; } .e8 { flex: 70 1 0; } .e9 { flex: 115 1 0; } .e10 { flex: 111.5 1 0; }
+.score { display: flex; align-items: baseline; gap: 0.4rem; white-space: nowrap; }
+.score b { font: 700 clamp(2.4rem, 4vw, 3.2rem)/0.9 var(--mono); letter-spacing: -0.04em; color: var(--ink); }
+.score small { font: 400 0.8rem/1.2 var(--mono); color: var(--ink-2); }
 
 /* Status line states, as pills */
 .states { list-style: none; padding: 0; display: grid; gap: 0.5rem; }
@@ -540,9 +511,37 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
   white-space: pre;
 }
 .mark { font-family: "Ghost Mark", var(--mono); }
+/* The status line segment, as it sits in a terminal. */
+code.seg { display: inline-block; padding: 0.3rem 0.85rem; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; font-size: 0.84rem; white-space: pre; }
 .seg { color: var(--st-idle); }
 .seg.run { color: var(--st-run); }
 .seg.amber .mark { color: var(--st-amber); }
+
+/* The three ways in. From 860 px the tiers share their rows, so the names, the prices, the
+   terms and the buttons line up across the three. The hairline of the tier this page is
+   selling runs violet the whole way. */
+.tiers { display: grid; grid-template-columns: minmax(0, 1fr); gap: 3.2rem clamp(28px, 4vw, 64px); }
+.tier { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; padding-top: 1.5rem; scroll-margin-top: 90px; }
+.hl.lit::before { background: var(--violet); }
+.tier-head { display: flex; flex-wrap: wrap; align-items: center; align-content: start; justify-content: space-between; gap: 0.3rem 1rem; }
+.tier h2, .tier h3 { font-size: 1.5rem; line-height: 46px; letter-spacing: -0.03em; }  /* the height of the switch beside "Pro" */
+.price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.45rem 0.7rem; margin-top: 1.2rem; }
+.price b { font: 700 3.4rem/0.9 var(--mono); letter-spacing: -0.04em; color: var(--ink); white-space: nowrap; }
+.price b small { font-size: 0.5em; font-weight: 400; color: var(--ink-2); margin-right: 0.08em; }
+.price .per { font: 400 0.84rem/1.3 var(--mono); color: var(--ink-body); white-space: nowrap; }
+.price-note { flex-basis: 100%; font: 400 0.8rem/1.4 var(--mono); color: var(--ink-2); }
+.tier:has(#bill-month:checked) .v-year, .tier:not(:has(#bill-month:checked)) .v-month { display: none; }
+.tier-terms { margin-top: 1rem; font-size: 0.98rem; line-height: 1.55; }
+.tier-terms + .tier-terms { margin-top: 0.7rem; }
+.buy { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: start; align-content: start; gap: 0.6rem; margin-top: 1.6rem; }
+.btn { border: 0; cursor: pointer; }
+.btn.quiet { border: 1px solid var(--line); }
+.buy-note { font-size: 0.86rem; line-height: 1.45; color: var(--ink-2); }
+.soon-tag {
+  display: inline-block; padding: 0.14rem 0.62rem 0.18rem; vertical-align: middle;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+  font: 400 0.75rem/1.4 var(--mono); letter-spacing: 0; color: var(--ink); white-space: nowrap;
+}
 
 /* Install. Steps and requirements on one side, the release files on the other. Download
    controls stay off until release.js names a release. */
@@ -561,7 +560,6 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
 :where(.get-col) > * + * { margin-top: var(--flow); }
 .get-col > h3:not(:first-child) { margin-top: 2.2rem; }
 .get-col > h3 + * { margin-top: 0.7rem; }
-.needs { font-size: 0.95rem; }
 .release-state { font-size: 0.9rem; color: var(--ink-2); }
 .dl { list-style: none; padding: 0; }
 .dl li { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 1rem; align-items: center; padding: 0.62rem 0; }
@@ -570,32 +568,20 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
 .dl .dl-btn { grid-column: 2; grid-row: 1 / span 2; }
 .dl .sum { grid-column: 1 / -1; margin-top: 0.3rem; font-size: 0.75rem; color: var(--ink-2); }
 .dl-btn {
-  display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 1.1rem;
-  background: var(--violet); color: var(--ink); border: 1px solid var(--violet); border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 1.1rem;
+  background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 999px;
   font: 400 0.8rem/1 var(--mono); text-decoration: none; white-space: nowrap;
-  transition: scale 0.35s var(--spring), background 0.2s var(--out);
+  transition: scale 0.35s var(--spring), background 0.2s var(--out), border-color 0.2s var(--out);
 }
-.dl-btn:hover { background: #6346d4; color: var(--ink); }
+.dl-btn:hover { background: var(--violet-deep); border-color: var(--violet); color: var(--ink); }
 .dl-btn:active { scale: 0.965; }
 .dl-btn[aria-disabled="true"], .dl-btn[aria-disabled="true"]:hover { background: none; border-color: var(--line); color: var(--ink-2); cursor: default; scale: 1; }
-.get-links { display: flex; flex-wrap: wrap; gap: 0.1rem 1.6rem; font: 400 0.84rem/1.6 var(--mono); }
-.get-links a { padding-block: 0.2rem; }
+.get-links { display: flex; flex-wrap: wrap; gap: 0 1.6rem; margin-top: 0.3rem; font: 400 0.84rem/1.6 var(--mono); }
+.get-links a { padding-block: 0.7rem; }
 .get-links a[aria-disabled="true"] { color: var(--ink-2); text-decoration: none; cursor: default; }
 .get .cmd pre { font-size: 0.8rem; line-height: 1.7; }
 .get .wrap > .small { max-width: 46rem; margin-top: 2.4rem; }
 .first-run { margin-top: 0.7rem; }
-.first-run > summary {
-  display: inline-flex; align-items: center; gap: 0.6ch;
-  min-height: 44px; padding: 0 1.1rem;
-  background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
-  font: 400 0.84rem/1.2 var(--mono); color: var(--ink);
-  cursor: pointer; list-style: none;
-  transition: background 0.2s var(--out), border-color 0.2s var(--out);
-}
-.first-run > summary::-webkit-details-marker { display: none; }
-.first-run > summary::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--violet); }
-.first-run > summary:hover { background: var(--surface-hi); }
-.first-run[open] > summary { border-color: var(--violet); }
 .out { margin-top: 0.8rem; }
 .out pre {
   padding: 0.9rem 1rem; background: var(--ground); border: 1px solid var(--line); border-radius: 4px;
@@ -603,7 +589,7 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
 }
 
 /* The island: a pill dock fixed to the top once the page scrolls. Section dots with a liquid
-   focus dot, the section's name, and the way to the install steps. */
+   focus dot, the section's name, and the way to Pro. */
 .island {
   position: fixed; z-index: 20; top: 12px; left: 50%; translate: -50% 0;
   display: flex; align-items: center; height: 46px; max-width: calc(100vw - 24px); padding: 0 5px 0 6px;
@@ -612,7 +598,7 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
   transition: opacity 0.25s var(--out), translate 0.5s var(--spring), visibility 0s;
 }
 .island:not(.on) { opacity: 0; translate: -50% -14px; visibility: hidden; transition: opacity 0.2s var(--out), translate 0.3s var(--out), visibility 0s linear 0.3s; }
-.isl-home { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 999px; }
+.isl-home { position: relative; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 999px; }
 .isl-home img { display: block; width: 20px; height: 20px; }
 .island .dots { position: relative; margin-inline: 2px; }
 .island ol { display: flex; list-style: none; margin: 0; padding: 0; }
@@ -637,25 +623,24 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
 .isl-label { display: none; overflow: hidden; width: var(--lw, 0px); white-space: nowrap; font: 400 12px/1 var(--mono); color: var(--ink); transition: width 0.5s var(--spring); }
 .isl-label span { display: inline-block; padding: 0 12px 0 6px; }
 .isl-cta {
-  display: inline-flex; align-items: center; height: 34px; padding: 0 14px;
-  background: var(--violet); color: var(--ink); border-radius: 999px; font: 400 0.8rem/1 var(--mono); text-decoration: none;
+  position: relative; display: inline-flex; align-items: center; height: 34px; padding: 0 14px;
+  background: var(--violet); color: var(--ink); border-radius: 999px; font: 400 0.8rem/1 var(--mono); text-decoration: none; white-space: nowrap;
   transition: background 0.2s var(--out), scale 0.35s var(--spring);
 }
 .isl-cta:hover { background: #6346d4; color: var(--ink); }
 .isl-cta:active { scale: 0.965; }
-/* At the install steps the dock's own name says it. */
+/* At the prices and the install steps the dock's own name says it. */
 .island.end .isl-cta { display: none; }
 .island.end .isl-label span { padding-right: 14px; }
 
 /* Footer */
 .site-foot { border-top: 1px solid var(--line); color: var(--ink-2); font-size: 0.92rem; }
 .foot-in { display: flex; gap: 1.2rem; align-items: flex-start; padding-block: 2.6rem 3rem; }
-/* The other pages, as the top bar sets its links. */
 .foot-nav { display: flex; flex-wrap: wrap; gap: 0 1.7rem; margin: -0.9rem 0 0.5rem; font: 400 0.84rem/1.2 var(--mono); }
 .foot-nav a { padding-block: 0.9rem; color: var(--ink-2); text-decoration: none; }
 .foot-nav a:hover, .foot-nav a[aria-current="page"] { color: var(--ink); }
 .site-foot p + p { margin-top: 0.4rem; }
-.site-foot .small { font-size: 0.82rem; max-width: 44rem; }
+.site-foot .small { font-size: 0.82rem; max-width: 46rem; }
 .site-foot cite { color: inherit; }
 .foot-g { flex: none; width: 32px; height: 32px; }
 
@@ -671,8 +656,12 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
 @media (max-width: 480px) {
   :root { --flow: 0.8rem; }
   body { font-size: 1rem; line-height: 1.56; }
-  .lede { margin-top: 1rem; font-size: 1.05rem; }
-  .cta { gap: 0.7rem 1.3rem; margin-top: 1.3rem; }
+  .lede { font-size: 1.05rem; }
+  .hero h1 { line-height: 1.06; }
+  .meter-row { grid-template-columns: minmax(0, 1fr); }
+  .mode-say { max-width: none; min-height: 3em; }
+  .cta { margin-top: 1.3rem; }
+  .cta .btn { flex: 1 1 100%; justify-content: center; }
   .get .cmd pre { font-size: 0.76rem; }
   .dl-btn { padding: 0 0.95rem; }
   .steps .cmd, .steps .first-run { grid-column: 1 / -1; }
@@ -681,8 +670,12 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
   /* On a phone the command gets the full width and its button sits under it. */
   .cmd { flex-direction: column; align-items: stretch; }
   .copy-btn { align-self: flex-end; min-width: 3.9rem; margin: 0 7px 7px 0; padding-inline: 0.7rem; }
-  .axis .odd { display: none; }
+  .plot .odd { display: none; }
   .mode label { padding: 0 0.85rem; }
+  .keys { font-size: 0.75rem; }
+  .price b { font-size: 3rem; }
+  .seats { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; }
+  .seats li span { display: none; }
 }
 
 @media (max-width: 360px) {
@@ -691,34 +684,50 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
 }
 
 @media (min-width: 620px) {
-  .said-by > div { grid-template-columns: 6.6rem minmax(0, 1fr); gap: 0.9rem; }
-  .said-by dt { padding-top: 0.2em; }
-  .qt { display: block; margin-left: 0; }
-  .said { min-height: 10.9rem; }
-  .readout { grid-template-areas: "ctl score" "say parts"; column-gap: clamp(1.4rem, 3vw, 2.8rem); }
-  .tally { justify-self: end; }
-  .mode-say { min-height: 3em; }
-  .tally .num { font-size: clamp(3.4rem, 5.4vw, 4.2rem); }
   .isl-label { display: block; }
+  .strip { height: 52px; }
 }
 
-/* Between a phone and the two-column hero, the frame and what was said sit side by side. */
-@media (min-width: 620px) and (max-width: 1023.98px) {
-  .screen { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-  .frame { align-self: start; border-radius: 3px 0 0 3px; }
-  .said-by > div { grid-template-columns: minmax(0, 1fr); gap: 0.1rem; }
-  .said-by dt { padding-top: 0; }
-  .qt { display: inline; margin-left: 0.6em; }
+@media (min-width: 720px) {
+  .tbl table { display: table; }
+  .tbl thead { position: static; width: auto; height: auto; margin: 0; overflow: visible; clip-path: none; white-space: normal; }
+  .tbl thead { display: table-header-group; }
+  .tbl tbody { display: table-row-group; }
+  .tbl tr { display: table-row; padding: 0; border: 0; }
+  .tbl th, .tbl td { display: table-cell; padding: 0.7rem 0.9rem 0.75rem 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .tbl thead th { padding-block: 0 0.45rem; font: 400 0.8rem/1.4 var(--mono); color: var(--ink-2); text-align: left; }
+  .tbl td::before { content: none; }
+  /* The side-by-side as a table: who, then each measure in its own column. */
+  .duel-t thead { position: static; display: block; width: auto; height: auto; margin: 0; overflow: visible; clip-path: none; white-space: normal; }
+  .duel-t tbody { gap: 0; }
+  .duel-t tr { grid-template-columns: var(--cols); column-gap: 1rem; align-items: baseline; }
+  .duel-t.m2 { --cols: 10.5rem minmax(0, 1.5fr) minmax(0, 1fr); }
+  .duel-t.m3 { --cols: 10.5rem minmax(0, 1.5fr) repeat(2, minmax(0, 1fr)); }
+  .duel-t.m4 { --cols: 10.5rem minmax(0, 1.5fr) repeat(3, minmax(0, 1fr)); }
+  .duel-t thead tr { padding-bottom: 0.45rem; border-bottom: 1px solid var(--line); }
+  .duel-t thead th { text-align: left; font-weight: 400; font-size: 0.84rem; color: var(--ink-2); }
+  .duel-t tbody tr { padding: 1rem 0 1.1rem; border-bottom: 1px solid var(--line); }
+  .duel-t tbody th { display: block; padding: 0; }
+  .duel-t tbody th small { display: block; margin-top: 0.15rem; }
+  .duel-t .poss th::before, .duel-t .alone th::before { display: inline-block; margin-right: 0.5rem; }
+  .duel-t td { display: block; padding: 0; border: 0; }
+  .duel-t td::before { content: none; }
+  .duel-t td b { text-align: left; }
 }
 
 @media (min-width: 860px) {
   .lockup { --u: 4px; }
+  .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: clamp(48px, 5.5vw, 96px); }
-  .tracks { padding-left: 4.6rem; }
-  .tl { position: absolute; right: calc(100% + 14px); top: 50%; translate: 0 -50%; margin: 0; white-space: nowrap; }
-  .strip .lane-in { height: 52px; }
-  .wave .lane-in { height: 36px; }
+  .tiers { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 0; }
+  @supports (grid-template-rows: subgrid) {
+    .tier { grid-row: span var(--rows, 4); grid-template-rows: subgrid; }
+  }
+  /* The proof as one chart: the job, its runs on the shared scale, and how much cheaper. */
+  .prow { grid-template-columns: minmax(0, 17rem) minmax(0, 1fr) minmax(0, 13rem); column-gap: clamp(28px, 3.4vw, 56px); align-items: center; }
+  .prow .ratio { justify-content: flex-end; text-align: right; }
+  .prow .ratio span { flex-basis: 100%; }
   /* The hand-off laid out left to right. */
   .hops { --pill: 52px; --gap: clamp(1.5rem, 4vw, 3.5rem); grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: var(--gap); row-gap: 0; }
   .pill { padding: 0 1.3rem; font-size: 1rem; }
@@ -735,81 +744,48 @@ th, td { text-align: left; font-weight: 400; padding: 0; }
   .wire i::after { left: -4px; top: -3px; }
   .relay .rider { --u: 4px; }
   .get-cols { grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr); column-gap: clamp(48px, 5.5vw, 96px); }
-}
-
-@media (min-width: 860px) and (pointer: fine) {
-  .step { display: none; }
+  .reel-row { grid-template-columns: minmax(0, 1fr) 9rem; }
+  .reel-row .score { justify-content: flex-end; }
 }
 
 @media (min-width: 1024px) {
-  .hero-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 482px); column-gap: clamp(40px, 5vw, 88px); row-gap: 1rem;
-    grid-template-areas: "pitch screen" "readout readout" "tracks tracks" "note note";
-  }
-  .pitch { grid-area: pitch; align-self: center; }
-  .screen { grid-area: screen; }
-  .readout { grid-area: readout; }
-  .tracks { grid-area: tracks; }
-  .film-note { grid-area: note; }
-  .cues { display: block; position: absolute; inset: 0; pointer-events: none; clip-path: inset(-6px calc((100 - var(--p)) * 1%) -6px 0); }
-  .cues span {
-    position: absolute; top: 50%; translate: 0 -50%; padding: 0.08rem 0.5rem 0.14rem;
-    background: var(--ground); border: 1px solid var(--violet); border-radius: 999px;
-    font: 400 0.75rem/1.3 var(--mono); color: var(--ink); white-space: nowrap;
-  }
-  .c1 { left: 6.04%; } .c2 { left: 20.96%; } .c3 { left: 58.35%; } .c4 { right: 0; }
-  .readout { grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "ctl say score parts"; }
-  h1 { font-size: min(4.5vw, 4.1rem); }
-  .sec-head { grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); column-gap: clamp(48px, 5.5vw, 96px); align-items: end; }
+  .hero-cols { grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr); column-gap: clamp(40px, 5vw, 88px); align-items: end; }
+}
+
+@media (min-width: 1200px) {
+  /* Room for the whole credit beside Claude. */
+  .relay .after { min-width: max-content; }
+  .duel { grid-template-columns: minmax(0, 21rem) minmax(0, 1fr); }
 }
 
 /* Motion that only runs when the script has checked the reader allows it (html.anim). */
 html.anim { scroll-behavior: smooth; }
 html.anim :is(.hl, .sec > .wrap)::before { transition: clip-path 1.1s var(--out); clip-path: inset(0 0 0 0); }
 html.anim :is(.hl, .sec > .wrap):not(.in)::before { clip-path: inset(0 calc(100% - 24px) 0 0); }
-html.anim .grid > :nth-child(2)::before, html.anim .wont > :nth-child(2)::before, html.anim .steps > :nth-child(2)::before { transition-delay: 0.07s; }
-html.anim .grid > :nth-child(3)::before, html.anim .wont > :nth-child(3)::before, html.anim .steps > :nth-child(3)::before { transition-delay: 0.14s; }
+html.anim :is(.grid, .tiers, .wont, .steps) > :nth-child(2)::before { transition-delay: 0.07s; }
+html.anim :is(.grid, .tiers, .wont, .steps) > :nth-child(3)::before { transition-delay: 0.14s; }
 html.anim .wont > :nth-child(n + 4)::before { transition-delay: 0.2s; }
-html.anim .bars rect.b { transform-box: fill-box; transform-origin: 0 50%; transition: transform 0.9s cubic-bezier(0.3, 0.6, 0.3, 1); }
-html.anim .chart:not(.in) rect.b { transform: scaleX(0); }
-html.anim .tag { transition: opacity 0.35s var(--out) var(--tag-delay, 0.5s), translate 0.5s var(--spring) var(--tag-delay, 0.5s); }
-html.anim .chart:not(.in) .tag { opacity: 0; translate: -6px 0; }
+html.anim .duel-t rect.b { transform-box: fill-box; transform-origin: 0 50%; transition: transform 0.9s cubic-bezier(0.3, 0.6, 0.3, 1); }
+html.anim .duel-t:not(.in) rect.b { transform: scaleX(0); }
 html.anim .g.blink .lid { animation: lids 0.3s steps(1); }
-
-/* The two answers under the abilities come back once, when their box is on screen. The clip is
-   scanned to the pin at a steady speed, then the frame sharpens and the words arrive; the
-   recording is played through, and each line arrives as the playhead reaches its time. */
-html.anim .result:not(.in) :is(.vid-said, .vid-frame img, .aud-lines li, .aud-marks i) { opacity: 0; }
-html.anim .result:not(.in) .vid-scan { background-position: 0% 100%; }
-html.anim .result:not(.in) .vid-run { transform: translateX(0); }
-html.anim .result:not(.in) .aud-lit { clip-path: inset(0 100% 0 0); }
-html.anim .vid.in .vid-scan { animation: vid-scan 1.4s steps(15, jump-none) 0.2s both; }
-html.anim .vid.in .vid-run { animation: vid-run 1.4s linear 0.2s both; }
-html.anim .vid.in .vid-frame img { animation: come 0.35s var(--out) 1.6s both; }
-html.anim .vid.in .vid-said { animation: arrive 0.5s var(--out) 1.75s both; }
-html.anim .aud.in .aud-lit { animation: aud-lit 1.6s linear 0.2s both; }
-html.anim .aud.in .aud-head { animation: aud-head 1.6s linear 0.2s both; }
-html.anim .aud.in .aud-marks i:nth-child(1) { animation: come 0.4s var(--out) 0.2s both; }
-html.anim .aud.in .aud-lines li:nth-child(1) { animation: arrive 0.5s var(--out) 0.2s both; }
-html.anim .aud.in .aud-marks i:nth-child(2) { animation: come 0.4s var(--out) 1.1s both; }
-html.anim .aud.in .aud-lines li:nth-child(2) { animation: arrive 0.5s var(--out) 1.1s both; }
-@keyframes vid-scan { from { background-position: 0% 100%; } to { background-position: 100% 100%; } }
-@keyframes vid-run { from { transform: translateX(0); } to { transform: translateX(62.22%); } }
-@keyframes come { from { opacity: 0; } }
-@keyframes aud-lit { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
-@keyframes aud-head { 0% { transform: translateX(0); opacity: 1; } 95% { transform: translateX(100%); opacity: 1; } 100% { transform: translateX(100%); opacity: 0; } }
 @keyframes lids { 0%, 100% { opacity: 0; } 20%, 60% { opacity: 1; } }
+/* The marks of a chart land once, one arm after the other, when the chart scrolls into view. */
+html.anim .land .pt { transition: opacity 0.4s var(--out), translate 0.6s var(--out); }
+html.anim .land:not(.in) .pt { opacity: 0; translate: 0 6px; }
+html.anim .land .pt.p { transition-delay: 0.25s; }
+html.anim .land .band { transition: opacity 0.5s var(--out) 0.1s; }
+html.anim .land:not(.in) .band { opacity: 0; }
 
-/* The film arrives once the script has set it to "Claude alone", so the first thing it does is
-   the sweep. If the script never runs, it shows itself after a moment, complete. */
+/* The hero's proof arrives once the script has set it to "rule off", so the first thing it does
+   is turn the rule on. If the script never runs, it shows itself after a moment, complete. */
 @media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
-  html:not(.film-ready) .film :is(.screen, .readout, .tracks, .film-note) { animation: arrive 0.6s var(--out) 2.5s both; }
-  html.film-ready .film :is(.screen, .readout, .tracks, .film-note) { animation: arrive 0.7s var(--out) both; }
-  html.film-ready .film .readout { animation-delay: 0.08s; }
-  html.film-ready .film .tracks { animation-delay: 0.16s; }
-  html.film-ready .film .film-note { animation-delay: 0.24s; }
+  html:not(.hero-ready) .hero :is(.meter, .dline) { animation: arrive 0.6s var(--out) 2.5s both; }
+  html.hero-ready .hero :is(.meter, .dline) { animation: arrive 0.7s var(--out) both; }
+  html.hero-ready .hero .dline { animation-delay: 0.1s; }
 }
 @keyframes arrive { from { opacity: 0; translate: 0 10px; } }
+.now .num.tick { animation: tick 0.5s var(--out); }
+@keyframes tick { from { color: var(--violet-ink); } }
 
 /* The hand-off plays once when it scrolls into view, and again on Replay: under five seconds, every
    part on one clock. 0-8% rest · 8-24% the ghost rides to the Haiku and the first wire follows
@@ -875,28 +851,22 @@ html.anim .relay:not(.play):not(.done) .rider { display: block; }
 html.anim .relay:not(.play):not(.done) .back { opacity: 0; }
 
 @media (prefers-reduced-motion: reduce) {
-  .tracks, .film.js .tracks, .screen, .mode-thumb, .island, .isl-label, .focus circle, .ev::before, .evs-lit i::before,
-  .btn, .dl-btn, .copy-btn, .isl-cta, .step-btn, .topnav .nav-cta, .island ol a::before, .island ol a::after { transition: none; }
-  .frame img, .frame canvas, .unseen { transition: none; }
-  .tally .num.tick { animation: none; }
+  html.hero-go .hero, .hero, .span b, .mode-thumb, .island, .isl-label, .focus circle, .tip,
+  .btn, .btn.quiet, .dl-btn, .copy-btn, .isl-cta, .topnav .nav-cta, .island ol a::before, .island ol a::after { transition: none; }
+  .now .num.tick { animation: none; }
 }
 
 /* Forced colors drop backgrounds; keep the marks that carry data. */
 @media (forced-colors: active) {
-  .gates tbody tr::before, .gates tbody tr::after, .head-line { background: Highlight; }
-  .bars rect, .bill-bar .b1 { fill: CanvasText; }
-  .bars .win rect, .focus circle, .bill-bar .b3 { fill: Highlight; }
+  .plot .pt.a, .duel-t rect, .bill-bar .b1, .evs li { fill: CanvasText; background: CanvasText; }
+  .plot .pt.p, .duel-t .poss rect, .focus circle, .bill-bar .b3 { fill: Highlight; }
+  .span, .span::after, .wire, .hl.lit::before, .reel-row.poss .evs li { background: Highlight; }
   .island ol a::before { background: CanvasText; }
-  .tag, .copy-btn, .btn, .dl-btn, .isl-cta, .mode-thumb { border: 1px solid ButtonText; }
-  .wire { background: Highlight; }
-  .ev.hit::before { background: CanvasText; }
-  .evs-lit i::before { background: Highlight; }
-  .w-dim { stroke: CanvasText; }
-  .w-lit { stroke: Highlight; }
+  .copy-btn, .btn, .dl-btn, .isl-cta, .mode-thumb { border: 1px solid ButtonText; }
 }
 
 @media print {
-  html.anim .bars rect.b { transform: none !important; }
-  html.anim .tag { opacity: 1 !important; }
+  html.anim .duel-t rect.b { transform: none !important; }
+  html.anim .land .pt, html.anim .land .band { opacity: 1 !important; translate: none !important; }
   .island { display: none; }
 }

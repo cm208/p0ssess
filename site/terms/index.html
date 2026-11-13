@@ -34,10 +34,10 @@
     </a>
     <nav class="topnav" aria-label="Site">
       <a href="../pricing/">Pricing</a>
-      <a href="../business/">Business</a>
+      <a href="../business/">For business</a>
       <a data-link="docs" hidden>Docs</a>
       <a data-link="repo" hidden>Source</a>
-      <a class="nav-cta" href="../#try">Install</a>
+      <a class="nav-cta" href="../pricing/#pro">Get Pro</a>
     </nav>
   </div>
 </header>
@@ -60,6 +60,7 @@
       <li><a href="#free-use">Free use</a></li>
       <li><a href="#accounts">Accounts</a></li>
       <li><a href="#plans">Plans</a></li>
+      <li><a href="#team">Team</a></li>
       <li><a href="#payments-renewal-and-cancellation">Payments, renewal and cancellation</a></li>
       <li><a href="#what-happens-when-pro-ends">What happens when Pro ends</a></li>
       <li><a href="#the-cloud-sandbox">The cloud sandbox</a></li>
@@ -104,9 +105,24 @@
     <p>Give us a working email address. We use it for sign-in links and for notices about your subscription.</p>
     <h2 class="hl" id="plans">Plans</h2>
     <p>Pro is for one person. It adds the cloud sandbox, live engine data, community success rates from outcome records, routing tuned by your own calibration runs, the savings report and priority email support.</p>
-    <p>Team is Pro for every seat plus an organization with invite links, shared rules that can only tighten, per-member budget shares and a spend dashboard. Team ships in plugin version 1.1.0. When it opens, it will come with a supplement to these terms and a data processing agreement.</p>
+    <p>Team is Pro for every seat plus an organization. It is described in the Team section below. It ships in plugin version 1.1.0.</p>
     <p>Pro and Team can show "Opening soon, get notified" before sales open. Joining the waitlist is not a purchase.</p>
     <p>What each plan includes can be described on p0ssess.me. If we change a paid plan in a way that takes something away, we give you notice (at least 14 days).</p>
+    <h2 class="hl" id="team">Team</h2>
+    <p>Team is for a group that wants one bill and shared limits. It is Pro for every seat, plus an organization (an "org").</p>
+    <p>How it works:</p>
+    <ul>
+      <li>The account that creates the org is its owner. An account can belong to one org at a time. The owner holds one of the seats.</li>
+      <li>The owner makes invite links. Each link says how many people can use it and when it expires, and the owner can revoke it. Anyone with a link can join while a seat is free. Treat links like keys.</li>
+      <li>People who join are members. The owner can remove a member, and a member can leave. The owner cannot leave without deleting the org.</li>
+      <li>The owner can set shared rules. A shared rule can only tighten what a member's own settings allow, and a member's own rules can never loosen a shared rule. Members see the rules, with the owner's notes. Shared rules cannot approve spending or switch off a member's limits.</li>
+      <li>The owner can set a monthly budget share for each member, or a default share. The share is enforced on the member's own machine, which uses the lesser of the member's own monthly limit and the share. We never hold or move a member's money, and a member pays model providers directly, as in Pro.</li>
+      <li>The owner sees a spend dashboard. A member's plugin reports each paid run to us as the day, the use case, the model, the route and the cost, so the dashboard can add it up. The owner can see each member's spend by day, use case, model and route, next to the member's email address or GitHub login. The owner cannot see prompts or file contents, because we never receive them. The privacy policy lists exactly what is reported.</li>
+    </ul>
+    <p>By joining an org, you accept that its owner can see your reported spend, set your monthly share, and apply shared rules to your plugin. If you do not want that, do not join, or leave the org. Reporting spend is part of Team in 1.1.0, and a member cannot turn it off. When you leave or are removed, your spend rows are deleted and your plugin goes back to your own plan.</p>
+    <p>The owner is responsible for the org and for its seats. That includes who gets an invite link, who is removed, the rules and shares the org sets, and telling its members what the org does with their spend data. The owner must have the right to invite the people they invite.</p>
+    <p>Team is billed per seat per month. The owner buys and changes seats from the org's page and pays for every seat, including the owner's own. A seat is used when a member joins and is free again when the member leaves or is removed. If a Team subscription ends, every member drops to whatever their own subscription gives, which may be Free, and the org's shared rules and spend dashboard stop working. Cancellation, renewal and refunds work as they do for Pro, with the owner as the buyer.</p>
+    <p>We provide the Team service to the owner. For Team, we process members' spend reports and membership data on the owner's behalf. A data processing agreement is available on request at legal@p0ssess.me.</p>
     <h2 class="hl" id="payments-renewal-and-cancellation">Payments, renewal and cancellation</h2>
     <p>Polar is the merchant of record. That means Polar sells the subscription to you, charges you, collects and pays sales tax and VAT, and holds your payment details. Polar's buyer terms apply to your purchase along with these terms. If they conflict about the payment itself, Polar's terms control the payment and these terms control the services.</p>
     <p>Subscriptions are monthly or yearly. The price, the billing interval, the renewal date and how to cancel are shown at checkout before you pay. Current prices are on the pricing page at p0ssess.me. A subscription renews automatically at the end of each period and charges the payment method you used, until you cancel.</p>
@@ -188,8 +204,8 @@
 <div class="wrap foot-in">
   <img class="foot-g" src="../ghost.svg" alt="" width="32" height="32">
   <div>
-    <nav class="foot-nav" aria-label="More pages"><a href="../pricing/">Pricing</a><a href="../business/">Business</a><a href="../terms/" aria-current="page">Terms</a><a href="../privacy/">Privacy</a><a href="../data/">Data</a><a href="../refunds/">Refunds</a></nav>
-    <p>p0ssess is MIT licensed. By s3ym0ur.</p>
+    <nav class="foot-nav" aria-label="More pages"><a href="../pricing/">Pricing</a><a href="../business/">For business</a><a href="../terms/" aria-current="page">Terms</a><a href="../privacy/">Privacy</a><a href="../data/">Data</a><a href="../refunds/">Refunds</a></nav>
+    <p>The p0ssess plugin is MIT licensed. By s3ym0ur. Pro and Team are sold by New Deal Systems LLC.</p>
     <p class="small">Set in Obel Mono and IBM Plex Sans, both under the <a href="../fonts/OFL-obel-mono.txt">SIL Open Font License</a>.</p>
   </div>
 </div>

@@ -34,10 +34,10 @@
     </a>
     <nav class="topnav" aria-label="Site">
       <a href="../pricing/">Pricing</a>
-      <a href="../business/">Business</a>
+      <a href="../business/">For business</a>
       <a data-link="docs" hidden>Docs</a>
       <a data-link="repo" hidden>Source</a>
-      <a class="nav-cta" href="../#try">Install</a>
+      <a class="nav-cta" href="../pricing/#pro">Get Pro</a>
     </nav>
   </div>
 </header>
@@ -71,7 +71,7 @@
   </nav>
 
   <article class="prose">
-    <p>This policy explains what New Deal Systems LLC, an Idaho limited liability company ("we", "us") collects when you use the p0ssess hosted services, why, and what we do with it. The services are the routing engine, accounts and subscriptions, the cloud sandbox, the web pages where you sign in or subscribe, and the waitlist form on p0ssess.me. We are the controller of the personal data described here. Our address is 784 S Clearwater Loop, Suite R, Post Falls, ID 83854 and our contact is legal@p0ssess.me.</p>
+    <p>This policy explains what New Deal Systems LLC, an Idaho limited liability company ("we", "us") collects when you use the p0ssess hosted services, why, and what we do with it. The services are the routing engine, accounts and subscriptions, the cloud sandbox, the web pages where you sign in or subscribe, and the waitlist form on p0ssess.me. We are the controller of the personal data described here, except where the Team section says we process it for an organization. Our address is 784 S Clearwater Loop, Suite R, Post Falls, ID 83854 and our contact is legal@p0ssess.me.</p>
     <p>The p0ssess plugin runs on your machine. Your budgets, rules, approvals, history and spend ledger stay there. This policy covers what reaches us.</p>
     <h2 class="hl" id="what-we-do-not-receive">What we do not receive</h2>
     <p>We never receive your prompts or your file contents through the routing engine. Your model calls go from your machine to OpenRouter, under your own OpenRouter key, and our servers are not in that path. The one exception is the cloud sandbox, described below. Your OpenRouter key never reaches us.</p>
@@ -102,6 +102,21 @@
       <li>short-lived sign-in records: hashed sign-in link tokens, sign-in state, hashed web sessions and checkouts in progress</li>
     </ul>
     <p>The sign-in pages set one session cookie so you stay signed in. It is not used for tracking.</p>
+    <h3 id="when-you-use-team-110">When you use Team (1.1.0)</h3>
+    <p>Team adds an org to Pro. Everything above about accounts and the routing engine still applies to each member. This section is what Team adds.</p>
+    <p><strong>What a member's plugin sends.</strong> Only a plugin whose account belongs to an org does any of this, and it uses the member's device token.</p>
+    <ul>
+      <li>It fetches the org's policy every 5 minutes while its server runs, at session start, and when you run <code>p0ssess team sync</code>. The request carries the device token and nothing else. The answer is the org's shared rules and your monthly share, signed by us.</li>
+      <li>It reports spend. A report is a list of paid runs, and each run has exactly five fields: the day it ended (a UTC date, with no time of day), the use case, the model, the route (<code>direct</code>, <code>agent</code>, <code>claude-subagent</code>, <code>engine</code> or <code>calibrate</code>) and the cost in US dollars. The plugin queues runs on your machine and sends them with the policy fetch and at session end. It does not name you in the body; we know who you are from the device token.</li>
+      <li>It never sends prompts, file contents, file names, project paths, session ids or times of day.</li>
+    </ul>
+    <p>A report looks like this:</p>
+    <pre class="sample"><code>{"v":1,"runs":[{"day":"2026-11-13","use_case":"audio-transcribe","model":"openai/whisper-large-v3","route":"direct","cost_usd":0.0123}]}</code></pre>
+    <p><strong>What the org owner sees.</strong> For each member, the owner sees the member's email address or GitHub login, the member's role and monthly share, and the member's spend and run count. The owner also sees spend per day, per use case, model and route. The owner sees no prompt content, because we never receive any. Members see the org's name, the owner's email address or GitHub login when they join, their own role and share, their own spend and the shared rules.</p>
+    <p><strong>What we store.</strong> We add each reported run to one row for the org, the member, the day, the use case, the model and the route. A row holds a count of runs and the sum of their cost. We keep no per-run rows, no arrival times and no IP addresses for spend reports. We also store the org (its name, its owner and the members), invite links (as hashes only, with how many times each can be used and when it expires), the shared rules the owner set and the monthly shares.</p>
+    <p><strong>How long.</strong> Spend rows older than 13 months are deleted. A member's rows are deleted when the member leaves or is removed. When the owner deletes the org, we delete every membership, invite, rule, share and spend row. If a Team subscription ends, members lose the org's features and drop to their own plan.</p>
+    <p><strong>Who is responsible.</strong> We are the controller of each member's account data, as described above. For the org's data (membership, shared rules, shares and spend reports), the org owner decides that the org uses Team and what the org does with what it sees. For that data, we process it on the owner's behalf, and the owner is the controller. The owner is responsible for telling members what the org does with their spend data.</p>
+    <p><strong>Data processing.</strong> For Team, we process members' spend reports and membership data on the org owner's behalf. A data processing agreement is available on request at legal@p0ssess.me.</p>
     <h3 id="when-you-join-the-waitlist">When you join the waitlist</h3>
     <p>You give your email address and choose Pro or Team. We store the address, the plan, whether you signed up on the site or in the plugin, and the time. We send you one email when Pro opens, and then delete the address. Until the waitlist form is live, the pricing page's button opens an email to support@p0ssess.me instead, and we keep those emails as support email.</p>
     <p>The sign-in and waitlist forms count requests per IP address, in memory, for up to an hour, to slow down abuse. The counts are never written to disk and vanish on restart. Our account service's logs record errors, not IP addresses.</p>
@@ -144,6 +159,8 @@
     <tr><th scope="row">Sandbox upload and workspace</th><td data-label="Why we use it">Run your session</td><td data-label="Where it lives">Sandbox host memory and disk</td><td data-label="How long we keep it">Deleted when the session ends (30 minutes at most)</td></tr>
     <tr><th scope="row">Sandbox host logs (see above)</th><td data-label="Why we use it">Run and protect the service</td><td data-label="Where it lives">Sandbox host</td><td data-label="How long we keep it">30 days</td></tr>
     <tr><th scope="row">Monthly sandbox time total</th><td data-label="Why we use it">Apply your allowance</td><td data-label="Where it lives">Sandbox host</td><td data-label="How long we keep it">Until the end of the next month</td></tr>
+    <tr><th scope="row">Org, membership, invite link hashes, shared rules and monthly shares (Team)</th><td data-label="Why we use it">Run the org</td><td data-label="Where it lives">Accounts database</td><td data-label="How long we keep it">Until the member leaves or is removed, or the owner deletes the org</td></tr>
+    <tr><th scope="row">Team spend rows (org, member, day, use case, model, route; run count and cost)</th><td data-label="Why we use it">Show the owner's spend dashboard and apply shares</td><td data-label="Where it lives">Accounts database</td><td data-label="How long we keep it">13 months; deleted when the member leaves or is removed, and all of them when the org is deleted</td></tr>
     <tr><th scope="row">Outcome records (eight fields and a count)</th><td data-label="Why we use it">Community success rates</td><td data-label="Where it lives">Engine database</td><td data-label="How long we keep it">24 months; not linked to you</td></tr>
     <tr><th scope="row">Calibration counts (runs and correct, per task kind and model)</th><td data-label="Why we use it">Tune your account's routing</td><td data-label="Where it lives">Engine database</td><td data-label="How long we keep it">Until you clear them or 30 days after the subscription ends</td></tr>
     <tr><th scope="row">Support email</th><td data-label="Why we use it">Help you</td><td data-label="Where it lives">Our mailbox</td><td data-label="How long we keep it">2 years</td></tr>
@@ -164,6 +181,7 @@
     <p>These companies handle personal data for us or for you.</p>
     <ul>
       <li>Polar (merchant of record): sells the subscription to you, takes payment, holds your payment details, collects and pays sales tax and VAT, issues license keys and runs the customer portal. Polar acts under its own privacy policy for your purchase. We receive your email, customer id and subscription details from it.</li>
+      <li>The owner of an org you join (Team): sees your email address or GitHub login, your share and your reported spend, as the Team section lists.</li>
       <li>GitHub: only if you choose to sign in with GitHub. GitHub gives us your numeric id, login and verified email.</li>
       <li>OVHcloud US: runs our servers.</li>
       <li>Cloudflare: stores encrypted database backups (R2), delivers the p0ssess.me website and keeps its access logs.</li>
@@ -211,8 +229,8 @@
 <div class="wrap foot-in">
   <img class="foot-g" src="../ghost.svg" alt="" width="32" height="32">
   <div>
-    <nav class="foot-nav" aria-label="More pages"><a href="../pricing/">Pricing</a><a href="../business/">Business</a><a href="../terms/">Terms</a><a href="../privacy/" aria-current="page">Privacy</a><a href="../data/">Data</a><a href="../refunds/">Refunds</a></nav>
-    <p>p0ssess is MIT licensed. By s3ym0ur.</p>
+    <nav class="foot-nav" aria-label="More pages"><a href="../pricing/">Pricing</a><a href="../business/">For business</a><a href="../terms/">Terms</a><a href="../privacy/" aria-current="page">Privacy</a><a href="../data/">Data</a><a href="../refunds/">Refunds</a></nav>
+    <p>The p0ssess plugin is MIT licensed. By s3ym0ur. Pro and Team are sold by New Deal Systems LLC.</p>
     <p class="small">Set in Obel Mono and IBM Plex Sans, both under the <a href="../fonts/OFL-obel-mono.txt">SIL Open Font License</a>.</p>
   </div>
 </div>
