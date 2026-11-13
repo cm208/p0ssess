@@ -23,6 +23,13 @@
         ]
       }
     ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/p0ssess", "args": ["hook", "session-end"], "timeout": 2 }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Agent|Task",

@@ -274,11 +274,24 @@ func (l *Ledger) Offer(id string) *Entry { return l.offers[id] }
 // outcomes are the recorded outcomes plus an implied "accepted" for every finished direct or agent run
 // that no outcome names: Claude reports only what it did not use (redo, declined, overridden). An
 // outcome naming a relay session covers all of its turns.
-func (l *Ledger) outcomes() []Entry {
+func (l *Ledger) outcomes() []Entry { return l.outcomesWith(false) }
+
+// RouteCalibrate marks the ledger entries that calibration writes: its spend, and one outcome per graded
+// sample (correct is accepted, wrong is declined).
+const RouteCalibrate = "calibrate"
+
+// outcomesWith is outcomes, plus the graded calibration results when calibration is true. Those tune
+// the user's own routing (Stats and UseCaseCounts) and nothing else: they are tests graded by p0ssess,
+// not a record of what the user accepted, so tendencies, suggestions, approvals and the outcome
+// records leave them out.
+func (l *Ledger) outcomesWith(calibration bool) []Entry {
 	var out []Entry
 	claimed := map[string]bool{}
 	for _, e := range l.Entries {
 		if e.Type == TypeOutcome {
+			if e.Route == RouteCalibrate && !calibration {
+				continue
+			}
 			out = append(out, e)
 			if e.RunID != "" {
 				claimed[e.RunID] = true
@@ -494,7 +507,7 @@ type ModelStats struct {
 // Stats returns outcomes for model on a use case and on its whole family.
 func (l *Ledger) Stats(model, useCase, family string) ModelStats {
 	var s ModelStats
-	for _, e := range l.outcomes() {
+	for _, e := range l.outcomesWith(true) {
 		if e.Model != model {
 			continue
 		}
@@ -520,7 +533,7 @@ type UseCaseCount struct {
 func (l *Ledger) UseCaseCounts(limit int) []UseCaseCount {
 	idx := map[[2]string]int{}
 	var out []UseCaseCount
-	for _, e := range l.outcomes() {
+	for _, e := range l.outcomesWith(true) {
 		if e.UseCase == "" || e.Model == "" {
 			continue
 		}

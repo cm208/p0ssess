@@ -92,7 +92,7 @@ func main() {
 	case "statusline":
 		os.Exit(cli.Run([]string{"statusline"}, stdio()))
 	case "hook":
-		if len(args) == 0 || (args[0] != "prompt" && args[0] != "tool") {
+		if len(args) == 0 || (args[0] != "prompt" && args[0] != "tool" && args[0] != "session-end" && args[0] != "session-end-send") {
 			fmt.Fprintln(os.Stderr, "p0ssess: unknown hook")
 			os.Exit(2)
 		}

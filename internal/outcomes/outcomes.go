@@ -1,5 +1,6 @@
-// Package outcomes turns the local delegation ledger into anonymous weekly
-// outcome records and sends them to the server once per ISO week.
+// Package outcomes turns the local delegation ledger into anonymous outcome
+// records and sends the ones not yet sent when a Claude Code session ends
+// (and, for any that missed a session end, at the next plugin start).
 //
 // A record carries eight coarse fields and nothing else from the ledger: no
 // session, project, run id, prompt, reason or exact cost.
@@ -84,15 +85,19 @@ func validRoute(r string) bool {
 	return false
 }
 
-// Build derives the records for finished weeks from ledger entries. A
-// delegated run is accepted unless an outcome naming it says otherwise; a
-// declined or overridden outcome with no run is recorded on its own. Only
-// weeks before the one containing the given time, at most MaxWeeks back and
-// after afterWeek, are included, in ascending week order.
-func Build(entries []history.Entry, now time.Time, afterWeek string) []Record {
+// Build derives the records for ledger entries newer than after. A delegated
+// run is accepted unless an outcome naming it says otherwise; a declined or
+// overridden outcome with no run is recorded on its own. Only entries from
+// the current ISO week or at most MaxWeeks before it are included, in
+// ascending week order. Calibration results (route "calibrate") are tests
+// graded by p0ssess, not outcomes, and are never recorded.
+func Build(entries []history.Entry, now time.Time, after time.Time) []Record {
 	cur := Week(now)
 	earliest := Week(now.AddDate(0, 0, -7*MaxWeeks))
-	inWindow := func(w string) bool { return w < cur && w >= earliest && w > afterWeek }
+	inWindow := func(ts time.Time) bool {
+		w := Week(ts)
+		return ts.After(after) && w <= cur && w >= earliest
+	}
 
 	l := history.NewLedger(entries)
 	runIDs := map[string]bool{}
@@ -117,7 +122,7 @@ func Build(entries []history.Entry, now time.Time, afterWeek string) []Record {
 	add := func(ts time.Time, useCase string, stakes int, model, route, outcome string, cost float64) {
 		week := Week(ts)
 		kind := KindOf(useCase)
-		if ts.IsZero() || !inWindow(week) || !kindRE.MatchString(kind) || stakes < 1 || stakes > 4 ||
+		if ts.IsZero() || !inWindow(ts) || route == history.RouteCalibrate || !kindRE.MatchString(kind) || stakes < 1 || stakes > 4 ||
 			!modelRE.MatchString(model) || !validRoute(route) {
 			return
 		}
@@ -198,10 +203,10 @@ func optionRoute(off *history.Entry, model, chosen string) string {
 	return ""
 }
 
-// state is what the client remembers between weekly sends.
+// state is what the client remembers between sends: the newest ledger entry
+// already covered by a send. It stays on this machine.
 type state struct {
-	LastSentWeek string `json:"last_sent_week"`
-	LastTryWeek  string `json:"last_try_week"`
+	SentThrough time.Time `json:"sent_through"`
 }
 
 func stateFile(d paths.Dirs) string { return filepath.Join(d.State, "outcomes.json") }
@@ -229,7 +234,7 @@ func Pending(d paths.Dirs, now time.Time) ([]Record, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Build(es, now, readState(d).LastSentWeek), nil
+	return Build(es, now, readState(d).SentThrough), nil
 }
 
 // marshal encodes v without HTML escaping, so "<1c" stays readable.
@@ -260,28 +265,45 @@ func Lines(recs []Record) []string {
 // the HTTP status.
 type Poster func(ctx context.Context, body []byte) (status int, err error)
 
-// MaybeSend sends the pending batch at most once per ISO week. Nothing is
-// read or written when enabled is false. An accepted batch, or one the
-// server refuses as invalid or too large, moves last_sent_week forward and
-// is never resent; a rate limit, server error or network failure leaves
-// the state alone so the next start tries again. It returns how many records
-// were sent.
-func MaybeSend(ctx context.Context, d paths.Dirs, enabled bool, post Poster, now time.Time) (sent int, err error) {
+// newest is the latest timestamp in the ledger.
+func newest(es []history.Entry) time.Time {
+	var t time.Time
+	for _, e := range es {
+		if e.TS.After(t) {
+			t = e.TS
+		}
+	}
+	return t
+}
+
+// Send sends whatever is pending. Nothing is read or written when enabled is
+// false, and nothing is sent when nothing is pending. An accepted batch, or
+// one the server refuses as invalid or too large, moves the sent mark forward
+// and is never resent; a rate limit, server error or network failure leaves
+// the state alone so the next session end or plugin start tries again. A lock
+// on the state keeps two processes from sending the same records. It returns
+// how many records were sent.
+func Send(ctx context.Context, d paths.Dirs, enabled bool, post Poster, now time.Time) (sent int, err error) {
 	if !enabled {
 		return 0, nil
 	}
-	week := Week(now)
-	st := readState(d)
-	if st.LastTryWeek == week {
-		return 0, nil
+	if err := os.MkdirAll(d.State, 0o700); err != nil {
+		return 0, err
 	}
-	recs, err := Pending(d, now)
+	unlock, err := paths.LockFile(stateFile(d) + ".lock")
 	if err != nil {
 		return 0, err
 	}
+	defer unlock()
+
+	es, err := history.Read(d.HistoryFile())
+	if err != nil {
+		return 0, err
+	}
+	st := readState(d)
+	recs := Build(es, now, st.SentThrough)
 	if len(recs) == 0 {
-		st.LastTryWeek = week
-		return 0, writeState(d, st)
+		return 0, nil
 	}
 	body, err := marshal(struct {
 		V       int      `json:"v"`
@@ -294,7 +316,6 @@ func MaybeSend(ctx context.Context, d paths.Dirs, enabled bool, post Poster, now
 	if err != nil {
 		return 0, err
 	}
-	newest := recs[len(recs)-1].Week
 	switch {
 	case status >= 200 && status < 300:
 		sent = len(recs)
@@ -303,6 +324,6 @@ func MaybeSend(ctx context.Context, d paths.Dirs, enabled bool, post Poster, now
 	default:
 		return 0, errors.New("outcomes: server answered " + fmt.Sprint(status))
 	}
-	st.LastSentWeek, st.LastTryWeek = newest, week
+	st.SentThrough = newest(es)
 	return sent, writeState(d, st)
 }

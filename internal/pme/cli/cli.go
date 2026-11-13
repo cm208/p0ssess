@@ -36,7 +36,7 @@ const usage = `p0ssess engine: routing, limits and history
   usecases    list the use case ids
   refresh     fetch the signed route table now
   statusline  status line wrapper (reads Claude Code's JSON on stdin)
-  hook        UserPromptSubmit hook (reads the hook JSON on stdin)
+  hook        Claude Code hook: prompt, tool or session-end (reads the hook JSON on stdin)
   me          open the local settings page
   version
 `
@@ -71,6 +71,12 @@ func Run(args []string, s IO) int {
 		fmt.Fprintln(s.Out, statusline.Run(in, d, time.Now()))
 		return 0
 	case "hook":
+		if len(rest) > 0 && rest[0] == "session-end" {
+			return sessionEnd(s.In, d)
+		}
+		if len(rest) > 0 && rest[0] == "session-end-send" {
+			return sendOutcomesNow(d)
+		}
 		in, _ := io.ReadAll(io.LimitReader(s.In, 4<<20))
 		out := ""
 		if len(rest) > 0 && rest[0] == "tool" {

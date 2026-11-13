@@ -101,15 +101,26 @@ type directRunner struct {
 	eng *local.Engine
 }
 
-func (r directRunner) Run(ctx context.Context, c calibrate.Call) (calibrate.Reply, error) {
-	// The direct path's default token cap, as in real use: a reply cut off there is a wrong answer here too.
-	req := direct.Request{Model: c.Model, Prompt: c.Prompt, Output: direct.OutText, DryRun: c.DryRun}
+// CalibrationMaxTokens caps a calibration reply, reasoning included. A reply cut off at the cap is a
+// wrong answer.
+const CalibrationMaxTokens = 2048
+
+// calibrationRequest is the direct request for one calibration call. Reasoning models run at low effort
+// so they finish inside the cap; OpenRouter ignores the setting for models that do not reason.
+func calibrationRequest(c calibrate.Call) direct.Request {
+	req := direct.Request{Model: c.Model, Prompt: c.Prompt, Output: direct.OutText, DryRun: c.DryRun,
+		MaxTokens: CalibrationMaxTokens, Reasoning: "low"}
 	if c.Transcript {
 		req.Output = direct.OutTranscript
 	}
 	if c.File != "" {
 		req.Files = []string{c.File}
 	}
+	return req
+}
+
+func (r directRunner) Run(ctx context.Context, c calibrate.Call) (calibrate.Reply, error) {
+	req := calibrationRequest(c)
 	res, _, err := server.RunDirect(ctx, r.cfg, r.eng, req, server.DirectJob{UseCase: c.UseCase, Stakes: c.Stakes, Route: "calibrate", Confirmed: true})
 	var rep calibrate.Reply
 	if res != nil {
@@ -254,6 +265,7 @@ func (c *calibrator) execute(ctx context.Context, args []string) error {
 	if err := calibrate.SaveResults(c.d, rs); err != nil {
 		return err
 	}
+	c.recordHistory(res)
 	right, graded, failed := 0, 0, 0
 	for _, r := range res {
 		switch {
@@ -280,6 +292,16 @@ func (c *calibrator) execute(ctx context.Context, args []string) error {
 		return runErr
 	}
 	return c.upload(ctx, rs)
+}
+
+// recordHistory writes each graded result into the local history, where it tunes this user's own
+// routing. A call that failed before a reply came back is not graded and writes nothing.
+func (c *calibrator) recordHistory(res []calibrate.Result) {
+	for _, r := range res {
+		if r.Graded() {
+			c.eng.RecordCalibration(r.UseCase, r.Model, c.stakes(r.UseCase), r.Correct)
+		}
+	}
 }
 
 // scoreLines is one line per kind and model from one run's results.

@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -145,15 +146,26 @@ func TestBuild(t *testing.T) {
 				return e
 			}(),
 		}, "", []Record{{1, "code.review", "deepseek/deepseek-v4", "agent", 3, "accepted", "25c-1", "2026-W45"}}},
-		{"current week excluded", []history.Entry{run("r1", "image-generate", m, "direct", 2, "2026-11-10", 0)}, "", nil},
+		{"current week included", []history.Entry{run("r1", "image-generate", m, "direct", 2, "2026-11-10", 0)},
+			"", []Record{{1, "image.generate", m, "direct", 2, "accepted", "0", "2026-W46"}}},
+		{"calibration results are never recorded", []history.Entry{
+			{TS: at("2026-11-10"), Type: history.TypeOutcome, UseCase: "image-generate", Stakes: 2, Model: m,
+				Outcome: history.Declined, Route: history.RouteCalibrate, Reason: "calibration"},
+			{TS: at("2026-11-10"), Type: history.TypeOutcome, UseCase: "image-generate", Stakes: 2, Model: m,
+				Outcome: history.Accepted, Route: history.RouteCalibrate},
+			run("c1", "image-generate", m, history.RouteCalibrate, 2, "2026-11-10", 0.01),
+			{TS: at("2026-11-10"), Type: history.TypeOffer, OfferID: "o-9", UseCase: "image-generate", Stakes: 2,
+				Options: []history.OfferOption{{Model: m, Route: history.RouteCalibrate}}},
+			{TS: at("2026-11-10"), Type: history.TypeOutcome, OfferID: "o-9", Model: m, Outcome: history.Declined},
+		}, "", nil},
 		{"older than 8 weeks excluded", []history.Entry{
 			run("r1", "image-generate", m, "direct", 2, "2026-09-07", 0), // W37, nine weeks back
 			run("r2", "image-generate", m, "direct", 2, "2026-09-14", 0), // W38, eight weeks back
 		}, "", []Record{{1, "image.generate", m, "direct", 2, "accepted", "0", "2026-W38"}}},
-		{"afterWeek respected", []history.Entry{
+		{"entries at or before the sent mark are skipped", []history.Entry{
 			run("r1", "image-generate", m, "direct", 2, "2026-10-28", 0), // W44
 			run("r2", "image-generate", m, "direct", 2, "2026-11-04", 0), // W45
-		}, "2026-W44", []Record{{1, "image.generate", m, "direct", 2, "accepted", "0", "2026-W45"}}},
+		}, "2026-10-28", []Record{{1, "image.generate", m, "direct", 2, "accepted", "0", "2026-W45"}}},
 		{"ordered by week", []history.Entry{
 			run("r2", "image-generate", m, "direct", 2, "2026-11-04", 0),
 			run("r1", "image-generate", m, "direct", 2, "2026-10-28", 0),
@@ -164,7 +176,11 @@ func TestBuild(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got := Build(c.entries, now, c.after)
+			var after time.Time
+			if c.after != "" {
+				after = at(c.after)
+			}
+			got := Build(c.entries, now, after)
 			if !reflect.DeepEqual(got, c.want) {
 				t.Errorf("got  %+v\nwant %+v", got, c.want)
 			}
@@ -181,7 +197,7 @@ func TestBuildCap(t *testing.T) {
 	for i := 0; i < 1500; i++ {
 		es = append(es, run("b", "image-generate", m, "direct", 2, "2026-11-04", 0))
 	}
-	got := Build(es, now, "")
+	got := Build(es, now, time.Time{})
 	if len(got) != MaxRecords {
 		t.Fatalf("len = %d", len(got))
 	}
@@ -268,19 +284,19 @@ func readState4(t *testing.T, d paths.Dirs) state {
 	return st
 }
 
-func TestMaybeSend(t *testing.T) {
+func TestSend(t *testing.T) {
 	const m = "google/gemini-3.4-flash-image"
 	ctx := context.Background()
 	runs := func(d paths.Dirs) {
 		seed(t, d, run("run-secret-1", "image-generate", m, "direct", 2, "2026-11-04", 0.004),
-			run("run-secret-2", "image-generate", m, "direct", 2, "2026-10-28", 0.4))
+			run("run-secret-2", "image-generate", m, "direct", 2, "2026-11-11", 0.4))
 	}
 
 	t.Run("disabled touches nothing", func(t *testing.T) {
 		d := home(t)
 		runs(d)
 		f := &fake{status: 202}
-		n, err := MaybeSend(ctx, d, false, f.post, now)
+		n, err := Send(ctx, d, false, f.post, now)
 		if n != 0 || err != nil || f.calls != 0 {
 			t.Fatalf("n=%d err=%v calls=%d", n, err, f.calls)
 		}
@@ -289,25 +305,17 @@ func TestMaybeSend(t *testing.T) {
 		}
 	})
 
-	t.Run("202 advances and a second call that week sends nothing", func(t *testing.T) {
+	t.Run("202 sends this week's records too, then only what is new", func(t *testing.T) {
 		d := home(t)
 		runs(d)
 		f := &fake{status: 202}
-		n, err := MaybeSend(ctx, d, true, f.post, now)
+		n, err := Send(ctx, d, true, f.post, now)
 		if n != 2 || err != nil || f.calls != 1 {
 			t.Fatalf("n=%d err=%v calls=%d", n, err, f.calls)
-		}
-		if st := readState4(t, d); st.LastSentWeek != "2026-W45" || st.LastTryWeek != "2026-W46" {
-			t.Errorf("state = %+v", st)
 		}
 		fi, _ := os.Stat(stateFile(d))
 		if fi.Mode().Perm() != 0o600 {
 			t.Errorf("mode = %v", fi.Mode().Perm())
-		}
-		seed(t, d, run("r3", "image-generate", m, "direct", 2, "2026-11-05", 0))
-		n, err = MaybeSend(ctx, d, true, f.post, now.Add(24*time.Hour))
-		if n != 0 || err != nil || f.calls != 1 {
-			t.Fatalf("second call: n=%d err=%v calls=%d", n, err, f.calls)
 		}
 		var body struct {
 			V       int      `json:"v"`
@@ -316,6 +324,19 @@ func TestMaybeSend(t *testing.T) {
 		if err := json.Unmarshal(f.body, &body); err != nil || body.V != 1 || len(body.Records) != 2 {
 			t.Errorf("body = %s (%v)", f.body, err)
 		}
+		// The next session end has nothing to say: no request at all.
+		if n, err := Send(ctx, d, true, f.post, now); n != 0 || err != nil || f.calls != 1 {
+			t.Fatalf("nothing new: n=%d err=%v calls=%d", n, err, f.calls)
+		}
+		// A run finished since goes out alone.
+		seed(t, d, history.Entry{TS: now, Type: history.TypeRun, RunID: "r3", UseCase: "image-generate", Model: m,
+			Route: "direct", Stakes: 2, Status: "done"})
+		if n, err := Send(ctx, d, true, f.post, now); n != 1 || err != nil || f.calls != 2 {
+			t.Fatalf("new run: n=%d err=%v calls=%d", n, err, f.calls)
+		}
+		if p, _ := Pending(d, now); len(p) != 0 {
+			t.Errorf("pending = %v", p)
+		}
 	})
 
 	for _, status := range []int{400, 413} {
@@ -323,12 +344,9 @@ func TestMaybeSend(t *testing.T) {
 			d := home(t)
 			runs(d)
 			f := &fake{status: status}
-			n, err := MaybeSend(ctx, d, true, f.post, now)
+			n, err := Send(ctx, d, true, f.post, now)
 			if n != 0 || err != nil {
 				t.Fatalf("n=%d err=%v", n, err)
-			}
-			if st := readState4(t, d); st.LastSentWeek != "2026-W45" || st.LastTryWeek != "2026-W46" {
-				t.Errorf("state = %+v", st)
 			}
 			if p, _ := Pending(d, now); len(p) != 0 {
 				t.Errorf("pending = %v", p)
@@ -341,33 +359,76 @@ func TestMaybeSend(t *testing.T) {
 		status int
 		err    error
 	}{{"429", 429, nil}, {"500", 503, nil}, {"network", 0, errors.New("dial failed")}} {
-		t.Run("retry on "+c.name, func(t *testing.T) {
+		t.Run("a missed send goes out with the next one: "+c.name, func(t *testing.T) {
 			d := home(t)
 			runs(d)
 			f := &fake{status: c.status, err: c.err}
-			n, err := MaybeSend(ctx, d, true, f.post, now)
+			n, err := Send(ctx, d, true, f.post, now)
 			if n != 0 || err == nil {
 				t.Fatalf("n=%d err=%v", n, err)
 			}
 			if _, err := os.Stat(stateFile(d)); !os.IsNotExist(err) {
 				t.Errorf("state written: %v", err)
 			}
+			if p, _ := Pending(d, now); len(p) != 2 {
+				t.Errorf("pending = %v", p)
+			}
+			// The next session ends with another run; both batches' records go together.
+			seed(t, d, history.Entry{TS: now, Type: history.TypeRun, RunID: "r3", UseCase: "image-generate", Model: m,
+				Route: "direct", Stakes: 2, Status: "done"})
 			f.status, f.err = 202, nil
-			if n, err := MaybeSend(ctx, d, true, f.post, now); n != 2 || err != nil {
+			if n, err := Send(ctx, d, true, f.post, now); n != 3 || err != nil {
 				t.Errorf("retry: n=%d err=%v", n, err)
 			}
 		})
 	}
 
-	t.Run("nothing pending records the try", func(t *testing.T) {
+	t.Run("nothing pending sends nothing and writes nothing", func(t *testing.T) {
 		d := home(t)
 		f := &fake{status: 202}
-		n, err := MaybeSend(ctx, d, true, f.post, now)
+		n, err := Send(ctx, d, true, f.post, now)
 		if n != 0 || err != nil || f.calls != 0 {
 			t.Fatalf("n=%d err=%v calls=%d", n, err, f.calls)
 		}
-		if st := readState4(t, d); st.LastTryWeek != "2026-W46" || st.LastSentWeek != "" {
-			t.Errorf("state = %+v", st)
+		if _, err := os.Stat(stateFile(d)); !os.IsNotExist(err) {
+			t.Errorf("state written: %v", err)
+		}
+	})
+
+	t.Run("calibration results are never sent", func(t *testing.T) {
+		d := home(t)
+		seed(t, d,
+			history.Entry{TS: at("2026-11-10"), Type: history.TypeOutcome, UseCase: "image-generate", Stakes: 2, Model: m,
+				Outcome: history.Declined, Route: history.RouteCalibrate, Reason: "calibration"},
+			history.Entry{TS: at("2026-11-10"), Type: history.TypeOutcome, UseCase: "image-generate", Stakes: 2, Model: m,
+				Outcome: history.Accepted, Route: history.RouteCalibrate, Reason: "calibration"})
+		f := &fake{status: 202}
+		if n, err := Send(ctx, d, true, f.post, now); n != 0 || err != nil || f.calls != 0 {
+			t.Fatalf("n=%d err=%v calls=%d", n, err, f.calls)
+		}
+	})
+
+	t.Run("two senders at once send each record once", func(t *testing.T) {
+		d := home(t)
+		runs(d)
+		var mu sync.Mutex
+		total := 0
+		post := func(_ context.Context, body []byte) (int, error) {
+			var b struct{ Records []Record }
+			json.Unmarshal(body, &b)
+			mu.Lock()
+			total += len(b.Records)
+			mu.Unlock()
+			return 202, nil
+		}
+		var wg sync.WaitGroup
+		for i := 0; i < 6; i++ {
+			wg.Add(1)
+			go func() { defer wg.Done(); Send(ctx, d, true, post, now) }()
+		}
+		wg.Wait()
+		if total != 2 {
+			t.Errorf("%d records sent, want 2", total)
 		}
 	})
 }
@@ -381,7 +442,7 @@ func TestBodyHasNoLedgerIdentifiers(t *testing.T) {
 	seed(t, d, e, history.Entry{TS: at("2026-11-05"), Type: history.TypeOutcome, RunID: "run-secret-1", Model: m,
 		Outcome: history.Redo, Session: "sess-secret", Project: "/home/u/secret-project", Reason: "private reason text"})
 	f := &fake{status: 202}
-	if n, err := MaybeSend(context.Background(), d, true, f.post, now); n != 1 || err != nil {
+	if n, err := Send(context.Background(), d, true, f.post, now); n != 1 || err != nil {
 		t.Fatalf("n=%d err=%v", n, err)
 	}
 	for _, leak := range []string{"sess-secret", "secret-project", "run-secret", "o-secret", "private reason", "0.004"} {

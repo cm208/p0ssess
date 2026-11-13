@@ -203,7 +203,7 @@ func (c *Client) FetchTable(ctx context.Context, etag string) (envelope []byte, 
 	return b, r.Header.Get("ETag"), false, nil
 }
 
-// PostOutcomes sends one weekly batch of outcome records. status is the HTTP status; retryAfter is set
+// PostOutcomes sends a batch of outcome records. status is the HTTP status; retryAfter is set
 // on 429.
 func (c *Client) PostOutcomes(ctx context.Context, body []byte) (status int, retryAfter time.Duration, err error) {
 	r, err := c.do(ctx, http.MethodPost, "/v1/outcomes", body, nil)

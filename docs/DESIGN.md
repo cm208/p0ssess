@@ -10,7 +10,7 @@ Status: design agreed and researched ([RESEARCH.md](RESEARCH.md)); built as a Cl
 - **Every model is a candidate, Claude included.** No preference for Claude; it is chosen when the numbers say so.
 - **Quiet.** p0ssess augments Claude Code rather than adding steps. "Watch this video" goes: the user asked for video, p0ssess is set up, the job is under the cap, do it. No plan read aloud, no confirmation, one hand-off to the p0ssess agent; the answer comes back with "(model, cost)" and nothing else.
 - **Claude reviews what comes back.** Nothing a delegated model writes lands without the right level of review.
-- **Private by default.** Prompts and files go only to the model doing the work. The engine service that ranks routes gets a task description Claude writes and plain counts, never content. Learning data stays on the user's machine; anonymous weekly outcome records are on by default and one setting turns them off (README, Privacy).
+- **Private by default.** Prompts and files go only to the model doing the work. The engine service that ranks routes gets a task description Claude writes and plain counts, never content. Learning data stays on the user's machine; anonymous outcome records, sent when a session ends, are on by default and one setting turns them off (README, Privacy).
 - **Only clean data.** Benchmarks and usage data are used only where their license clearly allows it, and every number carries its source and date.
 
 ## How a request is routed

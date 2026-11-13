@@ -881,3 +881,18 @@ func TestAnswerCapFitsLimit(t *testing.T) {
 		t.Errorf("a cap under %d tokens: err = %v", minFitTokens, err)
 	}
 }
+
+func TestReasoningEffortAndCapReachTheWire(t *testing.T) {
+	f, c := newFake(t)
+	f.answer["/chat/completions"] = chatOK("ANSWER: 4", "")
+	if _, err := c.Run(context.Background(), Request{Model: "deepseek/deepseek-v4.1-flash", Prompt: "2+2", MaxTokens: 2048, Reasoning: "low", MaxCostUSD: 0.01}); err != nil {
+		t.Fatal(err)
+	}
+	body := f.last("/chat/completions")
+	if body["max_tokens"].(float64) != 2048 {
+		t.Errorf("max_tokens = %v", body["max_tokens"])
+	}
+	if r, _ := body["reasoning"].(map[string]any); r["effort"] != "low" {
+		t.Errorf("reasoning = %v", body["reasoning"])
+	}
+}

@@ -67,7 +67,7 @@ func outcomesNotice(eng *local.Engine) string {
 	if os.MkdirAll(eng.Dirs.State, 0o700) != nil || os.WriteFile(mark, nil, 0o600) != nil {
 		return ""
 	}
-	return "records  once a week p0ssess sends anonymous outcome records; the page shows each one first. To stop: \"turn off outcome records\"\n" +
+	return "records  when a Claude Code session ends, p0ssess sends anonymous outcome records; the page shows each one first. To stop: \"turn off outcome records\"\n" +
 		`         one record: {"v":1,"kind":"image.generate","model":"google/gemini-3.4-flash-image","route":"direct","stakes":2,"outcome":"accepted","cost":"<1c","week":"2026-W46"}` + "\n"
 }
 

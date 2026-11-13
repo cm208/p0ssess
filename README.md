@@ -81,14 +81,14 @@ Nothing is sent from a repository with a `.p0ssess-private` file. The prompt hoo
 
 The service keeps none of it: it does not log requests, tokens or IP addresses. Once a day p0ssess also downloads a signed table of default routes, so it keeps working, quietly, when the service cannot be reached.
 
-Anonymous outcome records. Once a week p0ssess sends one batch of records about the past weeks' delegated runs. Each record is exactly this:
+Anonymous outcome records. When a Claude Code session ends, p0ssess sends the records about the delegated runs that have finished since the last send. If a session ends abruptly (a crash, a killed terminal), those records go out at the next session end or the next time the plugin starts. Nothing is sent when there are none, or from a repository with a `.p0ssess-private` file. Each record is exactly this:
 
 ```
 {"v":1, "kind":"image.generate", "model":"google/gemini-3.4-flash-image",
  "route":"direct", "stakes":2, "outcome":"accepted", "cost":"<1c", "week":"2026-W46"}
 ```
 
-That is the kind of task, the model, the route, the stakes, whether the result was used, the cost in a coarse bucket and the week. The service stores the records without the token and without your IP address, and uses them for success rates per model. The local page (`/p0ssess:p0ssess-me`) shows the pending batch line by line before it goes. To turn records off, tell Claude "turn off outcome records", or set `outcomes.send = false` in `~/.config/p0ssess/budget.toml`. Then no records are built or sent.
+That is the kind of task, the model, the route, the stakes, whether the result was used, the cost in a coarse bucket and the week. The service stores the records without the token, without your IP address and without the time they arrived, and uses them for success rates per model. Because an upload follows the end of a session, the service could in principle see roughly when your sessions end; it does not log requests, so it keeps no such record. Calibration results are not sent as outcome records. The local page (`/p0ssess:p0ssess-me`) shows the pending records line by line before they go. The upload runs in a background process, so closing Claude Code is never delayed by it. To turn records off, tell Claude "turn off outcome records", or set `outcomes.send = false` in `~/.config/p0ssess/budget.toml`. Then no records are built or sent.
 
 On your machine:
 

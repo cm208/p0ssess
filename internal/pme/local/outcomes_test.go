@@ -72,7 +72,7 @@ func TestSendOutcomes(t *testing.T) {
 		t.Errorf("batch carries ledger details: %s", *body)
 	}
 	if n, _ := e.SendOutcomes(context.Background()); n != 0 || atomic.LoadInt32(calls) != 1 {
-		t.Error("one batch a week")
+		t.Error("records are sent once")
 	}
 }
 
@@ -99,5 +99,18 @@ func TestOutcomesOff(t *testing.T) {
 	}
 	if n, _ := e.SendOutcomes(context.Background()); n != 0 || atomic.LoadInt32(calls) != 0 {
 		t.Error("nothing is sent when outcome records are off")
+	}
+}
+
+func TestThisSessionsRunGoesOutAtSessionEnd(t *testing.T) {
+	e, _ := setup(t, "")
+	calls, _ := outcomeServer(t, http.StatusAccepted)
+	err := history.Append(e.Dirs.HistoryFile(), history.Entry{TS: e.Now().Add(-time.Minute), Type: history.TypeRun, RunID: "d-2",
+		Route: "direct", Model: "google/gemini-3.8-flash", CashUSD: 0.004, UseCase: "video-understand", Stakes: 2, Status: "done"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n, err := e.SendOutcomes(context.Background()); err != nil || n != 1 || atomic.LoadInt32(calls) != 1 {
+		t.Fatalf("sent %d, err %v, calls %d", n, err, atomic.LoadInt32(calls))
 	}
 }

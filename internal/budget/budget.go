@@ -66,7 +66,7 @@ type Ask struct {
 	CodeEdits bool `toml:"code_edits" json:"code_edits"`
 }
 
-// Outcomes holds whether anonymous outcome records are sent once a week. On unless turned off.
+// Outcomes holds whether anonymous outcome records are sent when a Claude Code session ends. On unless turned off.
 type Outcomes struct {
 	Send bool `toml:"send" json:"send"`
 }

@@ -13,6 +13,8 @@ import (
 
 	"p0ssess/internal/account"
 	"p0ssess/internal/calibrate"
+	"p0ssess/internal/history"
+	"p0ssess/internal/outcomes"
 	"p0ssess/internal/pme/local"
 	"p0ssess/internal/pme/paths"
 )
@@ -181,5 +183,68 @@ func TestCalibrateBaselineDryRunAndFake(t *testing.T) {
 	r, _ := c.Report()
 	if len(r.Kinds) != 1 || r.Kinds[0].Alone == nil || r.Kinds[0].With == nil {
 		t.Errorf("report kinds %+v", r.Kinds)
+	}
+}
+
+func TestCalibrationRequestCapsReplyAndLowersReasoning(t *testing.T) {
+	for _, c := range []calibrate.Call{
+		{UseCase: "audio-transcribe", Model: "google/gemini-3.8-flash", Prompt: "p", File: "/x/a.wav", Transcript: true},
+		{UseCase: "data-extract-structured", Model: "deepseek/deepseek-v4.1-flash", Prompt: "p"},
+		{UseCase: "data-extract-structured", Model: "deepseek/deepseek-v4.1-flash", Prompt: "p", DryRun: true},
+	} {
+		req := calibrationRequest(c)
+		if req.MaxTokens != 2048 || req.Reasoning != "low" {
+			t.Errorf("%+v: max_tokens %d, reasoning %q", c, req.MaxTokens, req.Reasoning)
+		}
+		if req.DryRun != c.DryRun {
+			t.Errorf("dry run lost")
+		}
+	}
+}
+
+func TestCalibrationResultsGoToLocalHistoryNotToOutcomeRecords(t *testing.T) {
+	c, _, _ := newTestCalibrator(t, true)
+	res := []calibrate.Result{
+		{Sample: "b:one", UseCase: "audio-transcribe", Model: "google/gemini-3.8-flash", Correct: true},
+		{Sample: "b:one", UseCase: "audio-transcribe", Model: "openai/whisper-large-v3", Correct: false},
+		{Sample: "b:two", UseCase: "audio-transcribe", Model: "openai/whisper-large-v3", Error: "provider error"},
+	}
+	c.recordHistory(res)
+
+	es, err := history.Read(c.d.HistoryFile())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(es) != 2 {
+		t.Fatalf("%d history entries, want 2 (the failed call writes none): %+v", len(es), es)
+	}
+	got := map[string]string{}
+	for _, e := range es {
+		if e.Type != history.TypeOutcome || e.Route != history.RouteCalibrate {
+			t.Errorf("entry %+v", e)
+		}
+		got[e.Model] = e.Outcome
+	}
+	if got["google/gemini-3.8-flash"] != history.Accepted || got["openai/whisper-large-v3"] != history.Declined {
+		t.Errorf("outcomes %v", got)
+	}
+
+	l := history.NewLedger(es)
+	if n := l.Stats("openai/whisper-large-v3", "audio-transcribe", "").UseCase.Declined; n != 1 {
+		t.Errorf("routing history misses the declined result: %d", n)
+	}
+	if rows := l.UseCaseCounts(10); len(rows) != 2 {
+		t.Errorf("history summary rows: %+v", rows)
+	}
+	// Not a habit of the user: no tendencies, no recent outcomes, no used models.
+	if len(l.Tendencies()) != 0 || len(l.Recent(10)) != 0 || len(l.UsedModels()) != 0 {
+		t.Error("calibration results leaked into the user's own patterns")
+	}
+
+	// Never sent as anonymous outcome records, now or a week on.
+	for _, at := range []time.Time{time.Now(), time.Now().AddDate(0, 0, 8)} {
+		if recs := outcomes.Build(es, at, time.Time{}); len(recs) != 0 {
+			t.Errorf("outcome records built from calibration: %+v", recs)
+		}
 	}
 }
