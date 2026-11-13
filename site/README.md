@@ -195,10 +195,9 @@ Six pages sit beside the home page. Each loads `style.css`, then `pages.css` (wh
 |---|---|
 | `pricing/` | Three tiers, Free, Pro and Team, with what each includes, then how billing works. Prices and the buy buttons come from the offer (below). |
 | `business/` | The cost case for people who pay for Claude at work: Claude's three workarounds against real input and output, three measured side-by-sides, two slots for tests still being recorded, what Pro measures on your own work, and Team. |
-| `data/` | The data policy for the cloud sandbox: five commitments, then how each is kept. It is marked "Draft, not yet in effect" and its date reads "date not set"; set both when it takes effect. |
-| `terms/`, `privacy/`, `refunds/` | A heading, one line saying the policy is being written, and a link back to pricing. They carry `noindex` until they have text. |
+| `data/`, `terms/`, `privacy/`, `refunds/` | The full text of the policy, effective November 13, 2026, with a table of contents. Each is the Markdown source in the cloud repository's `legal/` folder, set in this page's HTML without rewording. |
 
-One rule runs through these pages: a dashed outline means not real yet. A price that is not set (`.blank` and the "Placeholder" tag), a test that is not recorded (`.slot-frame`, "Coming"), a policy that is not in effect ("Draft") and a policy that is not written (`.notice`) are all drawn that way, and nothing else is.
+One rule runs through these pages: a dashed outline means not real yet. A price that is not set (`.blank` and the "Placeholder" tag), a test that is not recorded (`.slot-frame`, "Coming"), a policy that is not in effect or not written (`.notice`) are all drawn that way, and nothing else is.
 
 With `prefers-reduced-motion: reduce` or with scripts off every page is complete: hairlines and bars are drawn in full, prices show as placeholders and the buy buttons read "Opening soon". `pages.js` adds what `page.js` adds on the home page (the links from `release.js`, hairlines that draw and bars that grow once when they scroll into view) and runs the pricing page.
 
@@ -213,9 +212,9 @@ No price is written in any HTML file, apart from Free's $0. The pricing page shi
 
 | `offer.api` | What the API says | Prices | Pro's button | Team's button |
 |---|---|---|---|---|
-| `""` | not asked | `offer.prices` | "Opening soon", off, with "Sign-up opens soon." | "Not open yet", off |
-| set | no answer within 4 seconds, or an error | `offer.prices` | "Opening soon, get notified", which opens the address form | "Get notified about Team", which opens the address form |
-| set | `checkout: "opening_soon"` | from `plans` | the same | the same |
+| `""` | not asked | `offer.prices` | "Opening soon, get notified", a `mailto:` link to support@p0ssess.me | "Get notified about Team", a `mailto:` link |
+| set | no answer within 4 seconds, or an error | `offer.prices` | the same `mailto:` link | the same `mailto:` link |
+| set | `checkout: "opening_soon"` | from `plans` | "Opening soon, get notified", which opens the address form | "Get notified about Team", which opens the address form |
 | set | `checkout: "open"`, a Pro plan `available`, and an https `start_url` | from `plans` | "Get Pro", a link to `start_url` | "Get notified about Team" |
 
 `pages.js` asks `GET <api>/v1/pro/offer` and reads each plan:
@@ -225,7 +224,7 @@ No price is written in any HTML file, apart from Free's $0. The pricing page shi
 - `available` on a Pro plan allows "Get Pro" once checkout is open. Team is shown and never gets a buy button, whatever the API says.
 - `recommended` picks which billing period the Yearly and Monthly switch starts on, unless the reader has already chosen. The page ships on Yearly.
 
-The address form sends `POST <api>/v1/waitlist` with the body `email=...&plan=pro|team&source=site` as `application/x-www-form-urlencoded`. That content type keeps it a simple request, so the browser sends no preflight. The API has to answer both routes with an `Access-Control-Allow-Origin` header that allows the site, or the page cannot read the answer. What the reader sees, in a live region under the form:
+The address form is used only once the API has answered with an offer. It sends `POST <api>/v1/waitlist` with the body `email=...&plan=pro|team&source=site` as `application/x-www-form-urlencoded`. That content type keeps it a simple request, so the browser sends no preflight. The API has to answer both routes with an `Access-Control-Allow-Origin` header that allows the site, or the page cannot read the answer. What the reader sees, in a live region under the form:
 
 | Answer | Message |
 |---|---|

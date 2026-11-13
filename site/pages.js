@@ -2,7 +2,7 @@
 // It sets the links release.js names, draws the hairlines and bars as they scroll into view
 // (the same rule as page.js), and on the pricing page reads what is for sale and runs the
 // sign-up form. Every page is complete with scripts off: prices show as placeholders and the
-// buy buttons read "Opening soon".
+// buy buttons are a link that opens an email to us ("Opening soon, get notified").
 (() => {
   const doc = document, root = doc.documentElement;
   const reduce = matchMedia("(prefers-reduced-motion: reduce)");
@@ -54,6 +54,7 @@
     price: { pro_year: cents(fallback.pro_year), pro_month: cents(fallback.pro_month), team_seat_month: cents(fallback.team_seat_month) },
     hours: {},      // sandbox hours a month, by Pro's billing period
     start: "",      // where checkout begins, once it is open
+    live: false,    // the cloud API answered with an offer, so the address form works
   };
 
   // A price slot keeps its placeholder, so it can go back to it.
@@ -82,21 +83,24 @@
   let chose = false;
   for (const r of [year, month]) r.addEventListener("change", () => { chose = true; paintHours(); });
 
-  // The buttons. Without an API nothing can be sent, so they stay as the page ships: "Opening
-  // soon", off. With one, Pro and Team take an address; once checkout is open, Pro links to it.
+  // The buttons. The page ships with a link that opens an email to us, and keeps it for as long as
+  // there is no API, or the API cannot be reached: nothing can be sent from the page then. Once the
+  // API has answered with an offer, Pro and Team take an address on the page, and once checkout is
+  // open, Pro links to it.
   const boxes = $$("[data-buy]", tiers).map((box) => ({
-    box, plan: box.dataset.buy, off: $("[data-off]", box), open: $("[data-open]", box), start: $("[data-start]", box),
+    box, plan: box.dataset.buy, mail: $("[data-mail]", box), open: $("[data-open]", box), start: $("[data-start]", box),
     form: $("form", box), input: $("input", box), send: $(".wl-send", box), say: $(".buy-say", box), note: $("[data-note]", box),
     done: false, busy: false,
   }));
   const paintBuy = () => {
     for (const b of boxes) {
       const buy = b.start && state.start;
-      b.off.hidden = !!api;
-      b.note.hidden = !!api;
+      const mail = !state.live && !buy;
+      b.mail.hidden = !mail;
+      b.note.hidden = !mail;
       if (b.start) { b.start.hidden = !buy; if (buy) b.start.href = state.start; }
       if (buy || b.done) b.form.hidden = true;
-      b.open.hidden = !api || !!buy || b.done || !b.form.hidden;
+      b.open.hidden = !state.live || !!buy || b.done || !b.form.hidden;
       if (buy && !b.done) b.say.textContent = "";
     }
   };
@@ -186,7 +190,7 @@
   const stop = new AbortController(), timer = setTimeout(() => stop.abort(), 4000);
   fetch(api + "/v1/pro/offer", { credentials: "omit", cache: "no-store", signal: stop.signal })
     .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
-    .then((offer) => { read(offer || {}); paint(); })
-    .catch(() => { /* keeps the prices from release.js and "Opening soon" */ })
+    .then((offer) => { read(offer || {}); state.live = true; paint(); })
+    .catch(() => { /* keeps the prices from release.js and the email link */ })
     .finally(() => clearTimeout(timer));
 })();

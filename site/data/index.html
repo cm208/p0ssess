@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
-<title>p0ssess: What the cloud sandbox does with your code</title>
+<title>p0ssess: Cloud sandbox data policy</title>
 <meta name="description" content="The data policy for the p0ssess cloud sandbox: what is uploaded, what is skipped, what is deleted and what is logged.">
-<meta property="og:title" content="p0ssess: What the cloud sandbox does with your code">
+<meta property="og:title" content="p0ssess: Cloud sandbox data policy">
 <meta property="og:description" content="The data policy for the p0ssess cloud sandbox: what is uploaded, what is skipped, what is deleted and what is logged.">
 <meta property="og:type" content="website">
 <link rel="canonical" href="https://p0ssess.me/data/">
@@ -46,9 +46,8 @@
 
 <section class="doc-head" aria-labelledby="page-h">
 <div class="wrap">
-  <h1 id="page-h">What the cloud sandbox does with your code</h1>
-  <p class="lede">Pro’s cloud sandbox runs agent work on a hosted machine, so it has to receive some of your code. This page says what is sent, what is kept and what is logged.</p>
-  <p class="doc-meta"><span>Last updated: date not set</span><span class="ph-tag">Draft, not yet in effect</span></p>
+  <h1 id="page-h">Cloud sandbox data policy</h1>
+  <p class="doc-meta"><span>Effective date: November 13, 2026.</span></p>
 </div>
 </section>
 
@@ -56,62 +55,83 @@
   <nav class="toc" aria-labelledby="toc-h">
     <p class="toc-h" id="toc-h">On this page</p>
     <ol>
-      <li><a href="#commitments">Five commitments</a></li>
-      <li><a href="#how">How it works</a>
-        <ol>
-          <li><a href="#key">Your OpenRouter key</a></li>
-          <li><a href="#network">What the sandbox can reach</a></li>
-          <li><a href="#machine">What it learns about your machine</a></li>
-          <li><a href="#logs">What the host logs</a></li>
-          <li><a href="#secrets">Files skipped as secrets</a></li>
-        </ol>
-      </li>
-      <li><a href="#rest">Outside the sandbox</a></li>
+      <li><a href="#our-five-commitments">Our five commitments</a></li>
+      <li><a href="#1-only-git-tracked-files-are-uploaded">1. Only git-tracked files are uploaded</a></li>
+      <li><a href="#2-secrets-and-private-repositories-are-never-sent">2. Secrets and private repositories are never sent</a></li>
+      <li><a href="#3-everything-is-deleted-when-the-session-ends">3. Everything is deleted when the session ends</a></li>
+      <li><a href="#4-no-content-is-logged">4. No content is logged</a></li>
+      <li><a href="#5-one-us-region-at-launch">5. One US region at launch</a></li>
+      <li><a href="#how-the-sandbox-is-set-up">How the sandbox is set up</a></li>
+      <li><a href="#what-you-should-do">What you should do</a></li>
+      <li><a href="#changes">Changes</a></li>
+      <li><a href="#contact">Contact</a></li>
     </ol>
   </nav>
 
   <article class="prose">
-    <h2 class="hl" id="commitments">Five commitments</h2>
+    <p>This policy is about the p0ssess cloud sandbox, a Pro feature run by New Deal Systems LLC, an Idaho limited liability company ("we", "us"). It says what happens to your code when a sandbox session runs. The <a href="../privacy/">privacy policy</a> covers the rest of the services.</p>
+    <h2 class="hl" id="our-five-commitments">Our five commitments</h2>
     <ol class="vows">
-      <li class="hl">Only files git tracks are uploaded (up to 200 MB per session).</li>
-      <li class="hl">Files that look like secrets are skipped, and repositories with a <code>.p0ssess-private</code> file are never sent.</li>
-      <li class="hl">Everything is deleted when the session ends. Nothing is kept between sessions.</li>
+      <li class="hl">Only git-tracked files are uploaded.</li>
+      <li class="hl">Files that look like secrets, and repositories marked <code>.p0ssess-private</code>, are never sent.</li>
+      <li class="hl">Everything is deleted when the session ends.</li>
       <li class="hl">No content is logged.</li>
       <li class="hl">The service runs in one US region at launch.</li>
     </ol>
-
-    <h2 class="hl" id="how">How it works</h2>
-
-    <h3 id="key">Your OpenRouter key never leaves your laptop</h3>
-    <p>The sandbox sends each model request back over the session’s one encrypted connection. Your laptop adds the key, checks the run’s cost cap and forwards the request.</p>
-
-    <h3 id="network">What the sandbox can reach</h3>
-    <p>By default the sandbox can reach only package registries: npm, PyPI, crates.io, the Go module proxy and Maven Central. Full internet access is opt-in, per project.</p>
-
-    <h3 id="machine">What it learns about your machine</h3>
-    <p>Your laptop’s folder path is never sent. Only the repository’s name is.</p>
-
-    <h3 id="logs">What the host logs</h3>
-    <p>The host logs a session id, a shortened hash of the account id, the request type, the status, sizes, durations and why the session ended.</p>
-    <p>It never logs paths, file names, commands, prompts, model requests or diffs.</p>
-
-    <h3 id="secrets">Files skipped as secrets</h3>
-    <p>Files whose names look like secrets are left out of the upload. Each skipped file is named in the run’s result.</p>
-    <details class="first-run">
-      <summary>Show the names that are skipped</summary>
-      <ul class="skip-list">
-        <li><code>.env</code> and <code>.env.*</code></li>
-        <li><code>.envrc</code>, <code>.netrc</code>, <code>.pgpass</code>, <code>.git-credentials</code>, <code>.npmrc</code>, <code>.pypirc</code> and <code>htpasswd</code></li>
-        <li>SSH keys, such as <code>id_rsa</code> and <code>id_ed25519</code></li>
-        <li>Files ending in <code>.pem</code>, <code>.key</code>, <code>.p12</code>, <code>.pfx</code>, <code>.kdbx</code>, <code>.jks</code> or <code>.keystore</code></li>
-        <li>Names that start with <code>credentials</code></li>
-        <li>Names with <code>secret</code> or <code>secrets</code> as a word</li>
-        <li>Anything under <code>.ssh</code>, <code>.gnupg</code>, <code>.aws</code>, <code>.kube</code> or <code>.docker</code></li>
-      </ul>
-    </details>
-
-    <h2 class="hl" id="rest">Outside the sandbox</h2>
-    <p>This page covers the cloud sandbox only. What the plugin sends otherwise is in the <a href="../privacy/">privacy policy</a>.</p>
+    <p>The sections below give the facts behind each one.</p>
+    <h2 class="hl" id="1-only-git-tracked-files-are-uploaded">1. Only git-tracked files are uploaded</h2>
+    <p>When a session starts, the plugin sends a compressed copy of the files git tracks in your repository, up to 200 MB. Untracked files, ignored files and build output stay on your machine. Submodule contents are left out too.</p>
+    <p>The upload is the files as they are in your tree (for an edit session, a worktree of your current commit). It does not include your git history. The sandbox host starts a fresh git repository from that copy.</p>
+    <p>Your laptop's folder path is never sent. The plugin sends only the repository's base name, with any odd characters replaced, as the folder name inside the sandbox.</p>
+    <p>Git-tracked means exactly that. If a secret is written inside a tracked source file, the file goes up with it, because the plugin matches file names and does not read file contents to look for secrets. Keep secrets out of tracked files.</p>
+    <h2 class="hl" id="2-secrets-and-private-repositories-are-never-sent">2. Secrets and private repositories are never sent</h2>
+    <p>The plugin skips files whose names look like secrets and tells you which ones it skipped. The sandbox host checks the same list again and rejects an upload that holds one. The names include:</p>
+    <ul>
+      <li><code>.env</code> and <code>.env.&lt;anything&gt;</code>, <code>.envrc</code>, <code>.netrc</code>, <code>.pgpass</code>, <code>.git-credentials</code>, <code>.npmrc</code>, <code>.pypirc</code>, <code>.htpasswd</code></li>
+      <li>names starting with <code>id_rsa</code>, <code>id_dsa</code>, <code>id_ecdsa</code> or <code>id_ed25519</code></li>
+      <li>names ending in <code>.pem</code>, <code>.key</code>, <code>.p12</code>, <code>.pfx</code>, <code>.kdbx</code>, <code>.jks</code> or <code>.keystore</code></li>
+      <li>names starting with <code>credentials</code></li>
+      <li>names with <code>secret</code> or <code>secrets</code> as a word, such as <code>client-secret.json</code></li>
+      <li>any path with a <code>.ssh</code>, <code>.gnupg</code>, <code>.aws</code>, <code>.kube</code> or <code>.docker</code> folder</li>
+    </ul>
+    <p>A repository that contains a file named <code>.p0ssess-private</code> is refused. The plugin does not start a cloud session for it, and the host refuses it again if one arrives.</p>
+    <p>Your OpenRouter key never leaves your laptop. The sandbox's model requests travel over one encrypted connection (TLS 1.3) that your plugin opens to the sandbox host. The plugin adds your key, checks the session's cost cap and forwards the request to OpenRouter. A compromised sandbox host holds no key and cannot spend past the cap. Your device token is not shown to the host either. The host sees a short-lived signed ticket instead.</p>
+    <p>The plugin does not forward other OpenRouter calls, such as key or credit lookups, for the host.</p>
+    <h2 class="hl" id="3-everything-is-deleted-when-the-session-ends">3. Everything is deleted when the session ends</h2>
+    <p>A session ends when you finish it, when 30 minutes pass, when the connection from your plugin has been gone for 90 seconds, when the upload does not finish within 5 minutes, or when the sandbox fails. In every case the containers stop and we delete the workspace, the sockets and the session record.</p>
+    <p>Nothing is cached between sessions. Each session starts from a clean environment.</p>
+    <p>The edits the agent makes come back to your machine as a diff. After the session, we do not keep the diff.</p>
+    <p>For ten minutes after a session ends, the host answers requests about it with the end reason only, and then forgets the session id.</p>
+    <p>We do not back up sandbox workspaces.</p>
+    <h2 class="hl" id="4-no-content-is-logged">4. No content is logged</h2>
+    <p>The sandbox host does not log file names, paths, commands, prompts, model requests or answers, or diffs. It does not store the model requests that pass through it. It keeps only these log entries for each request:</p>
+    <ul>
+      <li>the session id</li>
+      <li>a SHA-256 prefix of your account id</li>
+      <li>the request method and route template</li>
+      <li>the status and byte counts</li>
+      <li>durations</li>
+      <li>the reason the session ended</li>
+    </ul>
+    <p>These logs help us run the service and find abuse. They are kept for 30 days.</p>
+    <p>OVHcloud US runs the machines and may keep its own infrastructure logs under its own terms.</p>
+    <h2 class="hl" id="5-one-us-region-at-launch">5. One US region at launch</h2>
+    <p>The sandbox runs in one region in the United States, at OVHcloud US. We do not move a session to another region. If we add regions later, we update this policy and tell Pro customers before it applies.</p>
+    <h2 class="hl" id="how-the-sandbox-is-set-up">How the sandbox is set up</h2>
+    <p>Each session runs in two sealed containers under gVisor, an isolation layer that sits between the code and the host. The environment has no network of its own. The commands you run can reach package registries (npm, PyPI, crates.io, the Go module proxy and Maven Central) through a filtering proxy, and nothing else, unless you turn on full internet access for the project. With full internet access, the sandbox can reach public internet addresses on ports 80 and 443, and the sites you reach can see traffic coming from our network. Names that resolve to private addresses are refused.</p>
+    <p>Registries you download from will see the package requests that your session makes.</p>
+    <p>Each session gets 4 GiB of memory, 2 CPUs and a 30-minute limit, and you can run one session at a time. Your plan has a monthly allowance of sandbox hours, set with the prices. To apply it, the host adds up the wall time of your sessions each month, against your account.</p>
+    <p>The sandbox host never calls our account store. It gets a ticket that shows you are a Pro or Team customer, and nothing more. A ticket is checked when a session begins. If Pro ends mid-session, that session can finish.</p>
+    <h2 class="hl" id="what-you-should-do">What you should do</h2>
+    <ul>
+      <li>keep secrets out of tracked files</li>
+      <li>put a <code>.p0ssess-private</code> file in any repository that must never go to the cloud</li>
+      <li>read the diff before you keep a sandbox's changes</li>
+    </ul>
+    <h2 class="hl" id="changes">Changes</h2>
+    <p>If we change this policy, we post the new version with a new effective date. For a change that reduces any of the five commitments, we tell Pro customers by email before it takes effect.</p>
+    <h2 class="hl" id="contact">Contact</h2>
+    <p>Write to support@p0ssess.me, or legal@p0ssess.me for privacy and legal questions.</p>
   </article>
 </div>
 

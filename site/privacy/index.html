@@ -5,11 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
-<meta name="robots" content="noindex">
 <title>p0ssess: Privacy policy</title>
-<meta name="description" content="The p0ssess privacy policy. It is being written and will be published here before Pro opens.">
+<meta name="description" content="What p0ssess collects when you use the hosted services, why, how long it is kept and what your rights are.">
 <meta property="og:title" content="p0ssess: Privacy policy">
-<meta property="og:description" content="The p0ssess privacy policy. It is being written and will be published here before Pro opens.">
+<meta property="og:description" content="What p0ssess collects when you use the hosted services, why, how long it is kept and what your rights are.">
 <meta property="og:type" content="website">
 <link rel="canonical" href="https://p0ssess.me/privacy/">
 <meta property="og:url" content="https://p0ssess.me/privacy/">
@@ -48,14 +47,162 @@
 <section class="doc-head" aria-labelledby="page-h">
 <div class="wrap">
   <h1 id="page-h">Privacy policy</h1>
+  <p class="doc-meta"><span>Effective date: November 13, 2026.</span></p>
 </div>
 </section>
 
 <div class="wrap doc">
-  <div class="prose">
-    <p class="notice">This policy is being written. It will be published here before Pro opens.</p>
-    <p><a class="return" href="../pricing/">Back to pricing</a></p>
-  </div>
+  <nav class="toc" aria-labelledby="toc-h">
+    <p class="toc-h" id="toc-h">On this page</p>
+    <ol>
+      <li><a href="#what-we-do-not-receive">What we do not receive</a></li>
+      <li><a href="#what-we-collect">What we collect</a></li>
+      <li><a href="#table-of-data">Table of data</a></li>
+      <li><a href="#why-we-may-process-your-data">Why we may process your data</a></li>
+      <li><a href="#who-we-share-data-with">Who we share data with</a></li>
+      <li><a href="#where-your-data-goes">Where your data goes</a></li>
+      <li><a href="#your-rights">Your rights</a></li>
+      <li><a href="#security">Security</a></li>
+      <li><a href="#children">Children</a></li>
+      <li><a href="#cookies-and-tracking">Cookies and tracking</a></li>
+      <li><a href="#changes-to-this-policy">Changes to this policy</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ol>
+  </nav>
+
+  <article class="prose">
+    <p>This policy explains what New Deal Systems LLC, an Idaho limited liability company ("we", "us") collects when you use the p0ssess hosted services, why, and what we do with it. The services are the routing engine, accounts and subscriptions, the cloud sandbox, the web pages where you sign in or subscribe, and the waitlist form on p0ssess.me. We are the controller of the personal data described here. Our address is 784 S Clearwater Loop, Suite R, Post Falls, ID 83854 and our contact is legal@p0ssess.me.</p>
+    <p>The p0ssess plugin runs on your machine. Your budgets, rules, approvals, history and spend ledger stay there. This policy covers what reaches us.</p>
+    <h2 class="hl" id="what-we-do-not-receive">What we do not receive</h2>
+    <p>We never receive your prompts or your file contents through the routing engine. Your model calls go from your machine to OpenRouter, under your own OpenRouter key, and our servers are not in that path. The one exception is the cloud sandbox, described below. Your OpenRouter key never reaches us.</p>
+    <p>We do not sell personal data. We do not share it for advertising. We run no advertising or tracking on these services.</p>
+    <h2 class="hl" id="what-we-collect">What we collect</h2>
+    <h3 id="when-you-use-the-routing-engine-free-or-paid">When you use the routing engine (free or paid)</h3>
+    <p>Each request to the engine carries these fields and nothing else:</p>
+    <ul>
+      <li>a task profile, which is a short description written by Claude (never your words or your content), the kinds of input and output, and size estimates</li>
+      <li>the stakes level, the lead Claude model id and a cost weight (a number)</li>
+      <li>your routing rules: their ids, scope, kind and model lists, with no notes or times</li>
+      <li>your model and provider allow and deny lists, and your privacy mode</li>
+      <li>optional scoring settings you changed</li>
+      <li>a history summary: counts per use case and model, with no timestamps, projects or sessions</li>
+    </ul>
+    <p>The request also carries a credential. Free installs send a random install token that identifies nothing about you and is used only for rate limits. Pro and Team installs send their device token. The plugin sends the user agent <code>p0ssess/&lt;version&gt;</code>.</p>
+    <p>We do not store or log any of this. We keep no request bodies, tokens or IP addresses. Rate limit counters live in memory only and are gone when the server restarts. The engine does not read the peer address.</p>
+    <p>Nothing from the plugin's daily route-table download is stored or logged either. A repository that contains a file named <code>.p0ssess-private</code> never calls the engine.</p>
+    <h3 id="when-you-create-an-account-pro-and-team">When you create an account (Pro and Team)</h3>
+    <p>You sign in with GitHub or with a link we email you. There are no passwords. We store:</p>
+    <ul>
+      <li>your email address and whether it is verified</li>
+      <li>your GitHub numeric id and login, only if you sign in with GitHub</li>
+      <li>your Polar customer id and the time the account was created</li>
+      <li>for each linked device, a SHA-256 hash of its device token, a client name (the plugin version and platform, for example "p0ssess 1.0.0 on linux/amd64"), and the times it was created and last seen</li>
+      <li>a local copy of each Polar subscription: Polar ids, the customer email, plan, status, number of seats, period end and whether it is set to cancel</li>
+      <li>the ids of your license keys</li>
+      <li>short-lived sign-in records: hashed sign-in link tokens, sign-in state, hashed web sessions and checkouts in progress</li>
+    </ul>
+    <p>The sign-in pages set one session cookie so you stay signed in. It is not used for tracking.</p>
+    <h3 id="when-you-join-the-waitlist">When you join the waitlist</h3>
+    <p>You give your email address and choose Pro or Team. We store the address, the plan, whether you signed up on the site or in the plugin, and the time. We send you one email when Pro opens, and then delete the address.</p>
+    <p>The sign-in and waitlist forms count requests per IP address, in memory, for up to an hour, to slow down abuse. The counts are never written to disk and vanish on restart. Our account service's logs record errors, not IP addresses.</p>
+    <h3 id="when-you-use-the-cloud-sandbox-pro">When you use the cloud sandbox (Pro)</h3>
+    <p>The data policy has the full detail. In brief, the plugin uploads a compressed copy of your git-tracked files (up to 200 MB) for one session, and everything is deleted when the session ends. The sandbox's model calls travel over an encrypted connection to your machine, which adds your key and forwards them to OpenRouter. The sandbox host passes them along and does not store or log them.</p>
+    <p>The host logs the session id, a SHA-256 prefix of your account id, the request method and route template, the status, byte counts, durations and the reason the session ended. It never logs file names, paths, commands, prompts, model content or diffs. The host also adds up your sandbox time for the month to apply your allowance.</p>
+    <h3 id="outcome-records">Outcome records</h3>
+    <p>Outcome records are anonymous summaries of how a model did on a task. They are on by default for everyone, free users included. You can turn them off. Setting <code>outcomes.send = false</code> in <code>budget.toml</code> stops the plugin from queuing or sending anything.</p>
+    <p>One record looks like this:</p>
+    <pre class="sample"><code>{"v":1,"kind":"image.generate","model":"google/gemini-3.4-flash-image","route":"direct","stakes":2,"outcome":"accepted","cost":"&lt;1c","week":"2026-W46"}</code></pre>
+    <p>A record has exactly eight fields:</p>
+    <ul>
+      <li><code>v</code>: the record version, always 1</li>
+      <li><code>kind</code>: the type of task, such as <code>image.generate</code></li>
+      <li><code>model</code>: the model id</li>
+      <li><code>route</code>: <code>direct</code>, <code>agent</code>, <code>claude-subagent</code> or <code>engine</code></li>
+      <li><code>stakes</code>: 1 to 4</li>
+      <li><code>outcome</code>: <code>accepted</code>, <code>redo</code>, <code>declined</code> or <code>overridden</code></li>
+      <li><code>cost</code>: one of six cost ranges (<code>0</code>, <code>&lt;1c</code>, <code>1-5c</code>, <code>5-25c</code>, <code>25c-1</code>, <code>&gt;1</code>), never an exact amount</li>
+      <li><code>week</code>: the ISO week the run ended</li>
+    </ul>
+    <p>The plugin sends records when a Claude Code session ends; records that missed a session end go out with the next one. A session end therefore tells our server roughly when your session finished, so the server keeps no arrival time, does not log requests to this endpoint and drops the token before storing anything. The plugin's local page shows the pending records line by line before they go. Our server stores the eight fields with a count of identical records. It keeps no token, account, IP address or arrival time. We use the records to compute community success rates for Pro routing. Because stored records are not linked to you, we cannot find or remove your records later.</p>
+    <h3 id="calibration-results-pro">Calibration results (Pro)</h3>
+    <p>If you run calibration, the plugin tests a few models on built-in samples with known answers (and on your own samples, if you add them) on your machine, with your own OpenRouter key. It sends us only counts: for each task kind and model, how many samples ran and how many were right. It never sends the samples, the answers or the models' replies. We use the counts to tune routing for your account only. They are stored against your account, with no times, and deleted with it. Calibration results are never sent as outcome records.</p>
+    <h3 id="email-and-support">Email and support</h3>
+    <p>If you write to us, we keep your message and our replies so we can help you. We keep support email for 2 years..</p>
+    <h2 class="hl" id="table-of-data">Table of data</h2>
+    <div class="tbl">
+    <table>
+    <thead><tr><th scope="col">Data</th><th scope="col">Why we use it</th><th scope="col">Where it lives</th><th scope="col">How long we keep it</th></tr></thead>
+    <tbody>
+    <tr><th scope="row">Engine request fields (above)</th><td data-label="Why we use it">Pick a model for a task</td><td data-label="Where it lives">Memory only while the request runs; not stored</td><td data-label="How long we keep it">Not kept</td></tr>
+    <tr><th scope="row">Rate limit counters (token hash, or IP address on sign-in and waitlist forms)</th><td data-label="Why we use it">Slow down abuse</td><td data-label="Where it lives">Server memory</td><td data-label="How long we keep it">Up to one hour for forms; cleared on restart</td></tr>
+    <tr><th scope="row">Email, verified flag, GitHub id and login, Polar customer id, creation time</th><td data-label="Why we use it">Run your account, sign you in, contact you about your subscription</td><td data-label="Where it lives">Accounts database at OVHcloud US, and its backups</td><td data-label="How long we keep it">While the subscription is active, then 30 days after it ends</td></tr>
+    <tr><th scope="row">Device token hash, client name, created and last-seen times</th><td data-label="Why we use it">Link your plugin install to your account</td><td data-label="Where it lives">Accounts database</td><td data-label="How long we keep it">Until you sign the device out, or 30 days after the subscription ends</td></tr>
+    <tr><th scope="row">Subscription copy and license key ids</th><td data-label="Why we use it">Show your plan and apply entitlements</td><td data-label="Where it lives">Accounts database</td><td data-label="How long we keep it">30 days after the subscription ends</td></tr>
+    <tr><th scope="row">Sign-in records and web sessions</th><td data-label="Why we use it">Sign you in</td><td data-label="Where it lives">Accounts database</td><td data-label="How long we keep it">Sign-in links and device codes expire after 15 minutes, GitHub sign-in state after 10 minutes, web sessions after 30 days; expired records are purged within a day</td></tr>
+    <tr><th scope="row">Never-subscribed accounts</th><td data-label="Why we use it">Sign-in only</td><td data-label="Where it lives">Accounts database</td><td data-label="How long we keep it">30 days after creation</td></tr>
+    <tr><th scope="row">Waitlist email, plan, source, time</th><td data-label="Why we use it">Tell you when Pro opens</td><td data-label="Where it lives">Accounts database</td><td data-label="How long we keep it">One email, then deleted</td></tr>
+    <tr><th scope="row">Sandbox upload and workspace</th><td data-label="Why we use it">Run your session</td><td data-label="Where it lives">Sandbox host memory and disk</td><td data-label="How long we keep it">Deleted when the session ends (30 minutes at most)</td></tr>
+    <tr><th scope="row">Sandbox host logs (see above)</th><td data-label="Why we use it">Run and protect the service</td><td data-label="Where it lives">Sandbox host</td><td data-label="How long we keep it">30 days</td></tr>
+    <tr><th scope="row">Monthly sandbox time total</th><td data-label="Why we use it">Apply your allowance</td><td data-label="Where it lives">Sandbox host</td><td data-label="How long we keep it">Until the end of the next month</td></tr>
+    <tr><th scope="row">Outcome records (eight fields and a count)</th><td data-label="Why we use it">Community success rates</td><td data-label="Where it lives">Engine database</td><td data-label="How long we keep it">24 months; not linked to you</td></tr>
+    <tr><th scope="row">Calibration counts (runs and correct, per task kind and model)</th><td data-label="Why we use it">Tune your account's routing</td><td data-label="Where it lives">Engine database</td><td data-label="How long we keep it">Until you clear them or 30 days after the subscription ends</td></tr>
+    <tr><th scope="row">Support email</th><td data-label="Why we use it">Help you</td><td data-label="Where it lives">Our mailbox</td><td data-label="How long we keep it">2 years</td></tr>
+    </tbody>
+    </table>
+    </div>
+    <p>Backups of the accounts database are kept in Cloudflare R2 for 30 days. A deletion reaches the backups when they age out.</p>
+    <h2 class="hl" id="why-we-may-process-your-data">Why we may process your data</h2>
+    <p>Where the GDPR or UK GDPR applies, we rely on these legal bases :</p>
+    <ul>
+      <li>to run the account and subscription you asked for (contract)</li>
+      <li>to run, secure and improve the services, such as rate limits and outcome records (legitimate interests)</li>
+      <li>to meet legal duties, such as tax and fraud records (legal obligation)</li>
+    </ul>
+    <p>We do not rely on consent for any of this.</p>
+    <p>We do not use your data to make automated decisions that have legal effects on you.</p>
+    <h2 class="hl" id="who-we-share-data-with">Who we share data with</h2>
+    <p>These companies handle personal data for us or for you.</p>
+    <ul>
+      <li>Polar (merchant of record): sells the subscription to you, takes payment, holds your payment details, collects and pays sales tax and VAT, issues license keys and runs the customer portal. Polar acts under its own privacy policy for your purchase. We receive your email, customer id and subscription details from it.</li>
+      <li>GitHub: only if you choose to sign in with GitHub. GitHub gives us your numeric id, login and verified email.</li>
+      <li>OVHcloud US: runs our servers.</li>
+      <li>Cloudflare: stores encrypted database backups (R2), delivers the p0ssess.me website and keeps its access logs.</li>
+      <li>Our email delivery provider: sends sign-in links, subscription notices and the waitlist email. Cloudflare Email Routing receives mail sent to our p0ssess.me addresses.</li>
+      <li>OpenRouter: your own model provider, not ours. Your plugin calls it from your machine with your key, under OpenRouter's terms and privacy policy. We do not receive what you send it.</li>
+    </ul>
+    <p>We may also disclose data when the law requires it, or to protect our rights or the safety of others. If the business is sold or transferred, your data may move with it, under this policy.</p>
+    <p>We do not sell your personal data, and we do not share it for cross-context behavioral advertising.</p>
+    <h2 class="hl" id="where-your-data-goes">Where your data goes</h2>
+    <p>Our servers are in the United States (OVHcloud US, one US region at launch). If you use the services from elsewhere, your data goes to the United States. For people in the EU, UK or Switzerland, we rely on the safeguards the law provides for such transfers.</p>
+    <h2 class="hl" id="your-rights">Your rights</h2>
+    <p>Depending on where you live, you may have the right to:</p>
+    <ul>
+      <li>ask what personal data we hold about you and get a copy</li>
+      <li>correct it</li>
+      <li>delete it</li>
+      <li>limit or object to how we use it</li>
+      <li>move it to another service</li>
+      <li>withdraw consent, where we rely on it</li>
+      <li>not be treated worse for using these rights</li>
+    </ul>
+    <p>To use a right, email legal@p0ssess.me from the address on your account. We may ask you to verify it is you, and we answer within one month (45 days for California requests, with one extension if needed). Using a right is free. If we refuse a request, we tell you why. You can also sign a device out of your account yourself, which revokes its token.</p>
+    <p>If you live in the EU or UK, you can complain to your data protection authority. If you live in California, you have the rights above under the CCPA, and you can use an authorized agent. We do not discriminate against you for using them. Because we do not sell or share personal data, there is nothing to opt out of. A Global Privacy Control signal changes nothing for the same reason.</p>
+    <p>Outcome records cannot be matched to you, so we cannot look them up or delete them. You can stop sending them at any time with <code>outcomes.send = false</code>.</p>
+    <h2 class="hl" id="security">Security</h2>
+    <p>Device tokens, sign-in tokens and web sessions are stored as hashes. Connections to our servers use HTTPS. The sandbox tunnel uses TLS 1.3. No system is perfectly secure, and we cannot promise that. If a breach affects your data, we tell you as the law requires.</p>
+    <h2 class="hl" id="children">Children</h2>
+    <p>The services are not for children under 13, and we do not knowingly collect their data. A subscription requires you to be 18. If you think a child has given us data, write to us and we delete it.</p>
+    <h2 class="hl" id="cookies-and-tracking">Cookies and tracking</h2>
+    <p>The sign-in pages set one session cookie. p0ssess.me is a static site: it sets no cookies, has no analytics and loads nothing from other sites (its fonts are served from the site itself). Like most web servers, the site's server and its content delivery network keep standard access logs (IP address, page, time) for up to 30 days. We do not respond to "Do Not Track" signals because we do not track.</p>
+    <h2 class="hl" id="changes-to-this-policy">Changes to this policy</h2>
+    <p>When we change this policy, we post the new version with a new effective date. For a change that matters, we email paying customers before it takes effect (at least 14 days).</p>
+    <h2 class="hl" id="contact">Contact</h2>
+    <ul>
+      <li>New Deal Systems LLC, an Idaho limited liability company</li>
+      <li>784 S Clearwater Loop, Suite R, Post Falls, ID 83854</li>
+      <li>legal@p0ssess.me</li>
+    </ul>
+  </article>
 </div>
 
 </main>

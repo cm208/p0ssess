@@ -175,6 +175,18 @@ srv.listen(0, "127.0.0.1", async () => {
         await ctx.close();
       }
       if (!want("pricing")) continue;
+      // As it ships, and with an API that cannot answer: the buttons are links that open an email.
+      for (const [label, cloud] of [["as shipped", null], ["API unreachable", () => ({ status: 503, headers: cors })]]) {
+        const t = `${name} pricing, ${label}`;
+        const o = await open(viewport, "reduce", t, cloud ? { at: "/pricing/", cloud } : { at: "/pricing/" });
+        await o.pg.waitForTimeout(600);
+        await check(o.pg, t, "Pro and Team are mailto links to support, with no form shown", `(() => {
+          const m = (plan, word) => { const a = document.querySelector('[data-buy="' + plan + '"] [data-mail]');
+            return !a.hidden && a.href === "mailto:support@p0ssess.me?subject=Notify%20me%20when%20p0ssess%20" + word + "%20opens"; };
+          return m("pro", "Pro") && m("team", "Team") && [...document.querySelectorAll("[data-open], form.wl")].every((el) => el.hidden); })()`);
+        await overflow(o.pg, t);
+        await o.ctx.close();
+      }
       const digits = Object.values(TEST).slice(0, 3).map((c) => (c / 100).toFixed(2));
 
       // Opening soon: the API is there, its prices are placeholders, and the buttons take an address.

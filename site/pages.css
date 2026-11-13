@@ -185,6 +185,20 @@ main { flex: 1 0 auto; }
 .prose .first-run { margin-top: 1rem; }
 .skip-list { margin-top: 0.9rem; padding: 0.9rem 1rem 1rem 2.1rem; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; font-size: 0.95rem; }
 .prose .skip-list code { color: var(--ink); }
+/* Policy text: an ordered list that is not the commitments, a sample record and the table of data. */
+.prose ol:not(.vows) { padding-left: 1.4rem; }
+.prose .sample { max-width: 100%; padding: 0.9rem 1rem; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; overflow-x: auto; font-size: 0.84rem; line-height: 1.6; color: var(--ink); }
+.prose .sample code { overflow-wrap: normal; }
+.prose a { overflow-wrap: anywhere; }
+/* The table of data: one card to a row on a phone, a table from 720 px up. */
+.tbl { max-width: none; }
+.tbl table { width: 100%; border-collapse: collapse; font-size: 0.95rem; line-height: 1.5; }
+.tbl thead { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.tbl tbody, .tbl tr, .tbl th, .tbl td { display: block; }
+.tbl tr { padding: 1rem 0 1.1rem; border-bottom: 1px solid var(--line); }
+.tbl tbody th { padding: 0; text-align: left; font-weight: 600; color: var(--ink); }
+.tbl td { padding: 0.5rem 0 0; color: var(--ink-body); }
+.tbl td::before { content: attr(data-label); display: block; font: 400 0.76rem/1.4 var(--mono); color: var(--ink-2); }
 .notice { max-width: 68ch; padding: 1rem 1.2rem; border: 1px dashed var(--ink-2); border-radius: 4px; color: var(--ink); }
 .return { display: inline-block; margin-top: 1rem; padding-block: 0.9rem; font: 400 0.92rem/1 var(--mono); }
 
@@ -211,6 +225,17 @@ main { flex: 1 0 auto; }
   .duel-t td { display: block; padding: 0; border: 0; }
   .duel-t td::before { content: none; }
   .duel-t td b { text-align: left; }
+}
+
+@media (min-width: 720px) {
+  .tbl table { display: table; }
+  .tbl thead { position: static; width: auto; height: auto; margin: 0; overflow: visible; clip-path: none; white-space: normal; }
+  .tbl thead, .tbl tbody { display: table-header-group; }
+  .tbl tbody { display: table-row-group; }
+  .tbl tr { display: table-row; padding: 0; border: 0; }
+  .tbl th, .tbl td { display: table-cell; padding: 0.8rem 0.9rem 0.85rem 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .tbl thead th { padding-block: 0 0.45rem; font: 400 0.8rem/1.4 var(--mono); color: var(--ink-2); text-align: left; }
+  .tbl td::before { content: none; }
 }
 
 @media (min-width: 860px) {
