@@ -281,7 +281,7 @@ func (l *Ledger) outcomes() []Entry { return l.outcomesWith(false) }
 const RouteCalibrate = "calibrate"
 
 // outcomesWith is outcomes, plus the graded calibration results when calibration is true. Those tune
-// the user's own routing (Stats and UseCaseCounts) and nothing else: they are tests graded by p0ssess,
+// the user's own routing (Stats) and nothing else: they are tests graded by p0ssess,
 // not a record of what the user accepted, so tendencies, suggestions, approvals and the outcome
 // records leave them out.
 func (l *Ledger) outcomesWith(calibration bool) []Entry {
@@ -529,11 +529,13 @@ type UseCaseCount struct {
 }
 
 // UseCaseCounts sums the outcomes per use case and model, implied acceptances included, most used
-// first, at most limit rows. Outcomes without a use case or model are left out.
+// first, at most limit rows. Outcomes without a use case or model are left out, and so are graded
+// calibration results: this is the history summary sent with a recommendation, and calibration
+// reaches the engine through its own upload, so counting it here would weigh each result twice.
 func (l *Ledger) UseCaseCounts(limit int) []UseCaseCount {
 	idx := map[[2]string]int{}
 	var out []UseCaseCount
-	for _, e := range l.outcomesWith(true) {
+	for _, e := range l.outcomes() {
 		if e.UseCase == "" || e.Model == "" {
 			continue
 		}

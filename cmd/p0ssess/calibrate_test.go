@@ -233,8 +233,10 @@ func TestCalibrationResultsGoToLocalHistoryNotToOutcomeRecords(t *testing.T) {
 	if n := l.Stats("openai/whisper-large-v3", "audio-transcribe", "").UseCase.Declined; n != 1 {
 		t.Errorf("routing history misses the declined result: %d", n)
 	}
-	if rows := l.UseCaseCounts(10); len(rows) != 2 {
-		t.Errorf("history summary rows: %+v", rows)
+	// The summary sent with a recommendation leaves calibration out: the engine gets it from the
+	// calibration upload, so it counts once.
+	if rows := l.UseCaseCounts(10); len(rows) != 0 {
+		t.Errorf("calibration counted twice, history summary rows: %+v", rows)
 	}
 	// Not a habit of the user: no tendencies, no recent outcomes, no used models.
 	if len(l.Tendencies()) != 0 || len(l.Recent(10)) != 0 || len(l.UsedModels()) != 0 {
