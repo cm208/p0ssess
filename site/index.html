@@ -64,9 +64,9 @@
 
   <div class="hero-cols">
     <div class="pitch">
-      <p class="lede">p0ssess is a Claude Code plugin. Tell it once which chores don’t need Claude’s rates, and Claude hands them to a cheaper model, checks what comes back and answers you as usual. We set it against three ways of running Claude on a unit-test job, and it came out between 2.2 and 7.2 times cheaper, with every test file passing. With Sonnet in charge, Claude’s own Haiku subagent came close, and it’s on the chart too.</p>
+      <p class="lede">p0ssess is a Claude Code plugin. Tell it once which chores don’t need Claude’s rates, and Claude hands them to a cheaper model, checks what comes back and answers you as usual. Against three ways of running Claude on a unit-test job, it came out between 2.2 and 7.2 times cheaper, and every test file passed. With Sonnet in charge, Claude’s own Haiku subagent came close.</p>
       <p class="cta"><a class="btn" href="pricing/#pro">Get Pro, $4 a month</a><a class="btn quiet" href="pricing/#team">Get Team, $8 a seat</a></p>
-      <p class="terms">The plugin itself is free and open source. <a href="#try">Install it</a> with your own OpenRouter key.</p>
+      <p class="terms">Pro adds a cloud sandbox and a savings report. Team sets the rules once for every seat. Checkout opens soon, and the plugin is free now: <a href="#try">install it</a>.</p>
     </div>
 
     <div class="meter" id="savings">
@@ -84,7 +84,7 @@
             <!--gen:hero-say-->
       <span class="v-haiku">Told to hand the bulk of the work to its own Haiku subagent, Claude Opus 5.5 spent $0.64 a run. With p0ssess it spent $0.28. All 15 test files pass both ways.</span>
             <span class="v-opus">Writing every test itself, Claude Opus 5.5 spent $1.26 a run. With p0ssess it spent $0.28. All 15 test files pass both ways.</span>
-            <span class="v-sonnet">Writing every test itself, Claude Sonnet 5.5 spent $0.70 a run. With p0ssess it spent $0.10. All 15 test files pass both ways. Sonnet’s own Haiku subagent came within that spread: $0.09 to $0.22 a run, one run a test file short.</span>
+            <span class="v-sonnet">Writing every test itself, Claude Sonnet 5.5 spent $0.70 a run. With p0ssess it spent $0.10. All 15 test files pass both ways. Sonnet’s own Haiku subagent came close: $0.09 to $0.22 a run, with one run a test file short.</span>
       <!--/gen:hero-say-->
         </p>
         <p class="now">
@@ -165,7 +165,7 @@
 <div class="wrap">
   <div class="sec-head">
     <h2 id="proof-h">A second job cleared the bar</h2>
-    <p>We wrote down what would count before the first run. p0ssess wins a comparison only if its most expensive run costs less than Claude’s cheapest, with accuracy within three points, over at least three runs each way. A win we advertise also has to be at least twice as cheap. Unit tests cleared that bar. So did ticket triage, with nothing but a team rule in place.</p>
+    <p>We wrote down what would count as a win before the first run. Over at least three runs each way, p0ssess’s most expensive run has to cost less for each correct answer than Claude’s cheapest, with accuracy within three points on average and five in the worst run. A win we advertise also has to be at least twice as cheap. Unit tests cleared that bar, and so did ticket triage with nothing but a team rule in place.</p>
   </div>
 
   <ol class="proof">
@@ -174,7 +174,7 @@
       <div>
         <h3>Triaging support tickets</h3>
         <p>Each run sorted 300 support tickets by category, priority, order and product against a written policy, with Claude Opus 5.5 in charge. Every ticket came out right in every run shown.</p>
-        <p>With nothing but a team rule, a run cost $0.36 instead of $0.73. With the rule also written out in Claude’s instructions it cost $0.33: 2.2 times cheaper than Claude alone, and 2.3 times cheaper than Claude with its own Haiku subagent, which saved nothing here.</p>
+        <p>With nothing but a team rule, a run cost $0.36 instead of $0.73. The 0.6.0 plugin, with a personal rule that Claude’s instructions repeated, cost $0.33: 2.2 times cheaper than Claude alone and 2.3 times cheaper than Claude with its own Haiku subagent, which saved nothing here.</p>
       </div>
       <figure class="land" aria-label="Ticket triage, cost of each run. Claude Opus 5.5 alone: $0.64 to $0.90. Claude Opus 5.5 with its Haiku subagent: $0.60 to $0.90. With p0ssess, the rule in words: $0.24 to $0.39. With a team rule alone: $0.20 to $0.56.">
         <ol class="lanes">
@@ -192,9 +192,9 @@
 
   <p class="proof-end">
       <!--gen:proof-caveat-->
-      The 300 tickets and their triage policy were built for the benchmark, three runs for each setup, and deepseek-v4.1-flash did the delegated work. With p0ssess the job was about four times slower: 1.5 seconds a ticket against 0.4. At 60 tickets the hand-off cost as much as the work and there was no saving.
+      The 300 tickets and their triage policy were built for the benchmark, each setup ran three times, and deepseek-v4.1-flash did the delegated work. With p0ssess the job took three to four times as long: 1.4 to 1.5 seconds a ticket against 0.4. At 60 tickets the hand-off cost as much as the work and there was no saving.
       <!--/gen:proof-caveat-->
-      Most of what we tested went the same way. Of nineteen pairings of a job with a model in charge, fifteen failed our bar and one passed at less than twice as cheap. The method page lists every one with its numbers.</p>
+      Most jobs we tested did no better. Of nineteen pairings of a job with a model in charge, fifteen failed our bar and one passed at less than twice as cheap. The business page lists every one with its numbers.</p>
   <p class="next"><a class="btn quiet" href="business/#method">Read the method</a><a class="more" href="business/#results">See every job we tested</a></p>
 </div>
 </section>
@@ -243,7 +243,7 @@
     <h2 id="team-h">Set the rule once for the whole team</h2>
     <p>
       <!--gen:team-proof-->
-      On Team, an owner writes the rule and every seat gets it. We measured it with nothing else in play and no instructions on anyone’s machine, using a team rule that always sends ticket triage to deepseek-v4.1-flash. Triaging a day’s 300 support tickets cost $0.36 instead of $0.73 with Claude Opus 5.5 in charge, and every ticket came out right.
+      On Team, an owner writes a rule once and every seat gets it. We measured one on its own, with no instructions on anyone’s machine: a team rule that always sends ticket triage to deepseek-v4.1-flash. Triaging a day’s 300 support tickets cost $0.36 instead of $0.73 with Claude Opus 5.5 in charge, and every ticket came out right.
       <!--/gen:team-proof-->
     </p>
   </div>
@@ -268,7 +268,7 @@
       <p class="next"><a class="btn" href="pricing/#team">Get Team, $8 a seat</a><a class="more" href="business/">The cost case for a team</a></p>
       <p class="note">
       <!--gen:team-caveat-->
-      The 300 tickets and their triage policy were built for the benchmark, three runs each way, and the runs with the rule were about four times slower (1.5 seconds a ticket against 0.4). At 60 tickets the hand-off cost as much as the work and there was no saving. On unit tests a team rule alone did not pass our bar: in two of its three runs one module’s tests caught three of five planted bugs, so the figures at the top of this page are from a rule set on the person’s own machine.
+      The 300 tickets and their triage policy were built for the benchmark, and each setup ran three times. The team rule’s runs took 3.4 times as long (1.4 seconds a ticket against 0.4). At 60 tickets the hand-off cost as much as the work and there was no saving. On unit tests a team rule alone did not pass our bar: in two of its three runs one module’s tests caught three of five planted bugs, so the figures at the top of this page are from a rule set on the person’s own machine.
       <!--/gen:team-caveat-->
       </p>
     </div>
@@ -346,7 +346,7 @@
 <div class="wrap">
   <div class="sec-head">
     <h2 id="limits-h">You set the limits</h2>
-    <p>Sending work to other models only saves money if the spending can’t run away. You set the limits, and the tools that spend the money enforce them.</p>
+    <p>Sending work to other models only saves money if the spending can’t run away, so your limits are enforced in the tools that spend it.</p>
   </div>
   <div class="grid two">
     <div class="cell hl">
@@ -376,7 +376,7 @@
 <div class="wrap">
   <div class="sec-head">
     <h2 id="pricing-h">Free, $4 a month, or $8 a seat</h2>
-    <p>The routing behind every number on this page is in the free plugin. Pro runs coding hand-offs on a Mac or Windows laptop too, and measures what they saved you. Team puts one set of rules and one budget across every seat.</p>
+    <p>Every result on this page except the team rule’s came from the free plugin. Pro runs coding hand-offs on a Mac or Windows laptop too and measures what they save you. Team puts one set of rules and one budget across every seat.</p>
   </div>
   <div class="tiers">
     <article class="tier hl" aria-labelledby="free-h">

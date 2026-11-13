@@ -24,7 +24,7 @@ The pages must keep saying these things, because they are true:
 
 - The benchmark's datasets were built for it, a script graded them, and Claude is priced at API list price. The note under the hero's chart says so and links to the method.
 - Most of the jobs tested did not clear the bar. The home page says so and the business page shows every one of them.
-- The hero's figures are not from a team rule. On unit tests a team rule alone failed on accuracy, so the hero calls it a rule, and its small print says it was a personal rule with one line of instructions. The only measured claim for a team rule alone is ticket triage at 300 tickets, and it is printed with its caveats: about four times slower, and no saving at 60 tickets.
+- The hero's figures are not from a team rule. On unit tests a team rule alone failed on accuracy, so the hero calls it a rule, and its small print says it was a personal rule with one line of instructions. The only measured claim for a team rule alone is ticket triage at 300 tickets, and it is printed with its caveats: three to four times as long a run, and no saving at 60 tickets.
 - The Sonnet result is against Sonnet doing the work itself. Its own Haiku subagent came within the spread, and the hero shows that lane and says so.
 - The savings runs used the free plugin. The pricing page says so.
 - On the film, p0ssess cost more in total and took longer. Only the cost for each point scored is lower. Do not write that it was cheaper.
@@ -77,7 +77,7 @@ Every benchmark figure on the pages:
 | The proof: with p0ssess, the rule in words | mean $0.3266 a run, $0.24 to $0.39, 3 runs: $0.3904, $0.3524, $0.2369; 900 of 900 tickets right; mean 437 s | arm B | 2.24 times cheaper than alone, 2.29 than the Haiku route.
 | The proof, the Team section, pricing: a team rule alone | mean $0.3616 a run, $0.20 to $0.56, 3 runs: $0.3202, $0.2014, $0.5632; 900 of 900 tickets right; mean 418 s | arm T | 2.03 times cheaper than alone.
 | Method: a personal rule alone on ticket triage | mean $0.4536 a run, $0.29 to $0.56, 3 runs: $0.5082, $0.5582, $0.2944; 900 of 900 tickets right; mean 1090 s | arm R | 1.62 times cheaper than alone.
-| "About four times slower" | 0.41 s a ticket alone, 1.46 s with p0ssess (arm B), 1.39 s by a team rule alone | wall time of the session over 300 tickets |
+| "Three to four times as long" and the team rule's "3.4 times" | 0.41 s a ticket alone, 1.46 s with p0ssess (arm B), 1.39 s by a team rule alone | wall time of the session over 300 tickets |
 | The hand-off figure's two jobs on deepseek-v4.1-flash | $0.0291 for the tests of 15 modules, $0.0781 for 300 tickets | the OpenRouter part of arm B run 1 of each job |
 | Pricing, "less a run" | $0.98 and $0.37 | the difference of the two means, Opus in charge; the page says it is the mean |
 <!--/gen:readme-figures-->

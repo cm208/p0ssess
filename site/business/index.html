@@ -47,7 +47,7 @@
 <section class="page-head" aria-labelledby="page-h">
 <div class="wrap">
   <h1 id="page-h">The cost case, with every run shown.</h1>
-  <p class="lede">If you pay for Claude at work, part of that bill goes to repetitive jobs like writing tests and sorting tickets. p0ssess sends that work to a cheaper model under a rule you set, and Claude stays in charge and checks the result. Below are our measurements, how we took them and the jobs where it didn’t pay.</p>
+  <p class="lede">If you pay for Claude at work, part of that bill goes to repetitive jobs like writing tests and sorting tickets. p0ssess sends that work to a cheaper model under a rule you set, and Claude stays in charge and checks the result. On writing unit tests it came out between 2.2 and 7.2 times cheaper than three ways of running Claude, with every test file passing. Below is every run we measured, how we measured it and the jobs where it didn’t pay.</p>
   <p class="cta"><a class="btn" href="../pricing/#team">Get Team, $8 a seat</a><a class="btn quiet" href="#method">Read the method</a></p>
 </div>
 </section>
@@ -182,7 +182,7 @@
   </div>
   <div class="split">
     <div class="copy">
-      <p>Claude alone is cheap and accurate on batches of text. Opus and Sonnet scored 99 to 100% on every text job, and sixty tickets cost Claude Opus 5.5 about $0.24, so there is little left to save. The hand-off also has a fixed cost that a small batch cannot carry: Claude still pays for its own session, for the Haiku relay and for a review of what comes back, and Opus reviews thoroughly.</p>
+      <p>Claude alone is cheap and accurate on batches of text. Opus and Sonnet scored 99 to 100% on every text job but one, where a Sonnet code-review run gave line numbers from a combined file and scored 20%. Sixty tickets cost Claude Opus 5.5 about $0.24, so there is little left to save. The hand-off also has a fixed cost that a small batch cannot carry: Claude still pays for its own session, for the Haiku relay and for a review of what comes back, and Opus reviews thoroughly.</p>
     </div>
     <div class="copy">
       <p>The cheaper models lost accuracy on long, legalistic input and on strict normalizing: contract terms came out 96% right against 100%, and product listings 95% with Sonnet in charge. Sonnet reviews less than Opus, so it saved more when the other model was right and lost more when it was not. Audio wasn’t a cost win either. Claude alone installed a local Whisper, and with p0ssess the cost was the same on Opus and the accuracy lower on Sonnet.</p>
@@ -329,7 +329,7 @@
 <div class="wrap">
   <div class="sec-head">
     <h2 id="team-h">For a team</h2>
-    <p>Team is Pro for every seat, with an org on top. An owner sets the rules once and they reach everyone. A member’s own rules can only make them stricter. Each member gets a share of the monthly budget, and a spend dashboard shows the owner where it went.</p>
+    <p>Team is Pro for every seat, plus one owner who sets the rules once for everyone. A member’s own rules can only make them stricter. Each member gets a share of the monthly budget, and a spend dashboard shows the owner where it went.</p>
   </div>
   <p class="next"><a class="btn" href="../pricing/#team">Get Team, $8 a seat</a><a class="more" href="../data/">What the cloud sandbox does with your code</a></p>
   <p class="foot-line">Every figure on this page is a measured run. The sources are listed in the site’s README. <a data-link="repo" hidden>View the source</a></p>
