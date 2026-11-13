@@ -24,6 +24,9 @@ const (
 	PrepSegment   VideoPrep = "segment"   // split into segments and run one call per segment
 )
 
+// AudioPrepSpeech is the cleanup for noisy speech: a 250-3400 Hz band-pass and loudness normalization.
+const AudioPrepSpeech = "speech_bandpass"
+
 type Request struct {
 	Model  string
 	Prompt string
@@ -42,6 +45,9 @@ type Request struct {
 	PDFEngine       string // "native", "cloudflare-ai" or "mistral-ocr"; empty picks per model
 	VideoProcessing string // Gemini only: "agentic" or "static"
 	VideoPrep       VideoPrep
+	// AudioPrep is a cleanup applied to audio inputs before upload; "" sends files as they are. Values
+	// other than AudioPrepSpeech are treated as "".
+	AudioPrep string
 	// FromSegment skips the parts of a segmented video before this index (from 0): they were answered by
 	// an earlier call.
 	FromSegment int
