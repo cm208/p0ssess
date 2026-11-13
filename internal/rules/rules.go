@@ -1,13 +1,14 @@
 // Package rules holds the user's routing rules, standing approvals and budget
-// overrides, at session, project and global scope.
+// overrides, at session, team, project and global scope.
 //
 // Precedence: a forbid rule at any scope beats any allow. Session and global
 // rules are the user's own and have full power; for rules that pick one value
 // (only, mix, budget overrides) the session beats global, and within a scope the
-// newest rule wins. Project rules (.p0ssess/rules.toml, which arrives with a
-// cloned repository) can only tighten: forbid rules, only and mix rules that
-// narrow the user's own choice, and lower budget limits. Anything that would
-// loosen is ignored and reported. Rules are only ever created by the user; the
+// newest rule wins. Team rules (the signed policy of the user's Team org) and
+// project rules (.p0ssess/rules.toml, which arrives with a cloned repository)
+// can only tighten: forbid rules, only and mix rules that narrow the user's own
+// choice, and lower budget limits. Anything that would loosen is ignored and
+// reported. Rules are only ever created by the user or the team's owner; the
 // engine may suggest one.
 package rules
 
@@ -44,11 +45,15 @@ const (
 	TargetDelegation   = "delegation"
 
 	ScopeSession = "session"
+	ScopeTeam    = "team"
 	ScopeProject = "project"
 	ScopeGlobal  = "global"
 )
 
-var scopeRank = map[string]int{ScopeSession: 0, ScopeProject: 1, ScopeGlobal: 2}
+var scopeRank = map[string]int{ScopeSession: 0, ScopeTeam: 1, ScopeProject: 2, ScopeGlobal: 3}
+
+// tightenOnly reports the scopes whose rules may only tighten.
+func tightenOnly(scope string) bool { return scope == ScopeTeam || scope == ScopeProject }
 
 type Rule struct {
 	ID     string `toml:"id" json:"id"`
@@ -302,9 +307,11 @@ func short(ids []string) []string {
 	return out
 }
 
-// Files names the rule file for each scope; empty paths are skipped.
+// Files names the rule file for each scope; empty paths are skipped. Team holds the rules of a verified
+// team policy, which has no file of its own here.
 type Files struct {
 	Session, Project, Global string
+	Team                     []Rule
 }
 
 func (f Files) path(scope string) string {
@@ -366,18 +373,26 @@ type Ignored struct {
 func Load(f Files) (Set, error) {
 	var s Set
 	var errs []error
-	for _, scope := range []string{ScopeSession, ScopeProject, ScopeGlobal} {
-		rs, err := ReadFile(f.path(scope), scope)
-		if err != nil {
-			errs = append(errs, err)
-			continue
+	for _, scope := range []string{ScopeSession, ScopeTeam, ScopeProject, ScopeGlobal} {
+		var rs []Rule
+		if scope == ScopeTeam {
+			for _, r := range f.Team {
+				r.Scope = ScopeTeam
+				rs = append(rs, r)
+			}
+		} else {
+			var err error
+			if rs, err = ReadFile(f.path(scope), scope); err != nil {
+				errs = append(errs, err)
+				continue
+			}
 		}
 		for _, r := range rs {
 			if err := r.Validate(); err != nil {
 				s.Ignored = append(s.Ignored, Ignored{Rule: r, Why: "invalid: " + err.Error()})
 				continue
 			}
-			if scope == ScopeProject {
+			if tightenOnly(scope) {
 				if why := r.Loosens(); why != "" {
 					s.Ignored = append(s.Ignored, Ignored{Rule: r, Why: why})
 					continue
@@ -390,7 +405,7 @@ func Load(f Files) (Set, error) {
 }
 
 // Loosens says why a rule could widen what the user's own config allows, or "" when it can only
-// tighten. Project scope takes only rules that tighten.
+// tighten. Team and project scopes take only rules that tighten.
 func (r Rule) Loosens() string {
 	switch r.Kind {
 	case KindForbid, KindOnly, KindMix, KindAsk:
@@ -420,6 +435,9 @@ func Add(f Files, r Rule, now time.Time) (Rule, error) {
 	if r.Scope == "" {
 		r.Scope = ScopeGlobal
 	}
+	if r.Scope == ScopeTeam {
+		return r, errTeam
+	}
 	path := f.path(r.Scope)
 	if path == "" {
 		return r, fmt.Errorf("no %s scope available here", r.Scope)
@@ -447,8 +465,15 @@ func Add(f Files, r Rule, now time.Time) (Rule, error) {
 	})
 }
 
-// Remove deletes a rule by id from whichever scope holds it.
+var errTeam = errors.New("team rules come from the team's owner; change them with p0ssess team")
+
+// Remove deletes a rule by id from whichever scope holds it. Team rules are never removed here.
 func Remove(f Files, id string) (Rule, error) {
+	for _, r := range f.Team {
+		if r.ID == id {
+			return Rule{}, errTeam
+		}
+	}
 	for _, scope := range []string{ScopeSession, ScopeProject, ScopeGlobal} {
 		path := f.path(scope)
 		if _, err := os.Stat(path); path == "" || errors.Is(err, os.ErrNotExist) {
@@ -505,15 +530,15 @@ type Decision struct {
 	Allowed            map[string]*Rule // model -> allow rule
 	AllowAll           *Rule            // allow delegation
 	// Only is the narrowest only or mix rule of the user's own (session, then global), else the
-	// project's. Restrict holds project only and mix rules that narrow a user rule further: a model
-	// must be in Only and in every Restrict rule.
+	// team's, else the project's. Restrict holds team and project only and mix rules that narrow it
+	// further: a model must be in Only and in every Restrict rule.
 	Only     *Rule
 	Restrict []*Rule
-	// Budget holds the narrowest session or global override per field; ProjectBudget the project's,
-	// which only ever lower a limit.
+	// Budget holds the narrowest session or global override per field; ProjectBudget the lowest team or
+	// project override, which only ever lowers a limit.
 	Budget        map[string]Rule
 	ProjectBudget map[string]Rule
-	// ProjectCaps lists every project budget override, applied or not.
+	// ProjectCaps lists every team and project budget override, applied or not.
 	ProjectCaps []Rule
 	Approvals   []Rule // narrowest first
 	// Asks are the ask rules that cover the use case; AskFor says which apply to a model.
@@ -526,12 +551,12 @@ type Decision struct {
 func (s Set) Decide(useCase, kind string, now time.Time) Decision {
 	d := Decision{Forbidden: map[string]*Rule{}, Allowed: map[string]*Rule{}, Budget: map[string]Rule{}, ProjectBudget: map[string]Rule{}}
 	unknown := useCase == "" && kind == ""
-	var projectOnly []*Rule
+	var narrowing []*Rule
 	for _, r := range s.Active(now) {
 		r := r
 		if r.Kind == KindBudget {
-			if r.Scope == ScopeProject {
-				// Every project override is a cap; the lowest one holds.
+			if tightenOnly(r.Scope) {
+				// Every team or project override is a cap; the lowest one holds.
 				d.ProjectCaps = append(d.ProjectCaps, r)
 				if old, ok := d.ProjectBudget[r.Field]; !ok || r.Value < old.Value {
 					d.ProjectBudget[r.Field] = r
@@ -578,8 +603,8 @@ func (s Set) Decide(useCase, kind string, now time.Time) Decision {
 				d.AllowAll = &r
 			}
 		case KindOnly, KindMix:
-			if r.Scope == ScopeProject {
-				projectOnly = append(projectOnly, &r)
+			if tightenOnly(r.Scope) {
+				narrowing = append(narrowing, &r)
 			} else if d.Only == nil {
 				d.Only = &r
 			}
@@ -589,11 +614,11 @@ func (s Set) Decide(useCase, kind string, now time.Time) Decision {
 			d.Asks = append(d.Asks, r)
 		}
 	}
-	if len(projectOnly) > 0 {
+	if len(narrowing) > 0 {
 		if d.Only == nil {
-			d.Only, projectOnly = projectOnly[0], projectOnly[1:]
+			d.Only, narrowing = narrowing[0], narrowing[1:]
 		}
-		d.Restrict = projectOnly
+		d.Restrict = narrowing
 	}
 	return d
 }
