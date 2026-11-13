@@ -40,6 +40,18 @@ func TestSegment(t *testing.T) {
 	if !strings.Contains(colored, colorAmber+"ᗣ") || strings.Contains(colored, "\x1b[31m") || strings.Contains(colored, "\x1b[5m") {
 		t.Errorf("near budget should be an amber ghost, never red or blinking: %q", colored)
 	}
+	online := Segment(State{SpentToday: 0.14, MonthlyCap: 10}, Settings{Mark: "ᗣ", Color: true}, 0)
+	offline := Segment(State{SpentToday: 0.14, MonthlyCap: 10, Offline: true}, Settings{Mark: "ᗣ", Color: true}, 0)
+	if !strings.HasPrefix(online, colorIdle+"ᗣ") || !strings.HasPrefix(offline, colorOffline+"ᗣ") || colorOffline == colorIdle ||
+		!strings.Contains(offline, colorIdle+"p0ssess") || strings.Contains(offline, "\x1b[31m") || strings.Contains(offline, "\x1b[5m") {
+		t.Errorf("offline should dim only the mark, never red or blinking: %q vs %q", offline, online)
+	}
+	if got := Segment(State{SpentToday: 0.14, MonthlyCap: 10, Offline: true}, plain, 0); got != "ᗣ p0ssess  $0.14 today" {
+		t.Errorf("offline without color: %q", got)
+	}
+	if got := Segment(State{SpentMonth: 9, MonthlyCap: 10, Offline: true}, Settings{Mark: "ᗣ", Color: true}, 0); !strings.HasPrefix(got, colorAmber) {
+		t.Errorf("near the budget stays amber offline: %q", got)
+	}
 	if got := Segment(State{SpentToday: 1}, Settings{}, 0); got != "p0ssess  $1 today" {
 		t.Errorf("no mark: %q", got)
 	}
@@ -89,3 +101,16 @@ func TestRunWrapsUserCommand(t *testing.T) {
 }
 
 func itoa(n int64) string { return strconv.FormatInt(n, 10) }
+
+func TestOfflineMarker(t *testing.T) {
+	t.Setenv("P0SSESS_HOME", t.TempDir())
+	d := paths.Default()
+	if gather(d, time.Now()).Offline {
+		t.Fatal("offline with no marker")
+	}
+	os.MkdirAll(d.Cache, 0o700)
+	os.WriteFile(d.OfflineMarker(), nil, 0o600)
+	if !gather(d, time.Now()).Offline {
+		t.Error("the marker should dim the ghost")
+	}
+}

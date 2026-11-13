@@ -65,6 +65,7 @@ func LoadSettings(path string) Settings {
 // Colors, in 256-color codes. Never red, never blinking.
 const (
 	colorIdle    = "\x1b[38;5;244m"
+	colorOffline = "\x1b[38;5;240m"
 	colorRunning = "\x1b[38;5;250m"
 	colorAmber   = "\x1b[38;5;214m"
 	reset        = "\x1b[0m"
@@ -76,6 +77,8 @@ type State struct {
 	SpentMonth float64
 	MonthlyCap float64
 	Running    []usage.Job
+	// Offline is true while the last call to the engine service failed: the mark dims a little.
+	Offline bool
 }
 
 // Segment renders the p0ssess part for a given width budget. It returns ""
@@ -121,6 +124,9 @@ func Segment(s State, st Settings, room int) string {
 	textColor, markColor := colorIdle, colorIdle
 	if running > 0 {
 		textColor, markColor = colorRunning, colorRunning
+	}
+	if s.Offline {
+		markColor = colorOffline
 	}
 	if near {
 		markColor = colorAmber
@@ -198,7 +204,9 @@ func gather(d paths.Dirs, now time.Time) State {
 	b, _ := budget.Load(d.BudgetFile())
 	es, _ := history.Read(d.HistoryFile())
 	sp := history.NewLedger(es).Spend(now)
-	return State{SpentToday: sp.Today, SpentMonth: sp.Month, MonthlyCap: b.MonthlyUSD, Running: usage.Running(d.RunningDir(), now)}
+	_, err := os.Stat(d.OfflineMarker())
+	return State{SpentToday: sp.Today, SpentMonth: sp.Month, MonthlyCap: b.MonthlyUSD, Running: usage.Running(d.RunningDir(), now),
+		Offline: err == nil}
 }
 
 func runUser(st Settings, input []byte) string {

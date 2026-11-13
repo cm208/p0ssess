@@ -39,14 +39,16 @@ func xdg(name, fallback string) string {
 	return fallback
 }
 
-func (d Dirs) BudgetFile() string  { return filepath.Join(d.Config, "budget.toml") }
-func (d Dirs) EngineFile() string  { return filepath.Join(d.Config, "engine.toml") }
-func (d Dirs) RulesFile() string   { return filepath.Join(d.Config, "rules.toml") }
-func (d Dirs) UsageFile() string   { return filepath.Join(d.Cache, "usage.json") }
-func (d Dirs) ModelsCache() string { return filepath.Join(d.Cache, "openrouter-models.json") }
-func (d Dirs) RunningDir() string  { return filepath.Join(d.Cache, "running") }
-func (d Dirs) HistoryFile() string { return filepath.Join(d.State, "history.jsonl") }
-func (d Dirs) SessionsDir() string { return filepath.Join(d.State, "sessions") }
+func (d Dirs) BudgetFile() string { return filepath.Join(d.Config, "budget.toml") }
+func (d Dirs) EngineFile() string { return filepath.Join(d.Config, "engine.toml") }
+func (d Dirs) RulesFile() string  { return filepath.Join(d.Config, "rules.toml") }
+func (d Dirs) UsageFile() string  { return filepath.Join(d.Cache, "usage.json") }
+
+// OfflineMarker exists while the last call to the engine service failed.
+func (d Dirs) OfflineMarker() string { return filepath.Join(d.Cache, "engine-offline") }
+func (d Dirs) RunningDir() string    { return filepath.Join(d.Cache, "running") }
+func (d Dirs) HistoryFile() string   { return filepath.Join(d.State, "history.jsonl") }
+func (d Dirs) SessionsDir() string   { return filepath.Join(d.State, "sessions") }
 
 // SessionRulesFile is where session-scoped rules live.
 func (d Dirs) SessionRulesFile(session string) string {
