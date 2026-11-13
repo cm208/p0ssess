@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; connect-src https://cloud.p0ssess.me; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>p0ssess: Pricing</title>
+<meta name="description" content="p0ssess is free and MIT licensed. Pro adds a cloud sandbox, live data and a savings report for one person. Team adds shared rules and budgets for an org.">
+<meta property="og:title" content="p0ssess: Pricing">
+<meta property="og:description" content="p0ssess is free and MIT licensed. Pro adds a cloud sandbox, live data and a savings report for one person. Team adds shared rules and budgets for an org.">
+<meta property="og:type" content="website">
+<link rel="canonical" href="https://p0ssess.me/pricing/">
+<meta property="og:url" content="https://p0ssess.me/pricing/">
+<meta property="og:site_name" content="p0ssess">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0b0b0b">
+<link rel="icon" href="../ghost.svg" type="image/svg+xml">
+<link rel="preload" href="../fonts/obel-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../fonts/plex-sans-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pages.css">
+<script src="../release.js" defer></script>
+<script src="../pages.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the page</a>
+
+<header class="top" id="top">
+  <div class="wrap topbar">
+    <a class="lockup" href="../" aria-label="p0ssess, home">
+      <span class="g"><img src="../ghost.svg" alt="" width="64" height="64"><i class="lid"></i></span>
+      <svg class="wordmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 9" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path class="wm-ink" d="M0 2h3v1h-3zM0 3h1v1h-1zM3 3h1v1h-1zM0 4h1v1h-1zM3 4h1v1h-1zM0 5h3v1h-3zM0 6h1v1h-1zM0 7h1v1h-1zM0 8h1v1h-1zM11 2h3v1h-3zM10 3h1v1h-1zM11 4h2v1h-2zM13 5h1v1h-1zM10 6h3v1h-3zM16 2h3v1h-3zM15 3h1v1h-1zM16 4h2v1h-2zM18 5h1v1h-1zM15 6h3v1h-3zM21 2h2v1h-2zM20 3h1v1h-1zM23 3h1v1h-1zM20 4h4v1h-4zM20 5h1v1h-1zM21 6h3v1h-3zM26 2h3v1h-3zM25 3h1v1h-1zM26 4h2v1h-2zM28 5h1v1h-1zM25 6h3v1h-3zM31 2h3v1h-3zM30 3h1v1h-1zM31 4h2v1h-2zM33 5h1v1h-1zM30 6h3v1h-3z"/><path class="wm-zero" d="M6 0h2v1h-2zM5 1h1v1h-1zM8 1h1v1h-1zM5 2h1v1h-1zM8 2h1v1h-1zM5 3h1v1h-1zM8 3h1v1h-1zM5 4h1v1h-1zM8 4h1v1h-1zM5 5h1v1h-1zM8 5h1v1h-1zM6 6h2v1h-2z"/></svg>
+    </a>
+    <nav class="topnav" aria-label="Site">
+      <a href="../pricing/" aria-current="page">Pricing</a>
+      <a href="../business/">Business</a>
+      <a data-link="docs" hidden>Docs</a>
+      <a data-link="repo" hidden>Source</a>
+      <a class="nav-cta" href="../#try">Install</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<section class="page-head" aria-labelledby="page-h">
+<div class="wrap">
+  <h1 id="page-h">Pricing</h1>
+  <p class="lede">The plugin is free and MIT licensed. Pro adds a cloud sandbox, live data and a savings report for one person. Team adds shared rules and budgets for an org.</p>
+</div>
+</section>
+
+<section class="tiers-sec" aria-label="Plans">
+<div class="wrap tiers">
+
+  <article class="tier hl" aria-labelledby="free-h">
+    <div class="tier-head"><h2 id="free-h">Free</h2></div>
+    <p class="price"><b><small>$</small>0</b></p>
+    <p class="tier-terms">The MIT-licensed plugin. No account.</p>
+    <ul class="tier-list">
+      <li>Routing through the hosted engine, using public benchmark data.</li>
+      <li>Media, image generation and cheaper delegation, through your own OpenRouter key.</li>
+      <li>The local agent sandbox, on Linux with rootless podman.</li>
+      <li>Budgets, rules and history stay on your machine.</li>
+      <li>Support through GitHub issues.</li>
+      <li>Anonymous outcome records are on by default, and one setting turns them off. <a href="../privacy/">Privacy policy</a></li>
+    </ul>
+    <div class="buy"><a class="btn" href="../#try">Install p0ssess</a></div>
+  </article>
+
+  <article class="tier hl lit" aria-labelledby="pro-h">
+    <div class="tier-head">
+      <h2 id="pro-h">Pro</h2>
+      <fieldset class="mode">
+        <legend class="sr-only">Billing period for Pro</legend>
+        <span class="mode-thumb" aria-hidden="true"></span>
+        <label><input type="radio" name="bill" id="bill-year" value="year" checked><span>Yearly</span></label>
+        <label><input type="radio" name="bill" id="bill-month" value="month"><span>Monthly</span></label>
+      </fieldset>
+    </div>
+    <div class="tier-price">
+      <p class="price v-year" data-price="pro_year"><b aria-hidden="true"><small>$</small><i class="blank"></i></b> <span class="per">a year</span> <span class="price-note"><span class="ph-tag">Placeholder</span> Price not set yet</span></p>
+      <p class="price v-month" data-price="pro_month"><b aria-hidden="true"><small>$</small><i class="blank"></i></b> <span class="per">a month</span> <span class="price-note"><span class="ph-tag">Placeholder</span> Price not set yet</span></p>
+    </div>
+    <p class="tier-terms">For one person. <span data-rec>Yearly is recommended.</span> Buy early and keep your price for life.</p>
+    <ul class="tier-list">
+      <li class="lead">Everything in Free, plus:</li>
+      <li>The cloud sandbox, so agent work runs on any laptop: macOS, Windows or Linux. It comes with a monthly fair-use allowance of sandbox hours. <span data-hours><span class="ph-tag">Placeholder</span> The number is set with the prices.</span></li>
+      <li>Live engine data.</li>
+      <li>Community success rates, from outcome records.</li>
+      <li>Routing tuned by your own calibration runs.</li>
+      <li>The savings report: cost per correct answer and time, Claude alone against Claude with p0ssess. It is a local page, with a PDF a manager can forward.</li>
+      <li>Priority email support. Best effort, with no guaranteed response time.</li>
+    </ul>
+    <div class="buy" data-buy="pro">
+      <span class="btn off" data-off>Opening soon</span>
+      <button class="btn" type="button" data-open hidden>Opening soon, get notified</button>
+      <a class="btn" data-start hidden>Get Pro</a>
+      <form class="wl" id="wl-pro" novalidate hidden>
+        <label for="wl-pro-email">Your email address</label>
+        <div class="wl-row">
+          <input id="wl-pro-email" name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" required aria-describedby="wl-pro-say">
+          <button class="wl-send" type="submit">Notify me</button>
+        </div>
+        <p class="wl-terms">We’ll send one email when Pro opens, then delete your address.</p>
+      </form>
+      <p class="buy-say" id="wl-pro-say" role="status" aria-live="polite"></p>
+      <p class="buy-note" data-note>Sign-up opens soon.</p>
+    </div>
+  </article>
+
+  <article class="tier hl" aria-labelledby="team-h">
+    <div class="tier-head"><h2 id="team-h">Team</h2><span class="soon-tag">Coming right after 1.0</span></div>
+    <p class="price" data-price="team_seat_month"><b aria-hidden="true"><small>$</small><i class="blank"></i></b> <span class="per">per seat, a month</span> <span class="price-note"><span class="ph-tag">Placeholder</span> Price not set yet</span></p>
+    <p class="tier-terms">Billed per seat. It ships as release 1.1.0.</p>
+    <ul class="tier-list">
+      <li class="lead">Pro for every seat, plus an org:</li>
+      <li>Invite links.</li>
+      <li>Shared rules that can only tighten.</li>
+      <li>Per-member budget shares.</li>
+      <li>A spend dashboard.</li>
+    </ul>
+    <div class="buy" data-buy="team">
+      <span class="btn off" data-off>Not open yet</span>
+      <button class="btn quiet" type="button" data-open hidden>Get notified about Team</button>
+      <form class="wl" id="wl-team" novalidate hidden>
+        <label for="wl-team-email">Your email address</label>
+        <div class="wl-row">
+          <input id="wl-team-email" name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" required aria-describedby="wl-team-say">
+          <button class="wl-send" type="submit">Notify me</button>
+        </div>
+        <p class="wl-terms">We’ll send one email when Team opens, then delete your address.</p>
+      </form>
+      <p class="buy-say" id="wl-team-say" role="status" aria-live="polite"></p>
+      <p class="buy-note" data-note>Sign-up opens soon.</p>
+    </div>
+  </article>
+
+</div>
+</section>
+
+<section class="sec" id="billing" aria-labelledby="billing-h">
+<div class="wrap">
+  <div class="sec-head">
+    <h2 id="billing-h">How billing works</h2>
+    <p>What a p0ssess price covers, who takes the payment and what happens when a plan ends.</p>
+  </div>
+  <ul class="needs pair">
+    <li class="hl">Model calls bill to your own OpenRouter key, on every plan. The price here pays for the p0ssess service and doesn’t include the models.</li>
+    <li class="hl">Prices are in US dollars.</li>
+    <li class="hl">Checkout runs through Polar, the merchant of record. Polar handles sales tax and VAT, and gives you a portal to cancel or change plans.</li>
+    <li class="hl">When Pro ends you drop back to Free quietly. Account data is deleted 30 days later.</li>
+    <li class="hl">The cloud sandbox has to receive code to run it. <a href="../data/">What it does with your code</a></li>
+    <li class="hl">Refunds are set out in the <a href="../refunds/">refund policy</a>.</li>
+  </ul>
+</div>
+</section>
+
+</main>
+
+<footer class="site-foot">
+<div class="wrap foot-in">
+  <img class="foot-g" src="../ghost.svg" alt="" width="32" height="32">
+  <div>
+    <nav class="foot-nav" aria-label="More pages"><a href="../pricing/" aria-current="page">Pricing</a><a href="../business/">Business</a><a href="../terms/">Terms</a><a href="../privacy/">Privacy</a><a href="../data/">Data</a><a href="../refunds/">Refunds</a></nav>
+    <p>p0ssess is MIT licensed. By s3ym0ur.</p>
+    <p class="small">Set in Obel Mono and IBM Plex Sans, both under the <a href="../fonts/OFL-obel-mono.txt">SIL Open Font License</a>.</p>
+  </div>
+</div>
+</footer>
+
+</body>
+</html>
