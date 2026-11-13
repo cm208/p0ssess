@@ -22,9 +22,11 @@ import (
 	"p0ssess/internal/pme/local"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/pme/remote"
+	"p0ssess/internal/pme/table"
 	"p0ssess/internal/proxy"
 	"p0ssess/internal/relay"
 	"p0ssess/internal/server"
+	"p0ssess/internal/team"
 )
 
 var version = "0.6.0"
@@ -35,7 +37,8 @@ usage:
   p0ssess mcp                         the plugin's MCP server on stdio (relay, direct and engine tools)
   p0ssess me --brief                  a few lines: spend, limits, running jobs; starts the local page if none runs
   p0ssess me [--open]                 the local page: spend, Claude usage, rules, settings
-  p0ssess account pro|status|notify|signout   p0ssess Pro: upgrade, check the plan, get notified, sign out
+  p0ssess account pro|link|status|notify|signout   p0ssess Pro: upgrade, link this install, check the plan, get notified, sign out
+  p0ssess team COMMAND ...            p0ssess Team: create, invite, join, leave, rules, shares, spend, sync (p0ssess team for the list)
   p0ssess calibrate [plan|run|status|baseline|report|forget]   Pro: measure models on samples with known answers
   p0ssess engine COMMAND ...          the routing engine (recommend, status, set, rules, outcome, ...)
   p0ssess direct COMMAND ...          one-shot OpenRouter calls with local files, and ffmpeg helpers
@@ -116,9 +119,12 @@ func main() {
 	case "mcp":
 		refreshStableCopy()
 		go account.Watch(ctx, paths.Default())
+		go team.Watch(ctx, paths.Default(), table.PinnedKeys())
 		err = server.Serve(ctx, os.Stdin, os.Stdout, version)
 	case "account":
 		err = accountCmd(ctx, args)
+	case "team":
+		err = teamCmd(ctx, args)
 	case "calibrate":
 		err = calibrateCmd(ctx, args)
 	case "direct":

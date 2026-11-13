@@ -58,13 +58,15 @@ func accountCmd(ctx context.Context, args []string) error {
 
 func runAccount(ctx context.Context, args []string, out io.Writer) error {
 	if len(args) == 0 {
-		return errors.New("usage: p0ssess account pro | status | notify --email E | signout")
+		return errors.New("usage: p0ssess account pro | link | status | notify --email E | signout")
 	}
 	d := paths.Default()
 	c := account.NewClient(version)
 	switch args[0] {
 	case "pro":
 		return accountPro(ctx, d, c, out)
+	case "link":
+		return accountLink(ctx, d, c, out)
 	case "poll":
 		return account.Poll(ctx, d, c)
 	case "status":
@@ -126,8 +128,18 @@ func accountPro(ctx context.Context, d paths.Dirs, c *account.Client, out io.Wri
 		fmt.Fprintln(out, "Opening soon. Tell Claude an email to get notified.")
 		return nil
 	}
+	if err := startDeviceLink(ctx, d, c, out); err != nil {
+		return err
+	}
+	fmt.Fprintln(out, "Finish in the browser; Pro turns on here by itself.")
+	return nil
+}
+
+// startDeviceLink starts (or reuses) a device link and its background poller, and shows the page and code.
+func startDeviceLink(ctx context.Context, d paths.Dirs, c *account.Client, out io.Writer) error {
 	l, ok := account.PendingLink(d)
 	if !ok || !account.PollerRunning(d) {
+		var err error
 		if l, err = account.StartLink(ctx, d, c); err != nil {
 			return fmt.Errorf("could not start the link (%v); try again in a minute", err)
 		}
@@ -139,7 +151,20 @@ func accountPro(ctx context.Context, d paths.Dirs, c *account.Client, out io.Wri
 		fmt.Fprintf(out, "Open this page: %s\n", l.URL)
 	}
 	fmt.Fprintf(out, "Code: %s\n", l.UserCode)
-	fmt.Fprintln(out, "Finish in the browser; Pro turns on here by itself.")
+	return nil
+}
+
+// accountLink links this install to an account whatever the checkout says, for an account that already
+// has a plan, such as a seat in a team.
+func accountLink(ctx context.Context, d paths.Dirs, c *account.Client, out io.Writer) error {
+	if account.Token(d) != "" {
+		fmt.Fprintln(out, "This install is already linked. p0ssess account signout unlinks it.")
+		return nil
+	}
+	if err := startDeviceLink(ctx, d, c, out); err != nil {
+		return err
+	}
+	fmt.Fprintln(out, "Sign in and confirm the code in the browser; this install links by itself.")
 	return nil
 }
 

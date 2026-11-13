@@ -127,3 +127,18 @@ func TestAccountNotifyAndSignout(t *testing.T) {
 		t.Errorf("status %q", out)
 	}
 }
+
+func TestAccountLinkWhileOpeningSoon(t *testing.T) {
+	st, _, d := stub(t, "opening_soon")
+	out := run(t, "link")
+	if len(st.opened) != 1 || st.started != 1 || !strings.Contains(out, "Code: BKDF-MXTR") {
+		t.Errorf("link should start while checkout is closed: %+v\n%s", st, out)
+	}
+	if _, ok := account.PendingLink(d); !ok {
+		t.Error("no link state saved")
+	}
+	account.SaveToken(d, "p0d_x")
+	if out := run(t, "link"); !strings.Contains(out, "already linked") || st.started != 1 {
+		t.Errorf("a linked install should not relink: %s", out)
+	}
+}
