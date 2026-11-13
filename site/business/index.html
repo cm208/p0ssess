@@ -151,6 +151,18 @@
       </table></div>
     </details>
   </figure>
+
+  <div class="sec-head sub">
+    <h3 id="why-h">Why most jobs didn’t pay</h3>
+  </div>
+  <div class="split">
+    <div class="copy">
+      <p>Claude alone is already cheap and accurate on a small batch of text. Sixty tickets cost Claude Opus 5.5 about $0.24, which leaves little to save. And a hand-off has a cost of its own: Claude still pays for its session, for the Haiku relay and for a review of what comes back. On small batches that fixed cost ate the saving.</p>
+    </div>
+    <div class="copy">
+      <p>On two jobs the cheaper model was simply worse. It lost accuracy on long contracts and on the strict normalizing of product listings. Routing voicemails was not a cost win either: Claude alone installed a local speech model and did about as well for about the same money.</p>
+    </div>
+  </div>
 </div>
 </section>
 
@@ -185,7 +197,7 @@
       <h3>What changed along the way</h3>
       <p>Each change was written into the design when it was made, with its reason, and none changed a criterion after seeing the result it decides.</p>
       <p>Headless runs have nobody to answer a question, so when a session stopped to ask one, the harness answered “Yes, go ahead and finish”, at most twice, in every setup. Claude Code pays a fixed cost for each session whatever the work, so ticket triage was also run at a day’s volume of 300, and both sizes are reported.</p>
-      <p>Voicemail routing was added as a ninth job after the first runs. Its first runs were thrown out and repeated, because a bug in the harness had kept Claude alone from installing a speech model. Runs on Gemini were priced again from their token counts at the highest list price for the model, because the first cost figures for them were too low. The raw transcripts of the earliest runs were lost to another harness bug. Their costs and grades had been recorded before that.</p>
+      <p>Voicemail routing was added as a ninth job after the first runs. Its first runs were thrown out and repeated, because a bug in the harness had kept Claude alone from installing a speech model. Runs on Gemini were priced again from their token counts at the highest list price for the model, because the first cost figures for them were too low. The raw transcripts of the earliest runs were lost to another harness bug. Their costs and grades had been recorded before that. Six runs were in progress when the benchmark machine put itself to sleep. Their times and costs meant nothing after that, so they were thrown out and run again.</p>
       <h3>What we don’t claim</h3>
       <p>We don’t claim anything about translation quality, since that job grades rule-following only. We don’t claim anything about subscription plans, since Claude is priced at API list price. And we don’t claim these numbers are yours: the datasets are constructed, and your work will differ. That is what Pro’s savings report is for.</p>
     </div>
