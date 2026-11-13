@@ -2,7 +2,7 @@
 
 The engine decides when another model is the better choice. For a task Claude describes, it scores every route that could do it (Claude in the session, a native Claude subagent, one OpenRouter call, a sandboxed OpenCode session, a local tool) by its expected cost per **accepted** result, removes the routes that do not fit, are not allowed, or cannot save anything, and returns a ranked list with a cost breakdown, a one-line reason and whether the user has to approve it. Claude makes the final call.
 
-It runs entirely on the user's machine. It reads the shipped catalog, registry and benchmark files, the user's config, rules and history, and the Claude usage reading the status line wrapper saves. The only network call is the optional, keyless refresh of OpenRouter's public model list.
+This document is the method: how routes are scored, without the data. The scoring runs on p0ssess's engine service, which holds the catalog, the model registry and the benchmark evidence. The plugin sends it the task (a use-case id or a short profile Claude writes, never the user's words or files), the stakes, λ, the user's forbid, allow, only and mix rules, the model and provider lists, the privacy mode, any scoring keys changed in `engine.toml` and outcome counts per use case and model, with no timestamps, projects or sessions. Everything that spends or limits spending stays on the user's machine: budgets, rules, standing approvals, the ledger, approval (section 8) and the guard in front of every paid call (Enforcement). When the service cannot be reached, the plugin answers from a signed route table (the engine's answers at default settings), without saying so; a repository with a `.p0ssess-private` file never calls the service.
 
 Status: built and tested. The weights it uses (harm, ceilings, the pressure curve, review costs) are presets, not measurements; the defaults and the reasons for them are below, and all of them can be changed.
 
@@ -15,8 +15,8 @@ bin/p0ssess engine recommend --use-case video-understand
 bin/p0ssess engine recommend --text "transcribe the call recording" --in audio --audio-seconds 1800
 bin/p0ssess engine recommend --use-case code-implement-feature --stakes 3
 bin/p0ssess engine status
-bin/p0ssess engine usecases          # the 104 catalog ids
-bin/p0ssess engine refresh           # live OpenRouter prices, cached for a day
+bin/p0ssess engine usecases          # the use case ids in the route table
+bin/p0ssess engine refresh           # fetch the signed route table now (otherwise once a day)
 bin/p0ssess me --open                # the local page
 ```
 
@@ -49,9 +49,9 @@ Claude passes a catalog id (`use_case`) when it knows one, and a **profile** for
 
 **Stakes** come from Claude (1 trivial to 4 critical, DESIGN.md's rubric). When Claude passes none, the catalog's first-listed level is used, with a note when the job spans a range. `limit-fallback-coding` inherits the stakes of the work it carries and assumes 2 until told.
 
-**Size** comes from the profile (`size` T/S/M/R/L, `in_tokens`/`out_tokens`, `bytes` at 4 per token, `turns`, `items`, `audio_seconds`, `video_seconds`, `images`, `pages`, `chars`, `gen_seconds`). Anything missing comes from [`internal/pme/catalog/engine_map.yaml`](../internal/pme/catalog/engine_map.yaml), which gives every use case a default size, its evidence family and its modalities. The size profiles are the catalog's: T 1k in / 50 out, S 5k / 1k, M 30k / 3k, R 30k / 6k, L 200k / 4k.
+**Size** comes from the profile (`size` T/S/M/R/L, `in_tokens`/`out_tokens`, `bytes` at 4 per token, `turns`, `items`, `audio_seconds`, `video_seconds`, `images`, `pages`, `chars`, `gen_seconds`). Anything missing comes from the engine's map of the catalog, which gives every use case a default size, its evidence family and its modalities. The size profiles are the catalog's: T 1k in / 50 out, S 5k / 1k, M 30k / 3k, R 30k / 6k, L 200k / 4k.
 
-Media read by a chat model is converted to tokens at 32 per second of audio, 1,500 per image and 2,000 per PDF page (RESEARCH.md's ranges). Video uses the model's own rate where p0ssess's video check measured one (`prompt_tokens_per_video_second` in `registry/benchmarks/p0ssess_evals.json`: 91 for both Gemini models, about 228 for the Qwen models, 287 for GLM-5.3-Flash) and 290 per second (Google's frame and audio rates) for every other model, including those whose count did not grow with length.
+Media read by a chat model is converted to tokens at 32 per second of audio, 1,500 per image and 2,000 per PDF page (RESEARCH.md's ranges). Video uses the model's own rate where p0ssess's video check measured one (91 for both Gemini models, about 228 for the Qwen models, 287 for GLM-5.3-Flash) and 290 per second (Google's frame and audio rates) for every other model, including those whose count did not grow with length.
 
 ### 2. The routes
 
@@ -139,7 +139,7 @@ Then `p_fail = f_best + (f_worst - f_best) × (1 - q)`, averaged over the family
 
 **No clean evidence.** A model with no record on an evidenced family sits three quarters of the way to f_worst with sigma 0.20: wide and pessimistic, so it passes at stakes 1, fails at stakes 2 on agent work, and never passes at stakes 3. Families with no clean benchmark at all (speech-to-text 0.10, speech synthesis 0.12, audio understanding 0.15, music 0.25, embeddings 0.05, reranking 0.05, safety classification 0.15) use that prior for the catalog's recommended model, 0.03 more for its alternatives and 0.10 more (sigma 0.20) for models the catalog does not name. RESEARCH.md is explicit that these families have no clean evidence; logged outcomes are the only way to improve them.
 
-**Measured by p0ssess.** Video understanding had no public benchmark either, and the catalog prior ranked models by price alone: GLM-5.3-Flash came first and MiMo-v2.6-flash third. A small check with known ground truth (three synthetic clips, two runs per model, [MEDIA.md](MEDIA.md#video-accuracy-check)) now stands in for a board: `registry/benchmarks/p0ssess_evals.json`, cited as "p0ssess measurement, 2026-11-09". f_best stays at the old prior (0.15), so the best measured model is unchanged, and f_worst is 0.60, the highest any family uses, so a model with no record still passes at stakes 1 and not at stakes 2, as elsewhere. The same check showed that a video's soundtrack is part of the job: models without audio input scored 0 of 8 on sound and two of them said every clip was silent, so `video-understand` now requires audio input, as its catalog entry already said. Since 0.5.2 it also drops a model that described a sound the clip does not have in more than 1 of 6 answers (`invented_sound_answers` in the same file). The accuracy score does not count an invented sound on its own, and once video was priced at measured token rates, Gemini 3.1 Flash Lite (5 of 6) ranked first on price at stakes 1 and 2. Gemini 3.8 Flash (1 of 6) and Qwen3.8 Omni Flash (0 of 6) stay.
+**Measured by p0ssess.** Video understanding had no public benchmark either, and the catalog prior ranked models by price alone: GLM-5.3-Flash came first and MiMo-v2.6-flash third. A small check with known ground truth (three synthetic clips, two runs per model, [MEDIA.md](MEDIA.md#video-accuracy-check)) now stands in for a board, cited as "p0ssess measurement, 2026-11-09". f_best stays at the old prior (0.15), so the best measured model is unchanged, and f_worst is 0.60, the highest any family uses, so a model with no record still passes at stakes 1 and not at stakes 2, as elsewhere. The same check showed that a video's soundtrack is part of the job: models without audio input scored 0 of 8 on sound and two of them said every clip was silent, so `video-understand` now requires audio input, as its catalog entry already said. Since 0.5.2 it also drops a model that described a sound the clip does not have in more than 1 of 6 answers (counted in the same check). The accuracy score does not count an invented sound on its own, and once video was priced at measured token rates, Gemini 3.1 Flash Lite (5 of 6) ranked first on price at stakes 1 and 2. Gemini 3.8 Flash (1 of 6) and Qwen3.8 Omni Flash (0 of 6) stay.
 
 **History.** Outcomes in the ledger update the prior as a beta-binomial: the prior counts as 8 pseudo-observations when it comes from benchmarks and 3 when it is a family prior. Accepted runs are successes and redone runs are failures; outcomes on other use cases in the same family count half. Sigma shrinks with the square root of the added weight. Declines and overrides do not change p_fail (they are preferences, not quality), but add a small friction term (the wasted hand-off times the smoothed decline rate) and a note when the user usually declines that route.
 
@@ -215,7 +215,9 @@ The daily soft limit defaults to pacing: `(monthly cap - spent before today) / d
 | `~/.local/state/p0ssess/history.jsonl` | the ledger |
 | `~/.local/state/p0ssess/relay/` | the relay's sessions, transcripts, jail records and run log ([RELAY.md](RELAY.md#history-and-files)) |
 | `~/.cache/p0ssess/usage.json` | Claude usage readings and recent sessions |
-| `~/.cache/p0ssess/openrouter-models.json` | the live model list (refreshed after a day) |
+| `~/.cache/p0ssess/route-table.json` | the signed route table last fetched (checked once a day), with its tag; the binary carries one too |
+| `~/.cache/p0ssess/engine-offline` | present while the last call to the engine service failed |
+| `~/.local/state/p0ssess/install-token` | a random token, made once, that the engine service rate-limits by; it identifies nothing |
 | `~/.cache/p0ssess/running/` | one file per running delegation, for the status line |
 | `~/.cache/p0ssess/bin/<version>/` | the binary the plugin's launcher built or fetched |
 | `~/.config/p0ssess/bin/p0ssess` | the copy the wrapped status line runs (`p0ssess setup statusline`) |
@@ -379,7 +381,7 @@ An outcome takes its cash from the run it names (`run_id`), or from the newest u
 2. The budget, rules and ledger must be readable and valid: otherwise refused (fail closed).
 3. Forbid rules (delegation, the model, OpenCode for the agent path), `only`/`mix`/project restrictions, and the model and provider allow and deny lists.
 4. Stakes: the caller's rating, else the use case's catalog stakes, else 3. Stakes 4 is refused for a non-Claude model unless an `allow` rule names it with `max_stakes = 4`, and even then it needs a yes for the run (step 8).
-5. Price: a model with no known price runs only with an explicit `max_cost_usd` above 0, which is reserved and counted in full. A zero price counts as free only for a `:free` variant or a text model the shipped snapshot lists at zero; a zero from the live list, an endpoint, or a media model billed by the image, second or character means unknown. `recommend` leaves such models out ("price unknown") rather than ranking them as cheap.
+5. Price: a model with no known price runs only with an explicit `max_cost_usd` above 0, which is reserved and counted in full. A zero price counts as free only for a `:free` variant or a text model the route table lists at zero; a zero from an endpoint or a media model billed by the image, second or character means unknown. `recommend` leaves such models out ("price unknown") rather than ranking them as cheap.
 6. Privacy: in `zdr` mode a model whose endpoints are known and include no zero-retention one is refused, and the call goes out with `provider.zdr = true` (the direct client sets it; the relay's key proxy adds it to every request).
 7. The ceiling: `max_cost_usd` when the caller set one; otherwise the direct call's own estimate (full output allowance at the highest endpoint price, also sent to OpenRouter as `max_price`), or for a relay run `max_run_cost_usd` from `config.json` ($0.50). A default ceiling is lowered to the room left under the monthly cap and the daily limit, when the estimate still fits; a caller's own is never lowered.
 8. The monthly cap and the daily soft limit, checked against the ceiling and counting open reservations. The daily limit is lifted only by a session-scope `daily_usd` override.
@@ -401,7 +403,7 @@ working, wide terminal      ᗣ p0ssess  2 running  $0.14 today  mimo-v2.6-flash
 near the budget (80%+)      ᗣ p0ssess  $8.10 of $10 this month      (amber ghost)
 ```
 
-It picks the longest form that fits the width (Claude Code's `COLUMNS`, else the setting) after your own line. Muted grey when idle, a little brighter while running, an amber mark near the budget; never red, never animated. `NO_COLOR` turns color off. A broken p0ssess setup still prints your line. Running jobs are files in `~/.cache/p0ssess/running/` (see `usage.StartJob` and `usage.FinishJob`); entries whose process is gone are cleared. The relay and the direct path create and remove these files, so the running count is real.
+It picks the longest form that fits the width (Claude Code's `COLUMNS`, else the setting) after your own line. Muted grey when idle, a little brighter while running, an amber mark near the budget, and a dimmer mark while the engine service cannot be reached; never red, never animated. `NO_COLOR` turns color off. A broken p0ssess setup still prints your line. Running jobs are files in `~/.cache/p0ssess/running/` (see `usage.StartJob` and `usage.FinishJob`); entries whose process is gone are cleared. The relay and the direct path create and remove these files, so the running count is real.
 
 `p0ssess setup statusline` installs the wrapper: it copies the binary to `~/.config/p0ssess/bin/p0ssess` (the plugin's own path changes with each update; the MCP server refreshes this copy after an update), saves your current status line command in `statusline.command`, and points Claude Code's `statusLine` at the copy.
 
@@ -419,7 +421,7 @@ A reading older than two hours, or none (before the first response in a session,
 |---|---|
 | `recommend` | the ranked list for a use case or profile; records the offer. By default one line per option (route, model, total, estimated cash, p_fail, why it would ask); `detail: true` returns the full breakdown. Each paid option's `estimate_usd` is what the approval check uses |
 | `budget_status` | spend against limits, plan, λ and pressure, running jobs, file locations |
-| `settings_set` | change one setting (`monthly_usd`, `per_task_usd`, `daily_usd`, `save_claude`, `plan`, `usage_credits`, `privacy.mode`, `privacy.allow_safety_retention`, `ask.first_use`, `ask.code_edits`, `models.allow`, `models.deny`, `providers.allow`, `providers.deny`, `sandbox.shell_internet`, `sandbox.shell_internet.add`, `sandbox.shell_internet.remove`, `lambda.preset`, `statusline.command`, `statusline.mark`, `statusline.width`) |
+| `settings_set` | change one setting (`monthly_usd`, `per_task_usd`, `daily_usd`, `save_claude`, `plan`, `usage_credits`, `privacy.mode`, `privacy.allow_safety_retention`, `ask.first_use`, `ask.code_edits`, `outcomes.send`, `models.allow`, `models.deny`, `providers.allow`, `providers.deny`, `sandbox.shell_internet`, `sandbox.shell_internet.add`, `sandbox.shell_internet.remove`, `lambda.preset`, `statusline.command`, `statusline.mark`, `statusline.width`) |
 | `rules_list`, `rules_add`, `rules_remove` | rules with scope; `dry_run` renders without saving |
 | `approvals_add`, `approvals_list` | standing approvals and their use |
 | `history_record_outcome` | redo, overridden or declined (or accepted, though a finished run counts as accepted on its own), with the `run_id` whose measured cost it takes |

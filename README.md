@@ -71,7 +71,7 @@ Ask for things the way you normally would:
 - [docs/RELAY.md](docs/RELAY.md): the sandboxed agent path
 - [docs/MEDIA.md](docs/MEDIA.md): video, audio, images and PDFs on the direct path, with measured costs
 - [docs/RELEASE.md](docs/RELEASE.md): how releases are built, checked and published
-- [docs/RESEARCH.md](docs/RESEARCH.md), [catalog/](catalog/) and [registry/](registry/): the research, the 104 use cases and the model data behind the engine, each value with its source and date
+- [docs/RESEARCH.md](docs/RESEARCH.md): the research behind the engine's use cases and model data
 
 ## The ghost
 

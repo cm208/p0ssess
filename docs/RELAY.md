@@ -126,7 +126,7 @@ An ask in read mode is rejected at once with feedback ("not allowed in this dele
 | `wait` | Keeps blocking on a session that returned `still_running`. |
 | `abort` | Interrupts a session. |
 | `answer_permission` | `once` or `reject` for a paused edit task, then blocks like `wait`. |
-| `models` | Models with context, price per million tokens and modalities, from `registry/models.json` (or `P0SSESS_REGISTRY`, or `registry_file` in the config) or, with `live: true`, from OpenRouter. |
+| `models` | Models with context, price per million tokens and modalities, from the route table's model facts (or `P0SSESS_REGISTRY`, or `registry_file` in the config) or, with `live: true`, from OpenRouter. |
 
 Results are JSON with `answer` first, then `status` (`done`, `failed`, `interrupted`, `needs_permission`, `still_running`, `tampered`), `session_id`, `model`, `mode`, `cost_usd`, `tokens`, `duration_s`, `transcript_path`, `shell_internet` when it was on, `jail_start_s` on a session's first run, and for edit mode `worktree`, `diff_stat`, `diff_path` and `diff`.
 
