@@ -139,3 +139,17 @@ func TestHandOffEndsTheTurnQuietly(t *testing.T) {
 		t.Errorf("other agents are left alone: %s", out)
 	}
 }
+
+func TestRunCarriesLapseNoticeOnce(t *testing.T) {
+	d, proj := dirs(t)
+	os.MkdirAll(d.State, 0o700)
+	os.WriteFile(filepath.Join(d.State, "account.json"), []byte(`{"plan":"free","status":"lapsed","ends_at":"2026-11-12T00:00:00Z","renew":"https://example.test/pro","lapse_pending":true}`), 0o600)
+	in := []byte(`{"cwd":"` + proj + `","prompt":"what does this do?"}`)
+	got := Run(in, d, time.Now())
+	if !strings.Contains(got, "Pro ended on Nov 12") || !strings.Contains(got, "https://example.test/pro") || strings.Contains(got, "\n") {
+		t.Errorf("first prompt: %q", got)
+	}
+	if got := Run(in, d, time.Now()); got != "" {
+		t.Errorf("second prompt: %q", got)
+	}
+}

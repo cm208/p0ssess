@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"p0ssess/internal/account"
 	"p0ssess/internal/config"
 	"p0ssess/internal/egress"
 	"p0ssess/internal/jail"
@@ -34,6 +35,7 @@ usage:
   p0ssess mcp                         the plugin's MCP server on stdio (relay, direct and engine tools)
   p0ssess me --brief                  a few lines: spend, limits, running jobs; starts the local page if none runs
   p0ssess me [--open]                 the local page: spend, Claude usage, rules, settings
+  p0ssess account pro|status|notify|signout   p0ssess Pro: upgrade, check the plan, get notified, sign out
   p0ssess engine COMMAND ...          the routing engine (recommend, status, set, rules, outcome, ...)
   p0ssess direct COMMAND ...          one-shot OpenRouter calls with local files, and ffmpeg helpers
   p0ssess setup COMMAND ...           show, allow, statusline, summaries, undo (changes Claude Code settings)
@@ -112,7 +114,10 @@ func main() {
 	switch cmd {
 	case "mcp":
 		refreshStableCopy()
+		go account.Watch(ctx, paths.Default())
 		err = server.Serve(ctx, os.Stdin, os.Stdout, version)
+	case "account":
+		err = accountCmd(ctx, args)
 	case "direct":
 		err = directCmd(ctx, args)
 	case "setup":

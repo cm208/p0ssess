@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"p0ssess/internal/account"
 	"p0ssess/internal/config"
 	"p0ssess/internal/history"
 	"p0ssess/internal/pme/paths"
@@ -142,5 +143,9 @@ func Run(raw []byte, d paths.Dirs, now time.Time) string {
 		})
 		markMainCalls(d, in.SessionID, in.Prompt)
 	}
-	return strings.TrimSpace(Hint(in, d, now))
+	out := strings.TrimSpace(Hint(in, d, now))
+	if n := account.Notice(d); n != "" {
+		out = strings.TrimSpace(out + " p0ssess: tell the user this once, in one line, as written: " + n)
+	}
+	return out
 }
