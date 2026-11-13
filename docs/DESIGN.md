@@ -10,7 +10,7 @@ Status: design agreed and researched ([RESEARCH.md](RESEARCH.md)); built as a Cl
 - **Every model is a candidate, Claude included.** No preference for Claude; it is chosen when the numbers say so.
 - **Quiet.** p0ssess augments Claude Code rather than adding steps. "Watch this video" goes: the user asked for video, p0ssess is set up, the job is under the cap, do it. No plan read aloud, no confirmation, one hand-off to the p0ssess agent; the answer comes back with "(model, cost)" and nothing else.
 - **Claude reviews what comes back.** Nothing a delegated model writes lands without the right level of review.
-- **Local and private by default.** No telemetry. Learning data stays on the user's machine.
+- **Private by default.** Prompts and files go only to the model doing the work. The engine service that ranks routes gets a task description Claude writes and plain counts, never content. Learning data stays on the user's machine; anonymous weekly outcome records are on by default and one setting turns them off (README, Privacy).
 - **Only clean data.** Benchmarks and usage data are used only where their license clearly allows it, and every number carries its source and date.
 
 ## How a request is routed
@@ -178,7 +178,7 @@ Used, with attribution and the date of each value:
 
 Not used: any source whose terms restrict republishing or commercial use, or whose license is unclear.
 
-Live data is refreshed on the user's machine (cached about a day). Planned, not built: a weekly job in this repository that rebuilds the registry with its own zero-credit key and opens a pull request for a human to merge; today `registry/scripts/` is run by hand.
+The engine service holds this data and refreshes it; the plugin keeps a signed table of the engine's default answers, fetched at most once a day.
 
 ## Research deliverables
 

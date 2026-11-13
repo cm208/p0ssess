@@ -13,7 +13,7 @@ The hand-off runs in a small background agent on Haiku, which makes the calls an
 
 ## What it does
 
-- **Routes by expected cost per accepted result.** A local engine scores every route that could do a task, Claude included: one OpenRouter call, a sandboxed agent session on another model, a smaller Claude subagent, or a local tool. It weighs the cash, the Claude usage it saves, how likely each model is to get it right (from public benchmarks and your own history), and how much a wrong answer would hurt.
+- **Routes by expected cost per accepted result.** The p0ssess engine scores every route that could do a task, Claude included: one OpenRouter call, a sandboxed agent session on another model, a smaller Claude subagent, or a local tool. It weighs the cash, the Claude usage it saves, how likely each model is to get it right (from public benchmarks and your own history), and how much a wrong answer would hurt. Your budget, rules and approvals are enforced on your machine, whatever the engine says.
 - **Rates stakes.** Claude rates each task from trivial to critical. Critical work (auth, infrastructure, production, money) stays with Claude unless you say otherwise.
 - **Reviews everything that matters.** Code edits come back as a diff from a separate git worktree and are never applied unreviewed. For important diffs Claude can offer an optional second opinion from two other model families, in addition to its own review.
 - **Asks only when it matters.** A job runs without a question when its estimate is under your per-task auto-approve limit. Claude asks, in one line with the cost, only when the estimate is above that limit, the monthly cap would be passed, a rule of yours says to ask, or the work is critical. Asking before a model's first run or before agent edits is a setting you can turn on.
@@ -57,11 +57,43 @@ Ask for things the way you normally would:
 
 ## Privacy
 
-- Every call tells OpenRouter not to route to providers that train on prompts. A zero-retention mode is one setting away.
+<!-- DRAFT for 1.0.0: states what the client sends; review before release. -->
+
+p0ssess talks to two services: OpenRouter, which runs the models you hand work to, and the p0ssess engine service, which ranks the routes for a task.
+
+What goes to OpenRouter:
+
+- The prompt and files for the job you hand off, and nothing else. Every call tells OpenRouter not to route to providers that train on prompts. A zero-retention mode is one setting away.
 - Files that look like secrets (`.env`, keys, credentials) are never sent. A `.p0ssess-private` file in a repository blocks all delegation from it.
+- When a noisy recording is transcribed, p0ssess first cleans it up on your machine with ffmpeg (a speech band-pass and loudness normalization) and sends the cleaned copy, which it deletes after the call.
+
+What goes to the engine service, with each request for a ranking:
+
+- The use case (for example `video-understand`) or a short task description that Claude writes, such as "transcribe a 3-minute radio recording". Never your prompt, your files, their names or their contents.
+- The input and output types and rough sizes (minutes of audio, number of pages), the stakes rating, and which Claude model leads the session.
+- One number that weighs Claude's cost, worked out on your machine from your plan. Your Claude usage readings stay on your machine.
+- The rules you set that limit which models may run ("never use grok", "only use gemini-3.8-flash for video"), your model and provider allow and deny lists, and the privacy mode. Rule notes, budgets, spending, standing approvals and ask-first rules are not sent.
+- Any scoring settings you changed in `engine.toml`.
+- How often you accepted, redid, declined or overrode each model, per use case, as plain counts. No dates, projects, sessions or task text.
+- A random install token, made on your machine the first time, used only to rate-limit requests. It is not tied to you or to the machine.
+
+Nothing is sent from a repository with a `.p0ssess-private` file. The prompt hook, which reads your prompts, never contacts the service.
+
+The service keeps none of it: it does not log requests, tokens or IP addresses. Once a day p0ssess also downloads a signed table of default routes, so it keeps working, quietly, when the service cannot be reached.
+
+Anonymous outcome records. Once a week p0ssess sends one batch of records about the past weeks' delegated runs. Each record is exactly this:
+
+```
+{"v":1, "kind":"image.generate", "model":"google/gemini-3.4-flash-image",
+ "route":"direct", "stakes":2, "outcome":"accepted", "cost":"<1c", "week":"2026-W46"}
+```
+
+That is the kind of task, the model, the route, the stakes, whether the result was used, the cost in a coarse bucket and the week. The service stores the records without the token and without your IP address, and uses them for success rates per model. The local page (`/p0ssess:p0ssess-me`) shows the pending batch line by line before it goes. To turn records off, tell Claude "turn off outcome records", or set `outcomes.send = false` in `~/.config/p0ssess/budget.toml`. Then no records are built or sent.
+
+On your machine:
+
 - The sandbox for the agent path has no access to your home directory, SSH keys or credentials and cannot reach your local network. Each delegated session gets its own sandbox, removed when the session ends. Your OpenRouter key stays in a separate proxy container the model cannot reach. The model's shell commands have no network unless you turn on internet for a project yourself, and even then only public addresses.
-- No telemetry. The history the engine learns from lives in local files and never stores prompt content.
-- Agent-path transcripts and diffs are written to `~/.local/state/p0ssess/relay/runs/` (mode 0600) and kept until you delete them.
+- The full history the engine learns from stays in local files and never stores prompt content. Agent-path transcripts and diffs are written to `~/.local/state/p0ssess/relay/runs/` (mode 0600) and kept until you delete them.
 - p0ssess never reads, stores or relays your Claude credentials.
 
 ## How it works

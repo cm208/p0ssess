@@ -131,6 +131,15 @@ func New(opt Options) (s *mcp.Server, closeFn func(), err error) {
 			Reconcile(refreshCtx, cfg, eng)
 		}
 	}()
+	go func() {
+		select {
+		case <-refreshCtx.Done():
+		case <-time.After(10 * time.Second):
+			ctx, cancel := context.WithTimeout(refreshCtx, 30*time.Second)
+			eng.SendOutcomes(ctx)
+			cancel()
+		}
+	}()
 	if agentCheck() == nil {
 		// Jails left by a p0ssess process that crashed or was killed.
 		go re.Sweep(refreshCtx)
@@ -285,6 +294,10 @@ func RunDirect(ctx context.Context, cfg config.Config, eng *local.Engine, req di
 			return nil, "", err
 		}
 		req.Model, alts = ms[0], ms[1:]
+	}
+	if eng.Table == nil {
+	} else if uc := eng.Table.Table().UseCase(job.UseCase); uc != nil && uc.Preprocess == direct.AudioPrepSpeech {
+		req.AudioPrep = direct.AudioPrepSpeech
 	}
 	res, runID, err := runAuthorized(ctx, cfg, eng, c, req, job, cwd)
 	if err != nil && !req.DryRun && picked && direct.ProviderFailed(err) && ctx.Err() == nil {

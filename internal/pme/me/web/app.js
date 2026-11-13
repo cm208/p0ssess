@@ -95,6 +95,21 @@
       el("span", { class: "when", text: ago(r.ts) }))));
   }
 
+  function renderRecords(o) {
+    const note = $("#records-note"), box = $("#records");
+    if (!o || !o.send) {
+      note.textContent = "Off. Nothing is built or sent.";
+      box.replaceChildren();
+      return;
+    }
+    const lines = list(o.pending);
+    note.textContent = lines.length
+      ? "Next weekly batch, exactly as it will be sent. No prompts, files, paths or exact costs."
+      : "Nothing pending. Each finished week's runs show here before they are sent.";
+    box.replaceChildren(...lines.slice(0, 50).map((l) => el("li", { text: l })));
+    if (lines.length > 50) box.append(el("li", { class: "empty", text: "and " + (lines.length - 50) + " more" }));
+  }
+
   function renderLimits(s) {
     const b = s.status.budget;
     const items = [
@@ -164,6 +179,7 @@
       "lambda.preset": s.lambda_preset, save_claude: b.save_claude, usage_credits: b.usage_credits,
       "privacy.mode": b.privacy.mode, "privacy.allow_safety_retention": b.privacy.allow_safety_retention,
       "ask.first_use": b.ask && b.ask.first_use, "ask.code_edits": b.ask && b.ask.code_edits,
+      "outcomes.send": s.outcomes && s.outcomes.send,
       "models.deny": list(b.models && b.models.deny).join(", "), "providers.deny": list(b.providers && b.providers.deny).join(", "),
       "statusline.command": (s.statusline && s.statusline.command) || "",
     };
@@ -222,6 +238,7 @@
       renderRuns(s.runs);
       renderLimits(s);
       renderRules(s.rules, s.learned);
+      renderRecords(s.outcomes);
       fillSettings(s);
       up.classList.remove("off");
       up.textContent = "updated " + new Date(s.now).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });

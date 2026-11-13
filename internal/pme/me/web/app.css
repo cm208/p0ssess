@@ -98,6 +98,10 @@ main { display: flex; flex-direction: column; gap: 28px; flex: 1; }
 .runs .when { font-size: 12px; color: var(--ink-2); text-align: right; white-space: nowrap; }
 .runs .tag { margin-left: 6px; }
 .empty { color: var(--ink-2); font-size: 14px; padding: 8px 0; }
+.note { color: var(--ink-2); font-size: 13px; margin: 6px 0 4px; }
+.records { list-style: none; padding: 0; margin: 0; max-height: 220px; overflow: auto; }
+.records li { font: 400 11.5px/1.5 var(--mono); color: var(--ink-2); overflow-wrap: anywhere; padding: 3px 0; border-bottom: 1px solid var(--line); }
+.records li:last-child { border-bottom: 0; }
 
 .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .pills li {

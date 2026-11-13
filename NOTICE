@@ -13,25 +13,6 @@ github.com/BurntSushi/toml v1.6.0
   (LICENSE.BurntSushi-toml next to release binaries)
   Copyright (c) 2013 TOML authors
 
-gopkg.in/yaml.v3 v3.0.1
-  License: Apache-2.0, with some files under MIT.
-  Full text: vendor/gopkg.in/yaml.v3/LICENSE (LICENSE.yaml.v3 next to release binaries)
-  Its NOTICE file reads:
-
-    Copyright 2011-2016 Canonical Ltd.
-
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-        http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
-
 -------------------------------------------------------------------------------
 OpenCode (https://github.com/anomalyco/opencode)
 -------------------------------------------------------------------------------
@@ -67,10 +48,10 @@ itself; p0ssess does not redistribute it. OpenCode's license:
 Data
 -------------------------------------------------------------------------------
 
-The model registry, benchmark files and use-case catalog carry data from
-OpenRouter, LMArena, Epoch AI and others under their own terms (mostly CC BY
-4.0). Sources, licenses, dates and required citations are in
-registry/ATTRIBUTION.md.
+The route table built into the binary (internal/pme/table/default.json) holds
+model facts from OpenRouter's public model listing (prices, modalities, context
+limits, endpoints) and the p0ssess engine service's answers for each use case.
+It carries no benchmark data.
 
 -------------------------------------------------------------------------------
 Fonts embedded in the p0ssess binary for the local page (internal/pme/me/web/fonts/)

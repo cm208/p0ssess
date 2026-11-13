@@ -107,7 +107,6 @@ mkdir -p "$out"
 licenses() {
   cp "$work/src/LICENSE" "$work/src/NOTICE" "$1/"
   cp "$work/src/vendor/github.com/BurntSushi/toml/COPYING" "$1/LICENSE.BurntSushi-toml"
-  cp "$work/src/vendor/gopkg.in/yaml.v3/LICENSE" "$1/LICENSE.yaml.v3"
 }
 
 # The plugin archive: HEAD's tree with the checked binaries in dist/, which the launcher runs without Go.

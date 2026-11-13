@@ -50,7 +50,25 @@ func meBrief(args []string) error {
 		}
 	}
 	fmt.Print(brief(st, eng, url, setupGaps()))
+	fmt.Print(outcomesNotice(eng))
 	return nil
+}
+
+// outcomesNotice says once, the first time the summary runs with outcome records on, that they are sent
+// and what one looks like (D13).
+func outcomesNotice(eng *local.Engine) string {
+	mark := filepath.Join(eng.Dirs.State, "outcomes-notice")
+	if !eng.OutcomesEnabled() {
+		return ""
+	}
+	if _, err := os.Stat(mark); err == nil {
+		return ""
+	}
+	if os.MkdirAll(eng.Dirs.State, 0o700) != nil || os.WriteFile(mark, nil, 0o600) != nil {
+		return ""
+	}
+	return "records  once a week p0ssess sends anonymous outcome records; the page shows each one first. To stop: \"turn off outcome records\"\n" +
+		`         one record: {"v":1,"kind":"image.generate","model":"google/gemini-3.4-flash-image","route":"direct","stakes":2,"outcome":"accepted","cost":"<1c","week":"2026-W46"}` + "\n"
 }
 
 // brief renders the summary: spend against the cap, what runs, the limits, and how to change them.

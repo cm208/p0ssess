@@ -17,6 +17,7 @@ import (
 	"io/fs"
 	"net"
 	"net/http"
+	"p0ssess/internal/outcomes"
 	"strconv"
 	"strings"
 	"time"
@@ -145,6 +146,12 @@ type window struct {
 	ResetsAt  int64   `json:"resets_at"`
 }
 
+// outcomesView is the pending batch of anonymous outcome records, one JSON line each.
+type outcomesView struct {
+	Send    bool     `json:"send"`
+	Pending []string `json:"pending"`
+}
+
 type state struct {
 	Status     *local.Status       `json:"status"`
 	Windows    []window            `json:"windows"`
@@ -155,6 +162,7 @@ type state struct {
 	Preset     string              `json:"lambda_preset"`
 	Presets    []string            `json:"presets"`
 	Statusline statusline.Settings `json:"statusline"`
+	Outcomes   outcomesView        `json:"outcomes"`
 	Token      string              `json:"token"`
 	Now        time.Time           `json:"now"`
 }
@@ -170,6 +178,10 @@ func (s *Server) state(w http.ResponseWriter, r *http.Request) {
 		Presets: []string{"list", "gentle", "balanced", "eager"}, Statusline: statusline.LoadSettings(s.E.Dirs.EngineFile()),
 		Token: s.Token, Now: s.E.Now()}
 	out.Rules, _ = s.E.RulesList(s.Scope, "")
+	out.Outcomes = outcomesView{Send: s.E.OutcomesEnabled(), Pending: outcomes.Lines(s.E.PendingOutcomes())}
+	if out.Outcomes.Pending == nil {
+		out.Outcomes.Pending = []string{}
+	}
 	out.Runs = s.E.Ledger().Runs(20)
 	if out.Runs == nil {
 		out.Runs = []history.Entry{}

@@ -10,7 +10,7 @@ A p0ssess release is a tagged commit plus files built from it: one static binary
 |---|---|
 | `p0ssess-linux-amd64`, `p0ssess-linux-arm64`, `p0ssess-darwin-arm64`, `p0ssess-windows-amd64.exe` | the static binaries |
 | `SHA256SUMS` | sums of the binaries and the archive |
-| `LICENSE`, `NOTICE`, `LICENSE.BurntSushi-toml`, `LICENSE.yaml.v3` | p0ssess's license and the notices of the vendored code the binaries carry |
+| `LICENSE`, `NOTICE`, `LICENSE.BurntSushi-toml` | p0ssess's license and the notices of the vendored code the binaries carry |
 | `p0ssess-<version>.tar.gz` | the plugin at the tagged commit, with the four binaries in `dist/` next to `dist/SHA256SUMS` and `dist/VERSION`. Unpacked, it is a plugin that needs no Go: `claude plugin marketplace add /path/to/p0ssess-<version>` |
 
 In the repository, `dist/SHA256SUMS` (the binaries only) and `dist/VERSION` (the version, then the Go version that built it) are committed for each release, so a clone carries the checksums its launcher checks against. `dist/release-url`, when present, holds the base URL the launcher downloads from: `<url>/v<version>/p0ssess-<os>-<arch>`. Gitea and GitHub both serve release files at `https://<host>/<owner>/<repo>/releases/download/<tag>/<file>`, so the base URL is `https://<host>/<owner>/p0ssess/releases/download`.
