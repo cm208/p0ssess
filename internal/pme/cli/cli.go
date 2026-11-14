@@ -31,7 +31,7 @@ const usage = `p0ssess engine: routing, limits and history
   status      spend, limits, Claude pressure and λ
   set K V     change a setting (budget.toml or engine.toml)
   rules       list | add '<json>' [--dry-run] | remove ID
-  outcome     record what happened to an offer
+  outcome     record what happened to a run or an offer (--run ID --model M --outcome declined)
   tendencies  learned patterns and rule suggestions
   usecases    list the use case ids
   refresh     fetch the signed route table now
@@ -362,6 +362,7 @@ func outcome(e *local.Engine, args []string, s IO) error {
 	fs := flags("outcome", s)
 	var o local.Outcome
 	fs.StringVar(&o.OfferID, "offer", "", "offer id from recommend")
+	fs.StringVar(&o.RunID, "run", "", "run id the outcome is about (a direct run id or a relay session)")
 	fs.StringVar(&o.Model, "model", "", "model that ran (or was offered)")
 	fs.StringVar(&o.Outcome, "outcome", "", "accepted, redo, overridden or declined")
 	fs.Float64Var(&o.CashUSD, "cash", 0, "OpenRouter dollars spent")

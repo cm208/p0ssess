@@ -226,7 +226,7 @@ func tools() []map[string]any {
 		{"name": "rules_remove", "description": "Remove a rule by id.", "inputSchema": obj(withScope(map[string]any{"id": str}), "id")},
 		{"name": "approvals_add", "description": "Add a standing approval: auto-approve a kind of task up to a per-run price, with optional count or total limits.", "inputSchema": obj(ruleProps(), "max_per_run_usd")},
 		{"name": "approvals_list", "description": "Standing approvals and how much of each is used.", "inputSchema": obj(withScope(map[string]any{}))},
-		{"name": "history_record_outcome", "description": "Record a delegated result you did not use: redo, overridden or declined (a finished run you used counts as accepted on its own). Pass run_id. No prompt content.",
+		{"name": "history_record_outcome", "description": "Record a delegated result you did not use: redo, overridden or declined (a finished run you used counts as accepted on its own). Pass run_id: the outcome then replaces that run's implied acceptance. A run started with await_outcome counts only once an outcome (accepted included) names it. No prompt content.",
 			"inputSchema": obj(withScope(map[string]any{
 				"offer_id": str, "model": str,
 				"run_id":   map[string]any{"type": "string", "description": "The run the outcome is about: a relay session_id or a direct run id. Its measured cost becomes the outcome's cash"},

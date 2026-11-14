@@ -76,17 +76,19 @@ func TestSendOutcomes(t *testing.T) {
 	}
 }
 
-func TestRefusedBatchIsDropped(t *testing.T) {
+func TestRefusedBatchIsKept(t *testing.T) {
 	e, _ := setup(t, "")
 	calls, _ := outcomeServer(t, http.StatusBadRequest)
 	lastWeekRun(t, e)
-	if _, err := e.SendOutcomes(context.Background()); err != nil {
-		t.Fatalf("a refused batch is not an error: %v", err)
+	if _, err := e.SendOutcomes(context.Background()); err == nil || !strings.Contains(err.Error(), "400 no") {
+		t.Fatalf("a refused batch is an error with the server's message: %v", err)
 	}
-	e.Now = func() time.Time { return time.Now().AddDate(0, 0, 7) }
+	if p := e.PendingOutcomes(); len(p) != 1 {
+		t.Errorf("a refused batch is kept: %+v", p)
+	}
 	e.SendOutcomes(context.Background())
-	if c := atomic.LoadInt32(calls); c != 1 {
-		t.Errorf("a refused batch is never resent: %d posts", c)
+	if c := atomic.LoadInt32(calls); c != 2 {
+		t.Errorf("a refused batch is tried again at the next send: %d posts", c)
 	}
 }
 

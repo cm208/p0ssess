@@ -363,7 +363,7 @@ Every rule is validated when it is read; an invalid one is ignored and reported.
 `history.jsonl` holds these kinds of line, and never prompt content:
 
 - **offer**: written by `recommend` from the MCP server (or `--record`): offer id, use case, kind, family, stakes, project, session, the top options with total, cash, p_fail and approval status, λ and the preset.
-- **outcome**: written by `history_record_outcome` when Claude did not use a result (a finished run nobody reports on counts as `accepted`; the ledger infers that outcome on reading and never writes it): the model, `accepted` (the result was used), `redo` (Claude had to redo it), `overridden` (another route ran instead; `chosen` says which) or `declined` (the user said no), the cash spent, and a reason of at most 160 characters. With an offer id, use case, stakes and the standing approval are filled in from the offer.
+- **outcome**: written by `history_record_outcome` when Claude did not use a result (a finished run nobody reports on counts as `accepted`; the ledger infers that outcome on reading and never writes it): the model, `accepted` (the result was used), `redo` (Claude had to redo it), `overridden` (another route ran instead; `chosen` says which) or `declined` (the user said no), the cash spent, and a reason of at most 160 characters. With an offer id, use case, stakes and the standing approval are filled in from the offer. An outcome of any kind that names a `run_id` takes that run's measured cost and replaces the acceptance the run would imply, so a run is counted once. Since 1.0.1 a `declined` or `overridden` outcome with an offer id and no run id names the offer's own run of that model, when one exists; outcomes 1.0.0 wrote that way are matched the same way on reading. A run started with `await_outcome` implies nothing until an outcome names it.
 
 From it the engine reads spend (today, this month), first uses, standing-approval use, per-model outcomes for p_fail, and **tendencies** once a model and kind have three or more outcomes: "accepts gemini-3.8-flash for media 9/9", "declines deepseek-v4.1-flash for agent work 4/5", "redoes glm-5.3-flash's code 2/3". **Suggestions** are rules it proposes and never saves: a standing approval after five approved runs of a use case above the per-task limit (at the 90th percentile cost plus 25%), and a forbid rule after repeated declines.
 
@@ -426,11 +426,11 @@ A reading older than two hours, or none (before the first response in a session,
 | `settings_set` | change one setting (`monthly_usd`, `per_task_usd`, `daily_usd`, `save_claude`, `plan`, `usage_credits`, `privacy.mode`, `privacy.allow_safety_retention`, `ask.first_use`, `ask.code_edits`, `outcomes.send`, `models.allow`, `models.deny`, `providers.allow`, `providers.deny`, `sandbox.shell_internet`, `sandbox.shell_internet.add`, `sandbox.shell_internet.remove`, `lambda.preset`, `statusline.command`, `statusline.mark`, `statusline.width`) |
 | `rules_list`, `rules_add`, `rules_remove` | rules with scope; `dry_run` renders without saving |
 | `approvals_add`, `approvals_list` | standing approvals and their use |
-| `history_record_outcome` | redo, overridden or declined (or accepted, though a finished run counts as accepted on its own), with the `run_id` whose measured cost it takes |
+| `history_record_outcome` | redo, overridden or declined (or accepted, though a finished run counts as accepted on its own; a run started with `await_outcome` needs one), with the `run_id` whose measured cost it takes and whose implied acceptance it replaces |
 | `tendencies` | learned patterns, suggestions and recent delegations |
 | `shortcuts_suggest`, `shortcuts_create`, `shortcuts_remove` | named shortcut agents (below) |
 
-The `direct` and `run` tools enforce every limit before they spend (see Enforcement); both take optional `stakes` and `use_case`.
+The `direct` and `run` tools enforce every limit before they spend (see Enforcement); both take optional `stakes` and `use_case`. `direct` also takes `await_outcome` ([MEDIA.md](MEDIA.md#calling-it)).
 
 ### Shortcut agents
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"reflect"
 	"sort"
@@ -75,6 +76,12 @@ func TestWeek(t *testing.T) {
 func run(id, uc, model, route string, stakes int, ts string, cash float64) history.Entry {
 	return history.Entry{TS: at(ts), Type: history.TypeRun, RunID: id, UseCase: uc, Model: model, Route: route,
 		Stakes: stakes, CashUSD: cash, Status: "done", Session: "sess-secret", Project: "/home/u/secret-project"}
+}
+
+func held(id, ts string) history.Entry {
+	e := run(id, "image-generate", "google/gemini-3.4-flash-image", "direct", 2, ts, 0)
+	e.AwaitOutcome = true
+	return e
 }
 
 func TestBuild(t *testing.T) {
@@ -166,6 +173,64 @@ func TestBuild(t *testing.T) {
 			run("r1", "image-generate", m, "direct", 2, "2026-10-28", 0), // W44
 			run("r2", "image-generate", m, "direct", 2, "2026-11-04", 0), // W45
 		}, "2026-10-28", []Record{{1, "image.generate", m, "direct", 2, "accepted", "0", "2026-W45"}}},
+		{"an outcome naming one turn covers only that turn", []history.Entry{
+			run("s8/1", "code-implement-feature", "x-ai/grok-5", "agent", 2, "2026-11-04", 0),
+			run("s8/2", "code-implement-feature", "x-ai/grok-5", "agent", 2, "2026-11-04", 0),
+			{TS: at("2026-11-05"), Type: history.TypeOutcome, RunID: "s8/1", Model: "x-ai/grok-5", Outcome: history.Redo},
+		}, "", []Record{
+			{1, "code.implement-feature", "x-ai/grok-5", "agent", 2, "redo", "0", "2026-W45"},
+			{1, "code.implement-feature", "x-ai/grok-5", "agent", 2, "accepted", "0", "2026-W45"},
+		}},
+		{"declined naming its run replaces the implied accept", []history.Entry{offer,
+			func() history.Entry {
+				e := run("r1", "", "deepseek/deepseek-v4", "agent", 0, "2026-11-04", 0)
+				e.OfferID = "o-1"
+				return e
+			}(),
+			{TS: at("2026-11-05"), Type: history.TypeOutcome, OfferID: "o-1", RunID: "r1", Model: "deepseek/deepseek-v4", Outcome: history.Declined},
+		}, "", []Record{{1, "code.review", "deepseek/deepseek-v4", "agent", 3, "declined", "0", "2026-W45"}}},
+		{"1.0.0 declined without a run id binds to its offer's run", []history.Entry{offer,
+			func() history.Entry {
+				e := run("r1", "", "deepseek/deepseek-v4", "agent", 0, "2026-11-04", 0)
+				e.OfferID = "o-1"
+				return e
+			}(),
+			{TS: at("2026-11-05"), Type: history.TypeOutcome, OfferID: "o-1", Model: "deepseek/deepseek-v4", Outcome: history.Overridden, Chosen: "claude"},
+		}, "", []Record{{1, "code.review", "deepseek/deepseek-v4", "agent", 3, "overridden", "0", "2026-W45"}}},
+		{"1.0.0 declined does not bind a run of another model", []history.Entry{offer,
+			func() history.Entry {
+				e := run("r1", "", "x-ai/grok-5", "agent", 0, "2026-11-04", 0)
+				e.OfferID = "o-1"
+				return e
+			}(),
+			{TS: at("2026-11-05"), Type: history.TypeOutcome, OfferID: "o-1", Model: "deepseek/deepseek-v4", Outcome: history.Declined},
+		}, "", []Record{
+			{1, "code.review", "x-ai/grok-5", "agent", 3, "accepted", "0", "2026-W45"},
+			{1, "code.review", "deepseek/deepseek-v4", "agent", 3, "declined", "0", "2026-W45"},
+		}},
+		{"stakes from the reservation", []history.Entry{
+			{TS: at("2026-11-04"), Type: history.TypeReserve, RunID: "res-1", UseCase: "image-generate", Stakes: 1},
+			func() history.Entry {
+				e := run("r1", "image-generate", m, "direct", 0, "2026-11-04", 0)
+				e.Reserve = "res-1"
+				return e
+			}(),
+		}, "", []Record{{1, "image.generate", m, "direct", 1, "accepted", "0", "2026-W45"}}},
+		{"held run without an outcome is left out", []history.Entry{held("h1", "2026-11-04")}, "", nil},
+		{"held run goes out once rated, after the mark", []history.Entry{held("h1", "2026-11-04"),
+			{TS: at("2026-11-10"), Type: history.TypeOutcome, RunID: "h1", Model: m, Outcome: history.Declined},
+		}, "2026-11-06", []Record{{1, "image.generate", m, "direct", 2, "declined", "0", "2026-W45"}}},
+		{"held run rated before the mark was sent then", []history.Entry{held("h1", "2026-11-04"),
+			{TS: at("2026-11-05"), Type: history.TypeOutcome, RunID: "h1", Model: m, Outcome: history.Declined},
+			{TS: at("2026-11-10"), Type: history.TypeOutcome, RunID: "h1", Model: m, Outcome: history.Accepted},
+		}, "2026-11-06", nil},
+		{"held run rated too late is dropped", []history.Entry{held("h1", "2026-10-01"),
+			{TS: at("2026-11-10"), Type: history.TypeOutcome, RunID: "h1", Model: m, Outcome: history.Accepted},
+		}, "", nil},
+		{"kinds the server refuses are not built", []history.Entry{
+			run("k1", "image_generate", m, "direct", 2, "2026-11-04", 0),
+			run("k2", "image-generate.x.y", m, "direct", 2, "2026-11-04", 0),
+		}, "", nil},
 		{"ordered by week", []history.Entry{
 			run("r2", "image-generate", m, "direct", 2, "2026-11-04", 0),
 			run("r1", "image-generate", m, "direct", 2, "2026-10-28", 0),
@@ -339,20 +404,76 @@ func TestSend(t *testing.T) {
 		}
 	})
 
-	for _, status := range []int{400, 413} {
-		t.Run("refused batch is dropped", func(t *testing.T) {
+	for _, status := range []int{400, 413, 401} {
+		t.Run(fmt.Sprintf("a refused batch is kept: %d", status), func(t *testing.T) {
 			d := home(t)
 			runs(d)
-			f := &fake{status: status}
+			f := &fake{status: status, err: errors.New("The batch v must be 1.")}
 			n, err := Send(ctx, d, true, f.post, now)
-			if n != 0 || err != nil {
-				t.Fatalf("n=%d err=%v", n, err)
+			if n != 0 || err == nil || f.calls != 1 {
+				t.Fatalf("n=%d err=%v calls=%d", n, err, f.calls)
 			}
-			if p, _ := Pending(d, now); len(p) != 0 {
+			if p, _ := Pending(d, now); len(p) != 2 {
 				t.Errorf("pending = %v", p)
+			}
+			st := readState4(t, d)
+			if !st.SentThrough.IsZero() || st.Refused == nil || st.Refused.Status != status || st.Refused.Records != 2 {
+				t.Errorf("state = %+v", st)
+			}
+			f.status, f.err = 202, nil
+			if n, err := Send(ctx, d, true, f.post, now); n != 2 || err != nil {
+				t.Fatalf("retry: n=%d err=%v", n, err)
+			}
+			if st := readState4(t, d); st.Refused != nil {
+				t.Errorf("refusal kept after a send: %+v", st.Refused)
 			}
 		})
 	}
+
+	t.Run("a record the server names is set aside and the rest go out", func(t *testing.T) {
+		d := home(t)
+		runs(d)
+		var bodies [][]byte
+		post := func(_ context.Context, body []byte) (int, error) {
+			bodies = append(bodies, body)
+			if len(bodies) == 1 {
+				return 400, errors.New("record 1: kind is not a catalog use-case id.")
+			}
+			return 202, nil
+		}
+		n, err := Send(ctx, d, true, post, now)
+		if n != 1 || err != nil || len(bodies) != 2 {
+			t.Fatalf("n=%d err=%v posts=%d", n, err, len(bodies))
+		}
+		var b struct{ Records []Record }
+		json.Unmarshal(bodies[1], &b)
+		if len(b.Records) != 1 || b.Records[0].Cost != "<1c" {
+			t.Errorf("resent = %+v", b.Records)
+		}
+		raw, err := os.ReadFile(refusedFile(d))
+		if err != nil || strings.Count(string(raw), "\n") != 1 || !strings.Contains(string(raw), `"cost":"25c-1"`) ||
+			strings.Contains(string(raw), "run-secret") {
+			t.Errorf("set aside = %s (%v)", raw, err)
+		}
+		if p, _ := Pending(d, now); len(p) != 0 {
+			t.Errorf("pending = %v", p)
+		}
+	})
+
+	t.Run("an oversized batch drops its oldest records", func(t *testing.T) {
+		var recs []Record
+		for i := 0; i < MaxRecords; i++ {
+			recs = append(recs, Record{1, "code.implement-feature", "deepseek/deepseek-v4-pro-max-thinking", "claude-subagent", 2,
+				"overridden", "25c-1", "2026-W45"})
+		}
+		recs[0].Week = "2026-W40"
+		full, _ := batch(recs)
+		got := fit(recs)
+		b, _ := batch(got)
+		if len(full) <= MaxBody || len(b) > MaxBody || len(b) < MaxBody*99/100 || got[0].Week != "2026-W45" {
+			t.Errorf("full %d bytes, fitted %d bytes, %d records", len(full), len(b), len(got))
+		}
+	})
 
 	for _, c := range []struct {
 		name   string

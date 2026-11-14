@@ -15,7 +15,11 @@ p0ssess direct run --model openai/whisper-large-v3-turbo --output transcript --t
 p0ssess direct run --model recraft/recraft-v4.1-flash --output image --prompt "a ghost icon" --max-cost 0.02
 ```
 
-The key is read from `$P0SSESS_OPENROUTER_KEY_FILE` or `~/.config/p0ssess/secrets/openrouter_key` and is never printed. The answer comes first, inside `<answer>`, then output files, then one line with model, provider, actual cost and the estimate, then `run: d-…`, the id of the measured run in the engine's ledger (see [ENGINE.md](ENGINE.md#the-ledger)).
+The key is read from `$P0SSESS_OPENROUTER_KEY_FILE` or `~/.config/p0ssess/secrets/openrouter_key` and is never printed. The answer comes first, inside `<answer>`, then output files, then one line with model, provider, actual cost and the estimate, then `run: d-…`, the id of the measured run in the engine's ledger (see [ENGINE.md](ENGINE.md#the-ledger)). With `--json` the id is the result's `run_id` field.
+
+A prompt longer than a command line comfortably holds goes through the MCP `direct` tool, which takes `prompt` (and `system`) in its JSON arguments; `p0ssess direct tool < args.json` does the same from a shell.
+
+A caller that rates its own results passes `await_outcome: true` to the MCP `direct` tool (`--await-outcome` on `direct run`). The run is then not counted as accepted, locally or in the outcome records, until an outcome names it: `history_record_outcome` with its `run_id` and `accepted`, `redo`, `declined` or `overridden` (`p0ssess engine outcome --run d-… --model M --outcome declined` from a shell). A held run nobody rates within 30 days is never sent.
 
 | Output | Route | Notes |
 |---|---|---|

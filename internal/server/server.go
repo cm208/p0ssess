@@ -301,6 +301,8 @@ type DirectJob struct {
 	Route string
 	// Confirmed passes the user's yes for a whole job to the guard (local.Charge.Confirmed).
 	Confirmed bool
+	// AwaitOutcome holds the run out of the outcome records until history_record_outcome names it.
+	AwaitOutcome bool
 }
 
 // RunDirect runs one direct-path job under every limit. With no model it picks one for the use case
@@ -535,7 +537,8 @@ func runAuthorized(ctx context.Context, cfg config.Config, eng *local.Engine, c 
 		route = "direct"
 	}
 	run := local.Run{ID: runID, Route: route, Model: req.Model, CashUSD: res.Usage.CostUSD,
-		UpstreamUSD: res.Usage.UpstreamUSD, Status: status, OfferID: job.OfferID, UseCase: job.UseCase, Cwd: cwd}
+		UpstreamUSD: res.Usage.UpstreamUSD, Status: status, OfferID: job.OfferID, UseCase: job.UseCase, Cwd: cwd,
+		AwaitOutcome: job.AwaitOutcome}
 	run.CostBasis = res.Usage.CostBasis
 	switch {
 	case res.Measured():
@@ -719,15 +722,18 @@ func (d *directTool) schema() json.RawMessage {
 	props["use_case"] = map[string]any{"type": "string", "description": "catalog use case id, e.g. video-understand, audio-transcribe, audio-tone, image-generate; inferred from the files when left out"}
 	props["stakes"] = map[string]any{"type": "integer", "minimum": 1, "maximum": 4,
 		"description": "your stakes rating, 1-4; without it the use case's catalog stakes apply, or 3"}
+	props["await_outcome"] = map[string]any{"type": "boolean",
+		"description": "true when you will rate the result: the run is not counted as accepted until history_record_outcome names its run id"}
 	b, _ := json.Marshal(m)
 	return b
 }
 
 func (d *directTool) call(ctx context.Context, raw json.RawMessage, _ mcp.Progress) mcp.CallResult {
 	var extra struct {
-		OfferID string `json:"offer_id"`
-		UseCase string `json:"use_case"`
-		Stakes  int    `json:"stakes"`
+		OfferID      string `json:"offer_id"`
+		UseCase      string `json:"use_case"`
+		Stakes       int    `json:"stakes"`
+		AwaitOutcome bool   `json:"await_outcome"`
 	}
 	if err := json.Unmarshal(raw, &extra); err != nil {
 		return mcp.Error("bad arguments: " + err.Error())
@@ -739,12 +745,14 @@ func (d *directTool) call(ctx context.Context, raw json.RawMessage, _ mcp.Progre
 	delete(all, "offer_id")
 	delete(all, "use_case")
 	delete(all, "stakes")
+	delete(all, "await_outcome")
 	clean, _ := json.Marshal(all)
 	req, err := direct.ParseArgs(clean)
 	if err != nil {
 		return mcp.Error(err.Error())
 	}
-	res, runID, err := RunDirect(ctx, d.cfg, d.eng, req, DirectJob{OfferID: extra.OfferID, UseCase: extra.UseCase, Stakes: extra.Stakes})
+	res, runID, err := RunDirect(ctx, d.cfg, d.eng, req, DirectJob{OfferID: extra.OfferID, UseCase: extra.UseCase, Stakes: extra.Stakes,
+		AwaitOutcome: extra.AwaitOutcome})
 	if errors.As(err, new(*direct.PartialError)) && res != nil && strings.TrimSpace(res.Text) != "" {
 		// The parts answered before the failure are the result; the note says what is missing.
 		err = nil

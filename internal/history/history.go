@@ -95,6 +95,9 @@ type Entry struct {
 	CostBasis string `json:"cost_basis,omitempty"`
 	// Generations are OpenRouter generation ids, kept so an estimated cost can be looked up later.
 	Generations []string `json:"generations,omitempty"`
+	// AwaitOutcome marks a run whose caller will rate it: no acceptance is implied for it, and the
+	// outcome records leave it out until an outcome names it.
+	AwaitOutcome bool `json:"await_outcome,omitempty"`
 	// Expires ends a reservation's hold.
 	Expires *time.Time `json:"expires,omitempty"`
 	// Implied marks an outcome the ledger infers (a finished run nobody reported on); it is never written.
@@ -249,7 +252,61 @@ func NewLedger(es []Entry) *Ledger {
 			}
 		}
 	}
+	l.bindOutcomes()
 	return l
+}
+
+// bindOutcomes gives a declined or overridden outcome written without a run id (1.0.0 dropped it) the
+// run of its offer and model, when one ran before it and no other outcome names that run, so the run
+// is not also counted as accepted. It fills Entries in place.
+func (l *Ledger) bindOutcomes() {
+	var claimed map[string]bool
+	for i, e := range l.Entries {
+		if e.Type != TypeOutcome || e.RunID != "" || e.OfferID == "" || (e.Outcome != Declined && e.Outcome != Overridden) {
+			continue
+		}
+		if claimed == nil {
+			claimed = l.claimedRuns()
+		}
+		if r, ok := l.offerRun(e.OfferID, e.Model, e.TS, claimed); ok {
+			l.Entries[i].RunID = r.RunID
+			claimed[r.RunID] = true
+		}
+	}
+}
+
+// claimedRuns are the run ids (or bare relay sessions) that outcomes name.
+func (l *Ledger) claimedRuns() map[string]bool {
+	claimed := map[string]bool{}
+	for _, e := range l.Entries {
+		if e.Type == TypeOutcome && e.RunID != "" {
+			claimed[e.RunID] = true
+		}
+	}
+	return claimed
+}
+
+// offerRun is the newest run of an offer and model, no later than before, that no outcome names.
+func (l *Ledger) offerRun(offerID, model string, before time.Time, claimed map[string]bool) (Entry, bool) {
+	for i := len(l.Entries) - 1; i >= 0; i-- {
+		e := l.Entries[i]
+		session, _, _ := strings.Cut(e.RunID, "/")
+		if e.Type == TypeRun && e.RunID != "" && e.OfferID == offerID && Short(e.Model) == Short(model) &&
+			!e.TS.After(before) && !claimed[e.RunID] && !claimed[session] {
+			e.CashUSD = l.Cost(e)
+			return e, true
+		}
+	}
+	return Entry{}, false
+}
+
+// OfferRun finds the run a declined or overridden outcome is about when Claude named only the offer:
+// the newest run of that offer and model that no outcome names yet.
+func (l *Ledger) OfferRun(offerID, model string, now time.Time) (Entry, bool) {
+	if offerID == "" || model == "" {
+		return Entry{}, false
+	}
+	return l.offerRun(offerID, model, now, l.claimedRuns())
 }
 
 // Cost is a run's cost: the measured figure found later for an estimated run, else its own.
@@ -281,7 +338,8 @@ func (l *Ledger) Offer(id string) *Entry { return l.offers[id] }
 
 // outcomes are the recorded outcomes plus an implied "accepted" for every finished direct or agent run
 // that no outcome names: Claude reports only what it did not use (redo, declined, overridden). An
-// outcome naming a relay session covers all of its turns.
+// outcome naming a relay session covers all of its turns. A run held for its outcome (AwaitOutcome)
+// implies nothing.
 func (l *Ledger) outcomes() []Entry { return l.outcomesWith(false) }
 
 // RouteCalibrate marks the ledger entries that calibration writes: its spend, and one outcome per graded
@@ -307,7 +365,7 @@ func (l *Ledger) outcomesWith(calibration bool) []Entry {
 		}
 	}
 	for _, e := range l.Entries {
-		if e.Type != TypeRun || e.Status != "done" || e.RunID == "" || (e.Route != "direct" && e.Route != "agent") {
+		if e.Type != TypeRun || e.Status != "done" || e.RunID == "" || (e.Route != "direct" && e.Route != "agent") || e.AwaitOutcome {
 			continue
 		}
 		session, _, _ := strings.Cut(e.RunID, "/")

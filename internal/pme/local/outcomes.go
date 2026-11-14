@@ -2,9 +2,11 @@ package local
 
 import (
 	"context"
+	"errors"
 
 	"p0ssess/internal/history"
 	"p0ssess/internal/outcomes"
+	"p0ssess/internal/pme/remote"
 )
 
 // PendingOutcomes is the anonymous outcome records the next send (at the end of a session) would carry, or nil
@@ -21,11 +23,12 @@ func (e *Engine) PendingOutcomes() []outcomes.Record {
 func (e *Engine) SendOutcomes(ctx context.Context) (int, error) {
 	post := func(ctx context.Context, body []byte) (int, error) {
 		status, _, err := e.Remote.PostOutcomes(ctx, body)
-		if status != 0 {
-			// The sender decides from the status; an error here only means "not 2xx".
-			return status, nil
+		var re *remote.Error
+		if errors.As(err, &re) && re.Message != "" {
+			// The sender decides from the status; a refusal's message may name the record it refused.
+			return status, errors.New(re.Message)
 		}
-		return 0, err
+		return status, err
 	}
 	return outcomes.Send(ctx, e.Dirs, e.OutcomesEnabled(), post, e.Now())
 }

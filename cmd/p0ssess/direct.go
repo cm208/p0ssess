@@ -35,6 +35,11 @@ run/estimate options:
   --reasoning none|low|medium|high      --pdf-engine native|cloudflare-ai|mistral-ocr
   --video-prep downscale|keyframes|segment   --video-processing agentic|static
   --timestamps   --language CODE   --aspect R   --resolution R   --out DIR   --json
+  --await-outcome   keep the run out of the outcome records until an outcome names it
+                    (p0ssess engine outcome --run ID ...)
+      The run id is printed last ("run: d-..."), or as run_id with --json.
+      Large prompts: pass them through the MCP direct tool, which takes the prompt in its
+      arguments, rather than through --prompt on a command line.
 `
 
 type files []string
@@ -83,6 +88,7 @@ func directRun(ctx context.Context, mode string, args []string) error {
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	useCase := fs.String("use-case", "", "catalog use case id")
 	stakes := fs.Int("stakes", 0, "stakes 1-4")
+	await := fs.Bool("await-outcome", false, "hold the run out of the outcome records until it is rated")
 	fs.Parse(args)
 	req := direct.Request{
 		Model: *model, Prompt: *prompt, System: *system, Files: fl, Output: direct.Output(*output),
@@ -104,10 +110,13 @@ func directRun(ctx context.Context, mode string, args []string) error {
 	if err != nil {
 		return err
 	}
-	res, runID, err := server.RunDirect(ctx, cfg, eng, req, server.DirectJob{UseCase: *useCase, Stakes: *stakes})
+	res, runID, err := server.RunDirect(ctx, cfg, eng, req, server.DirectJob{UseCase: *useCase, Stakes: *stakes, AwaitOutcome: *await})
 	if res != nil {
 		if *asJSON {
-			b, _ := json.MarshalIndent(res, "", "  ")
+			b, _ := json.MarshalIndent(struct {
+				*direct.Result
+				RunID string `json:"run_id,omitempty"`
+			}{res, runID}, "", "  ")
 			fmt.Println(string(b))
 		} else {
 			fmt.Print(direct.Format(res))

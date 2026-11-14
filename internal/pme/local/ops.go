@@ -242,28 +242,33 @@ func (e *Engine) RecordOutcome(o Outcome) (history.Entry, error) {
 	if o.CashUSD < 0 {
 		return en, errors.New("cash_usd must be 0 or more")
 	}
-	// The cash on an outcome is the measured run's. Without a run to point
-	// at, reported cash becomes a run of its own so it is counted once.
-	if en.Outcome == history.Accepted || en.Outcome == history.Redo {
-		l := e.Ledger()
-		if o.RunID != "" {
-			cost, ok := l.RunCost(o.RunID)
-			if !ok {
-				return en, fmt.Errorf("unknown run %q", o.RunID)
-			}
-			en.RunID, en.CashUSD = o.RunID, cost
-		} else if r, ok := l.MatchRun(o.OfferID, o.Model, e.Now().Add(-RunMatchWindow)); ok {
-			en.RunID, en.CashUSD = r.RunID, r.CashUSD
-		} else if o.CashUSD > 0 {
-			en.RunID = "r-" + history.NewOfferID()[2:]
-			run := history.Entry{TS: en.TS, Type: history.TypeRun, RunID: en.RunID, Route: "reported", Model: o.Model,
-				CashUSD: o.CashUSD, OfferID: o.OfferID, UseCase: en.UseCase, Session: en.Session, Project: en.Project,
-				ApprovalID: en.ApprovalID}
-			if err := history.Append(e.Dirs.HistoryFile(), run); err != nil {
-				return en, err
-			}
-			e.reportSpend(optionRoute(l.Offer(o.OfferID), o.Model), o.Model, en.UseCase, o.CashUSD, o.Cwd, "")
+	// The cash on an outcome is the measured run's, and an outcome naming a run replaces the acceptance
+	// that run would otherwise imply. Without a run to point at, reported cash becomes a run of its own
+	// so it is counted once.
+	l := e.Ledger()
+	if o.RunID != "" {
+		cost, ok := l.RunCost(o.RunID)
+		if !ok {
+			return en, fmt.Errorf("unknown run %q", o.RunID)
 		}
+		en.RunID, en.CashUSD = o.RunID, cost
+	} else if en.Outcome == history.Declined || en.Outcome == history.Overridden {
+		// Only the offer's own run of this model, never a nearby run of the same model: a declined
+		// offer may never have run.
+		if r, ok := l.OfferRun(o.OfferID, o.Model, e.Now()); ok {
+			en.RunID, en.CashUSD = r.RunID, r.CashUSD
+		}
+	} else if r, ok := l.MatchRun(o.OfferID, o.Model, e.Now().Add(-RunMatchWindow)); ok {
+		en.RunID, en.CashUSD = r.RunID, r.CashUSD
+	} else if o.CashUSD > 0 {
+		en.RunID = "r-" + history.NewOfferID()[2:]
+		run := history.Entry{TS: en.TS, Type: history.TypeRun, RunID: en.RunID, Route: "reported", Model: o.Model,
+			CashUSD: o.CashUSD, OfferID: o.OfferID, UseCase: en.UseCase, Session: en.Session, Project: en.Project,
+			ApprovalID: en.ApprovalID}
+		if err := history.Append(e.Dirs.HistoryFile(), run); err != nil {
+			return en, err
+		}
+		e.reportSpend(optionRoute(l.Offer(o.OfferID), o.Model), o.Model, en.UseCase, o.CashUSD, o.Cwd, "")
 	}
 	return en, history.Append(e.Dirs.HistoryFile(), en)
 }
@@ -303,6 +308,11 @@ type Run struct {
 	// CostBasis is how CashUSD was arrived at (costbasis.Reported, BYOKUpstream, Tokens or Reserved).
 	CostBasis   string
 	Generations []string
+	// Stakes 1-4, as authorized.
+	Stakes int
+	// AwaitOutcome holds the run out of the outcome records, and implies no acceptance, until an
+	// outcome names it.
+	AwaitOutcome bool
 }
 
 // RecordRun adds a run to the ledger; spend is the sum of these.
@@ -315,7 +325,7 @@ func (e *Engine) RecordRun(r Run) error {
 		kind, family = uc.Kind, uc.Family
 	}
 	err := history.Append(e.Dirs.HistoryFile(), history.Entry{TS: e.Now().UTC(), Type: history.TypeRun, RunID: r.ID,
-		Kind: kind, Family: family,
+		Kind: kind, Family: family, Stakes: r.Stakes, AwaitOutcome: r.AwaitOutcome,
 		Route: r.Route, Model: r.Model, CashUSD: r.CashUSD, UpstreamUSD: r.UpstreamUSD, Status: r.Status,
 		OfferID: r.OfferID, UseCase: r.UseCase, Session: r.Session, Project: paths.ProjectRoot(r.Cwd),
 		ApprovalID: r.ApprovalID, Reserve: r.Reserve, Estimated: r.Estimated, CostBasis: r.CostBasis, Generations: r.Generations})

@@ -349,6 +349,9 @@ func (e *Engine) Settle(g *Grant, r Run) error {
 	if r.Cwd == "" {
 		r.Cwd = g.Cwd
 	}
+	if r.Stakes == 0 {
+		r.Stakes = g.Stakes
+	}
 	return e.RecordRun(r)
 }
 

@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -31,6 +32,9 @@ const (
 	MaxWeeks = 8
 )
 
+// HoldMax is how long a run held for its outcome waits. A run not rated by then is never recorded.
+const HoldMax = 30 * 24 * time.Hour
+
 // Record is one anonymous outcome record, exactly as it goes on the wire.
 type Record struct {
 	V       int    `json:"v"`
@@ -43,9 +47,16 @@ type Record struct {
 	Week    string `json:"week"`
 }
 
+// The checks the server makes (DecodeBatch); a record that fails one is never built, since one bad
+// record refuses the whole batch.
 var (
-	kindRE  = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]{0,63}$`)
+	kindRE  = regexp.MustCompile(`^[a-z0-9]+(\.[a-z0-9-]+)?$`)
 	modelRE = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]{0,39}/[a-z0-9][a-z0-9._:-]{0,79}$`)
+)
+
+const (
+	maxKind  = 64
+	maxModel = 100
 )
 
 // KindOf writes a catalog use-case id as a record kind: the first hyphen
@@ -87,43 +98,72 @@ func validRoute(r string) bool {
 
 // Build derives the records for ledger entries newer than after. A delegated
 // run is accepted unless an outcome naming it says otherwise; a declined or
-// overridden outcome with no run is recorded on its own. Only entries from
-// the current ISO week or at most MaxWeeks before it are included, in
-// ascending week order. Calibration results (route "calibrate") are tests
-// graded by p0ssess, not outcomes, and are never recorded.
+// overridden outcome with no run is recorded on its own. A run held for its
+// outcome (AwaitOutcome) is left out until an outcome names it, and is then
+// due as of that first outcome, so it goes out with the next send even when
+// earlier sends moved past the run; one not rated within HoldMax is never
+// recorded. Only entries from the current ISO week or at most MaxWeeks
+// before it are included, in ascending week order. Calibration results
+// (route "calibrate") are tests graded by p0ssess, not outcomes, and are
+// never recorded.
 func Build(entries []history.Entry, now time.Time, after time.Time) []Record {
 	cur := Week(now)
 	earliest := Week(now.AddDate(0, 0, -7*MaxWeeks))
-	inWindow := func(ts time.Time) bool {
-		w := Week(ts)
-		return ts.After(after) && w <= cur && w >= earliest
-	}
 
+	// NewLedger also gives 1.0.0's declined and overridden outcomes, written without a run id, the run
+	// of their offer.
 	l := history.NewLedger(entries)
+	entries = l.Entries
 	runIDs := map[string]bool{}
-	byRun := map[string]history.Entry{}
-	bySession := map[string]history.Entry{}
+	reserves := map[string]history.Entry{}
+	// latest is the newest outcome naming a run id or a bare relay session; first is when the first
+	// one was recorded.
+	latest := map[string]history.Entry{}
+	first := map[string]time.Time{}
 	for _, e := range entries {
 		switch e.Type {
 		case history.TypeRun:
 			if e.RunID != "" {
 				runIDs[e.RunID] = true
 			}
-		case history.TypeOutcome:
+		case history.TypeReserve:
 			if e.RunID != "" {
-				// A later outcome replaces an earlier one for the same run.
-				byRun[e.RunID] = e
-				bySession[session(e.RunID)] = e
+				reserves[e.RunID] = e
+			}
+		case history.TypeOutcome:
+			if e.RunID != "" && e.Route != history.RouteCalibrate {
+				latest[e.RunID] = e
+				if _, ok := first[e.RunID]; !ok {
+					first[e.RunID] = e.TS
+				}
 			}
 		}
 	}
+	// outcomeFor finds the outcome for a run: one naming the run itself, else one naming its whole
+	// relay session.
+	outcomeFor := func(id string) (history.Entry, time.Time, bool) {
+		if id == "" {
+			return history.Entry{}, time.Time{}, false
+		}
+		if o, ok := latest[id]; ok {
+			return o, first[id], true
+		}
+		if s := session(id); s != id {
+			if o, ok := latest[s]; ok {
+				return o, first[s], true
+			}
+		}
+		return history.Entry{}, time.Time{}, false
+	}
 
 	var out []Record
-	add := func(ts time.Time, useCase string, stakes int, model, route, outcome string, cost float64) {
+	// add records one entry. ts is when it happened (its week); due is when it became sendable.
+	add := func(ts, due time.Time, useCase string, stakes int, model, route, outcome string, cost float64) {
 		week := Week(ts)
 		kind := KindOf(useCase)
-		if ts.IsZero() || !inWindow(ts) || route == history.RouteCalibrate || !kindRE.MatchString(kind) || stakes < 1 || stakes > 4 ||
-			!modelRE.MatchString(model) || !validRoute(route) {
+		if ts.IsZero() || !due.After(after) || week > cur || week < earliest || route == history.RouteCalibrate ||
+			len(kind) > maxKind || !kindRE.MatchString(kind) || stakes < 1 || stakes > 4 ||
+			len(model) > maxModel || !modelRE.MatchString(model) || !validRoute(route) {
 			return
 		}
 		out = append(out, Record{V: 1, Kind: kind, Model: model, Route: route, Stakes: stakes,
@@ -134,20 +174,32 @@ func Build(entries []history.Entry, now time.Time, after time.Time) []Record {
 		switch e.Type {
 		case history.TypeRun:
 			off := l.Offer(e.OfferID)
-			outcome, explicit := history.Accepted, false
-			if o, ok := byRun[e.RunID]; ok && e.RunID != "" {
-				outcome, explicit = o.Outcome, true
-			} else if o, ok := bySession[session(e.RunID)]; ok && e.RunID != "" {
-				outcome, explicit = o.Outcome, true
+			outcome := history.Accepted
+			o, firstTS, explicit := outcomeFor(e.RunID)
+			if explicit {
+				outcome = o.Outcome
 			}
 			if !explicit && e.Status != "done" && e.Status != "" {
 				continue
+			}
+			due := e.TS
+			if e.AwaitOutcome {
+				if !explicit || firstTS.Sub(e.TS) > HoldMax {
+					continue
+				}
+				if firstTS.After(due) {
+					due = firstTS
+				}
 			}
 			useCase, stakes := e.UseCase, e.Stakes
 			if off != nil {
 				useCase, stakes = cmp.Or(useCase, off.UseCase), cmp.Or(stakes, off.Stakes)
 			}
-			add(e.TS, useCase, stakes, e.Model, cmp.Or(e.Route, optionRoute(off, e.Model, "")), outcome, l.Cost(e))
+			// Runs before 1.0.1 carry no stakes; their reservation has them.
+			if r, ok := reserves[e.Reserve]; ok && e.Reserve != "" {
+				useCase, stakes = cmp.Or(useCase, r.UseCase), cmp.Or(stakes, r.Stakes)
+			}
+			add(e.TS, due, useCase, stakes, e.Model, cmp.Or(e.Route, optionRoute(off, e.Model, "")), outcome, l.Cost(e))
 		case history.TypeOutcome:
 			if e.Outcome != history.Declined && e.Outcome != history.Overridden {
 				continue
@@ -160,7 +212,7 @@ func Build(entries []history.Entry, now time.Time, after time.Time) []Record {
 			if off != nil {
 				useCase, stakes = cmp.Or(useCase, off.UseCase), cmp.Or(stakes, off.Stakes)
 			}
-			add(e.TS, useCase, stakes, e.Model, cmp.Or(e.Route, optionRoute(off, e.Model, e.Chosen)), e.Outcome, e.CashUSD)
+			add(e.TS, e.TS, useCase, stakes, e.Model, cmp.Or(e.Route, optionRoute(off, e.Model, e.Chosen)), e.Outcome, e.CashUSD)
 		}
 	}
 
@@ -204,10 +256,27 @@ func optionRoute(off *history.Entry, model, chosen string) string {
 }
 
 // state is what the client remembers between sends: the newest ledger entry
-// already covered by a send. It stays on this machine.
+// already covered by a send, and the last refusal. It stays on this machine.
 type state struct {
 	SentThrough time.Time `json:"sent_through"`
+	Refused     *refusal  `json:"refused,omitempty"`
 }
+
+// refusal is a batch the server refused whole and the client kept.
+type refusal struct {
+	At      time.Time `json:"at"`
+	Status  int       `json:"status"`
+	Message string    `json:"message,omitempty"`
+	Records int       `json:"records"`
+}
+
+// MaxBody is the most bytes the server takes in one batch.
+const MaxBody = 256 << 10
+
+// maxSetAside bounds how many records one send sets aside before it gives up and keeps the batch.
+const maxSetAside = 20
+
+func refusedFile(d paths.Dirs) string { return filepath.Join(d.State, "outcomes-refused.jsonl") }
 
 func stateFile(d paths.Dirs) string { return filepath.Join(d.State, "outcomes.json") }
 
@@ -277,12 +346,17 @@ func newest(es []history.Entry) time.Time {
 }
 
 // Send sends whatever is pending. Nothing is read or written when enabled is
-// false, and nothing is sent when nothing is pending. An accepted batch, or
-// one the server refuses as invalid or too large, moves the sent mark forward
-// and is never resent; a rate limit, server error or network failure leaves
-// the state alone so the next session end or plugin start tries again. A lock
-// on the state keeps two processes from sending the same records. It returns
-// how many records were sent.
+// false, and nothing is sent when nothing is pending. Only an accepted batch
+// moves the sent mark forward. When the server refuses a batch as invalid and
+// names the record (400 "record N: ..."), that record is set aside in
+// outcomes-refused.jsonl in the state directory and the rest is sent again at
+// once (refusals do not count against the upload limits). Any other refusal
+// (400 without a record, 413, other 4xx) keeps the batch, notes the refusal
+// in the state file and returns an error, as a rate limit, server error or
+// network failure does: the next session end or plugin start tries again. A
+// batch larger than MaxBody drops its oldest records first. A lock on the
+// state keeps two processes from sending the same records. It returns how
+// many records were sent.
 func Send(ctx context.Context, d paths.Dirs, enabled bool, post Poster, now time.Time) (sent int, err error) {
 	if !enabled {
 		return 0, nil
@@ -305,25 +379,104 @@ func Send(ctx context.Context, d paths.Dirs, enabled bool, post Poster, now time
 	if len(recs) == 0 {
 		return 0, nil
 	}
-	body, err := marshal(struct {
+	recs = fit(recs)
+	for setAside := 0; ; {
+		body, err := batch(recs)
+		if err != nil {
+			return 0, err
+		}
+		status, perr := post(ctx, body)
+		switch {
+		case status >= 200 && status < 300:
+			st.SentThrough, st.Refused = newest(es), nil
+			return len(recs), writeState(d, st)
+		case status == 400 && setAside < maxSetAside:
+			if i, ok := refusedIndex(perr); ok && i < len(recs) {
+				if err := setAsideRecord(d, recs[i], status, perr, now); err != nil {
+					return 0, err
+				}
+				setAside++
+				recs = append(recs[:i:i], recs[i+1:]...)
+				if len(recs) == 0 {
+					st.SentThrough, st.Refused = newest(es), nil
+					return 0, writeState(d, st)
+				}
+				continue
+			}
+		}
+		if status == 0 && perr != nil {
+			return 0, perr
+		}
+		if status >= 400 && status < 500 && status != 429 {
+			msg := ""
+			if perr != nil {
+				msg = perr.Error()
+			}
+			st.Refused = &refusal{At: now.UTC(), Status: status, Message: msg, Records: len(recs)}
+			if err := writeState(d, st); err != nil {
+				return 0, err
+			}
+			return 0, fmt.Errorf("outcomes: server refused the batch (%s); it is kept for the next send", strings.TrimSpace(fmt.Sprint(status, " ", msg)))
+		}
+		return 0, errors.New("outcomes: server answered " + fmt.Sprint(status))
+	}
+}
+
+func batch(recs []Record) ([]byte, error) {
+	return marshal(struct {
 		V       int      `json:"v"`
 		Records []Record `json:"records"`
 	}{1, recs})
+}
+
+// fit drops the oldest records until the batch fits in MaxBody.
+func fit(recs []Record) []Record {
+	for len(recs) > 0 {
+		b, err := batch(recs)
+		if err != nil || len(b) <= MaxBody {
+			return recs
+		}
+		over := (len(b)-MaxBody)*len(recs)/len(b) + 1
+		recs = recs[min(over, len(recs)):]
+	}
+	return recs
+}
+
+var recordIndexRE = regexp.MustCompile(`(?i)\brecord (\d+)\b`)
+
+// refusedIndex reads the index of the refused record from the server's message.
+func refusedIndex(err error) (int, bool) {
+	if err == nil {
+		return 0, false
+	}
+	m := recordIndexRE.FindStringSubmatch(err.Error())
+	if m == nil {
+		return 0, false
+	}
+	i, convErr := strconv.Atoi(m[1])
+	return i, convErr == nil
+}
+
+// setAsideRecord appends a refused record, with the server's reason, to outcomes-refused.jsonl.
+func setAsideRecord(d paths.Dirs, r Record, status int, reason error, now time.Time) error {
+	line := struct {
+		At     time.Time `json:"at"`
+		Status int       `json:"status"`
+		Reason string    `json:"reason,omitempty"`
+		Record Record    `json:"record"`
+	}{At: now.UTC(), Status: status, Record: r}
+	if reason != nil {
+		line.Reason = reason.Error()
+	}
+	b, err := marshal(line)
 	if err != nil {
-		return 0, err
+		return err
 	}
-	status, err := post(ctx, body)
+	f, err := os.OpenFile(refusedFile(d), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
 	if err != nil {
-		return 0, err
+		return err
 	}
-	switch {
-	case status >= 200 && status < 300:
-		sent = len(recs)
-	case status == 400 || status == 413:
-		// The server refused the batch whole; it is dropped.
-	default:
-		return 0, errors.New("outcomes: server answered " + fmt.Sprint(status))
-	}
-	st.SentThrough = newest(es)
-	return sent, writeState(d, st)
+	defer f.Close()
+	_, err = f.Write(append(b, '\n'))
+	return err
 }

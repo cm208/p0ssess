@@ -33,6 +33,7 @@ var Version = "dev"
 type Error struct {
 	Status     int
 	Code       string
+	Message    string
 	RetryAfter time.Duration
 }
 
@@ -134,10 +135,11 @@ func (c *Client) do(ctx context.Context, method, path string, body []byte, hdr m
 func apiError(r *http.Response) *Error {
 	e := &Error{Status: r.StatusCode}
 	var body struct {
-		Error string `json:"error"`
+		Error   string `json:"error"`
+		Message string `json:"message"`
 	}
 	if json.NewDecoder(io.LimitReader(r.Body, 8<<10)).Decode(&body) == nil {
-		e.Code = body.Error
+		e.Code, e.Message = body.Error, body.Message
 	}
 	if s, err := strconv.Atoi(strings.TrimSpace(r.Header.Get("Retry-After"))); err == nil && s > 0 {
 		e.RetryAfter = time.Duration(s) * time.Second

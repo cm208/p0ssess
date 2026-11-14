@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"p0ssess/internal/history"
 	"p0ssess/internal/pme/local"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/pme/remote"
@@ -69,6 +70,19 @@ func TestCLI(t *testing.T) {
 	}
 	if code, out, _ := run(t, "", "outcome", "--model", "google/gemini-3.8-flash", "--outcome", "accepted", "--cash", "0.04", "--use-case", "video-understand"); code != 0 || !strings.Contains(out, "recorded accepted") {
 		t.Errorf("outcome: %s", out)
+	}
+	if code, _, errs := run(t, "", "outcome", "--run", "d-nope", "--model", "google/gemini-3.8-flash", "--outcome", "declined"); code == 0 || !strings.Contains(errs, "unknown run") {
+		t.Errorf("outcome --run names an unknown run: %d %s", code, errs)
+	}
+	if err := history.Append(paths.Default().HistoryFile(), history.Entry{Type: history.TypeRun, RunID: "d-cli", Route: "direct",
+		Model: "google/gemini-3.8-flash", Status: "done", UseCase: "video-understand", Stakes: 2}); err != nil {
+		t.Fatal(err)
+	}
+	if code, out, errs := run(t, "", "outcome", "--run", "d-cli", "--model", "google/gemini-3.8-flash", "--outcome", "declined"); code != 0 || !strings.Contains(out, "recorded declined") {
+		t.Errorf("outcome --run: %d %s %s", code, out, errs)
+	}
+	if es, _ := history.Read(paths.Default().HistoryFile()); es[len(es)-1].RunID != "d-cli" {
+		t.Errorf("outcome --run did not name the run: %+v", es[len(es)-1])
 	}
 	if code, out, _ := run(t, "", "status", "--cwd", proj); code != 0 || !strings.Contains(out, "spent $0.04 today") {
 		t.Errorf("status: %s", out)
