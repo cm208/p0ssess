@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; connect-src https://cloud.p0ssess.me; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'sha256-8AE3sI/61Auvlkps469+N9yPOlpaUaccSGhWsDTp19Q='; font-src 'self'; img-src 'self'; connect-src https://cloud.p0ssess.me; frame-src https://polar.sh; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>p0ssess pricing: free, Pro at $4 a month, Team at $8 a seat</title>
 <meta name="description" content="The p0ssess plugin is free and MIT licensed. Pro is $4 a month or $36 a year and adds a cloud sandbox and a savings report. Team is $8 a seat a month and adds shared rules and budgets.">
@@ -76,8 +76,8 @@
       </fieldset>
     </div>
     <div class="tier-price">
-      <p class="price v-year" data-price="pro_year"><b><small>$</small><span data-amount>36</span></b> <span class="per">a year</span> <span class="price-note" data-each>$3 a month, billed once a year</span></p>
-      <p class="price v-month" data-price="pro_month"><b><small>$</small><span data-amount>4</span></b> <span class="per">a month</span> <span class="price-note">billed monthly</span></p>
+      <p class="price v-year" data-price="pro_year"><b><small>$</small><span data-amount>36</span></b> <span class="per">a year</span> <span class="price-note" data-each>$3 a month, billed once a year</span> <span class="price-save" data-save>$12 a year less than paying monthly</span></p>
+      <p class="price v-month" data-price="pro_month"><b><small>$</small><span data-amount>4</span></b> <span class="per">a month</span> <span class="price-note" data-over>billed monthly, $48 over a year</span> <label class="price-save" for="bill-year" data-swap><span data-save-alt>Yearly is $12 a year less.</span> <span class="go">Switch to yearly</span></label></p>
       <p class="price-unset" hidden>The price is being set. Leave your address and we’ll send it.</p>
     </div>
     <div class="tier-body">
@@ -87,7 +87,7 @@
       <p class="tier-terms">The savings report measures your own work the way this site measures ours: cost per correct answer and time, Claude alone against Claude with p0ssess. It is a local page, with a PDF you can forward to whoever pays the bill.</p>
       <p class="tier-terms">Support is priority email, best effort, with no guaranteed response time. Buy before the first price change and you keep this price for as long as you stay subscribed.</p>
     </div>
-    <div class="buy" data-buy="pro">
+    <div class="buy" data-buy="pro" id="buy-pro">
       <a class="btn" data-mail href="mailto:support@p0ssess.me?subject=Notify%20me%20when%20p0ssess%20Pro%20opens">Opening soon, get notified</a>
       <button class="btn" type="button" data-open hidden>Opening soon, get notified</button>
       <a class="btn" data-start hidden>Get Pro</a>
@@ -101,6 +101,7 @@
       </form>
       <p class="buy-say" id="wl-pro-say" role="status" aria-live="polite"></p>
       <p class="buy-note" data-note>Checkout isn’t open yet. This opens an email to support@p0ssess.me, and we’ll write once when it is.</p>
+      <p class="buy-note" data-terms hidden>Polar runs the checkout and shows the total, with any tax, before you pay. <span data-renews>It renews each year until you cancel.</span></p>
     </div>
   </article>
 
@@ -126,8 +127,10 @@
         </div>
         <p class="wl-terms">We’ll send one email when Team opens, then delete your address.</p>
       </form>
+      <a class="btn" data-start hidden>Start a team</a>
       <p class="buy-say" id="wl-team-say" role="status" aria-live="polite"></p>
       <p class="buy-note" data-note>Checkout isn’t open yet. This opens an email to support@p0ssess.me, and we’ll write once when it is.</p>
+      <p class="buy-note" data-terms hidden>You sign in, name the team and choose how many seats it has. Polar runs the checkout.</p>
     </div>
   </article>
 
@@ -172,6 +175,7 @@
     <div class="cell hl">
       <h3>Checkout and tax</h3>
       <p>Checkout runs through Polar, the merchant of record. Polar handles sales tax and VAT, and gives you a portal to cancel or change plans. Refunds are set out in the <a href="../refunds/">refund policy</a>.</p>
+      <p data-portal hidden><a data-link="portal">Open Polar’s customer portal</a></p>
     </div>
     <div class="cell hl">
       <h3>When a plan ends</h3>
@@ -186,6 +190,31 @@
 </section>
 
 </main>
+
+<div class="pay" id="pay" role="dialog" aria-modal="true" aria-labelledby="pay-say" tabindex="-1" hidden>
+  <div class="wrap pay-top">
+    <span class="lockup">
+      <span class="g"><img src="../ghost.svg" alt="" width="64" height="64"><i class="lid"></i></span>
+      <svg class="wordmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 9" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path class="wm-ink" d="M0 2h3v1h-3zM0 3h1v1h-1zM3 3h1v1h-1zM0 4h1v1h-1zM3 4h1v1h-1zM0 5h3v1h-3zM0 6h1v1h-1zM0 7h1v1h-1zM0 8h1v1h-1zM11 2h3v1h-3zM10 3h1v1h-1zM11 4h2v1h-2zM13 5h1v1h-1zM10 6h3v1h-3zM16 2h3v1h-3zM15 3h1v1h-1zM16 4h2v1h-2zM18 5h1v1h-1zM15 6h3v1h-3zM21 2h2v1h-2zM20 3h1v1h-1zM23 3h1v1h-1zM20 4h4v1h-4zM20 5h1v1h-1zM21 6h3v1h-3zM26 2h3v1h-3zM25 3h1v1h-1zM26 4h2v1h-2zM28 5h1v1h-1zM25 6h3v1h-3zM31 2h3v1h-3zM30 3h1v1h-1zM31 4h2v1h-2zM33 5h1v1h-1zM30 6h3v1h-3z"/><path class="wm-zero" d="M6 0h2v1h-2zM5 1h1v1h-1zM8 1h1v1h-1zM5 2h1v1h-1zM8 2h1v1h-1zM5 3h1v1h-1zM8 3h1v1h-1zM5 4h1v1h-1zM8 4h1v1h-1zM5 5h1v1h-1zM8 5h1v1h-1zM6 6h2v1h-2z"/></svg>
+    </span>
+  </div>
+  <div class="pay-mid">
+    <div class="pay-hop" aria-hidden="true">
+      <span class="pill from"><img class="seat" src="../ghost.svg" alt="" width="32" height="32">p0ssess</span>
+      <span class="pay-wire"><i></i></span>
+      <span class="pill to"><span class="pip"></span>Polar</span>
+    </div>
+    <p class="pay-say" id="pay-say" data-pay-say>Opening checkout</p>
+    <p class="pay-sub" data-pay-sub>Polar is the merchant of record. It takes the payment and works out the tax.</p>
+  </div>
+  <div class="wrap">
+    <ul class="pay-notes">
+      <li class="hl">Pro is sold by New Deal Systems LLC. Polar, the merchant of record, takes the payment.</li>
+      <li class="hl">Close the checkout before you pay and nothing is charged.</li>
+      <li class="hl">After you pay you come back to this site to sign in and link Pro to your install.</li>
+    </ul>
+  </div>
+</div>
 
 <footer class="site-foot">
 <div class="wrap foot-in">

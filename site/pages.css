@@ -20,7 +20,9 @@ main { flex: 1 0 auto; }
 .price-unset { margin-top: 1.2rem; font: 400 0.92rem/1.5 var(--mono); color: var(--ink); }
 .tier-body { margin-top: 0.3rem; }
 
-/* What you can do about a tier: install it, buy it, or leave an address. */
+/* What you can do about a tier: install it, buy it, or leave an address. Polar's back button
+   returns to Pro's, which lands in the middle of the window so its line about the charge is seen. */
+#buy-pro { scroll-margin-top: 45vh; }
 .buy-say { font-size: 0.93rem; line-height: 1.5; color: var(--ink); }
 .buy-say:empty { display: none; }
 .buy.done .buy-say { position: relative; padding-left: 1.2rem; }
@@ -55,6 +57,86 @@ main { flex: 1 0 auto; }
 .wl-terms { font-size: 0.86rem; line-height: 1.45; color: var(--ink-2); }
 /* What went wrong takes the place of the line under the field. */
 .buy:has(.buy-say:not(:empty)) .wl-terms { display: none; }
+
+/* Pro's two periods. What a year at once saves is said under the yearly price, with the mark a
+   winning row carries; under the monthly price the same line is the way over to yearly. */
+.price-save { position: relative; flex-basis: 100%; font: 400 0.8rem/1.4 var(--mono); color: var(--ink); }
+span.price-save { padding-left: 1.05rem; }
+span.price-save::before { content: ""; position: absolute; left: 0; top: 0.36em; width: 8px; height: 8px; border-radius: 2px; background: var(--violet); }
+label.price-save { color: var(--ink-2); cursor: pointer; }
+label.price-save::after { content: ""; position: absolute; inset: -13px 0; }  /* a 44 px touch target */
+label.price-save .go { color: var(--violet-ink); text-decoration: underline 1px; text-underline-offset: 0.2em; transition: color 0.2s var(--out); }
+label.price-save:hover .go { color: var(--ink); }
+
+/* Checkout. Polar's script puts its checkout in a frame over the page and styles that frame
+   itself. This layer sits under the frame: the ground, the mark where the top bar has it, the
+   hand-off to Polar while the frame loads, and three lines that hold while it is open. */
+.pay {
+  position: fixed; inset: 0; z-index: 2147483646; display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
+  background: rgb(11 11 11 / 0.95); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  outline: 0; overflow: hidden;
+}
+.pay > .wrap { width: 100%; }
+.pay-top { padding-block: 1.1rem 0.4rem; }
+.pay-mid { align-self: center; justify-self: center; width: min(23rem, 100% - 2 * var(--gutter)); padding-bottom: 8vh; transition: opacity 0.25s var(--out), visibility 0s 0.25s; }
+.pay-hop { --pill: 44px; display: flex; align-items: center; }
+.pay-hop .from { padding-left: 0.4rem; background: var(--violet-deep); border-color: var(--violet); }
+.pay-wire { position: relative; flex: 1; min-width: 3rem; height: 1px; background: var(--line); }
+.pay-wire::before { content: ""; position: absolute; inset: -0.5px 0; background: var(--violet); transform-origin: 0 50%; }
+.pay-wire i { position: absolute; left: 0; top: -4px; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: var(--ink); opacity: 0; }
+.pay-hop .to { border-color: var(--violet); }
+.pay-say { margin-top: 1.5rem; font: 700 1.5rem/1.2 var(--mono); letter-spacing: -0.03em; color: var(--ink); }
+.pay-sub { margin-top: 0.55rem; font-size: 0.98rem; line-height: 1.55; }
+/* The three lines stand in the margin left of Polar's checkout, which is 512 px wide and centered. */
+.pay-notes {
+  display: none; list-style: none; margin: 0; padding: 0 0 40px;
+  width: min(20rem, calc(min(50vw - 256px, 404px) - var(--gutter) - 2.5rem));
+  font-size: 0.9rem; line-height: 22px;   /* whole pixels, so each hairline lands on one row */
+}
+.pay-notes li { padding: 12px 0 13px; }
+/* Once Polar's checkout is up it covers the middle of the window, and all of a narrow one. */
+.pay.open .pay-mid { opacity: 0; visibility: hidden; }
+.pay.open .pay-top { visibility: hidden; }
+@media (min-width: 1280px) and (min-height: 620px) {
+  .pay-notes { display: block; }
+  .pay.open .pay-top { visibility: visible; }
+}
+/* Polar's script gives its frame a half-black wash and adds a loader of its own. The layer above
+   is the backdrop and the loader, so both are turned off here; the page stops scrolling under it. */
+body > iframe[src*="embed=true"] { background-color: transparent !important; }
+/* The frame stays out of sight until Polar's checkout says it has loaded. A frame that fails
+   draws the browser's own error page, which must never show over this one. */
+body > iframe[src*="embed=true"]:not(.in) { opacity: 0; pointer-events: none; }
+html.anim body > iframe.in[src*="embed=true"] { transition: opacity 0.25s var(--out); }
+body > div > .polar-loader-spinner { display: none; }
+body.polar-no-scroll { overflow: hidden; }
+/* The wire to Polar draws once, then a dot keeps crossing it for as long as the frame is loading. */
+html.anim .pay:not(.go) .pay-wire::before { scale: 0 1; }
+html.anim .pay.go .pay-wire::before { scale: 1 1; transition: scale 0.7s var(--out); }
+html.anim .pay:not(.go) .pay-hop .to { border-color: var(--line); }
+html.anim .pay.go .pay-hop .to { transition: border-color 0.3s var(--out) 0.5s; }
+html.anim .pay.go:not(.open) .pay-wire i { animation: cross 1.5s var(--io) 0.8s infinite; }
+@keyframes cross {
+  0% { left: 0; opacity: 0; }
+  12%, 82% { opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+
+/* Welcome: where Polar sends a buyer back. What was paid for, then the two things left to do. */
+.paid { position: relative; margin-top: 1.5rem; padding-left: 1.3rem; font: 400 0.92rem/1.5 var(--mono); color: var(--ink); }
+.paid::before { content: ""; position: absolute; left: 0; top: 0.38em; width: 10px; height: 10px; border-radius: 2px; background: var(--violet); }
+.todo-sec { padding-bottom: var(--sec-pad); }
+.todo { counter-reset: todo; }
+.todo .cell { counter-increment: todo; }
+.todo h2 { display: flex; align-items: baseline; gap: 0.9rem; font-size: 1.5rem; line-height: 1.25; letter-spacing: -0.03em; }
+.todo h2::before { content: counter(todo); flex: none; color: var(--ink-2); }
+.todo .cell > p { max-width: 34rem; }
+.acts { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 1.3rem; }
+.todo .cell > .acts { margin-top: 1.3rem; }
+.todo .cmd { max-width: 26rem; }
+.todo .hint { font-size: 0.9rem; color: var(--ink-2); }
+.after-pay { margin-top: clamp(2.6rem, 5vw, 4rem); }
+.page-head .acts { margin-top: 1.6rem; }
 
 /* What one rule is worth: the mean run without it, struck through, and the mean run with it. */
 .worth figcaption h3 { font-size: 1.14rem; }

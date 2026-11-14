@@ -27,5 +27,11 @@ window.P0SSESS = {
     // Prices in US cents, shown only while the API cannot be reached. null = not decided yet: the page
     // shows a marked placeholder, never a number.
     prices: { pro_month: 400, pro_year: 3600, team_seat_month: 800 },
+    // true shows Polar's checkout in a frame over the pricing page; false sends the buyer to Polar's
+    // own page instead. Turn it on only once p0ssess.me is on the Polar organization's list of embed
+    // hosts and the privacy policy says the page loads Polar's checkout (README.md, "Checkout").
+    embed: false,
+    // Polar's customer portal for the organization that sells Pro, or "" to show no link to it.
+    portal: "https://polar.sh/new-deal-systems-llc/portal",
   },
 };

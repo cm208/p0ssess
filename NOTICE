@@ -61,3 +61,13 @@ Obel Mono (obel-mono.woff2), Copyright 2026 The Obel Mono Project Authors
 IBM Plex Sans (plex-sans-400.woff2), Copyright IBM Corp.
   License: SIL Open Font License 1.1. Full texts: internal/pme/me/web/fonts/OFL-obel-mono.txt and
   internal/pme/me/web/fonts/OFL-ibm-plex.txt. Both are subsets of the original fonts.
+
+-------------------------------------------------------------------------------
+Polar checkout embed, on the website only (site/vendor/)
+-------------------------------------------------------------------------------
+
+site/vendor/polar-checkout-embed-0.6.0.js is dist/embed.global.js from the npm
+package @polar-sh/checkout 0.6.0 (https://github.com/polarsource/polar,
+clients/packages/checkout), unchanged. Copyright 2023 Polar Software Inc.
+  License: Apache License 2.0. Full text: site/vendor/polar-checkout-LICENSE.txt
+It is not part of the p0ssess binary or the plugin.

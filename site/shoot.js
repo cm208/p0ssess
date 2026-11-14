@@ -7,10 +7,11 @@
 // --live also captures the motion: the hero's rule turning on at fixed moments after the line
 // of dollars is on screen (desktop and phone), the hand-off figure part-way through, and the
 // island over a later section.
-// --pages adds full-page captures of the pages beside the home page (pricing, business, data,
-// terms, privacy, refunds) at each size, and of the pricing page in each state: as it ships,
+// --pages adds full-page captures of the pages beside the home page (pricing, business, welcome,
+// data, terms, privacy, refunds) at each size, and of the pricing page in each state: as it ships,
 // then against a cloud API that this file answers itself (nothing leaves the machine): opening
-// soon, a sign-up refused and accepted, and checkout open. --only takes page names too.
+// soon, a sign-up refused and accepted, checkout open, the hand-off to Polar and the checkout
+// closed again. The welcome page is taken paid and not paid. --only takes page names too.
 // --og writes the share image: the top of the hero at 1200x630, reduced motion, device scale 1.
 // Needs playwright-core: `npm i playwright-core`, or set PLAYWRIGHT_CORE to a copy of it
 // (Playwright for Python ships one as playwright/driver/package, next to its own node).
@@ -46,7 +47,7 @@ const sweepAt = [600, 1700, 3400];
 const log = [];
 
 // The pages beside the home page.
-const pages = ["pricing", "business", "data", "terms", "privacy", "refunds"];
+const pages = ["pricing", "business", "welcome", "data", "terms", "privacy", "refunds"];
 // The cloud API, mocked. The address is the one the pricing page's CSP allows. These amounts
 // are test values that exist only here, so a capture can show that the page paints what the API says.
 const CLOUD = "https://cloud.p0ssess.me";
@@ -54,19 +55,28 @@ const TEST = { year: 12345, month: 1234, seat: 567, hours: 7 };
 const releaseWithApi = () => {
   const src = fs.readFileSync(path.join(root, "release.js"), "utf8");
   if (!/\n\s*api:\s*"[^"]*"/.test(src)) log.push("release.js: no offer.api to replace");
-  return src.replace(/(\n\s*api:\s*)"[^"]*"/, `$1"${CLOUD}"`);
+  // The frame is captured whatever the file says about it.
+  return src.replace(/(\n\s*api:\s*)"[^"]*"/, `$1"${CLOUD}"`).replace(/(\n\s*embed:\s*)(true|false)/, "$1true");
 };
 const plan = (id, tier, interval, amount, placeholder, more) => ({ id, tier, interval, name: id, available: true, placeholder,
   price: { amount_cents: amount, currency: "usd", display: "test" }, ...more });
-const offer = (checkout, placeholder) => ({ checkout, start_url: CLOUD + "/pro", plans: [
+const offer = (checkout, placeholder) => ({ checkout, start_url: CLOUD + "/pro", team_url: CLOUD + "/team", plans: [
   plan("pro_yearly", "pro", "year", TEST.year, placeholder, { recommended: true, sandbox_hours_per_month: TEST.hours }),
   plan("pro_monthly", "pro", "month", TEST.month, placeholder, { sandbox_hours_per_month: TEST.hours }),
   plan("team_monthly", "team", "month", TEST.seat, placeholder, { per_seat: true, available: false }),
 ] });
 const cors = { "access-control-allow-origin": "*" };
-const cloudApi = (checkout, placeholder) => (req, tag) => {
+// A checkout that exists only here. Its address is Polar's host, which the harness never reaches.
+const CHECKOUT = { id: "test-checkout", url: "https://polar.sh/checkout/polar_c_test?theme=dark", claim: "test-claim", embed: true };
+const cloudApi = (checkout, placeholder, paid = "open") => (req, tag) => {
   const route = req.method() + " " + new URL(req.url()).pathname;
-  if (route === "GET /v1/pro/offer") return { status: 200, headers: cors, contentType: "application/json", body: JSON.stringify(offer(checkout, placeholder)) };
+  const json = (body) => ({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify(body) });
+  if (route === "GET /v1/pro/offer") return json(offer(checkout, placeholder));
+  if (route === "POST /v1/checkout") {
+    if ((req.postData() || "") !== "plan=pro_yearly&embed=1") log.push(`${tag}: checkout was asked for with ${req.postData()}`);
+    return json(CHECKOUT);
+  }
+  if (route === "GET /v1/checkout") return json({ status: paid, plan: "pro_yearly", tier: "pro", interval: "year" });
   if (route === "POST /v1/waitlist") {
     const form = new URLSearchParams(req.postData() || "");
     const simple = (req.headers()["content-type"] || "").startsWith("application/x-www-form-urlencoded");
@@ -93,6 +103,8 @@ srv.listen(0, "127.0.0.1", async () => {
       if (!cloud && u === origin + "/release.js") return r.fulfill({ contentType: types[".js"], body: fs.readFileSync(path.join(root, "release.js"), "utf8").replace(/(\n\s*api:\s*)"[^"]*"/, '$1""') });
       if (u.startsWith(origin + "/")) return r.continue();
       if (cloud && u.startsWith(CLOUD + "/")) return r.fulfill(cloud(r.request(), tag));
+      // Polar's frame is asked for when checkout is opened; the harness leaves it empty.
+      if (cloud && expectFail && u.startsWith("https://polar.sh/checkout/")) return r.abort();
       log.push(`${tag}: outside request blocked: ${u}`);
       return r.abort();
     });
@@ -222,7 +234,9 @@ srv.listen(0, "127.0.0.1", async () => {
       await pg.waitForSelector("[data-start]:not([hidden])");
       await pg.waitForTimeout(400);
       await check(pg, tag, "Pro links to checkout and Team has nothing to buy", `document.querySelector('[data-buy="pro"] [data-start]').href === "${CLOUD}/pro"
-        && !document.querySelector('[data-buy="team"] [data-start]') && document.querySelector('[data-buy="pro"] [data-open]').hidden`);
+        && document.querySelector('[data-buy="team"] [data-start]').hidden && document.querySelector('[data-buy="pro"] [data-open]').hidden`);
+      await check(pg, tag, "the button names the period in view", `document.querySelector('[data-buy="pro"] [data-start]').textContent === "Get Pro yearly"
+        && !document.querySelector('[data-buy="pro"] [data-terms]').hidden`);
       await check(pg, tag, "prices are formatted from cents", `${JSON.stringify(digits)}.every((d) => document.querySelector(".tiers").textContent.includes(d))`);
       await overflow(pg, tag);
       await pg.evaluate(() => {
@@ -233,6 +247,48 @@ srv.listen(0, "127.0.0.1", async () => {
       });
       await full(pg, "pricing-mock-open");
       await ctx.close();
+
+      // The hand-off: Get Pro asks for a checkout and the layer comes up. Polar's frame stays empty
+      // here. Escape closes it, and the page says nothing was charged once the API says so.
+      tag = `${name} pricing, hand-off`;
+      ({ ctx, pg } = await open(viewport, "reduce", tag, { at: "/pricing/", cloud: cloudApi("open", false), expectFail: true }));
+      await pg.waitForSelector("[data-start]:not([hidden])");
+      await scrollTo(pg, "#pro", "start");
+      await pg.click('[data-buy="pro"] [data-start]');
+      await pg.waitForSelector('body > iframe[src*="embed=true"]', { state: "attached" });
+      await pg.waitForTimeout(400);
+      await check(pg, tag, "the layer is up, the page behind is inert and Polar's frame is dark", `!document.querySelector("#pay").hidden
+        && document.querySelector("main").inert && new URL(document.querySelector("body > iframe").src).searchParams.get("theme") === "dark"`);
+      await shot(pg, `${name}-pricing-mock-handoff.png`);
+      await pg.keyboard.press("Escape");
+      await pg.waitForFunction(() => document.querySelector("#wl-pro-say").textContent !== "");
+      await check(pg, tag, "closing leaves no frame and says nothing was charged", `document.querySelector("#pay").hidden && !document.querySelector("body > iframe")
+        && !document.querySelector("main").inert && document.querySelector("#wl-pro-say").textContent === "Checkout closed. Nothing was charged."`);
+      await shot(pg, `${name}-pricing-mock-closed.png`);
+      await ctx.close();
+    }
+
+    // The welcome page with a checkout that was paid, then with one that was not.
+    for (const [name, viewport] of sizes) {
+      if (!want("welcome")) continue;
+      const check = async (pg, tag, what, test) => { if (!(await pg.evaluate(test))) log.push(`${tag}: check failed: ${what}`); };
+      for (const paid of ["paid", "expired"]) {
+        const tag = `${name} welcome, ${paid}`;
+        const { ctx, pg } = await open(viewport, "reduce", tag, { at: "/welcome/?checkout_id=test-checkout&customer_session_token=test", cloud: cloudApi("open", false, paid) });
+        await pg.waitForFunction(() => document.querySelector("[data-h]").textContent !== "Sign in to finish.");
+        await pg.waitForTimeout(300);
+        if (paid === "paid") {
+          await check(pg, tag, "the page says what was paid and sends sign-in on with the checkout", `document.querySelector("[data-paid]").textContent === "Pro, yearly. Paid through Polar."
+            && document.querySelector("[data-email]").href === "${CLOUD}/pro/done?checkout_id=test-checkout"
+            && document.querySelector("[data-github]").href === "${CLOUD}/pro/done?checkout_id=test-checkout&with=github" && location.search === "?checkout_id=test-checkout"`);
+        } else {
+          await check(pg, tag, "an unpaid checkout shows no steps", `document.querySelector("[data-next]").hidden && document.querySelector("[data-h]").textContent === "This checkout wasn\u2019t paid."`);
+        }
+        const sw = await pg.evaluate(() => document.documentElement.scrollWidth);
+        if (sw > viewport.width) log.push(`${tag}: horizontal overflow, scrollWidth ${sw}`);
+        await pg.screenshot({ path: path.join(out, `${name}-welcome-mock-${paid === "paid" ? "paid" : "unpaid"}.png`), fullPage: true });
+        await ctx.close();
+      }
     }
   }
 

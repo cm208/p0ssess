@@ -1,8 +1,8 @@
 # p0ssess website
 
-The site is static: `index.html`, `style.css`, `page.js`, `release.js`, `ghost.svg`, two images (`film-strip.webp`, `ghost-lantern.webp`), `og.png` (the share image) and `fonts/`. No build step, no framework, and no requests to anything but its own files.
+The site is static: `index.html`, `style.css`, `page.js`, `release.js`, `ghost.svg`, two images (`film-strip.webp`, `ghost-lantern.webp`), `og.png` (the share image) and `fonts/`. No build step, no framework, and no requests to anything but its own files, with two exceptions on the pricing and welcome pages: calls to the cloud API, and Polar's checkout in a frame once a reader opens it.
 
-Beside the home page are six pages, each an `index.html` in its own folder: `pricing/`, `business/`, `data/`, `terms/`, `privacy/` and `refunds/`. They load `style.css`, then `pages.css` and `pages.js`.
+Beside the home page are seven pages, each an `index.html` in its own folder: `pricing/`, `business/`, `welcome/`, `data/`, `terms/`, `privacy/` and `refunds/`. They load `style.css`, then `pages.css` and `pages.js`. `vendor/` holds the one script that is not ours, Polar's checkout embed.
 
 The home page is an advertisement, and its subject is cost. In order:
 
@@ -124,12 +124,13 @@ The rules in "Your limits" and the status line segment are from `../README.md` a
 
 ## Pricing, business and policy pages
 
-Six pages sit beside the home page. They share the top bar (the lockup links home; Pricing, For business, Docs, Source and Get Pro, with the current page marked `aria-current="page"`) and the footer. The footer's row of links (Pricing, For business, Terms, Privacy, Data, Refunds) is on the home page too, and below 760 px, where the top bar keeps only Get Pro, it is the way between pages.
+Seven pages sit beside the home page. They share the top bar (the lockup links home; Pricing, For business, Docs, Source and Get Pro, with the current page marked `aria-current="page"`) and the footer. The footer's row of links (Pricing, For business, Terms, Privacy, Data, Refunds) is on the home page too, and below 760 px, where the top bar keeps only Get Pro, it is the way between pages.
 
 | Page | What it holds |
 |---|---|
 | `pricing/` | Three tiers, Free, Pro and Team, with what each includes, then what one rule is worth and how billing works. The buy buttons follow the offer (below). |
 | `business/` | The cost case for people who pay for Claude at work: every job tested, with every run; how it was measured; two side-by-sides on what Claude can't do alone; what Pro measures on your own work; and Team. |
+| `welcome/` | Where Polar sends a buyer after checkout: whether the payment went through, then the two things left to do, sign in and link the install. It is not linked from the other pages and asks search engines not to index it. |
 | `data/`, `terms/`, `privacy/`, `refunds/` | The full text of the policy, with its effective date and a table of contents. Each is the Markdown source of that policy, set in this page's HTML without rewording. |
 
 With `prefers-reduced-motion: reduce` or with scripts off every page is complete: hairlines, marks and bars are drawn in full, the prices are in the markup and the buy buttons read "Opening soon, get notified".
@@ -140,6 +141,8 @@ What is for sale is configured in one place, `offer` in `release.js`:
 
 - `api` is the cloud API's address without a trailing slash, or `""` to leave the page on its own.
 - `prices` holds `pro_month`, `pro_year` and `team_seat_month` in US cents, for when the API cannot be reached. `null` leaves the price that is in the markup.
+- `embed` is `true` to show Polar's checkout in a frame over the pricing page, or `false` to send the buyer to Polar's own page. It ships `false`; "Checkout" below says what has to be in place first.
+- `portal` is Polar's customer portal for the organization that sells Pro, `https://polar.sh/<organization slug>/portal`, or `""` to show no link to it.
 
 The prices are also written in the HTML ($4 a month, $36 a year, $8 a seat), on the home page, in the top of the pricing page and in its tiers, so they read with scripts off. When a price changes, change them there, in `release.js` and on the server.
 
@@ -148,7 +151,7 @@ The prices are also written in the HTML ($4 a month, $36 a year, $8 a seat), on 
 | `""` | not asked | the markup, or `offer.prices` | "Opening soon, get notified", a `mailto:` link to support@p0ssess.me |
 | set | no answer within 4 seconds, or an error | the markup, or `offer.prices` | the same `mailto:` link |
 | set | `checkout: "opening_soon"` | from `plans` | "Opening soon, get notified", which opens the address form |
-| set | `checkout: "open"`, a Pro plan `available`, and an https `start_url` | from `plans` | Pro: "Get Pro", a link to `start_url`. Team: the address form |
+| set | `checkout: "open"`, a Pro plan `available`, and an https `start_url` | from `plans` | Pro: "Get Pro yearly" or "Get Pro monthly", which opens checkout (below); the link itself goes to `start_url`. Team: "Start a team", a link to `team_url`, when the Team plan is `available`; otherwise the address form |
 
 `pages.js` asks `GET <api>/v1/pro/offer` and reads each plan:
 
@@ -157,6 +160,8 @@ The prices are also written in the HTML ($4 a month, $36 a year, $8 a seat), on 
 - `sandbox_hours_per_month` on a Pro plan is shown as the allowance for the billing period in view.
 - `available` on a Pro plan allows "Get Pro" once checkout is open.
 - `recommended` picks which billing period the Yearly and Monthly switch starts on, unless the reader has already chosen. The page ships on Yearly.
+
+Yearly is the period the page steers toward. It is the one selected, and when both of Pro's prices are decided and a year at once is the cheaper way, the saving is said under each price: under the yearly price as a line with the violet mark, and under the monthly price as a line that switches to yearly when it is pressed (it is a label for the Yearly choice, so it works with scripts off). The amount is twelve times the monthly price less the yearly price.
 
 The address form is used only once the API has answered with an offer. It sends `POST <api>/v1/waitlist` with the body `email=...&plan=pro|team&source=site` as `application/x-www-form-urlencoded`. That content type keeps it a simple request, so the browser sends no preflight. The API has to answer both routes with an `Access-Control-Allow-Origin` header that allows the site, or the page cannot read the answer. What the reader sees, in a live region under the form:
 
@@ -169,7 +174,24 @@ The address form is used only once the API has answered with an offer. It sends 
 
 The send button is disabled while a request is out. Sending the same address twice is not an error. The form is in the markup with `hidden` and no `action`, and the policy has `form-action 'none'`, so with scripts off there is no form to submit.
 
-**The policy and the address change together.** Every page forbids connections (`default-src 'none'`). The pricing page alone adds `connect-src https://cloud.p0ssess.me` to the policy in its `<meta>` tag. When `offer.api` is set, the same origin has to be in that `connect-src`, and if the host also sends the policy as a header, in the header for `/pricing/` too, since a browser enforces both.
+**The policy and the address change together.** Every page forbids connections (`default-src 'none'`). The pricing and welcome pages add `connect-src https://cloud.p0ssess.me` to the policy in their `<meta>` tags. When `offer.api` is set, the same origin has to be in that `connect-src`, and if the host also sends the policy as a header, in the header for `/pricing/` and `/welcome/` too, since a browser enforces both.
+
+### Checkout
+
+Polar is the merchant of record, so the form that takes the payment is Polar's and only a few things about it can be set: its theme (dark or light), where it sends the buyer afterwards, and whether it opens as Polar's own page or in a frame on ours. The pages do the rest around it.
+
+1. **Get Pro.** `pages.js` sends `POST <api>/v1/checkout` with `plan=pro_yearly` or `pro_monthly` (the period in view) and `embed=1`, form-encoded like the sign-up. The API answers with the checkout's `id`, its `url` on Polar (dark theme) and a `claim`. The page keeps the id and the claim in `sessionStorage` under `p0ssess.checkout`, for this tab only.
+2. **The hand-off.** A layer (`#pay`) covers the page: the ground, the mark where the top bar has it, and p0ssess handing over to Polar on one wire, in the manner of the hand-off figure on the home page. The page behind is made inert and stops scrolling. From 1280 px wide, three lines stand in the left margin while the checkout is open: who sells Pro and who takes the payment, that closing before paying charges nothing, and that the buyer comes back to this site.
+3. **Polar's checkout in a frame.** Polar's own embed script, `vendor/polar-checkout-embed-0.6.0.js`, puts the checkout in a frame over the page. The frame stays invisible until the checkout inside says it has loaded, because a frame that fails draws the browser's error page. Polar's close button, a click outside the form or Escape closes it; the page then asks `GET <api>/v1/checkout?id=...` and says "Checkout closed. Nothing was charged." only when the API confirms the checkout is unpaid.
+4. **If the frame cannot be used.** With `embed: false`, without the vendored script, when the API answers `embed: false`, when the frame has loaded a document that is not the checkout for 5 seconds, or after 12 seconds in all, the layer says "Taking you to Polar" and the same checkout opens as Polar's own page. Polar's back button returns to `/pricing/?checkout=back#buy-pro`, where the page tidies the address and says the same line as after a close. If the API gives no answer the page can read to the request for a checkout, moments after it answered with the offer, the buyer is sent to `start_url` instead; that is what a server without this call does. A refusal the page can read stays on the page: "Checkout isn’t open yet." for 409, "Too many tries." for 429, and "Couldn’t open checkout, and nothing was charged." for anything else.
+5. **After the payment.** Polar tells the page, and the page goes to `/welcome/?checkout_id=...`. Polar adds a `customer_session_token` to that address; the pricing page drops it before going there, and the welcome page removes it from the address bar if it arrives another way. The welcome page asks the API where the checkout stands and shows one of: paid ("You have Pro."), still being confirmed (it looks again every 2.5 seconds, eight times, then offers a button), not paid, or not a checkout the API knows. If the API cannot be reached it stays as it ships, which is the plain case: sign in, then link the install.
+6. **Sign in.** The welcome page's two buttons go to `<api>/pro/done?checkout_id=...&claim=...`, one with `with=github`. The claim ties the checkout to whoever signs in from this browser. Without it (another tab or another browser) the page says to sign in with the address the buyer paid with, which is what the server matches on then.
+
+With scripts off, "Get Pro" is a link to `start_url`, where the server has its own plan picker and sends the buyer to Polar's page, and the welcome page's one button goes to the server's sign-in page.
+
+`offer.embed` ships `false`, so as shipped every checkout takes step 4's way at once: the layer says "Taking you to Polar" and Polar's own page opens. Before setting it to `true`, three things have to be in place outside this folder. The Polar organization has to list `p0ssess.me` under Settings, Embedding; until it does, Polar refuses the frame and step 4 takes over after a wait. The privacy policy says the site loads nothing from other sites, and with the frame the pricing page loads Polar's checkout, so the policy has to say so first. And the cloud API has to be the build that answers `/v1/checkout`. Apple Pay and Google Pay stay off inside a frame until Polar's support has validated the domain; they work on Polar's own page.
+
+**The policy for the frame.** The pricing page's policy adds `frame-src https://polar.sh`, which is where Polar serves checkout, and one hash in `style-src`. The hash is of the style block Polar's script adds for its own loader; the script is pinned, so the block is always the same text. When the script is updated, replace the file in `vendor/` under its new version, change `EMBED` in `pages.js`, and take the new hash from the browser's console message. The vendored file is `dist/embed.global.js` from the npm package `@polar-sh/checkout` 0.6.0, unchanged (SHA-256 `2b861410fcf0a0b1286823ec884642797cc46f201dca3fda086c26c0661431b6`, the same bytes jsDelivr serves for that version), under the Apache License 2.0 (`vendor/polar-checkout-LICENSE.txt`). Nothing is loaded from a CDN, and no version is ever "latest".
 
 ### The reading layout
 
@@ -223,7 +245,7 @@ node site/shoot.js --browser /path/to/chromium --only none --og site/og.png
 
 Without an installed `playwright-core`, set `PLAYWRIGHT_CORE` to a copy of it; Playwright for Python ships one as `playwright/driver/package`, next to its own `node`.
 
-`--pages` captures each of the six pages whole at both sizes (`desk-pricing.png`, `phone-data.png` and so on), then the pricing page against a cloud API that `shoot.js` answers itself. For every capture it serves `release.js` with `offer.api` set to `""`, or to `https://cloud.p0ssess.me` when the API is mocked, whatever the file says, and fulfills requests to that address in the browser, so nothing leaves the machine:
+`--pages` captures each of the seven pages whole at both sizes (`desk-pricing.png`, `phone-data.png` and so on), then the pricing page against a cloud API that `shoot.js` answers itself. For every capture it serves `release.js` with `offer.api` set to `""`, or to `https://cloud.p0ssess.me` and `offer.embed` set to `true` when the API is mocked, whatever the file says, and fulfills requests to that address in the browser, so nothing leaves the machine:
 
 | Capture | State |
 |---|---|
@@ -232,6 +254,10 @@ Without an installed `playwright-core`, set `PLAYWRIGHT_CORE` to a copy of it; P
 | `*-pricing-mock-waitlist-bad.png` | The address form after an address that is refused. |
 | `*-pricing-mock-waitlist-ok.png` | Both forms after an address that is accepted. |
 | `*-pricing-mock-open.png` | The API answers `open` with decided plans. |
+| `*-pricing-mock-handoff.png` | After "Get Pro yearly": the layer, with the frame for Polar's checkout left empty (the harness reaches nothing outside). |
+| `*-pricing-mock-closed.png` | After Escape: the layer is gone and the page says nothing was charged. |
+| `*-welcome.png` | The welcome page as it ships. |
+| `*-welcome-mock-paid.png`, `*-welcome-mock-unpaid.png` | The welcome page for a checkout the API says was paid, and for one that expired. |
 
 The amounts in the mock (`TEST` in `shoot.js`) are test values, not prices. The run fails a check if one shows while its plan is not decided. The `-mock-open` captures show them, under a band across the top that says so. Do not publish those captures as if they were prices. `--only` takes page names too, so `--pages --only pricing` retakes the pricing captures alone.
 
@@ -239,9 +265,9 @@ It prints console errors, failed and outside requests, failed checks and any hor
 
 ## Deploy
 
-Copy `index.html`, `style.css`, `pages.css`, `page.js`, `pages.js`, `release.js`, `ghost.svg`, `film-strip.webp`, `ghost-lantern.webp`, `og.png`, `fonts/` and the six page folders (`pricing/`, `business/`, `data/`, `terms/`, `privacy/`, `refunds/`, each with its `index.html`) to any static host. The pages link to each other as folders (`../pricing/`), so the host has to serve a folder's `index.html` for its address; with nginx, `try_files $uri $uri/` and `index index.html` do that. `README.md`, `shoot.js`, `shots/` and `docs-build/` are not needed there. `film-still.png` is no longer on any page; it stays in the folder for a deploy script that copies it by name.
+Copy `index.html`, `style.css`, `pages.css`, `page.js`, `pages.js`, `release.js`, `ghost.svg`, `film-strip.webp`, `ghost-lantern.webp`, `og.png`, `fonts/`, `vendor/` and the seven page folders (`pricing/`, `business/`, `welcome/`, `data/`, `terms/`, `privacy/`, `refunds/`, each with its `index.html`) to any static host. Without `vendor/` checkout still works, as Polar's own page. The pages link to each other as folders (`../pricing/`), so the host has to serve a folder's `index.html` for its address; with nginx, `try_files $uri $uri/` and `index index.html` do that. `README.md`, `shoot.js`, `shots/` and `docs-build/` are not needed there. `film-still.png` is no longer on any page; it stays in the folder for a deploy script that copies it by name.
 
-Every page carries a strict Content Security Policy in a `<meta>` tag. If the host can set headers, send the same policy as a header and add what a meta tag cannot express. For `/pricing/` the header also needs the page's `connect-src` (see "The offer"), or the header will block what the meta tag allows:
+Every page carries a strict Content Security Policy in a `<meta>` tag. If the host can set headers, send the same policy as a header and add what a meta tag cannot express. For `/pricing/` and `/welcome/` the header also needs the page's `connect-src` (see "The offer"), and for `/pricing/` its `frame-src` and the hash in its `style-src` (see "Checkout"), or the header will block what the meta tag allows:
 
 ```
 Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
@@ -249,7 +275,7 @@ Referrer-Policy: no-referrer
 X-Content-Type-Options: nosniff
 ```
 
-Serve `.woff2` as `font/woff2` and `.webp` as `image/webp`, and cache `fonts/` and the images for a long time. Outside addresses are only followed when someone clicks a link; the pages load nothing from them, except the pricing page's two calls to the cloud API once `offer.api` is set. Uncompressed, the home page and everything it loads come to about 190 KB.
+Serve `.woff2` as `font/woff2` and `.webp` as `image/webp`, and cache `fonts/` and the images for a long time. Outside addresses are only followed when someone clicks a link; the pages load nothing from them, except the calls the pricing and welcome pages make to the cloud API once `offer.api` is set, and Polar's checkout in its frame once a reader opens it. Uncompressed, the home page and everything it loads come to about 190 KB.
 
 ## Fonts
 

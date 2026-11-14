@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; connect-src https://cloud.p0ssess.me; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<title>Welcome to p0ssess Pro</title>
+<meta name="description" content="Where Polar sends you after checkout: sign in, then link p0ssess Pro to Claude Code.">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0b0b0b">
+<link rel="icon" href="../ghost.svg" type="image/svg+xml">
+<link rel="preload" href="../fonts/obel-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../fonts/plex-sans-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../pages.css">
+<script src="../release.js" defer></script>
+<script src="../pages.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the page</a>
+
+<header class="top" id="top">
+  <div class="wrap topbar">
+    <a class="lockup" href="../" aria-label="p0ssess, home">
+      <span class="g"><img src="../ghost.svg" alt="" width="64" height="64"><i class="lid"></i></span>
+      <svg class="wordmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 9" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path class="wm-ink" d="M0 2h3v1h-3zM0 3h1v1h-1zM3 3h1v1h-1zM0 4h1v1h-1zM3 4h1v1h-1zM0 5h3v1h-3zM0 6h1v1h-1zM0 7h1v1h-1zM0 8h1v1h-1zM11 2h3v1h-3zM10 3h1v1h-1zM11 4h2v1h-2zM13 5h1v1h-1zM10 6h3v1h-3zM16 2h3v1h-3zM15 3h1v1h-1zM16 4h2v1h-2zM18 5h1v1h-1zM15 6h3v1h-3zM21 2h2v1h-2zM20 3h1v1h-1zM23 3h1v1h-1zM20 4h4v1h-4zM20 5h1v1h-1zM21 6h3v1h-3zM26 2h3v1h-3zM25 3h1v1h-1zM26 4h2v1h-2zM28 5h1v1h-1zM25 6h3v1h-3zM31 2h3v1h-3zM30 3h1v1h-1zM31 4h2v1h-2zM33 5h1v1h-1zM30 6h3v1h-3z"/><path class="wm-zero" d="M6 0h2v1h-2zM5 1h1v1h-1zM8 1h1v1h-1zM5 2h1v1h-1zM8 2h1v1h-1zM5 3h1v1h-1zM8 3h1v1h-1zM5 4h1v1h-1zM8 4h1v1h-1zM5 5h1v1h-1zM8 5h1v1h-1zM6 6h2v1h-2z"/></svg>
+    </a>
+    <nav class="topnav" aria-label="Site">
+      <a href="../pricing/">Pricing</a>
+      <a href="../business/">For business</a>
+      <a data-link="docs" hidden>Docs</a>
+      <a data-link="repo" hidden>Source</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<section class="page-head" aria-labelledby="page-h">
+<div class="wrap" aria-live="polite">
+  <h1 id="page-h" data-h>Sign in to finish.</h1>
+  <p class="lede" data-lede>Polar sends you to this page after checkout. Signing in ties what you paid for to an account, and one command links it to Claude Code.</p>
+  <p class="paid" data-paid hidden></p>
+  <div class="acts" data-acts hidden>
+    <button class="btn" type="button" data-again hidden>Check again</button>
+    <a class="btn" data-signin-alt href="https://cloud.p0ssess.me/signin?next=%2Faccount" hidden>Sign in</a>
+    <a class="btn quiet" data-back href="../pricing/#pro">Back to pricing</a>
+  </div>
+</div>
+</section>
+
+<section class="todo-sec" id="next" aria-labelledby="next-h" data-next>
+<div class="wrap">
+  <h2 class="sr-only" id="next-h">What is left to do</h2>
+  <div class="grid two todo">
+    <div class="cell hl lit">
+      <h2>Sign in</h2>
+      <p>There is no password. Use GitHub, or get a one-time link by email. Signing in makes the account your subscription belongs to.</p>
+      <p class="hint" data-hint>Sign in with the address you paid with, so the payment is matched to you.</p>
+      <div class="acts">
+        <a class="btn" data-signin href="https://cloud.p0ssess.me/signin?next=%2Faccount">Sign in</a>
+        <a class="btn" data-github hidden>Continue with GitHub</a>
+        <a class="btn quiet" data-email hidden>Email me a sign-in link</a>
+      </div>
+    </div>
+    <div class="cell hl lit">
+      <h2>Link your install</h2>
+      <p>In Claude Code, run this command. It opens a page with a short code.</p>
+      <div class="cmd"><pre><code><span class="ln">/p0ssess:pro</span></code></pre><button class="copy-btn" type="button" aria-label="Copy the command" hidden>Copy</button></div>
+      <p>Check that the code matches the one in your terminal, then press Link. Pro turns on in the session that is already running, with no restart and nothing to paste.</p>
+      <p class="hint">No plugin yet? <a href="../#try">Install p0ssess</a> first, then run the command.</p>
+    </div>
+  </div>
+  <div class="grid two after-pay">
+    <div class="cell hl">
+      <h3>Receipts and cancelling</h3>
+      <p>Polar emails a confirmation to the address you paid with. Your invoices and your card are in Polar’s customer portal, and so is cancelling. You sign in there with that same address.</p>
+      <p><a data-link="portal" hidden>Open Polar’s customer portal</a></p>
+    </div>
+    <div class="cell hl">
+      <h3>If something is off</h3>
+      <p>Write to <a href="mailto:support@p0ssess.me">support@p0ssess.me</a>. Refunds are set out in the <a href="../refunds/">refund policy</a>.</p>
+    </div>
+  </div>
+  <p class="sr-only" id="copy-status" role="status" aria-live="polite"></p>
+</div>
+</section>
+
+</main>
+
+<footer class="site-foot">
+<div class="wrap foot-in">
+  <img class="foot-g" src="../ghost.svg" alt="" width="32" height="32">
+  <div>
+    <nav class="foot-nav" aria-label="More pages"><a href="../pricing/">Pricing</a><a href="../business/">For business</a><a href="../terms/">Terms</a><a href="../privacy/">Privacy</a><a href="../data/">Data</a><a href="../refunds/">Refunds</a></nav>
+    <p>The p0ssess plugin is MIT licensed. By s3ym0ur. Pro and Team are sold by New Deal Systems LLC.</p>
+    <p class="small">Set in Obel Mono and IBM Plex Sans, both under the <a href="../fonts/OFL-obel-mono.txt">SIL Open Font License</a>.</p>
+  </div>
+</div>
+</footer>
+
+</body>
+</html>
