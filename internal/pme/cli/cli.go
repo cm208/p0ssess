@@ -209,7 +209,11 @@ func recommend(e *local.Engine, args []string, s IO) error {
 
 // PrintRecommendation is the terminal view of a recommendation.
 func PrintRecommendation(w io.Writer, r *local.Recommendation) {
-	fmt.Fprintf(w, "%s (#%d, %s) · stakes %d · λ %.2f (%s)\n", r.UseCase.ID, r.UseCase.N, r.UseCase.Kind, r.Stakes, r.Lambda.Value, r.Lambda.Note)
+	if r.Lead == local.LeadNone {
+		fmt.Fprintf(w, "%s (#%d, %s) · stakes %d · no Claude lead\n", r.UseCase.ID, r.UseCase.N, r.UseCase.Kind, r.Stakes)
+	} else {
+		fmt.Fprintf(w, "%s (#%d, %s) · stakes %d · λ %.2f (%s)\n", r.UseCase.ID, r.UseCase.N, r.UseCase.Kind, r.Stakes, r.Lambda.Value, r.Lambda.Note)
+	}
 	if len(r.Classification) > 1 {
 		var alts []string
 		for _, m := range r.Classification[1:] {

@@ -108,3 +108,22 @@ func TestCLI(t *testing.T) {
 		t.Error("unknown command exit code")
 	}
 }
+
+func TestCLINoLead(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("P0SSESS_HOME", home)
+	useFixture(t)
+	tabletest.Down(t)
+	proj := filepath.Join(home, "proj")
+	os.MkdirAll(filepath.Join(proj, ".git"), 0o755)
+	if code, out, _ := run(t, "", "engine", "recommend", "--use-case", "qa-factual", "--stakes", "2", "--cwd", proj); code != 0 || !strings.Contains(out, "pick: keeping this on Claude") {
+		t.Fatalf("with a lead: %s", out)
+	}
+	if code, out, _ := run(t, "", "engine", "set", "lead", "none"); code != 0 || !strings.Contains(out, "lead = none") {
+		t.Fatalf("set lead: %s", out)
+	}
+	code, out, _ := run(t, "", "engine", "recommend", "--use-case", "qa-factual", "--stakes", "2", "--cwd", proj)
+	if code != 0 || !strings.Contains(out, "stakes 2 · no Claude lead") || strings.Contains(out, "λ") || !strings.Contains(out, "pick: handing this to deepseek-v4.1-flash") {
+		t.Fatalf("no lead: %s", out)
+	}
+}
