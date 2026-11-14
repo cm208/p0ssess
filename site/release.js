@@ -7,16 +7,16 @@ window.P0SSESS = {
   // <repo>/releases/download/v<version>/<file>, which is where GitHub and Gitea serve them.
   repo: "https://github.com/cm208/p0ssess",
   // The published release, without the "v": "<major>.<minor>.<patch>".
-  version: "1.0.1",
+  version: "1.0.2",
   // The documentation site, or "" to keep the Docs link hidden.
   docs: "https://docs.p0ssess.me",
   // Optional: the lines of that release's SHA256SUMS, to print each sum under its file.
   // Leave a value empty to show only the link to SHA256SUMS.
   sha256: {
-    "p0ssess-linux-amd64": "ed8b768ed8868873f52f009273cfa0f6de025db0b7183e4522980e123a6b109c",
-    "p0ssess-linux-arm64": "11116a700edaaff0aa14316783d645e23637f4f766b67b0eb3d9dbe63b3451e5",
-    "p0ssess-darwin-arm64": "b7a342d0214a87a8caa7538d8a3ad81dd2225fdd956f9cfba06e3b013c02363e",
-    "p0ssess-windows-amd64.exe": "cfd47f252c177a891cb27010293f6be7bb9fd77e50e9d6f7d2614d837c749996",
+    "p0ssess-linux-amd64": "97fc6fc922cfa0b9ec15cbed6bd3b1c63b7f2e09affadf6f644fde059c6f3b32",
+    "p0ssess-linux-arm64": "0ba507a22c7d03725f4535af4b280df4ab741c3a6ae3309b72308075ab0beb60",
+    "p0ssess-darwin-arm64": "347028bd4e9e73148a4745c1b5297051ae2be6778888a84a3a2fbceef4202096",
+    "p0ssess-windows-amd64.exe": "92951cd5a27f717deb2358ec4935dc24a3ed9818b8692ef6a1a005b4a7b13cbb",
   },
   // What is for sale, read by the pricing page (pages.js). See README.md, "Pricing, business and policy pages".
   offer: {
