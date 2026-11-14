@@ -24,6 +24,8 @@ const HistoryRows = 500
 
 const privateNote = "this repository has a .p0ssess-private file: no delegation from here"
 
+const noLeadNote = "no Claude lead (lead = none): only routes p0ssess runs itself are offered"
+
 // Recommend ranks the routes for a task. The engine service scores them; when it cannot be reached
 // (or answers anything but a good 200) the signed route table answers instead, without a word. In a
 // repository with a .p0ssess-private file nothing is sent. Approval, the monthly cap, rule wording,
@@ -58,11 +60,12 @@ func (e *Engine) Recommend(req Request) (*Recommendation, error) {
 	us := e.Usage()
 	t := e.facts()
 
+	noLead := cfg.NoLead()
 	lead := LeadID(req.Lead)
 	if lead == "" {
 		lead = LeadID(us.LeadModel)
 	}
-	if lead != "" && !t.Empty() && t.Model(lead) == nil {
+	if lead != "" && !t.Empty() && t.Model(lead) == nil || noLead {
 		lead = ""
 	}
 	plan := bud.Plan
@@ -70,7 +73,7 @@ func (e *Engine) Recommend(req Request) (*Recommendation, error) {
 		plan = "api"
 		if us.Subscriber {
 			plan = "subscription"
-		} else {
+		} else if !noLead {
 			notes = append(notes, "plan unknown: Claude priced at list (set plan in budget.toml)")
 		}
 	}
@@ -80,17 +83,27 @@ func (e *Engine) Recommend(req Request) (*Recommendation, error) {
 	private := paths.Private(req.Cwd)
 	var resp *remote.Response
 	if !private {
-		resp = e.ask(e.wire(req, stakes, lead, lam.Value, bud, rs, ledger, now))
+		w := e.wire(req, stakes, lead, lam.Value, bud, rs, ledger, now)
+		w.NoLead = noLead
+		resp = e.ask(w)
 	}
 	fromTable := resp == nil
 	if fromTable {
 		if lead == "" {
 			lead = cfg.DefaultLead
 		}
-		resp, err = fromRoutes(t, req, stakes, lead, lam.Value, cfg, private)
+		if noLead {
+			resp, err = fromNoLeadRoutes(t, req, stakes, cfg)
+		} else {
+			resp, err = fromRoutes(t, req, stakes, lead, lam.Value, cfg, private)
+		}
 		if err != nil {
 			return nil, err
 		}
+	}
+	if noLead {
+		resp = withoutLead(resp)
+		notes = append(notes, noLeadNote)
 	}
 	if private {
 		notes = append(notes, privateNote)
@@ -232,6 +245,47 @@ func fromRoutes(t *table.Table, req Request, stakes int, lead string, lam float6
 	return r, nil
 }
 
+// fromNoLeadRoutes answers from the table's no-lead routes. A table signed before 1.0.2 has none; then
+// the delegated options of the Claude-lead routes are all there is, and a job those keep on Claude gets
+// no route until the table is refreshed.
+func fromNoLeadRoutes(t *table.Table, req Request, stakes int, cfg Config) (*remote.Response, error) {
+	if !t.HasNoLead() {
+		r, err := fromRoutes(t, req, stakes, cfg.DefaultLead, 1, cfg, false)
+		if err == nil && len(withoutLead(r).Options) == 0 {
+			r.Notes = append(r.Notes, "this route table has no routes for a caller with no Claude lead; run p0ssess engine refresh")
+		}
+		return r, err
+	}
+	r, err := fromRoutes(t, req, stakes, cfg.DefaultLead, 1, cfg, false)
+	if err != nil || r.UseCase.ID == "" || t.UseCase(r.UseCase.ID) == nil {
+		return r, err
+	}
+	r.Options = nil
+	if rt := t.NoLeadRoute(r.UseCase.ID, r.Stakes); rt != nil && (rt.Stakes == r.Stakes || r.Stakes < 4) {
+		for _, o := range rt.Options {
+			o.Notes = append([]string(nil), o.Notes...)
+			o.ApprovalReasons, o.NeedsApproval, o.ApprovalID = nil, false, ""
+			r.Options = append(r.Options, o)
+		}
+	}
+	return r, nil
+}
+
+// withoutLead drops the routes that need a Claude session: Claude itself, a Claude subagent and a
+// local tool Claude would run.
+func withoutLead(r *remote.Response) *remote.Response {
+	opts := r.Options[:0:0]
+	for _, o := range r.Options {
+		switch o.Route {
+		case RouteClaude, RouteSubagent, RouteLocal:
+			continue
+		}
+		opts = append(opts, o)
+	}
+	r.Options, r.LeadModel, r.ClaudeFeasible = opts, LeadNone, false
+	return r
+}
+
 func abs(x int) int {
 	if x < 0 {
 		return -x
@@ -282,8 +336,11 @@ func (e *Engine) finish(req Request, resp *remote.Response, fromTable, private b
 		Classification: resp.Classification, Stakes: resp.Stakes, StakesNote: resp.StakesNote, Work: resp.Work, Lead: resp.LeadModel,
 		Lambda: lam, ClaudeFeasible: resp.ClaudeFeasible, Ceiling: resp.StakesCeiling, DataAsOf: resp.DataAsOf,
 	}
-	if rec.Lead == "" {
+	if rec.Lead == "" || cfg.NoLead() {
 		rec.Lead = cfg.DefaultLead
+		if cfg.NoLead() {
+			rec.Lead = LeadNone
+		}
 	}
 	for _, x := range resp.Excluded {
 		if x.Why == "rule" {

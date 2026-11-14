@@ -8,6 +8,7 @@ type Request struct {
 	Profile   *Profile     `json:"profile,omitempty"`
 	Stakes    int          `json:"stakes"`
 	LeadModel string       `json:"lead_model,omitempty"`
+	NoLead    bool         `json:"no_lead,omitempty"`
 	Lambda    float64      `json:"lambda"`
 	Top       int          `json:"top,omitempty"`
 	Rules     []Rule       `json:"rules"`

@@ -371,7 +371,7 @@ func (e *Engine) Learned(s Scope) Learned {
 var settingKeys = []string{"monthly_usd", "per_task_usd", "daily_usd", "save_claude", "plan", "usage_credits",
 	"privacy.mode", "privacy.allow_safety_retention", "models.allow", "models.deny", "providers.allow", "providers.deny",
 	"sandbox.shell_internet", "sandbox.shell_internet.add", "sandbox.shell_internet.remove",
-	"ask.first_use", "ask.code_edits", "outcomes.send", "lambda.preset", "statusline.command", "statusline.mark", "statusline.width"}
+	"ask.first_use", "ask.code_edits", "outcomes.send", "lambda.preset", "statusline.command", "statusline.mark", "statusline.width", "lead"}
 
 func SettingKeys() []string { return append([]string(nil), settingKeys...) }
 
@@ -380,7 +380,7 @@ func SettingKeys() []string { return append([]string(nil), settingKeys...) }
 func (e *Engine) SetSetting(key, value string) (msg string, err error) {
 	path := e.Dirs.BudgetFile()
 	set := e.setBudget
-	if strings.HasPrefix(key, "lambda.") || strings.HasPrefix(key, "statusline.") {
+	if strings.HasPrefix(key, "lambda.") || strings.HasPrefix(key, "statusline.") || key == "lead" {
 		path, set = e.Dirs.EngineFile(), e.setEngine
 	}
 	err = paths.WithLock(path, func() error {
@@ -529,6 +529,12 @@ func (e *Engine) setEngine(key, value string) (string, error) {
 		tab = map[string]any{}
 	}
 	switch key {
+	case "lead":
+		if !validLead(value) {
+			return "", errors.New("lead must be claude or none")
+		}
+		doc[key] = value
+		tab = nil
 	case "lambda.preset":
 		if _, ok := Presets[value]; !ok && value != "custom" {
 			return "", fmt.Errorf("lambda.preset must be list, gentle, balanced, eager or custom")
@@ -545,7 +551,9 @@ func (e *Engine) setEngine(key, value string) (string, error) {
 	default:
 		return "", fmt.Errorf("unknown setting %q", key)
 	}
-	doc[section] = tab
+	if tab != nil {
+		doc[section] = tab
+	}
 	var buf strings.Builder
 	buf.WriteString("# p0ssess engine presets. See docs/ENGINE.md.\n\n")
 	if err := toml.NewEncoder(&buf).Encode(doc); err != nil {

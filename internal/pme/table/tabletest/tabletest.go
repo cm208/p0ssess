@@ -106,6 +106,9 @@ func UseCases() []table.UseCase {
 		uc("dual-review-high-risk", 90, "Two-family review of a high-risk diff", "review", "coding", "direct", text, text, 4, 4, 4, 0, false, "full"),
 		uc("limit-fallback-coding", 100, "Coding when Claude's limit is near", "agent", "agentic_coding", "agent", text, text, 1, 4, 0, 20, true, "full"),
 		uc("audio-transcribe-noisy", 105, "Noisy or hard audio to text", "media", "speech_to_text", "direct", []string{"audio"}, text, 2, 2, 2, 0, false, "spot"),
+		uc("qa-factual", 110, "Factual question with a short answer", "text", "knowledge", "direct", text, text, 1, 2, 1, 0, false, "spot"),
+		uc("ocr-degraded-image", 111, "Text out of a degraded scan", "media", "ocr", "direct", []string{"image"}, text, 2, 2, 2, 0, false, "spot"),
+		uc("invoice-receipt-extract", 112, "Fields out of invoices and receipts", "media", "document", "direct", []string{"image", "file"}, []string{"json"}, 3, 4, 3, 0, false, "spot"),
 	}
 }
 
@@ -152,6 +155,14 @@ func Routes() []table.Route {
 		for s := 1; s <= 4; s++ {
 			rs = append(rs, route("limit-fallback-coding", s, l, true, claude(0.5)))
 		}
+		// With a Claude lead the break-even rule keeps these small jobs on Claude.
+		rs = append(rs,
+			route("qa-factual", 1, l, true, claude(0.01)),
+			route("qa-factual", 2, l, true, claude(0.02)),
+			route("ocr-degraded-image", 2, l, true, claude(0.03)),
+			route("invoice-receipt-extract", 3, l, true, claude(0.05)),
+			route("invoice-receipt-extract", 4, l, true, claude(0.06)),
+		)
 	}
 	rs = append(rs,
 		route("code-implement-feature", 2, "api", true, paid("agent", "deepseek/deepseek-v4.1-flash", 0.2, 0.05), paid("agent", "openai/gpt-6.1-sol", 0.45, 0.2), claude(0.5)),
@@ -162,10 +173,31 @@ func Routes() []table.Route {
 	return rs
 }
 
+// NoLeadRoutes are the fixture's answers for a caller with no Claude lead.
+func NoLeadRoutes() []table.Route {
+	return []table.Route{
+		route("qa-factual", 1, "none", false, paid("direct", "deepseek/deepseek-v4.1-flash", 0.001, 0.001), paid("direct", "z-ai/glm-5.3-flash", 0.0015, 0.001)),
+		route("qa-factual", 2, "none", false, paid("direct", "deepseek/deepseek-v4.1-flash", 0.008, 0.001), paid("direct", "z-ai/glm-5.3-flash", 0.009, 0.001)),
+		route("ocr-degraded-image", 2, "none", false, paid("direct", "google/gemini-3.8-flash", 0.009, 0.002)),
+		route("invoice-receipt-extract", 3, "none", false, paid("direct", "google/gemini-3.8-flash", 0.065, 0.004), paid("direct", "qwen/qwen3.8-omni-flash", 0.08, 0.003)),
+		route("invoice-receipt-extract", 4, "none", false),
+		route("log-digest", 1, "none", false, paid("direct", "deepseek/deepseek-v4.1-flash", 0.004, 0.001)),
+		route("video-understand", 1, "none", false, paid("direct", "qwen/qwen3.8-omni-flash", 0.03, 0.0223)),
+	}
+}
+
 // Payload is the fixture table's JSON.
-func Payload() []byte {
+func Payload() []byte { return payload(true) }
+
+// PayloadBeforeNoLead is the fixture as a server before 1.0.2 signed it: no no_lead_routes.
+func PayloadBeforeNoLead() []byte { return payload(false) }
+
+func payload(noLead bool) []byte {
 	t := map[string]any{"v": 1, "tier": "free", "lambda_points": map[string]float64{"api": 1.0, "subscription": 0.15},
 		"use_cases": UseCases(), "models": Models(), "routes": Routes()}
+	if noLead {
+		t["no_lead_routes"] = NoLeadRoutes()
+	}
 	b, _ := json.Marshal(t)
 	sum := sha256.Sum256(b)
 	t["id"] = hex.EncodeToString(sum[:8])

@@ -81,6 +81,9 @@ type Table struct {
 	UseCases     []UseCase          `json:"use_cases"`
 	Models       []Model            `json:"models"`
 	Routes       []Route            `json:"routes"`
+	// NoLeadRoutes are the answers for a caller with no Claude lead, one per use case and stakes level.
+	// Tables signed before 1.0.2 have none.
+	NoLeadRoutes []Route `json:"no_lead_routes,omitempty"`
 
 	models json.RawMessage
 	byUC   map[string]*UseCase
@@ -127,6 +130,35 @@ func (t *Table) Route(useCase string, stakes int, lambda float64) *Route {
 		}
 	}
 	return best
+}
+
+// NoLeadRoute returns the no-lead entry for a use case at the stakes level closest to stakes (the
+// higher on a tie), or nil.
+func (t *Table) NoLeadRoute(useCase string, stakes int) *Route {
+	if t == nil {
+		return nil
+	}
+	var best *Route
+	for i := range t.NoLeadRoutes {
+		r := &t.NoLeadRoutes[i]
+		if r.UseCase != useCase {
+			continue
+		}
+		if best == nil || gap(r.Stakes, stakes) < gap(best.Stakes, stakes) || gap(r.Stakes, stakes) == gap(best.Stakes, stakes) && r.Stakes > best.Stakes {
+			best = r
+		}
+	}
+	return best
+}
+
+// HasNoLead reports whether the table carries no-lead routes.
+func (t *Table) HasNoLead() bool { return t != nil && len(t.NoLeadRoutes) > 0 }
+
+func gap(a, b int) int {
+	if a > b {
+		return a - b
+	}
+	return b - a
 }
 
 // Levels lists the stakes levels the table has routes for, for one use case.

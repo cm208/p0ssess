@@ -269,6 +269,7 @@ Every key is optional; anything missing keeps its default.
 candidates = "evidence"     # evidence, catalog or all
 subagent_model = "anthropic/claude-haiku-5.5"
 default_lead = "anthropic/claude-sonnet-5.5"
+lead = "claude"             # claude, or none when no Claude session stands behind p0ssess
 overhead_usd = 0.05
 mechanical_retries = 2
 cash_headroom = 1.5
@@ -305,6 +306,18 @@ mark = "ᗣ"                  # the ghost; "" hides it
 width = 0                   # used when Claude Code does not set COLUMNS (0 means 120)
 color = true
 ```
+
+#### No Claude lead
+
+Routing assumes a Claude Code session leads: Claude can do the work itself, so a small job goes elsewhere only when that saves more than the hand-off and review cost. A program that drives the p0ssess binary itself, over MCP (`p0ssess mcp`) or the CLI, has no Claude session to keep the work on. For it, set `lead = "none"` in that installation's `engine.toml` (`$P0SSESS_HOME/engine.toml` when `P0SSESS_HOME` is set), or `P0SSESS_LEAD=none` in its environment. The environment variable wins over the file; `P0SSESS_LEAD=claude` turns it back off. `p0ssess engine set lead none` and the `settings_set` tool write the file.
+
+With no lead:
+
+* The `claude`, `claude-subagent` and `local` routes are left out, along with the break-even rule. The rest are scored without hand-off or review costs and as if nothing reviews the result: every failure counts toward harm and there are no mechanical retries. λ plays no part.
+* `recommend` names `none` as the lead, and the `direct` tool, given a `use_case` and no model, uses the best direct option.
+* Budgets, the monthly cap, the stakes ceilings, the stakes-4 rule, rules, lists, privacy mode, approvals, the ledger and outcome records work as they always do.
+
+The engine service scores these requests itself (`no_lead` in the request). The route table carries a no-lead answer for every use case and stakes level since 1.0.2. A table fetched before then has none; until `p0ssess engine refresh` replaces it, only the delegated options of the usual routes are offered, so a job those keep on Claude gets no route.
 
 ### rules.toml
 
@@ -423,7 +436,7 @@ A reading older than two hours, or none (before the first response in a session,
 |---|---|
 | `recommend` | the ranked list for a use case or profile; records the offer. By default one line per option (route, model, total, estimated cash, p_fail, why it would ask); `detail: true` returns the full breakdown. Each paid option's `estimate_usd` is what the approval check uses |
 | `budget_status` | spend against limits, plan, λ and pressure, running jobs, file locations |
-| `settings_set` | change one setting (`monthly_usd`, `per_task_usd`, `daily_usd`, `save_claude`, `plan`, `usage_credits`, `privacy.mode`, `privacy.allow_safety_retention`, `ask.first_use`, `ask.code_edits`, `outcomes.send`, `models.allow`, `models.deny`, `providers.allow`, `providers.deny`, `sandbox.shell_internet`, `sandbox.shell_internet.add`, `sandbox.shell_internet.remove`, `lambda.preset`, `statusline.command`, `statusline.mark`, `statusline.width`) |
+| `settings_set` | change one setting (`monthly_usd`, `per_task_usd`, `daily_usd`, `save_claude`, `plan`, `usage_credits`, `privacy.mode`, `privacy.allow_safety_retention`, `ask.first_use`, `ask.code_edits`, `outcomes.send`, `models.allow`, `models.deny`, `providers.allow`, `providers.deny`, `sandbox.shell_internet`, `sandbox.shell_internet.add`, `sandbox.shell_internet.remove`, `lambda.preset`, `statusline.command`, `statusline.mark`, `statusline.width`, `lead`) |
 | `rules_list`, `rules_add`, `rules_remove` | rules with scope; `dry_run` renders without saving |
 | `approvals_add`, `approvals_list` | standing approvals and their use |
 | `history_record_outcome` | redo, overridden or declined (or accepted, though a finished run counts as accepted on its own; a run started with `await_outcome` needs one), with the `run_id` whose measured cost it takes and whose implied acceptance it replaces |

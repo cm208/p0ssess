@@ -397,7 +397,7 @@ func TestRunsAreSpend(t *testing.T) {
 		t.Error("an unknown use case was recorded")
 	}
 	st, _ := e.Status(Scope{Cwd: proj})
-	if st.Spend.Runs != 2 || st.Spend.Month < 0.0399 || st.Spend.Month > 0.0401 || !strings.Contains(st.RouteTable, "13 use cases") {
+	if st.Spend.Runs != 2 || st.Spend.Month < 0.0399 || st.Spend.Month > 0.0401 || !strings.Contains(st.RouteTable, "16 use cases") {
 		t.Errorf("spend = %+v, table %q", st.Spend, st.RouteTable)
 	}
 }

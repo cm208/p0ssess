@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 
@@ -68,7 +69,19 @@ type Config struct {
 	Candidates    string  `toml:"candidates" json:"candidates"`
 	SubagentModel string  `toml:"subagent_model" json:"subagent_model"`
 	DefaultLead   string  `toml:"default_lead" json:"default_lead"`
+	// Lead is "claude" when a Claude Code session leads (the default), or "none" when nothing stands
+	// behind the caller, such as a server app driving the binary over MCP. P0SSESS_LEAD overrides it.
+	Lead string `toml:"lead" json:"lead"`
 }
+
+// LeadNone is the lead setting, and the lead a recommendation names, when no Claude session leads.
+const LeadNone = "none"
+
+// LeadEnv overrides the lead setting in engine.toml.
+const LeadEnv = "P0SSESS_LEAD"
+
+// NoLead reports whether no Claude session leads: Claude routes and the break-even rule drop out.
+func (c Config) NoLead() bool { return c.Lead == LeadNone }
 
 func DefaultConfig() Config {
 	return Config{
@@ -82,6 +95,7 @@ func DefaultConfig() Config {
 		Candidates:        "evidence",
 		SubagentModel:     "anthropic/claude-haiku-5.5",
 		DefaultLead:       "anthropic/claude-sonnet-5.5",
+		Lead:              "claude",
 	}
 }
 
@@ -112,20 +126,29 @@ func (l LambdaConfig) Shape(saveClaude bool) (floor, exponent float64, name stri
 	return p.Floor, p.Exponent, name
 }
 
+// LoadConfig reads engine.toml and applies P0SSESS_LEAD.
 func LoadConfig(path string) (Config, error) {
+	c := DefaultConfig()
 	b, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return DefaultConfig(), nil
-	}
-	if err != nil {
+	switch {
+	case errors.Is(err, os.ErrNotExist):
+	case err != nil:
 		return DefaultConfig(), err
+	default:
+		if c, err = LoadConfigFrom(b); err != nil {
+			return DefaultConfig(), fmt.Errorf("%s: %w", path, err)
+		}
 	}
-	c, err := LoadConfigFrom(b)
-	if err != nil {
-		return DefaultConfig(), fmt.Errorf("%s: %w", path, err)
+	if v := strings.TrimSpace(os.Getenv(LeadEnv)); v != "" {
+		if !validLead(v) {
+			return DefaultConfig(), fmt.Errorf("%s must be claude or none, not %q", LeadEnv, v)
+		}
+		c.Lead = v
 	}
 	return c, nil
 }
+
+func validLead(v string) bool { return v == "claude" || v == LeadNone }
 
 // LoadConfigFrom decodes engine.toml content over the defaults.
 func LoadConfigFrom(b []byte) (Config, error) {
@@ -163,6 +186,12 @@ func (c Config) Validate() error {
 	}
 	if c.MechanicalRetries < 0 {
 		return errors.New("mechanical_retries must be 0 or more")
+	}
+	if c.Lead == "" {
+		c.Lead = "claude"
+	}
+	if !validLead(c.Lead) {
+		return fmt.Errorf("lead must be claude or none, not %q", c.Lead)
 	}
 	switch c.Candidates {
 	case "evidence", "catalog", "all":
