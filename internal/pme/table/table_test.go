@@ -32,6 +32,27 @@ func TestBuiltInVerifiesWithThePinnedKey(t *testing.T) {
 	if s.ETag() != "" {
 		t.Error("a built-in table has no etag to send")
 	}
+	for _, uc := range []string{"invoice-receipt-extract", "ocr-degraded-image", "qa-factual"} {
+		r := tb.NoLeadRoute(uc, 2)
+		if r == nil || len(r.Options) == 0 || r.Options[0].Route != "direct" || r.ClaudeFeasible {
+			t.Errorf("built-in no-lead route for %s: %+v", uc, r)
+		}
+		if r := tb.Route(uc, r.Stakes, 1); r == nil {
+			t.Errorf("%s: no Claude-lead route", uc)
+		}
+	}
+}
+
+func TestNoLeadRouteTakesTheClosestLevel(t *testing.T) {
+	tb := tabletest.Store(t.TempDir()).Table()
+	for _, c := range []struct{ stakes, want int }{{1, 1}, {2, 2}, {3, 2}, {4, 2}} {
+		if r := tb.NoLeadRoute("qa-factual", c.stakes); r == nil || r.Stakes != c.want {
+			t.Errorf("stakes %d: %+v", c.stakes, r)
+		}
+	}
+	if tb.NoLeadRoute("nope", 2) != nil || !tb.HasNoLead() {
+		t.Error("unknown use case or no no-lead routes")
+	}
 }
 
 func TestPinnedKeyID(t *testing.T) {
