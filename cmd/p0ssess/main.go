@@ -29,7 +29,7 @@ import (
 	"p0ssess/internal/team"
 )
 
-var version = "1.0.1"
+var version = "1.0.2"
 
 const usage = `p0ssess %s: Claude Code hands work to other models through OpenRouter
 
