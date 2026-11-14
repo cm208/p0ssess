@@ -39,7 +39,9 @@ var ToolSchema = json.RawMessage(`{
     "language": {"type": "string"},
     "image_aspect": {"type": "string"},
     "image_resolution": {"type": "string"},
-    "out_dir": {"type": "string"},
+    "out_dir": {"type": "string", "description": "folder for generated files; existing files there are never replaced (the next free name is used)"},
+    "out_file": {"type": "string", "description": "image output only: the file to write, absolute or inside out_dir; refused before sending if it exists, unless overwrite"},
+    "overwrite": {"type": "boolean", "description": "let out_file replace an existing file"},
     "dry_run": {"type": "boolean"}
   },
   "required": ["prompt"],
@@ -64,6 +66,8 @@ type toolArgs struct {
 	ImageAspect     string   `json:"image_aspect"`
 	ImageResolution string   `json:"image_resolution"`
 	OutDir          string   `json:"out_dir"`
+	OutFile         string   `json:"out_file"`
+	Overwrite       bool     `json:"overwrite"`
 	DryRun          bool     `json:"dry_run"`
 }
 
@@ -80,7 +84,7 @@ func ParseArgs(raw json.RawMessage) (Request, error) {
 		MaxTokens: a.MaxTokens, StrictZDR: a.StrictZDR, Reasoning: a.Reasoning, PDFEngine: a.PDFEngine,
 		VideoProcessing: a.VideoProcessing, VideoPrep: VideoPrep(a.VideoPrep), Timestamps: a.Timestamps,
 		Language: a.Language, ImageAspect: a.ImageAspect, ImageResolution: a.ImageResolution,
-		OutDir: a.OutDir, DryRun: a.DryRun,
+		OutDir: a.OutDir, OutFile: a.OutFile, Overwrite: a.Overwrite, DryRun: a.DryRun,
 	}
 	if a.MaxCostUSD != nil {
 		r.MaxCostUSD, r.MaxGiven = *a.MaxCostUSD, true

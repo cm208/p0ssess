@@ -62,7 +62,13 @@ type Request struct {
 	ImageResolution string // image generation: e.g. "1K"
 
 	OutDir string // where generated files go; empty means a new folder under the state directory
-	DryRun bool   // estimate only
+	// OutFile names the generated image (image output only); a relative name is inside OutDir, or the
+	// working directory. A second image from the same call takes "-2" before the extension.
+	OutFile string
+	// Overwrite lets OutFile replace an existing file. Without it an existing OutFile is refused before
+	// anything is sent, and generated files never replace one.
+	Overwrite bool
+	DryRun    bool // estimate only
 }
 
 // Limits are the per-modality input caps. Zero fields take the defaults.

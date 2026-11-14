@@ -446,6 +446,9 @@ func (c *Client) Run(ctx context.Context, req Request) (*Result, error) {
 	if c.Key == "" {
 		return nil, errors.New("no OpenRouter key")
 	}
+	if err := checkOutFile(p.req); err != nil {
+		return nil, err
+	}
 	outDir, err := c.outDir(p.req.OutDir)
 	if err != nil {
 		return nil, err
@@ -475,6 +478,34 @@ func (c *Client) Run(ctx context.Context, req Request) (*Result, error) {
 		res.Warnings = append(res.Warnings, fmt.Sprintf("actual cost $%.6f was above the estimate $%.6f", res.Usage.CostUSD, p.est.CostUSD))
 	}
 	return res, nil
+}
+
+// checkOutFile refuses an out_file on anything but image output, and one that exists without
+// overwrite, before anything is sent.
+func checkOutFile(r Request) error {
+	if r.OutFile == "" {
+		return nil
+	}
+	if r.Output != OutImage {
+		return errors.New("out_file is for image output")
+	}
+	path, err := outFilePath(r.OutFile, r.OutDir)
+	if err != nil {
+		return err
+	}
+	if filepath.Ext(path) == "" {
+		// The extension comes from the image; any existing file with this stem and an image extension counts.
+		for _, ext := range []string{".png", ".jpg", ".webp", ".gif", ".svg", ".bin"} {
+			if _, err := os.Stat(path + ext); err == nil && !r.Overwrite {
+				return fmt.Errorf("out_file %s exists; pass overwrite to replace it, or another name", path+ext)
+			}
+		}
+		return nil
+	}
+	if _, err := os.Stat(path); err == nil && !r.Overwrite {
+		return fmt.Errorf("out_file %s exists; pass overwrite to replace it, or another name", path)
+	}
+	return nil
 }
 
 func (c *Client) outDir(asked string) (string, error) {

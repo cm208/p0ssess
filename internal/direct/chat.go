@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"mime"
 	"net/http"
 	"os"
@@ -219,7 +220,7 @@ func (c *Client) chatOnce(ctx context.Context, p *plan, inputs []Input, prompt s
 	// Count the cost before saving images, so a failed save still records what the call was billed.
 	c.settleCost(ctx, res, p, cr.ID, cr.Usage, "the answer reported no cost")
 	for i, im := range cr.Choices[0].Message.Images {
-		f, err := c.saveImage(ctx, im.ImageURL.URL, outDir, len(res.Files)+i+1)
+		f, err := c.saveImage(ctx, im.ImageURL.URL, p.dest(outDir), len(res.Files)+i+1)
 		if err != nil {
 			return err
 		}
@@ -289,8 +290,8 @@ func joinUnique(have, add string) string {
 	return have + ", " + add
 }
 
-// saveImage writes a returned image (a data URL, or an https URL fetched once) to outDir.
-func (c *Client) saveImage(ctx context.Context, u, outDir string, n int) (OutFile, error) {
+// saveImage writes a returned image (a data URL, or an https URL fetched once) to dst.
+func (c *Client) saveImage(ctx context.Context, u string, dst imageDest, n int) (OutFile, error) {
 	var data []byte
 	var mt string
 	switch {
@@ -330,10 +331,32 @@ func (c *Client) saveImage(ctx context.Context, u, outDir string, n int) (OutFil
 	default:
 		return OutFile{}, errors.New("answer image is neither a data URL nor an https URL")
 	}
-	return writeImage(data, mt, outDir, n)
+	return writeImage(data, mt, dst, n)
 }
 
-func writeImage(data []byte, mt, outDir string, n int) (OutFile, error) {
+// imageDest is where a call's generated images go: File when the caller named one, else Dir.
+type imageDest struct {
+	Dir       string
+	File      string
+	Overwrite bool
+}
+
+func (p *plan) dest(outDir string) imageDest {
+	return imageDest{Dir: outDir, File: p.req.OutFile, Overwrite: p.req.Overwrite}
+}
+
+// outFilePath resolves a caller's out_file: a relative name is inside outDir, or the working directory.
+func outFilePath(file, outDir string) (string, error) {
+	if !filepath.IsAbs(file) && outDir != "" {
+		file = filepath.Join(outDir, file)
+	}
+	return filepath.Abs(file)
+}
+
+// writeImage writes the n-th image of a call (from 1). It never replaces an existing file unless the
+// caller named the file and asked to overwrite it: a taken name moves on to the next free one
+// (image-02.png, ghost-2.png), so a paid image is never lost.
+func writeImage(data []byte, mt string, dst imageDest, n int) (OutFile, error) {
 	if mt == "" || mt == "application/octet-stream" {
 		mt = http.DetectContentType(data)
 	}
@@ -342,11 +365,54 @@ func writeImage(data []byte, mt, outDir string, n int) (OutFile, error) {
 	if ext == "" {
 		ext = ".bin"
 	}
-	path := filepath.Join(outDir, fmt.Sprintf("image-%02d%s", n, ext))
-	if err := os.WriteFile(path, data, 0o600); err != nil {
-		return OutFile{}, err
+	name := func(i int) string { return filepath.Join(dst.Dir, fmt.Sprintf("image-%02d%s", i, ext)) }
+	if dst.File != "" {
+		file, err := outFilePath(dst.File, dst.Dir)
+		if err != nil {
+			return OutFile{}, err
+		}
+		stem, fext := file, filepath.Ext(file)
+		if fext == "" {
+			fext = ext
+		} else {
+			stem = strings.TrimSuffix(file, fext)
+		}
+		name = func(i int) string {
+			if i == 1 {
+				return stem + fext
+			}
+			return fmt.Sprintf("%s-%d%s", stem, i, fext)
+		}
+		if err := os.MkdirAll(filepath.Dir(stem), 0o700); err != nil {
+			return OutFile{}, err
+		}
+		if dst.Overwrite && n == 1 {
+			path := name(1)
+			if err := os.WriteFile(path, data, 0o600); err != nil {
+				return OutFile{}, err
+			}
+			return OutFile{Path: path, MIME: mt, Bytes: int64(len(data))}, nil
+		}
 	}
-	return OutFile{Path: path, MIME: mt, Bytes: int64(len(data))}, nil
+	for i := n; i < n+10000; i++ {
+		path := name(i)
+		f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+		if errors.Is(err, fs.ErrExist) {
+			continue
+		}
+		if err != nil {
+			return OutFile{}, err
+		}
+		_, werr := f.Write(data)
+		if cerr := f.Close(); werr == nil {
+			werr = cerr
+		}
+		if werr != nil {
+			return OutFile{}, werr
+		}
+		return OutFile{Path: path, MIME: mt, Bytes: int64(len(data))}, nil
+	}
+	return OutFile{}, fmt.Errorf("no free file name for image %d in %s", n, filepath.Dir(name(n)))
 }
 
 // ErrNoProviderCost says OpenRouter has not (or will not) report what the provider billed on the user's

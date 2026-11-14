@@ -35,6 +35,8 @@ run/estimate options:
   --reasoning none|low|medium|high      --pdf-engine native|cloudflare-ai|mistral-ocr
   --video-prep downscale|keyframes|segment   --video-processing agentic|static
   --timestamps   --language CODE   --aspect R   --resolution R   --out DIR   --json
+  --out-file FILE [--overwrite]   image output: write exactly FILE; generated files never
+                    replace existing ones otherwise (the next free name is used)
   --await-outcome   keep the run out of the outcome records until an outcome names it
                     (p0ssess engine outcome --run ID ...)
       The run id is printed last ("run: d-..."), or as run_id with --json.
@@ -85,6 +87,8 @@ func directRun(ctx context.Context, mode string, args []string) error {
 	aspect := fs.String("aspect", "", "image aspect ratio")
 	resolution := fs.String("resolution", "", "image resolution")
 	out := fs.String("out", "", "output directory")
+	outFile := fs.String("out-file", "", "image output: the file to write (refused if it exists, unless --overwrite)")
+	overwrite := fs.Bool("overwrite", false, "let --out-file replace an existing file")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	useCase := fs.String("use-case", "", "catalog use case id")
 	stakes := fs.Int("stakes", 0, "stakes 1-4")
@@ -95,7 +99,7 @@ func directRun(ctx context.Context, mode string, args []string) error {
 		MaxTokens: *maxTokens, MaxCostUSD: *maxCost, StrictZDR: *zdr, Reasoning: *reasoning,
 		PDFEngine: *pdfEngine, VideoPrep: direct.VideoPrep(*videoPrep), VideoProcessing: *videoProc,
 		Timestamps: *timestamps, Language: *language, ImageAspect: *aspect, ImageResolution: *resolution,
-		OutDir: *out, DryRun: mode == "estimate",
+		OutDir: *out, OutFile: *outFile, Overwrite: *overwrite, DryRun: mode == "estimate",
 	}
 	fs.Visit(func(f *flag.Flag) {
 		if f.Name == "max-cost" {

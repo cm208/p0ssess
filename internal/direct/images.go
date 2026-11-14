@@ -60,10 +60,10 @@ func (c *Client) runImages(ctx context.Context, p *plan, res *Result, outDir str
 			var data []byte
 			data, err = base64.StdEncoding.DecodeString(strings.TrimSpace(d.B64))
 			if err == nil {
-				f, err = writeImage(data, d.MediaType, outDir, i+1)
+				f, err = writeImage(data, d.MediaType, p.dest(outDir), i+1)
 			}
 		case d.URL != "":
-			f, err = c.saveImage(ctx, d.URL, outDir, i+1)
+			f, err = c.saveImage(ctx, d.URL, p.dest(outDir), i+1)
 		default:
 			err = fmt.Errorf("image %d has no data", i+1)
 		}
