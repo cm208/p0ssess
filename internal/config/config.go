@@ -27,6 +27,9 @@ type Config struct {
 	MaxRunCostUSD float64 `json:"max_run_cost_usd,omitempty"`
 	// MaxRuntimeSec interrupts a run that is still busy after this many seconds.
 	MaxRuntimeSec int `json:"max_runtime_s,omitempty"`
+	// PermissionWaitSec is how long an edit run may wait on an unanswered permission request before the
+	// relay rejects it, stops the run and removes its jail. Default 1800; 0 takes the default.
+	PermissionWaitSec int `json:"permission_wait_s,omitempty"`
 	// RegistryFile is a models.json snapshot for the models tool.
 	RegistryFile string `json:"registry_file,omitempty"`
 	// SessionIdleSec is how long a relay session's jail stays up after its last run ends, so a follow-up
@@ -84,6 +87,12 @@ func Load() (Config, error) {
 	}
 	if c.SessionIdleSec == 0 {
 		c.SessionIdleSec = 1800
+	}
+	if c.PermissionWaitSec == 0 {
+		c.PermissionWaitSec = 1800
+	}
+	if c.PermissionWaitSec < 0 {
+		return c, errors.New("config.json: permission_wait_s must be 0 or more")
 	}
 	if !(c.MaxRunCostUSD > 0) || math.IsInf(c.MaxRunCostUSD, 0) {
 		return c, errors.New("config.json: max_run_cost_usd must be a finite number above 0")

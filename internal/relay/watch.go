@@ -33,12 +33,14 @@ type watch struct {
 	errMsg    string
 	note      string
 	pending   *opencode.PermissionRequest
-	seen      map[string]bool
-	issued    map[string]bool
-	rejected  []string
-	escalated int
-	cost      float64
-	closed    bool
+	// pendingSince is when pending was first seen, for permission_wait_s.
+	pendingSince time.Time
+	seen         map[string]bool
+	issued       map[string]bool
+	rejected     []string
+	escalated    int
+	cost         float64
+	closed       bool
 
 	tampered       bool
 	tamperReason   string
@@ -283,10 +285,44 @@ func (w *watch) poll() {
 			w.checkSession(ctx)
 		}
 		cancel()
+		if wait := time.Duration(w.e.cfg.PermissionWaitSec) * time.Second; wait > 0 {
+			w.expirePending(wait)
+		}
 		if maxRun > 0 && time.Since(w.rec.PromptAt) > maxRun {
 			w.interrupt(fmt.Sprintf("stopped: ran longer than the %s maximum", maxRun))
 		}
 	}
+}
+
+// expirePending rejects a permission request that has waited longer than wait with no answer, stops the
+// run with the reason, and releases its jail once the run has ended. It reports whether it did.
+func (w *watch) expirePending(wait time.Duration) bool {
+	w.mu.Lock()
+	p := w.pending
+	if p == nil || w.finished() || time.Since(w.pendingSince) <= wait {
+		w.mu.Unlock()
+		return false
+	}
+	w.pending = nil
+	w.issued[p.ID] = true
+	w.mu.Unlock()
+	why := fmt.Sprintf("stopped: the permission request (%s) had no answer for %s, so it was rejected and the run ended; its jail was released",
+		strings.TrimSpace(p.Action+" "+strings.Join(p.Resources, ", ")), wait.Round(time.Minute))
+	w.setNote(why)
+	w.markRelayInterrupt()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	w.c.ReplyPermission(ctx, w.rec.SessionID, p.ID, "reject", "Nobody answered in time; stopping.")
+	w.c.Interrupt(ctx, w.rec.SessionID)
+	cancel()
+	go func() {
+		select {
+		case <-w.done:
+		case <-time.After(15 * time.Second):
+			w.finish("interrupted", why)
+		}
+		w.e.closeSession(w.rec.SessionID)
+	}()
+	return true
 }
 
 func (w *watch) interrupt(note string) {
@@ -324,6 +360,7 @@ func (w *watch) checkPermissions(ctx context.Context) {
 		if w.pending == nil {
 			req := r
 			w.pending = &req
+			w.pendingSince = time.Now()
 			w.escalated++
 		}
 		w.mu.Unlock()
@@ -386,8 +423,9 @@ func (e *Engine) block(ctx context.Context, w *watch, waitFor time.Duration, pro
 	for {
 		w.mu.Lock()
 		pending := w.pending
+		aborting := w.relayInterrupt
 		w.mu.Unlock()
-		if pending != nil && !w.finished() {
+		if pending != nil && !aborting && !w.finished() {
 			return e.result(w, "needs_permission")
 		}
 		select {
