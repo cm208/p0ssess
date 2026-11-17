@@ -46,7 +46,7 @@ usage:
   p0ssess statusline                  status line wrapper (reads Claude Code's JSON on stdin)
   p0ssess hook prompt|tool            UserPromptSubmit and PreToolUse hooks (read the hook JSON on stdin)
   p0ssess jail build|status|sweep|up|down|probe ...   the sandbox for the agent path (Linux)
-  p0ssess run --model M [--mode read|edit] [--cwd D] [--session S] [--attach F] [--max-cost USD] [--detach] [--keep] TASK
+  p0ssess run [--model M] [--mode read|edit] [--cwd D] [--session S] [--attach F] [--max-cost USD] [--detach] [--keep] TASK
   p0ssess wait|abort --session S      the relay tools, from the command line (JSON out)
   p0ssess answer --session S --request R --decision once|reject
       run, wait and answer stay until the run ends or asks for a permission decision, printing progress.
@@ -327,7 +327,7 @@ func runCmd(ctx context.Context, name string, args []string) error {
 	var attach multi
 	var request, decision, message string
 	var detach, keep bool
-	fs.StringVar(&req.Model, "model", "", "OpenRouter model id")
+	fs.StringVar(&req.Model, "model", "", "OpenRouter model id (left out, the routing engine picks one)")
 	fs.StringVar(&req.Mode, "mode", "read", "read or edit")
 	fs.StringVar(&req.Cwd, "cwd", "", "working directory")
 	fs.StringVar(&req.Session, "session", "", "session to continue")

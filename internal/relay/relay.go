@@ -14,7 +14,7 @@ var runSchema = json.RawMessage(`{
   "type": "object",
   "properties": {
     "task": {"type": "string", "description": "The task, exactly as the caller wrote it."},
-    "model": {"type": "string", "description": "OpenRouter model id, e.g. deepseek/deepseek-v4.1-flash. Optional when continuing a session."},
+    "model": {"type": "string", "description": "OpenRouter model id, e.g. deepseek/deepseek-v4.1-flash. Leave it out and p0ssess picks the model from the routing engine (budget, fit, rules), as direct does; the result says which and why. Optional when continuing a session."},
     "mode": {"type": "string", "enum": ["read", "edit"], "description": "read (default): no file changes. edit: works in a new git worktree and returns a diff."},
     "cwd": {"type": "string", "description": "Working directory, inside the project's git repository. Defaults to the Claude Code session's working directory. Runs outside a git repository, or in the home directory, are refused."},
     "attachments": {"type": "array", "items": {"type": "string"}, "description": "Absolute paths of text, PDF or image files to attach."},

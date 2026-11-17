@@ -74,7 +74,10 @@ type RunRequest struct {
 func ParseModel(s string) (opencode.ModelRef, error) {
 	s = strings.TrimSpace(s)
 	s = strings.TrimPrefix(s, "openrouter/")
-	if s == "" || !strings.Contains(s, "/") || strings.ContainsAny(s, " \t\n") {
+	if s == "" {
+		return opencode.ModelRef{}, errors.New("no model given and none could be chosen here: pass an OpenRouter id like deepseek/deepseek-v4.1-flash")
+	}
+	if !strings.Contains(s, "/") || strings.ContainsAny(s, " \t\n") {
 		return opencode.ModelRef{}, fmt.Errorf("model must be an OpenRouter id like deepseek/deepseek-v4.1-flash, got %q", s)
 	}
 	m := opencode.ModelRef{ProviderID: "openrouter", ID: s}
@@ -119,6 +122,10 @@ func (e *Engine) Run(ctx context.Context, req RunRequest, progress func(float64,
 	if req.Mode == "unsafe-allow-all" && os.Getenv("P0SSESS_ALLOW_UNSAFE_TEST_MODE") != "1" {
 		return nil, errors.New("unsafe-allow-all is a test-only mode")
 	}
+	chosen, err := e.chooseModel(&req)
+	if err != nil {
+		return nil, err
+	}
 	if req.Model != "" {
 		m, err := e.ResolveModelID(req.Model)
 		if err != nil {
@@ -127,7 +134,6 @@ func (e *Engine) Run(ctx context.Context, req RunRequest, progress func(float64,
 		req.Model = m
 	}
 	var rec *SessionRecord
-	var err error
 	if req.Session != "" {
 		if rec, err = loadRecord(req.Session); err != nil {
 			return nil, fmt.Errorf("unknown session %s (only sessions started by this relay can be continued)", req.Session)
@@ -225,6 +231,9 @@ func (e *Engine) Run(ctx context.Context, req RunRequest, progress func(float64,
 		return nil, err
 	}
 	res, err := e.block(ctx, w, waitDuration(req.WaitS), progress)
+	if res != nil && chosen != "" {
+		res.Chosen = chosen
+	}
 	if res != nil && grant.Note != "" {
 		res.Note = strings.TrimSpace(res.Note + " " + grant.Note)
 	}
@@ -638,6 +647,12 @@ func (e *Engine) Answer(ctx context.Context, sid, requestID, decision, message s
 	if err != nil {
 		return nil, fmt.Errorf("unknown session %s", sid)
 	}
+	if rec.Closed {
+		if res, err := loadFinal(sid); err == nil {
+			res.Note = strings.TrimSpace(res.Note + " the session has ended and its jail was removed, so this answer was not sent")
+			return res, nil
+		}
+	}
 	_, c, err := e.jailFor(ctx, rec)
 	if err != nil {
 		return nil, err
@@ -677,6 +692,8 @@ func (e *Engine) Abort(ctx context.Context, sid string) (*Result, error) {
 	w := e.watch(sid)
 	if w == nil {
 		w = e.startWatch(c, rec)
+		w.setNote("aborted by the caller")
+		w.markRelayInterrupt()
 	}
 	return e.block(ctx, w, 20*time.Second, nil)
 }

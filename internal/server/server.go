@@ -28,6 +28,7 @@ import (
 	"p0ssess/internal/jail"
 	"p0ssess/internal/mcp"
 	"p0ssess/internal/opencode"
+	"p0ssess/internal/pme/hook"
 	"p0ssess/internal/pme/local"
 	"p0ssess/internal/pme/mcpserver"
 	"p0ssess/internal/pme/paths"
@@ -628,25 +629,7 @@ func pickModels(eng *local.Engine, c *direct.Client, req direct.Request, job *Di
 	if err != nil {
 		return nil, err
 	}
-	var best *local.Option
-	for i := range rec.Options {
-		o := &rec.Options[i]
-		if o.Route != local.RouteDirect {
-			continue
-		}
-		switch {
-		case best == nil:
-			best = o
-		case best.NeedsApproval && !o.NeedsApproval && o.Total <= best.Total*1.5:
-			best = o
-		}
-		if !best.NeedsApproval {
-			break
-		}
-	}
-	if rec.Pick != nil && rec.Pick.Route == local.RouteDirect && rec.Pick.MixNext {
-		best = rec.Pick
-	}
+	best := bestOption(rec, local.RouteDirect)
 	if best == nil {
 		why := "no model fits " + uc + " within your rules and limits"
 		if len(rec.Notes) > 0 {
@@ -662,6 +645,86 @@ func pickModels(eng *local.Engine, c *direct.Client, req direct.Request, job *Di
 		}
 	}
 	return out, nil
+}
+
+// bestOption is the engine's best option on one of the routes. It prefers one that runs without asking
+// when that costs at most half again as much as the best, and takes the engine's own pick when it is
+// marked as the next of a mix.
+func bestOption(rec *local.Recommendation, routes ...string) *local.Option {
+	var best *local.Option
+	for i := range rec.Options {
+		o := &rec.Options[i]
+		if !slices.Contains(routes, o.Route) {
+			continue
+		}
+		switch {
+		case best == nil:
+			best = o
+		case best.NeedsApproval && !o.NeedsApproval && o.Total <= best.Total*1.5:
+			best = o
+		}
+		if !best.NeedsApproval {
+			break
+		}
+	}
+	if rec.Pick != nil && slices.Contains(routes, rec.Pick.Route) && rec.Pick.MixNext {
+		best = rec.Pick
+	}
+	return best
+}
+
+// Choose picks the model for a relay run that names none: the use case comes from the caller, else from
+// the task's text, and the engine's best direct or agent option under the budget, caps, rules and
+// approvals wins. When the use case has none, the engine is asked again for the generic coding or
+// reading work of the run's mode. A refusal carries what the engine considered and why nothing fit.
+func (o *observer) Choose(c relay.ChooseRequest) (relay.Choice, error) {
+	stakes := c.Stakes
+	if stakes == 0 {
+		stakes = 2
+		if c.Mode == "edit" {
+			stakes = 3
+		}
+	}
+	var cands []string
+	if c.UseCase != "" {
+		cands = []string{c.UseCase}
+	} else {
+		if uc := hook.UseCaseFor(c.Task); uc != "" {
+			cands = append(cands, uc)
+		}
+		if c.Mode == "edit" {
+			cands = append(cands, "code-implement-feature", "agentic-multifile-change")
+		} else {
+			cands = append(cands, "repo-scan-explore", "quick-code-question")
+		}
+	}
+	prof := local.Profile{Text: "run task", InTokens: max(len(c.Task)/4, 2000)}
+	var tried []string
+	for _, uc := range cands {
+		if slices.Contains(tried, uc) {
+			continue
+		}
+		rec, err := o.eng.Recommend(local.Request{UseCase: uc, Profile: &prof, Stakes: stakes, Record: true, Scope: local.Scope{Cwd: c.Cwd}})
+		if err != nil {
+			tried = append(tried, uc+" ("+err.Error()+")")
+			continue
+		}
+		if best := bestOption(rec, local.RouteDirect, local.RouteAgent); best != nil {
+			why := fmt.Sprintf("best %s route for %s at stakes %d (about $%.3f)", best.Route, uc, rec.Stakes, best.Total)
+			if best.Reason != "" {
+				why += "; " + best.Reason
+			}
+			return relay.Choice{Model: best.Model, UseCase: uc, Stakes: stakes, Why: why}, nil
+		}
+		why := uc
+		if len(rec.Notes) > 0 {
+			why += ": " + strings.Join(rec.Notes, "; ")
+		} else if rec.ClaudeFeasible {
+			why += ": only Claude is cheaper or fits"
+		}
+		tried = append(tried, why)
+	}
+	return relay.Choice{}, fmt.Errorf("no model fits this task within your rules and limits (considered %s); name a model to run it anyway", strings.Join(tried, "; "))
 }
 
 // Reconcile looks up the measured cost of recent estimated direct runs and records it.

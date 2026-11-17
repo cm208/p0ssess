@@ -2,6 +2,7 @@ package relay
 
 import (
 	"errors"
+	"strings"
 	"time"
 )
 
@@ -65,4 +66,55 @@ func (e *Engine) SetObserver(o Observer) { e.obs = o }
 func (e *Engine) runInfo(rec *SessionRecord) RunInfo {
 	return RunInfo{SessionID: rec.SessionID, Turn: rec.Turns, Model: rec.Model, Mode: rec.Mode, Kind: rec.Kind,
 		UseCase: rec.UseCase, Repo: rec.Repo, Grant: rec.Grant}
+}
+
+// Chooser is an Observer that can pick the model for a run that names none, from the routing engine.
+type Chooser interface {
+	Choose(c ChooseRequest) (Choice, error)
+}
+
+// ChooseRequest is what the engine needs to pick a model for a run.
+type ChooseRequest struct {
+	Task    string
+	Mode    string
+	UseCase string
+	Stakes  int
+	Cwd     string
+}
+
+// Choice is the engine's pick: the model, the use case and stakes it was priced under, and one line on why.
+type Choice struct {
+	Model   string
+	UseCase string
+	Stakes  int
+	Why     string
+}
+
+// chooseModel fills in req.Model (and the use case and stakes) for a new run that names no model, by
+// asking the routing engine. It returns the one-line note for the result. A run that names a model, or
+// continues a session, is left alone.
+func (e *Engine) chooseModel(req *RunRequest) (string, error) {
+	if strings.TrimSpace(req.Model) != "" || req.Session != "" {
+		return "", nil
+	}
+	ch, ok := e.obs.(Chooser)
+	if !ok {
+		return "", nil // the run is refused where the model is parsed, with the way to name one
+	}
+	cwd := req.Cwd
+	if cwd == "" {
+		cwd = defaultCwd()
+	}
+	c, err := ch.Choose(ChooseRequest{Task: req.Task, Mode: req.Mode, UseCase: req.UseCase, Stakes: req.Stakes, Cwd: cwd})
+	if err != nil {
+		return "", err
+	}
+	req.Model = c.Model
+	if req.UseCase == "" {
+		req.UseCase = c.UseCase
+	}
+	if req.Stakes == 0 {
+		req.Stakes = c.Stakes
+	}
+	return "p0ssess chose " + c.Model + ": " + c.Why, nil
 }

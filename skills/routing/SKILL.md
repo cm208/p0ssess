@@ -11,7 +11,7 @@ p0ssess is set up when the `p0ssess:p0ssess` agent exists. The user installed it
 
 Hand the request to the p0ssess agent with the Agent tool: `subagent_type: "p0ssess:p0ssess"`, and a one-sentence prompt with the user's request and absolute file paths (resolve `~` and relative paths first). Add "model <id>" only if the user named one, "edit mode" when files should change, "stakes N" when not 1-2, "max $X" only if the user named a ceiling. It runs on Haiku in the background, makes the p0ssess calls and returns only the result, so its tool traffic never fills this conversation.
 
-Do not call `direct`, `run`, `wait`, `recommend` or the other routing tools yourself. A hook refuses them outside the agent unless the user explicitly asks you to call p0ssess in the main session.
+Do not call `direct`, `run`, `wait`, `recommend` or the other routing tools yourself. A hook refuses them outside the agent unless the user explicitly asks you to call p0ssess in the main session. If the p0ssess agent type is missing in this session (after a restart or resume), the hook opens the tools once starting it fails, and a paused run can always be finished by calling `answer_permission` or `abort` a second time, or from a shell with `p0ssess answer` or `p0ssess abort`.
 
 Write nothing before or while it runs: no preamble, no plan, no "I've sent this to …", no "I'll tell you when it's back", no confirmation question. After the Agent call, end your turn without any text. When it returns:
 

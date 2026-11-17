@@ -42,6 +42,8 @@ type Result struct {
 	AsksRejected []string `json:"asks_rejected,omitempty"`
 	Error        string   `json:"error,omitempty"`
 	Note         string   `json:"note,omitempty"`
+	// Chosen says which model p0ssess picked for a run that named none, and why, in one line.
+	Chosen string `json:"chosen,omitempty"`
 	// ShellInternet says the model's shell commands could reach the public internet in this run.
 	ShellInternet bool `json:"shell_internet,omitempty"`
 	// JailStartS is how long the session's jail took to start, on its first run.

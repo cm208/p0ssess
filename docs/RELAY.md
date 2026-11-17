@@ -122,13 +122,13 @@ Edit mode already runs the project's code, so allowing its test runners and in-t
 
 Claude names paths in the repository, but an edit run works in a worktree (a cloud run under another root) where the repository is read-only or absent. In the 2026-11-13 savings benchmark cheap models spent edit runs testing mounts and write access and stopped for permission. So before sending, the relay rewrites paths under the repository root to the copy the model works in (not paths already under `.p0ssess/`), and appends a note: where the copy is, that changes are collected without committing, that the project's tests may be run, and that the run ends with a short report (each file changed, the test command and its counts, no file contents or diff). A read run's note says it is read-only and not to probe.
 
-An ask in read mode is rejected at once with feedback ("not allowed in this delegated read-only task … continue without it"), and the model carries on. An ask in edit mode pauses the run and comes back to Claude as `needs_permission`. The relay answers only `once` or `reject`; `always` is refused, because it would save a project-wide allow rule.
+An ask in read mode is rejected at once with feedback ("not allowed in this delegated read-only task … continue without it"), and the model carries on. An ask in edit mode pauses the run and comes back to Claude as `needs_permission`. The relay answers only `once` or `reject`; `always` is refused, because it would save a project-wide allow rule. A request nobody answers for `permission_wait_s` (config.json, default 1800) is rejected, the run is stopped with that reason in its `note`, and its jail is removed. From a shell, `p0ssess answer --session S --request R --decision once|reject` and `p0ssess abort --session S` make the same calls as the tools; the plugin's hook points to them when the p0ssess agent type is not available in a session. `abort` on a paused run reports `interrupted`, not `needs_permission`.
 
 ## The MCP tools
 
 | Tool | Does |
 |---|---|
-| `run` | `task`, `model` (OpenRouter id), `mode` (`read` default, or `edit`), `cwd` (default `CLAUDE_PROJECT_DIR`), `attachments` (file paths), `session` (continue), `kind` (for the history), `wait_s`. Blocks until the run ends, pauses on a permission request, or `wait_s` passes (default 25 minutes). |
+| `run` | `task`, `model` (OpenRouter id; optional, see below), `mode` (`read` default, or `edit`), `cwd` (default `CLAUDE_PROJECT_DIR`), `attachments` (file paths), `session` (continue), `kind` (for the history), `wait_s`. Blocks until the run ends, pauses on a permission request, or `wait_s` passes (default 25 minutes). |
 | `wait` | Keeps blocking on a session that returned `still_running`. |
 | `abort` | Interrupts a session. |
 | `answer_permission` | `once` or `reject` for a paused edit task, then blocks like `wait`. |
@@ -137,6 +137,8 @@ An ask in read mode is rejected at once with feedback ("not allowed in this dele
 Results are JSON with `answer` first, then `status` (`done`, `failed`, `interrupted`, `needs_permission`, `still_running`, `tampered`), `session_id`, `model`, `mode`, `cost_usd`, `tokens`, `duration_s`, `transcript_path`, `shell_internet` when it was on, `jail_start_s` on a session's first run, and for edit mode `worktree`, `diff_stat`, `diff_path` and `apply` (the `git -C <repo> apply <diff_path>` command). The patch itself is not in the result (the agent passes on its path, so it only cost tokens), and an edit run's answer is capped at 4,000 characters (the model is asked for a short report: files changed and the test command with its counts; the full text stays in the run directory).
 
 ### Model ids
+
+With no `model`, the routing engine picks it, as `direct` does: the use case is `use_case` if given, else the one the task text looks like (the prompt hook's matcher), else the generic coding or reading work of the mode; stakes default to 2 (3 in edit mode); the best direct or agent option under the budget, caps, rules and approvals wins, from the offline built-in table when the engine is unreachable, and the `lead = "none"` setting is honored. The result's `chosen` says which model and why in one line. If nothing fits, the error lists what the engine considered. An explicit model always wins.
 
 `run` takes an exact OpenRouter id (`vendor/model`, optionally `openrouter/…` or `…#variant`), which is accepted as given so the registry snapshot can lag OpenRouter. A bare name is resolved against the registry only when exactly one model matches; otherwise the relay returns the candidates (or "no model matches") instead of guessing (`ResolveModelID`, `internal/relay/models.go`).
 
@@ -163,7 +165,7 @@ The relay keeps its state under `~/.local/state/p0ssess/relay/` (`$XDG_STATE_HOM
 
 | File | Holds |
 |---|---|
-| `~/.config/p0ssess/config.json` | optional settings: `openrouter_key_file`, `image`, `selinux` (`relabel` or `disable`), `max_run_cost_usd`, `max_runtime_s`, `session_idle_s`, `blocked_cidrs`, `registry_file` |
+| `~/.config/p0ssess/config.json` | optional settings: `openrouter_key_file`, `image`, `selinux` (`relabel` or `disable`), `max_run_cost_usd`, `max_runtime_s`, `session_idle_s`, `permission_wait_s`, `blocked_cidrs`, `registry_file` |
 | `relay/relay-runs.jsonl` | one line per finished run: time, kind, model, mode, outcome, cost, tokens, duration, session, turn, a 12-character SHA-256 prefix of the task (never its text), and counts of rejected and escalated asks |
 | `relay/sessions/<id>.json` | what the relay needs to continue a session: repository, directory, mode, model, worktree, jail, whether it has ended |
 | `relay/runs/<id>/` | `transcript.md`, `diff.patch`, `result.json` (the last result), and the full answer when it was truncated |
