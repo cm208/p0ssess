@@ -40,6 +40,13 @@ var (
 	reviewRe    = regexp.MustCompile(`(?i)\b(second opinion|review (this|the|my)|cross-check|red.?team)\b`)
 )
 
+// delegateRe is a prompt that hands work to a Claude subagent or asks for an agent.
+var delegateRe = regexp.MustCompile(`(?i)\b(sub-?agents?|(sonnet|opus|haiku|claude) agents?|agents? (on|using|with) (sonnet|opus|haiku)|(spawn|launch|delegate|dispatch|hand)\b[^.?!\n]{0,40}\bagents?)\b|\bagents?\b[^.?!\n]{0,30}\b(sonnet|opus|haiku)\b|\b(sonnet|opus|haiku)\b[^.?!\n]{0,30}\b(sub-?agents?|agents?)\b`)
+
+// agentOffer is added to the limit line when the prompt sends work to a Claude agent: before choosing one,
+// Claude offers the cheaper route once. It never blocks the Claude agent.
+const agentOffer = " Before you start a Claude agent for this, offer the p0ssess agent in one line (it runs the work on a cheaper model and spares the limit) and let the user pick; if they do not answer or prefer Claude, go ahead with the Claude agent."
+
 // BulkChars is the pasted-text size at which a prompt counts as bulk.
 const BulkChars = 40_000
 
@@ -85,6 +92,9 @@ func hint(in Input, d paths.Dirs, now time.Time, ready bool) string {
 			` (use case image-generate; image-edit with a reference image's path). Present the file it returns and print its absolute path`, "generate")
 	}
 	if line := limitLine(d, now); line != "" {
+		if delegateRe.MatchString(p) {
+			line += agentOffer
+		}
 		return line
 	}
 	if len(p) >= BulkChars || bulkRe.MatchString(p) {

@@ -185,3 +185,18 @@ func matchWork(p string) []*work {
 	}
 	return out
 }
+
+// UseCaseFor returns the catalog use case a task's text looks like, or "". Work the catalog keeps on
+// Claude is named only when nothing else matches.
+func UseCaseFor(task string) string {
+	ws := matchWork(task)
+	for _, w := range ws {
+		if !w.keep {
+			return w.id
+		}
+	}
+	if len(ws) > 0 {
+		return ws[0].id
+	}
+	return ""
+}

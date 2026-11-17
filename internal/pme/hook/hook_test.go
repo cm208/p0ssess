@@ -153,3 +153,92 @@ func TestRunCarriesLapseNoticeOnce(t *testing.T) {
 		t.Errorf("second prompt: %q", got)
 	}
 }
+
+func toolCall(name string) string {
+	return `{"session_id":"s1","tool_name":"mcp__plugin_p0ssess_p0ssess__` + name + `","tool_input":{}}`
+}
+
+// A paused run can always be answered: the denial names the command line that does the same call, and a
+// second attempt in the same session goes through for the tools that finish a paused run.
+func TestPausedRunCanBeAnsweredFromTheMainConversation(t *testing.T) {
+	d, _ := dirs(t)
+	out := Tool([]byte(toolCall("answer_permission")), d)
+	for _, want := range []string{`"permissionDecision":"deny"`, "p0ssess answer --session", "p0ssess abort --session"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("denial lacks %q: %s", want, out)
+		}
+	}
+	if out := Tool([]byte(toolCall("answer_permission")), d); out != "" {
+		t.Errorf("the retry should pass: %s", out)
+	}
+	if out := Tool([]byte(toolCall("abort")), d); !strings.Contains(out, "deny") {
+		t.Errorf("abort has its own first denial: %s", out)
+	}
+	if out := Tool([]byte(toolCall("abort")), d); out != "" {
+		t.Errorf("the abort retry should pass: %s", out)
+	}
+	if out := Tool([]byte(toolCall("direct")), d); !strings.Contains(out, "deny") {
+		t.Errorf("direct stays with the agent: %s", out)
+	}
+	if out := Tool([]byte(toolCall("direct")), d); !strings.Contains(out, "deny") {
+		t.Errorf("direct is not released by retrying: %s", out)
+	}
+}
+
+// When starting the p0ssess agent fails (its type is gone after a restart or resume), every routed tool
+// is open to the main conversation for that session.
+func TestAgentTypeGoneOpensTheTools(t *testing.T) {
+	d, _ := dirs(t)
+	fail := `{"hook_event_name":"PostToolUseFailure","session_id":"s1","tool_name":"Agent","tool_input":{"subagent_type":"p0ssess:p0ssess"},"error":"Agent type 'p0ssess:p0ssess' not found"}`
+	if out := Tool([]byte(fail), d); out != "" {
+		t.Errorf("failure hook prints nothing: %s", out)
+	}
+	for _, name := range []string{"direct", "run", "wait", "abort", "answer_permission"} {
+		if out := Tool([]byte(toolCall(name)), d); out != "" {
+			t.Errorf("%s still refused: %s", name, out)
+		}
+	}
+	other := `{"hook_event_name":"PostToolUseFailure","session_id":"s2","tool_name":"Agent","tool_input":{"subagent_type":"Explore"}}`
+	Tool([]byte(other), d)
+	if out := Tool([]byte(strings.Replace(toolCall("run"), "s1", "s2", 1)), d); !strings.Contains(out, "deny") {
+		t.Errorf("another agent's failure opens nothing: %s", out)
+	}
+}
+
+func TestLimitOffersTheAgentRoute(t *testing.T) {
+	d, proj := dirs(t)
+	now := time.Now()
+	used, reset := 85.0, now.Add(time.Hour).Unix()
+	usage.Save(d.UsageFile(), usage.State{ReadingAt: now, Subscriber: true,
+		RateLimits: &usage.RateLimits{FiveHour: &usage.Window{UsedPercentage: &used, ResetsAt: &reset}}})
+	for _, p := range []string{"spawn a Sonnet subagent to refactor the parser", "use an opus agent for the big review", "delegate the migration to a Claude agent", "run this with a subagent"} {
+		got := Hint(Input{Prompt: p, Cwd: proj}, d, now)
+		if !strings.Contains(got, "offer the p0ssess agent") || !strings.Contains(got, "one line") || strings.Contains(got, "\n") {
+			t.Errorf("%q: %q", p, got)
+		}
+	}
+	got := Hint(Input{Prompt: "refactor the parser", Cwd: proj}, d, now)
+	if strings.Contains(got, "offer") || !strings.Contains(got, "limit is 85% used") {
+		t.Errorf("no delegation in the prompt: %q", got)
+	}
+	low := 10.0
+	usage.Save(d.UsageFile(), usage.State{ReadingAt: now, Subscriber: true,
+		RateLimits: &usage.RateLimits{FiveHour: &usage.Window{UsedPercentage: &low, ResetsAt: &reset}}})
+	if got := Hint(Input{Prompt: "spawn a Sonnet subagent to refactor the parser", Cwd: proj}, d, now); got != "" {
+		t.Errorf("low pressure: %q", got)
+	}
+}
+
+func TestUseCaseFor(t *testing.T) {
+	for p, want := range map[string]string{
+		"fix the failing test in the parser": "code-debug-fix",
+		"write unit tests for the cache":     "test-generation",
+		"summarize this changelog":           "summarize-long-doc",
+		"fix the typo in README":             "small-scoped-task",
+		"hello there":                        "",
+	} {
+		if got := UseCaseFor(p); got != want {
+			t.Errorf("%q: %q, want %q", p, got, want)
+		}
+	}
+}

@@ -30,6 +30,14 @@
         ]
       }
     ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/p0ssess", "args": ["hook", "tool"], "timeout": 5 }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Agent|Task",
