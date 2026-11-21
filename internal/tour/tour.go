@@ -263,8 +263,12 @@ func FindDemo(id string) DemoTask {
 // demo) with each option's label, description, command and preview card.
 func Show(f Facts) string {
 	var b strings.Builder
-	b.WriteString("=== CARD 1: your first message is exactly this code block ===\n")
-	b.WriteString(card.Fenced(welcomeCard().String()))
+	b.WriteString("=== QUESTION 1: Welcome to p0ssess (1 / 4) ===\n")
+	w := welcomeCard().String()
+	b.WriteString("option  Start the tour | about a minute; one live demo capped at " + Money(DemoMaxUSD) + " | none\n")
+	b.WriteString(w)
+	b.WriteString("option  Skip the tour | /p0ssess:tour runs it again any time | p0ssess tour skip\n")
+	b.WriteString(w)
 
 	b.WriteString("\n=== QUESTION 2: Your spending envelope (2 / 4) ===\n")
 	for _, c := range Choices(f.Envelope) {

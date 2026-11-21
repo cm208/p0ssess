@@ -7,9 +7,9 @@ allowed-tools: Bash(p0ssess tour:*), AskUserQuestion
 
 The text above is the p0ssess tour's script. If it is not (the command failed), run `p0ssess tour show` with Bash; if that fails too, say in one line that the p0ssess plugin is not working and to check `/mcp`, and stop.
 
-The tour is cards p0ssess draws and two pop-ups. Every card already comes inside a ```text code block. Copy each one into your reply character for character, fences included. Never describe, summarize, translate, number or add to a card, and never put the card's content into a sentence: the user must see the box itself. Write nothing else between steps unless a step says so.
+The tour is cards p0ssess draws and two pop-ups. Cards come either as pop-up previews or, at the end, inside ```text code blocks. Copy each code block into your reply character for character, fences included. Never describe, summarize, translate, number or add to a card, and never put the card's content into a sentence: the user must see the box itself. Write nothing else between steps unless a step says so.
 
-1. Your first message is exactly the CARD 1 code block, nothing before or after it.
+1. Start with no text at all: your first action is AskUserQuestion for QUESTION 1: header "p0ssess", question "Welcome to p0ssess. Take the one-minute tour?", one option per `option` line in order (label = the text before the first `|`, description = the text between the bars), each with the card printed right under its `option` line, exactly, as its `preview`. On "Skip the tour", run `p0ssess tour skip` with Bash, say in one line that `/p0ssess:tour` runs it again, and stop.
 2. Ask QUESTION 2 with AskUserQuestion: header "Envelope", question "Your spending envelope (2 / 4): keep it?", one option per `option` line in order (label = the text before the first `|`, description = the text between the bars). Give each option except "Skip the tour" a `preview`: the card printed right under its `option` line, exactly. The first option is the recommended one.
    - An option whose command is `none`: go on.
    - "Skip the tour": run `p0ssess tour skip` with Bash, say in one line that `/p0ssess:tour` runs it again, and stop.

@@ -165,7 +165,7 @@ func TestConcurrentStartClaimsOnce(t *testing.T) {
 func TestShowNewUser(t *testing.T) {
 	out := Show(Facts{Envelope: Defaults(), New: true, KeyReady: true, StatusLine: true})
 	for _, want := range []string{
-		"=== CARD 1", "ᗣ p0ssess tour", "1 / 4", "Welcome to p0ssess",
+		"=== QUESTION 1", "option  Start the tour", "ᗣ p0ssess tour", "1 / 4", "Welcome to p0ssess",
 		"=== QUESTION 2", "option  Keep these | $1/day · $10/month · asks above $0.25 (recommended to start) | none",
 		"option  Lower | $0.50/day · $5/month · asks above $0.10 | p0ssess tour envelope --daily 0.5 --monthly 5 --task 0.1",
 		"option  Higher | $2/day · $25/month · asks above $0.50", "option  Skip the tour",
