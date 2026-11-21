@@ -212,6 +212,7 @@ type Facts struct {
 	KeyFile    string
 	StatusLine bool // the p0ssess status line segment is set up
 	Team       bool
+	Counts     bool // the anonymous usage counts are on
 }
 
 // What is step one.
@@ -259,8 +260,8 @@ func FindDemo(id string) DemoTask {
 	return Demos[0]
 }
 
-// Show is what /p0ssess:tour reads: the first card to show verbatim, then the two pop-ups (envelope and
-// demo) with each option's label, description, command and preview card.
+// Show is what /p0ssess:tour reads: the first card to show verbatim, then the pop-ups (envelope, usage
+// counts and demo) with each option's label, description, command and preview card.
 func Show(f Facts) string {
 	var b strings.Builder
 	b.WriteString("=== QUESTION 1: Welcome to p0ssess (1 / 4) ===\n")
@@ -286,7 +287,20 @@ func Show(f Facts) string {
 	}
 	b.WriteString("option  Skip the tour | stop here; /p0ssess:tour runs it again | p0ssess tour skip\n")
 
-	b.WriteString("\n=== QUESTION 3: Pick a live demo (3 / 4) ===\n")
+	b.WriteString("\n=== QUESTION 3: Anonymous usage counts (2 / 4) ===\n")
+	share, keep := "weekly milestone counts, no content; helps decide what to build", "nothing is counted or sent"
+	if f.Counts {
+		share += " (on now)"
+	} else {
+		keep += " (off now)"
+	}
+	fmt.Fprintf(&b, "option  Share counts | %s | %s\n", share, CountsCommand(true))
+	b.WriteString(countsCard(true).String())
+	fmt.Fprintf(&b, "option  Keep them off | %s | %s\n", keep, CountsCommand(false))
+	b.WriteString(countsCard(false).String())
+	b.WriteString("option  Skip the tour | stop here; /p0ssess:tour runs it again | p0ssess tour skip\n")
+
+	b.WriteString("\n=== QUESTION 4: Pick a live demo (3 / 4) ===\n")
 	if !f.KeyReady {
 		fmt.Fprintf(&b, "nokey   put an OpenRouter key in %s (mode 0600), then run p0ssess tour demo\n", f.KeyFile)
 	}
@@ -299,6 +313,32 @@ func Show(f Facts) string {
 		}}.String())
 	}
 	return b.String()
+}
+
+// CountsCommand is the command that turns the anonymous usage counts on or off.
+func CountsCommand(on bool) string {
+	if on {
+		return "p0ssess tour counts --on"
+	}
+	return "p0ssess tour counts --off"
+}
+
+// countsCard previews one answer to the usage counts question: exactly what is sent, or that nothing is.
+func countsCard(on bool) card.Card {
+	if !on {
+		return card.Card{Title: "usage counts · off", W: 56, Rows: []string{
+			card.Pair("sends", "nothing; nothing is counted", 8),
+			card.Pair("change", "say \"share usage counts\" any time", 8),
+		}}
+	}
+	return card.Card{Title: "usage counts · shared", W: 56, Rows: []string{
+		card.Pair("sends", "how often 9 milestones happened, per week", 8),
+		card.Pair("like", "install, tour done, first saving", 8),
+		card.Pair("id", "random, not tied to your account", 8),
+		card.Pair("never", "prompts, files, paths, models, costs", 8),
+		card.Pair("see it", "on /p0ssess:p0ssess-me before it goes", 8),
+		card.Pair("stop", "say \"turn off usage counts\"", 8),
+	}}
 }
 
 func welcomeCard() card.Card {

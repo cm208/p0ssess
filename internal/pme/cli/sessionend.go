@@ -62,7 +62,7 @@ func sendOutcomesNow(d paths.Dirs) int {
 	return 0
 }
 
-// sendAll sends the outcome records and the Team spend queue side by side.
+// sendAll sends the outcome records, the opt-in usage counts and the Team spend queue side by side.
 func sendAll(ctx context.Context, e *local.Engine) {
 	done := make(chan struct{})
 	go func() {
@@ -70,5 +70,6 @@ func sendAll(ctx context.Context, e *local.Engine) {
 		_, _ = team.Flush(ctx, team.NewClient(e.Dirs, Version))
 	}()
 	_, _ = e.SendOutcomes(ctx)
+	_, _ = e.SendFunnel(ctx)
 	<-done
 }

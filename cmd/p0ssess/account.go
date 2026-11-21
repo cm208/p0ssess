@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"p0ssess/internal/account"
+	"p0ssess/internal/funnel"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/proc"
 )
@@ -117,6 +118,7 @@ func accountPro(ctx context.Context, d paths.Dirs, c *account.Client, out io.Wri
 	if err != nil {
 		return fmt.Errorf("could not reach p0ssess cloud (%v); try again in a minute", err)
 	}
+	funnel.Note(d, funnel.UpgradeViewed, time.Now())
 	fmt.Fprintln(out, "p0ssess Pro")
 	for _, p := range offer.Plans {
 		if p.Tier == "" {
@@ -131,6 +133,7 @@ func accountPro(ctx context.Context, d paths.Dirs, c *account.Client, out io.Wri
 	if err := startDeviceLink(ctx, d, c, out); err != nil {
 		return err
 	}
+	funnel.Note(d, funnel.UpgradeClicked, time.Now())
 	fmt.Fprintln(out, "Finish in the browser; Pro turns on here by itself.")
 	return nil
 }

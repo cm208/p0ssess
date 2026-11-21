@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"p0ssess/internal/funnel"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/proc"
 )
@@ -136,6 +137,7 @@ func Poll(ctx context.Context, d paths.Dirs, c *Client) error {
 			if err := SaveToken(d, tok); err != nil {
 				return err
 			}
+			funnel.Note(d, funnel.DeviceLinked, time.Now())
 			os.Remove(linkFile(d))
 			Refresh(ctx, d, c)
 			return nil

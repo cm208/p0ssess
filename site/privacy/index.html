@@ -102,6 +102,7 @@
       <li>short-lived sign-in records: hashed sign-in link tokens, sign-in state, hashed web sessions and checkouts in progress</li>
     </ul>
     <p>The sign-in pages set one session cookie so you stay signed in. It is not used for tracking.</p>
+    <p><strong>Setup emails.</strong> When a Pro or Team subscription starts, we email the buyer the setup steps once. If no install has linked to the subscription three days later, we send one reminder, and that is the last setup email. Each has an unsubscribe link. If you use it, we put your email address on a do-not-send list so the request still holds after your account is gone. We record when each setup email was sent and why none was (for example, a device linked).</p>
     <h3 id="when-you-use-team">When you use Team</h3>
     <p>Team adds an org to Pro. Everything above about accounts and the routing engine still applies to each member. This section is what Team adds.</p>
     <p><strong>What a member's plugin sends.</strong> Only a plugin whose account belongs to an org does any of this, and it uses the member's device token.</p>
@@ -139,6 +140,12 @@
       <li><code>week</code>: the ISO week the run ended</li>
     </ul>
     <p>The plugin sends records when a Claude Code session ends; records that missed a session end go out with the next one. A session end therefore tells our server roughly when your session finished, so the server keeps no arrival time, does not log requests to this endpoint and drops the token before storing anything. The plugin's local page shows the pending records line by line before they go. Our server stores the eight fields with a count of identical records. It keeps no token, account, IP address or arrival time. We use the records to compute community success rates for Pro routing. Because stored records are not linked to you, we cannot find or remove your records later.</p>
+    <h3 id="usage-counts">Usage counts (opt-in)</h3>
+    <p>Usage counts tell us how many people reach each step of using p0ssess, so we can see where it gets stuck. They are off unless you turn them on. The plugin's tour asks once; you can also say "share usage counts" or "turn off usage counts" in Claude Code, or set <code>funnel.send</code> under <code>[funnel]</code> in <code>budget.toml</code>. While they are off, the plugin counts nothing.</p>
+    <p>While they are on, the plugin counts how many times each of these nine milestones happened in each ISO week, on your machine: <code>install</code> (counting started), <code>tour_done</code>, <code>first_route</code> (the first task handed to another model), <code>first_saving</code> (the first receipt that shows a saving), <code>rescue_offered</code> and <code>rescue_used</code> (taking over when Claude's usage limit is near), <code>upgrade_viewed</code> and <code>upgrade_clicked</code> (the Pro plans, and opening checkout), and <code>device_linked</code>. Install, tour done, first route, first saving and device linked are counted at most once. When you turn counts on, the steps your install has already reached are counted once in that week.</p>
+    <p>After a week ends, the plugin sends that week's counts once, with a random id made for this purpose. The id is not your install token or device token and is not tied to your account, even when you are signed in; the request carries no token. One batch looks like this:</p>
+    <pre class="sample"><code>{"v":1,"id":"p0f_3kq9ZxW1mB7cTn0aLr5uYe","weeks":[{"week":"2026-W46","counts":{"first_route":1,"install":1,"tour_done":1}}]}</code></pre>
+    <p>That is everything in it: no prompts, files, paths, project names, model ids, costs, times of day or account. The p0ssess page (<code>/p0ssess:p0ssess-me</code>) shows the next batch exactly as it will be sent, and the current week's counts as they build. Our server stores one row per id, week and milestone with its count, and nothing about the request: no IP address, token or arrival time. Rate limits count requests per IP address and per id in memory only. Turning counts off deletes the id and every count not yet sent from your machine; a later yes starts over with a new id.</p>
     <h3 id="calibration-results-pro">Calibration results (Pro)</h3>
     <p>If you run calibration, the plugin tests a few models on built-in samples with known answers (and on your own samples, if you add them) on your machine, with your own OpenRouter key. It sends us only counts: for each task kind and model, how many samples ran and how many were right. It never sends the samples, the answers or the models' replies. We use the counts to tune routing for your account only. They are stored against your account, with no times, and deleted with it. Calibration results are never sent as outcome records.</p>
     <h3 id="email-and-support">Email and support</h3>
@@ -162,6 +169,9 @@
     <tr><th scope="row">Org, membership, invite link hashes, shared rules and monthly shares (Team)</th><td data-label="Why we use it">Run the org</td><td data-label="Where it lives">Accounts database</td><td data-label="How long we keep it">Until the member leaves or is removed, or the owner deletes the org</td></tr>
     <tr><th scope="row">Team spend rows (org, member, day, use case, model, route; run count and cost)</th><td data-label="Why we use it">Show the owner's spend dashboard and apply shares</td><td data-label="Where it lives">Accounts database</td><td data-label="How long we keep it">13 months; deleted when the member leaves or is removed, and all of them when the org is deleted</td></tr>
     <tr><th scope="row">Outcome records (eight fields and a count)</th><td data-label="Why we use it">Community success rates</td><td data-label="Where it lives">Engine database</td><td data-label="How long we keep it">24 months; not linked to you</td></tr>
+    <tr><th scope="row">Usage counts (random id, ISO week, milestone, count), only if you turned them on</th><td data-label="Why we use it">See which steps people reach</td><td data-label="Where it lives">Accounts database</td><td data-label="How long we keep it">2 years; not linked to you</td></tr>
+    <tr><th scope="row">Setup email record (when each was sent, or why not)</th><td data-label="Why we use it">Send at most two setup emails</td><td data-label="Where it lives">Accounts database</td><td data-label="How long we keep it">Deleted with the subscription's account data</td></tr>
+    <tr><th scope="row">Do-not-send list (email address, time)</th><td data-label="Why we use it">Keep your unsubscribe</td><td data-label="Where it lives">Accounts database</td><td data-label="How long we keep it">Until you ask us to remove it</td></tr>
     <tr><th scope="row">Calibration counts (runs and correct, per task kind and model)</th><td data-label="Why we use it">Tune your account's routing</td><td data-label="Where it lives">Engine database</td><td data-label="How long we keep it">Until you clear them or 30 days after the subscription ends</td></tr>
     <tr><th scope="row">Support email</th><td data-label="Why we use it">Help you</td><td data-label="Where it lives">Our mailbox</td><td data-label="How long we keep it">2 years</td></tr>
     </tbody>
@@ -172,10 +182,11 @@
     <p>Where the GDPR or UK GDPR applies, we rely on these legal bases:</p>
     <ul>
       <li>to run the account and subscription you asked for (contract)</li>
-      <li>to run, secure and improve the services, such as rate limits and outcome records (legitimate interests)</li>
+      <li>to run, secure and improve the services, such as rate limits, outcome records and setup emails (legitimate interests)</li>
+      <li>to count usage milestones, only if you turned usage counts on (consent; turning them off withdraws it)</li>
       <li>to meet legal duties, such as tax and fraud records (legal obligation)</li>
     </ul>
-    <p>We do not rely on consent for any of this.</p>
+    <p>Usage counts are the only thing we rely on consent for.</p>
     <p>We do not use your data to make automated decisions that have legal effects on you.</p>
     <h2 class="hl" id="who-we-share-data-with">Who we share data with</h2>
     <p>These companies handle personal data for us or for you.</p>
@@ -185,7 +196,7 @@
       <li>GitHub: only if you choose to sign in with GitHub. GitHub gives us your numeric id, login and verified email.</li>
       <li>OVHcloud US: runs our servers.</li>
       <li>Cloudflare: stores encrypted database backups (R2), delivers the p0ssess.me website and keeps its access logs.</li>
-      <li>Our email delivery provider (Resend): sends sign-in links, subscription notices and the waitlist email, and receives mail sent to our p0ssess.me addresses so we can forward it to our own inbox.</li>
+      <li>Our email delivery provider (Resend): sends sign-in links, setup emails, subscription notices and the waitlist email, and receives mail sent to our p0ssess.me addresses so we can forward it to our own inbox.</li>
       <li>OpenRouter: your own model provider, not ours. Your plugin calls it from your machine with your key, under OpenRouter's terms and privacy policy. We do not receive what you send it.</li>
     </ul>
     <p>We may also disclose data when the law requires it, or to protect our rights or the safety of others. If the business is sold or transferred, your data may move with it, under this policy.</p>
@@ -205,13 +216,13 @@
     </ul>
     <p>To use a right, email legal@p0ssess.me from the address on your account. We may ask you to verify it is you, and we answer within one month (45 days for California requests, with one extension if needed). Using a right is free. If we refuse a request, we tell you why. You can also sign a device out of your account yourself, which revokes its token.</p>
     <p>If you live in the EU or UK, you can complain to your data protection authority. If you live in California, you have the rights above under the CCPA, and you can use an authorized agent. We do not discriminate against you for using them. Because we do not sell or share personal data, there is nothing to opt out of. A Global Privacy Control signal changes nothing for the same reason.</p>
-    <p>Outcome records cannot be matched to you, so we cannot look them up or delete them. You can stop sending them at any time with <code>outcomes.send = false</code>.</p>
+    <p>Outcome records cannot be matched to you, so we cannot look them up or delete them. You can stop sending them at any time with <code>outcomes.send = false</code>. Usage counts are tied only to a random id, so we cannot match them to you either; turning them off deletes the id and the unsent counts on your machine.</p>
     <h2 class="hl" id="security">Security</h2>
     <p>Device tokens, sign-in tokens and web sessions are stored as hashes. Connections to our servers use HTTPS. The sandbox tunnel uses TLS 1.3. No system is perfectly secure, and we cannot promise that. If a breach affects your data, we tell you as the law requires.</p>
     <h2 class="hl" id="children">Children</h2>
     <p>The services are not for children under 13, and we do not knowingly collect their data. A subscription requires you to be 18. If you think a child has given us data, write to us and we delete it.</p>
     <h2 class="hl" id="cookies-and-tracking">Cookies and tracking</h2>
-    <p>The sign-in pages set one session cookie. p0ssess.me is a static site: it sets no cookies, has no analytics and loads nothing from other sites (its fonts are served from the site itself). Like most web servers, the site's server and its content delivery network keep standard access logs (IP address, page, time) for up to 30 days. We do not respond to "Do Not Track" signals because we do not track.</p>
+    <p>The sign-in pages set one session cookie. p0ssess.me is a static site: it sets no cookies, has no analytics and loads nothing from other sites (its fonts are served from the site itself). Like most web servers, the site's server and its content delivery network keep standard access logs (IP address, page, time) for up to 30 days. We do not respond to "Do Not Track" signals because we do not track. The plugin's usage counts are off unless you turn them on, and are described above.</p>
     <h2 class="hl" id="changes-to-this-policy">Changes to this policy</h2>
     <p>When we change this policy, we post the new version with a new effective date. For a change that matters, we email paying customers before it takes effect (at least 14 days).</p>
     <h2 class="hl" id="contact">Contact</h2>

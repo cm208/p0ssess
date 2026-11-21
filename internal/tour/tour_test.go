@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"p0ssess/internal/card"
 	"p0ssess/internal/pme/paths"
 )
 
@@ -169,7 +170,9 @@ func TestShowNewUser(t *testing.T) {
 		"=== QUESTION 2", "option  Keep these | $1/day · $10/month · asks above $0.25 (recommended to start) | none",
 		"option  Lower | $0.50/day · $5/month · asks above $0.10 | p0ssess tour envelope --daily 0.5 --monthly 5 --task 0.1",
 		"option  Higher | $2/day · $25/month · asks above $0.50", "option  Skip the tour",
-		"=== QUESTION 3", "p0ssess tour demo --task summarize --done", "p0ssess tour demo --task translate --done", "p0ssess tour demo --task brainstorm --done",
+		"=== QUESTION 3: Anonymous usage counts", "option  Share counts | weekly milestone counts, no content; helps decide what to build | p0ssess tour counts --on",
+		"option  Keep them off | nothing is counted or sent (off now) | p0ssess tour counts --off", "usage counts · shared", "usage counts · off",
+		"=== QUESTION 4", "p0ssess tour demo --task summarize --done", "p0ssess tour demo --task translate --done", "p0ssess tour demo --task brainstorm --done",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in\n%s", want, out)
@@ -177,6 +180,24 @@ func TestShowNewUser(t *testing.T) {
 	}
 	if strings.Contains(out, "nokey") {
 		t.Error("key line with a key")
+	}
+	q3 := out[strings.Index(out, "=== QUESTION 3"):strings.Index(out, "=== QUESTION 4")]
+	if strings.Contains(q3, "recommended") {
+		t.Error("an answer to the usage counts question is marked recommended")
+	}
+	for _, on := range []bool{true, false} {
+		for _, l := range strings.Split(strings.TrimRight(countsCard(on).String(), "\n"), "\n") {
+			if card.Cols(l) != 56 {
+				t.Errorf("counts card line is %d wide, not 56: %q", card.Cols(l), l)
+			}
+		}
+	}
+}
+
+func TestShowCountsOn(t *testing.T) {
+	out := Show(Facts{Envelope: Defaults(), KeyReady: true, Counts: true})
+	if !strings.Contains(out, "build (on now) | p0ssess tour counts --on") || strings.Contains(out, "(off now)") {
+		t.Fatalf("counts on:\n%s", out)
 	}
 }
 

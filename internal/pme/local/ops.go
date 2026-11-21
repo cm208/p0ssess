@@ -371,7 +371,7 @@ func (e *Engine) Learned(s Scope) Learned {
 var settingKeys = []string{"monthly_usd", "per_task_usd", "daily_usd", "save_claude", "plan", "usage_credits",
 	"privacy.mode", "privacy.allow_safety_retention", "models.allow", "models.deny", "providers.allow", "providers.deny",
 	"sandbox.shell_internet", "sandbox.shell_internet.add", "sandbox.shell_internet.remove",
-	"ask.first_use", "ask.code_edits", "outcomes.send", "lambda.preset", "statusline.command", "statusline.mark", "statusline.width", "lead"}
+	"ask.first_use", "ask.code_edits", "outcomes.send", "funnel.send", "lambda.preset", "statusline.command", "statusline.mark", "statusline.width", "lead"}
 
 func SettingKeys() []string { return append([]string(nil), settingKeys...) }
 
@@ -459,6 +459,8 @@ func (e *Engine) setBudget(key, value string) (string, error) {
 		b.Ask.CodeEdits, err = flag()
 	case "outcomes.send":
 		b.Outcomes.Send, err = flag()
+	case "funnel.send":
+		b.Funnel.Send, err = flag()
 	case "models.allow":
 		b.Models.Allow = list()
 	case "models.deny":
@@ -501,6 +503,18 @@ func (e *Engine) setBudget(key, value string) (string, error) {
 	}
 	if err := budget.Save(e.Dirs.BudgetFile(), b); err != nil {
 		return "", err
+	}
+	if key == "funnel.send" {
+		if err := e.funnelChanged(b.Funnel.Send); err != nil {
+			return "", err
+		}
+		if b.Funnel.Send {
+			return "Anonymous usage counts are on (saved to " + e.Dirs.BudgetFile() + "). Once a week p0ssess sends how often a few " +
+				"milestones happened (install, tour done, first route, first saving, limit rescue, upgrade viewed or clicked, device " +
+				"linked) under a random id that is not your account. The p0ssess page shows each week's counts before they go. " +
+				"\"Turn off usage counts\" stops them and deletes what is not sent.", nil
+		}
+		return "Anonymous usage counts are off (saved to " + e.Dirs.BudgetFile() + "). Nothing is counted or sent, and the counts not sent were deleted.", nil
 	}
 	if strings.HasPrefix(key, "sandbox.shell_internet") {
 		on := "none"

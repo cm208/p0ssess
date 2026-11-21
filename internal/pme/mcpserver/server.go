@@ -219,7 +219,7 @@ func tools() []map[string]any {
 			}))},
 		{"name": "budget_status", "description": "Spend against the monthly cap and daily limit, Claude limit pressure and λ, running jobs, and where the config files are.",
 			"inputSchema": obj(withScope(map[string]any{}))},
-		{"name": "settings_set", "description": "Change one budget or engine setting permanently. Keys: " + fmt.Sprint(local.SettingKeys()) + ". Lists are comma-separated.",
+		{"name": "settings_set", "description": "Change one budget or engine setting permanently. Keys: " + fmt.Sprint(local.SettingKeys()) + ". Lists are comma-separated. funnel.send is the opt-in anonymous usage counts (\"share usage counts\" / \"turn off usage counts\"); show the tool's text as it is.",
 			"inputSchema": obj(map[string]any{"key": str, "value": str}, "key", "value")},
 		{"name": "rules_list", "description": "Every rule with its scope, expiry and one-line text. Rules at team scope come from the user's Team org: read-only here, they only tighten.", "inputSchema": obj(withScope(map[string]any{}))},
 		{"name": "rules_add", "description": "Add a structured rule (forbid, allow, only, mix, approve, ask, budget). Use dry_run first and show the text to the user.", "inputSchema": obj(ruleProps(), "kind")},

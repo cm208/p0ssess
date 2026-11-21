@@ -10,6 +10,7 @@ import (
 
 	"p0ssess/internal/config"
 	"p0ssess/internal/direct"
+	"p0ssess/internal/funnel"
 	"p0ssess/internal/notices"
 	"p0ssess/internal/opencode"
 	"p0ssess/internal/pme/hook"
@@ -69,8 +70,15 @@ func notice(eng *local.Engine, id string, lines []string, more ...string) {
 }
 
 func record(eng *local.Engine, r notices.Record) {
-	if eng != nil {
-		notices.Append(eng.Dirs.NoticesFile(), r)
+	if eng == nil {
+		return
+	}
+	notices.Append(eng.Dirs.NoticesFile(), r)
+	if r.Receipt != "" {
+		funnel.Note(eng.Dirs, funnel.FirstRoute, eng.Now())
+	}
+	if r.SavedUSD > 0 {
+		funnel.Note(eng.Dirs, funnel.FirstSaving, eng.Now())
 	}
 }
 

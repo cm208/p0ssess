@@ -196,6 +196,26 @@
     if (lines.length > 50) box.append(el("li", { class: "empty", text: "and " + (lines.length - 50) + " more" }));
   }
 
+  function renderCounts(c) {
+    const note = $("#counts-note"), box = $("#counts");
+    if (!c || !c.send) {
+      note.textContent = "Off. Nothing is counted or sent. Say \u201cshare usage counts\u201d to turn them on.";
+      box.replaceChildren();
+      return;
+    }
+    const wk = (c.this_week && c.this_week.counts) || {};
+    const building = Object.keys(wk).map((k) => k + " " + wk[k]).join(" \u00b7 ");
+    const items = [];
+    if (c.pending) {
+      note.textContent = "Next batch, exactly as it will be sent, under the random id " + c.id + ". Milestone counts only.";
+      items.push(el("li", { text: c.pending }));
+    } else {
+      note.textContent = "Nothing to send. Each week's counts show here once the week ends, before they go. Random id " + c.id + ".";
+    }
+    items.push(el("li", { class: "empty", text: "This week so far: " + (building || "nothing yet") }));
+    box.replaceChildren(...items);
+  }
+
   function renderLimits(s) {
     const b = s.status.budget;
     const items = [
@@ -266,6 +286,7 @@
       "privacy.mode": b.privacy.mode, "privacy.allow_safety_retention": b.privacy.allow_safety_retention,
       "ask.first_use": b.ask && b.ask.first_use, "ask.code_edits": b.ask && b.ask.code_edits,
       "outcomes.send": s.outcomes && s.outcomes.send,
+      "funnel.send": s.funnel && s.funnel.send,
       "models.deny": list(b.models && b.models.deny).join(", "), "providers.deny": list(b.providers && b.providers.deny).join(", "),
       "statusline.command": (s.statusline && s.statusline.command) || "",
     };
@@ -531,6 +552,7 @@
       renderLimits(s);
       renderRules(s.rules, s.learned);
       renderRecords(s.outcomes);
+      renderCounts(s.funnel);
       fillSettings(s);
       up.classList.remove("off");
       up.textContent = "updated " + new Date(s.now).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });

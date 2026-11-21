@@ -6,12 +6,14 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
 	"p0ssess/internal/account"
 	"p0ssess/internal/config"
 	"p0ssess/internal/direct"
+	"p0ssess/internal/funnel"
 	"p0ssess/internal/pme/local"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/server"
@@ -59,12 +61,14 @@ func tourCmd(ctx context.Context, args []string) error {
 			return tourDone(d)
 		}
 		return nil
+	case "counts":
+		return tourCounts(d, args)
 	case "skip":
 		return tour.Set(d, tour.Skipped, time.Now())
 	case "done":
 		return tourDone(d)
 	}
-	return fmt.Errorf("tour: unknown step %q (show, envelope, demo, skip, done)", sub)
+	return fmt.Errorf("tour: unknown step %q (show, envelope, counts, demo, skip, done)", sub)
 }
 
 func tourFacts(d paths.Dirs) (tour.Facts, error) {
@@ -82,7 +86,34 @@ func tourFacts(d paths.Dirs) (tour.Facts, error) {
 	}
 	a := account.Current(d)
 	f.Team = a.OrgID != "" || a.Plan == "team"
+	f.Counts = funnel.Enabled(d)
 	return f, nil
+}
+
+// tourCounts answers the usage counts question: --on or --off.
+func tourCounts(d paths.Dirs, args []string) error {
+	fs := flag.NewFlagSet("tour counts", flag.ContinueOnError)
+	on := fs.Bool("on", false, "share anonymous usage counts")
+	off := fs.Bool("off", false, "keep them off")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if *on == *off {
+		return errors.New("tour counts: pass --on or --off")
+	}
+	eng, err := local.Load(d)
+	if err != nil {
+		return err
+	}
+	if _, err := eng.SetSetting("funnel.send", strconv.FormatBool(*on)); err != nil {
+		return err
+	}
+	if *on {
+		fmt.Println("saved    usage counts on · weekly, anonymous · shown on /p0ssess:p0ssess-me before they go")
+	} else {
+		fmt.Println("saved    usage counts off · nothing is counted or sent")
+	}
+	return nil
 }
 
 // keyReady reports whether the OpenRouter key file is there; it is never read here.
@@ -163,6 +194,7 @@ func tourDone(d paths.Dirs) error {
 	if err := tour.Set(d, tour.Done, time.Now()); err != nil {
 		return err
 	}
+	funnel.Note(d, funnel.TourDone, time.Now())
 	f, err := tourFacts(d)
 	if err != nil {
 		return err

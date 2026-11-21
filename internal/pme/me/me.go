@@ -17,6 +17,7 @@ import (
 	"io/fs"
 	"net"
 	"net/http"
+	"p0ssess/internal/funnel"
 	"p0ssess/internal/outcomes"
 	"strconv"
 	"strings"
@@ -208,6 +209,7 @@ type state struct {
 	Presets    []string            `json:"presets"`
 	Statusline statusline.Settings `json:"statusline"`
 	Outcomes   outcomesView        `json:"outcomes"`
+	Funnel     funnel.View         `json:"funnel"`
 	Token      string              `json:"token"`
 	Now        time.Time           `json:"now"`
 }
@@ -227,6 +229,7 @@ func (s *Server) state(w http.ResponseWriter, r *http.Request) {
 	if out.Outcomes.Pending == nil {
 		out.Outcomes.Pending = []string{}
 	}
+	out.Funnel = s.E.FunnelView()
 	l := s.E.Ledger()
 	recent := notices.Recent(s.E.Dirs.NoticesFile(), 200)
 	out.Runs = []runView{}

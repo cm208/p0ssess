@@ -152,6 +152,7 @@ func New(opt Options) (s *mcp.Server, closeFn func(), err error) {
 		case <-time.After(10 * time.Second):
 			ctx, cancel := context.WithTimeout(refreshCtx, 30*time.Second)
 			eng.SendOutcomes(ctx)
+			eng.SendFunnel(ctx)
 			d := eng.Dirs
 			calibrate.SendPending(ctx, d, account.Current(d).Pro(), remote.New(d).PutCalibration)
 			cancel()

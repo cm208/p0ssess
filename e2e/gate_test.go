@@ -113,8 +113,28 @@ func (g *gate) env(extra []string) []string {
 			env = append(env, kv)
 		}
 	}
+	// The gate never sends usage counts, whatever the scratch install's settings say.
 	env = append(env, "P0SSESS_HOME="+g.home, "P0SSESS_OPENROUTER_KEY_FILE="+g.key)
-	return append(env, extra...)
+	for _, kv := range extra {
+		if !strings.HasPrefix(kv, "P0SSESS_FUNNEL=") {
+			env = append(env, kv)
+		}
+	}
+	return append(env, "P0SSESS_FUNNEL=off")
+}
+
+func TestGateSendsNoUsageCounts(t *testing.T) {
+	g := &gate{home: "/scratch", key: "/key"}
+	t.Setenv("P0SSESS_FUNNEL", "on")
+	var got []string
+	for _, kv := range g.env([]string{"P0SSESS_FUNNEL=on"}) {
+		if strings.HasPrefix(kv, "P0SSESS_FUNNEL=") {
+			got = append(got, kv)
+		}
+	}
+	if len(got) != 1 || got[0] != "P0SSESS_FUNNEL=off" {
+		t.Fatalf("gate environment: %v", got)
+	}
 }
 
 func (g *gate) p0ssess(t *testing.T, dir string, extra []string, args ...string) (string, string, error) {

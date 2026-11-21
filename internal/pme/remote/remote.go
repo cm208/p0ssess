@@ -221,6 +221,34 @@ func (c *Client) PostOutcomes(ctx context.Context, body []byte) (status int, ret
 	return r.StatusCode, 0, nil
 }
 
+// PostFunnel sends a batch of usage counts. It carries no device or install token: the batch's own
+// random id is all the server learns about this install.
+func (c *Client) PostFunnel(ctx context.Context, body []byte) (status int, err error) {
+	if testing.Testing() && os.Getenv("P0SSESS_CLOUD_URL") == "" {
+		return 0, errTestNetwork
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, account.BaseURL()+"/v1/funnel", bytes.NewReader(body))
+	if err != nil {
+		return 0, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "p0ssess")
+	hc := c.HTTP
+	if hc == nil {
+		hc = http.DefaultClient
+	}
+	r, err := hc.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer r.Body.Close()
+	if r.StatusCode/100 != 2 {
+		return r.StatusCode, apiError(r)
+	}
+	io.Copy(io.Discard, io.LimitReader(r.Body, 8<<10))
+	return r.StatusCode, nil
+}
+
 // PutCalibration sends the account's whole set of calibration scores (POST /v1/calibration); with an
 // empty body it forgets them (DELETE). Only a linked install calls it.
 func (c *Client) PutCalibration(ctx context.Context, body []byte) error {

@@ -62,7 +62,7 @@ install -m 600 /dev/null ~/.config/p0ssess/secrets/openrouter_key
 "${EDITOR:-vi}" ~/.config/p0ssess/secrets/openrouter_key
 ```
 
-Start Claude Code. The tour opens in your first session and takes about a minute: your spending envelope (keep it or pick another), a live demo you choose, capped at one cent, and where to see spend. `/p0ssess:tour` runs it again any time.
+Start Claude Code. The tour opens in your first session and takes about a minute: your spending envelope (keep it or pick another), whether to share anonymous usage counts (off unless you say yes), a live demo you choose, capped at one cent, and where to see spend. `/p0ssess:tour` runs it again any time.
 
 <p align="center">
   <img src="assets/readme/tour.svg" width="100%" alt="The tour's first card, as the terminal shows it. p0ssess tour, 1 of 4. Welcome to p0ssess. Glad you're here. Claude stays in charge. Heavy, bulk and media work goes to cheaper models on OpenRouter, inside limits you set. You, then Claude, then p0ssess, then a cheaper model; back comes the result plus (model, cost, saved). Three quick steps: your limits, a live demo, where to look. The two choices beside it: Start the tour, or Skip the tour.">
@@ -159,6 +159,7 @@ On every plan, model calls bill to your own OpenRouter key. `/p0ssess:pro` shows
 - Files that look like secrets (`.env`, keys, credentials) never leave. A `.p0ssess-private` file in a repository blocks all delegation from it and every directory below.
 - The engine sees no prompts. Ranking requests carry a short task description, input and output types and sizes, the stakes and your model limits, never your prompt, your files or their names. The service keeps no request logs.
 - Anonymous outcome records, one line per finished run (kind, model, route, stakes, outcome, coarse cost, week), are shown on the local page before they go. "Turn off outcome records" stops them.
+- Usage counts are off unless you say yes (the tour asks once, or say "share usage counts"). Then, once a week, p0ssess sends how many times each of nine milestones happened that week (install, tour done, first route, first saving, limit rescue offered and used, upgrade viewed and clicked, device linked) under a random id that is not your account or install token, and nothing else. The local page shows each batch before it goes. "Turn off usage counts" stops them and deletes what was not sent.
 - Releases are reproducible. The same commit and Go version build byte-identical binaries, so anyone can rebuild a release and compare. [docs/RELEASE.md](docs/RELEASE.md) says how.
 
 The full list of what goes where is in [docs/DESIGN.md](docs/DESIGN.md) and on [p0ssess.me/privacy](https://p0ssess.me/privacy/).

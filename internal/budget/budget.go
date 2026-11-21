@@ -71,6 +71,11 @@ type Outcomes struct {
 	Send bool `toml:"send" json:"send"`
 }
 
+// Funnel holds whether anonymous usage counts are sent (opt-in; off unless the user says yes).
+type Funnel struct {
+	Send bool `toml:"send" json:"send"`
+}
+
 type Budget struct {
 	MonthlyUSD float64 `toml:"monthly_usd" json:"monthly_usd"`
 	PerTaskUSD float64 `toml:"per_task_usd" json:"per_task_usd"`
@@ -87,6 +92,7 @@ type Budget struct {
 	Sandbox      Sandbox  `toml:"sandbox" json:"sandbox"`
 	Ask          Ask      `toml:"ask" json:"ask"`
 	Outcomes     Outcomes `toml:"outcomes" json:"outcomes"`
+	Funnel       Funnel   `toml:"funnel" json:"funnel"`
 	// DailyCapUSD is a lower daily limit set by project rules; 0 means none. It is never saved.
 	DailyCapUSD float64 `toml:"-" json:"daily_cap_usd,omitempty"`
 }
