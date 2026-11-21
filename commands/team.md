@@ -10,7 +10,7 @@ The user ran `/p0ssess:team $ARGUMENTS`. Call the matching p0ssess tool once:
 - `invite EMAIL`: `team_invite` with that email. Typing the command is the user's go-ahead; do not ask again. `invite link` (no address): `team_invite` without email.
 - `spend`, optionally with a month `YYYY-MM`: `team_spend`.
 - `rules`: `team_rules`.
-- `rules add ...` (in words, e.g. "never use grok", "ask before image work", "cap tasks at 50 cents"): turn it into one shared rule and call `team_rules_add` with `dry_run` true, show its one line, and save (the same call without `dry_run`) only after the user says yes. An ask rule is a team approval: every seat asks before that work. A budget rule's field is `per_task_usd`, `daily_usd` or `monthly_usd`.
+- `rules add ...` (in words, e.g. "never use grok", "ask before image work", "cap tasks at 50 cents"): turn it into one shared rule and call `team_rules_add` with `dry_run` true, show its one line, and save (the same call without `dry_run`) only after the user says yes. "Approve up to 50 cents a task for everyone" is an approve rule with `max_per_run_usd`: members are not asked below it, and the team budget still caps it. An ask rule makes every seat ask before that work. A budget rule's field is `per_task_usd`, `daily_usd` or `monthly_usd`.
 - `rules remove ID`: `team_rules_remove`.
 - Anything else: say in one line what this command does.
 

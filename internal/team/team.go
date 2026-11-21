@@ -38,13 +38,19 @@ type Rule struct {
 	Kinds    []string  `json:"kinds,omitempty"`
 	Field    string    `json:"field,omitempty"`
 	Value    *float64  `json:"value,omitempty"`
-	Note     string    `json:"note,omitempty"`
+	// Standing approval limits, for a team approve rule.
+	MaxPerRunUSD float64 `json:"max_per_run_usd,omitempty"`
+	MaxCount     int     `json:"max_count,omitempty"`
+	MaxTotalUSD  float64 `json:"max_total_usd,omitempty"`
+	Period       string  `json:"period,omitempty"`
+	Note         string  `json:"note,omitempty"`
 }
 
 // Local is the rule at team scope.
 func (r Rule) Local() rules.Rule {
 	l := rules.Rule{ID: r.ID, Kind: r.Kind, Target: r.Target, Models: r.Models, Weights: r.Weights, UseCases: r.UseCases,
-		Kinds: r.Kinds, Field: r.Field, Note: r.Note, Scope: rules.ScopeTeam}
+		Kinds: r.Kinds, Field: r.Field, Note: r.Note, Scope: rules.ScopeTeam,
+		MaxPerRunUSD: r.MaxPerRunUSD, MaxCount: r.MaxCount, MaxTotalUSD: r.MaxTotalUSD, Period: r.Period}
 	if r.Value != nil {
 		l.Value = *r.Value
 	}
@@ -59,11 +65,14 @@ func FromLocal(l rules.Rule) (Rule, error) {
 	if l.Expires != nil {
 		return Rule{}, errors.New("team rules cannot expire")
 	}
-	if l.MaxStakes != 0 || l.MaxPerRunUSD != 0 || l.MaxCount != 0 || l.MaxTotalUSD != 0 || l.Period != "" {
-		return Rule{}, fmt.Errorf("%s: team rules take no stakes or approval limits", l.Kind)
+	if l.MaxStakes != 0 {
+		return Rule{}, fmt.Errorf("%s: team rules take no stakes", l.Kind)
+	}
+	if l.Kind != rules.KindApprove && (l.MaxPerRunUSD != 0 || l.MaxCount != 0 || l.MaxTotalUSD != 0 || l.Period != "") {
+		return Rule{}, fmt.Errorf("%s: approval limits are for approve rules", l.Kind)
 	}
 	r := Rule{Kind: l.Kind, Target: l.Target, Models: l.Models, Weights: l.Weights, UseCases: l.UseCases, Kinds: l.Kinds,
-		Field: l.Field, Note: l.Note}
+		Field: l.Field, Note: l.Note, MaxPerRunUSD: l.MaxPerRunUSD, MaxCount: l.MaxCount, MaxTotalUSD: l.MaxTotalUSD, Period: l.Period}
 	if teamID.MatchString(l.ID) {
 		r.ID = l.ID
 	}
@@ -89,9 +98,9 @@ func Check(rs []Rule) error {
 	}
 	for i, r := range rs {
 		switch r.Kind {
-		case rules.KindForbid, rules.KindOnly, rules.KindMix, rules.KindAsk, rules.KindBudget:
+		case rules.KindForbid, rules.KindOnly, rules.KindMix, rules.KindAsk, rules.KindBudget, rules.KindApprove:
 		default:
-			return fmt.Errorf("rule %d: team rules are forbid, only, mix, ask or budget, not %q", i+1, r.Kind)
+			return fmt.Errorf("rule %d: team rules are forbid, only, mix, ask, approve or budget, not %q", i+1, r.Kind)
 		}
 		if r.Kind == rules.KindBudget && r.Value == nil {
 			return fmt.Errorf("rule %d: budget needs a value", i+1)
@@ -100,7 +109,7 @@ func Check(rs []Rule) error {
 		if err := l.Validate(); err != nil {
 			return fmt.Errorf("rule %d: %w", i+1, err)
 		}
-		if why := l.Loosens(); why != "" {
+		if why := l.LoosensAt(rules.ScopeTeam); why != "" {
 			return fmt.Errorf("rule %d: team rules can only tighten (%s)", i+1, why)
 		}
 		if len([]rune(r.Note)) > MaxNote {
@@ -158,6 +167,8 @@ type View struct {
 	AccountID         string   `json:"account_id"`
 	MonthlyShareUSD   *float64 `json:"monthly_share_usd"`
 	DefaultMonthlyUSD *float64 `json:"default_monthly_usd,omitempty"`
+	TeamMonthlyUSD    *float64 `json:"team_monthly_usd,omitempty"`
+	TeamSpentUSD      float64  `json:"team_spent_usd,omitempty"`
 	Rules             []Rule   `json:"rules"`
 	SeatsUsed         int      `json:"seats_used,omitempty"`
 	Members           []Member `json:"members,omitempty"`
@@ -302,6 +313,12 @@ func (s Share) value() any {
 		return nil
 	}
 	return s.USD
+}
+
+// SetTeamBudget sets the team's shared monthly budget, a hard cap over every seat (Set false clears it).
+func (c *Client) SetTeamBudget(ctx context.Context, s Share) (View, error) {
+	var v View
+	return v, c.call(ctx, "PUT", "/v1/team/budget", map[string]any{"team_monthly_usd": s.value()}, &v)
 }
 
 // SetBudget changes the default share (when def is not nil) and members' shares.

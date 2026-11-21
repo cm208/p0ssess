@@ -34,8 +34,29 @@ type Policy struct {
 	Rules           []Rule   `json:"rules"`
 	MonthlyShareUSD *float64 `json:"monthly_share_usd,omitempty"`
 	ReportSpend     bool     `json:"report_spend"`
+	// TeamMonthlyUSD is the team's shared monthly budget, a hard cap over every seat; TeamSpentUSD is
+	// what the server had for the whole team in Month (YYYY-MM, UTC) when it issued the policy.
+	TeamMonthlyUSD *float64 `json:"team_monthly_usd,omitempty"`
+	TeamSpentUSD   float64  `json:"team_spent_usd,omitempty"`
+	Month          string   `json:"month,omitempty"`
 
 	issued time.Time
+}
+
+// IssuedAt is when the server signed the policy.
+func (p *Policy) IssuedAt() time.Time { return p.issued }
+
+// TeamSpent is the team's spend this UTC month as this seat can know it: the server's total when the
+// policy was issued plus this seat's own spend since (ownSince returns it for a start time). Other
+// seats' runs since the last fetch are not in it, so the cap can be passed by at most one fetch
+// interval of their spend.
+func (p *Policy) TeamSpent(now time.Time, ownSince func(time.Time) float64) float64 {
+	now = now.UTC()
+	start := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+	if p.Month != now.Format("2006-01") || p.issued.Before(start) {
+		return ownSince(start)
+	}
+	return p.TeamSpentUSD + ownSince(p.issued)
 }
 
 // LocalRules is the policy at team scope: its rules, and the member's share as a cap on monthly_usd.
@@ -77,6 +98,9 @@ func parse(raw []byte, keys map[string]ed25519.PublicKey) (*Policy, error) {
 	}
 	if p.MonthlyShareUSD != nil && !(*p.MonthlyShareUSD >= 0) {
 		return nil, errors.New("team policy: negative share")
+	}
+	if p.TeamMonthlyUSD != nil && !(*p.TeamMonthlyUSD >= 0) {
+		return nil, errors.New("team policy: negative team budget")
 	}
 	return &p, nil
 }
@@ -144,18 +168,20 @@ func Sync(ctx context.Context, c *Client, keys map[string]ed25519.PublicKey) (Re
 		Forget(d)
 		return Result{Left: true}, nil
 	}
+	// Send queued runs first, so the team total in the policy includes this seat's spend up to now.
+	sent, flushErr := Flush(ctx, c)
 	var raw json.RawMessage
 	_, err := c.API.Do(ctx, "GET", "/v1/team/policy", tok, nil, &raw)
 	switch {
 	case gone(err):
 		Forget(d)
-		return Result{Left: true}, nil
+		return Result{Left: true, Sent: sent}, nil
 	case account.IsInvalidToken(err):
 		account.DeleteToken(d)
 		Forget(d)
 		return Result{Left: true}, nil
 	case err != nil:
-		return Result{Policy: Load(d, keys)}, err
+		return Result{Policy: Load(d, keys), Sent: sent}, err
 	}
 	cached := Load(d, keys)
 	p, err := Verify(raw, keys, st.AccountID, cached)
@@ -165,8 +191,7 @@ func Sync(ctx context.Context, c *Client, keys map[string]ed25519.PublicKey) (Re
 	if err := paths.WriteFileAtomic(policyFile(d), raw, 0o600); err != nil {
 		return Result{Policy: cached}, err
 	}
-	n, err := Flush(ctx, c)
-	return Result{Policy: p, Sent: n}, err
+	return Result{Policy: p, Sent: sent}, flushErr
 }
 
 // startDelay lets the account check at start finish before the first fetch; tests shorten it.

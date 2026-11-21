@@ -393,7 +393,7 @@ func Load(f Files) (Set, error) {
 				continue
 			}
 			if tightenOnly(scope) {
-				if why := r.Loosens(); why != "" {
+				if why := r.LoosensAt(scope); why != "" {
 					s.Ignored = append(s.Ignored, Ignored{Rule: r, Why: why})
 					continue
 				}
@@ -421,6 +421,15 @@ func (r Rule) Loosens() string {
 		return ""
 	}
 	return "unknown rule kind"
+}
+
+// LoosensAt is Loosens for a scope. A team's owner may pre-approve spend for every seat (the team
+// pays, and the team budget still caps it), so a team approve rule is kept; it never lifts stakes.
+func (r Rule) LoosensAt(scope string) string {
+	if scope == ScopeTeam && r.Kind == KindApprove && r.MaxStakes == 0 {
+		return ""
+	}
+	return r.Loosens()
 }
 
 // NewID makes a short random rule id.

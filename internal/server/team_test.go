@@ -160,7 +160,7 @@ func TestTeamToolsRules(t *testing.T) {
 	if p := team.Load(tt.eng.Dirs, tt.eng.Table.Keys()); p == nil || len(p.Rules) != 2 {
 		t.Fatalf("policy after add: %+v", p)
 	}
-	for _, bad := range []map[string]any{{"kind": "allow", "target": "delegation"}, {"kind": "approve", "max_per_run_usd": 1},
+	for _, bad := range []map[string]any{{"kind": "allow", "target": "delegation"}, {"kind": "approve"},
 		{"kind": "budget", "field": "daily_usd", "value": 0}} {
 		if out, isErr := callTeam(t, tt, "team_rules_add", bad); !isErr {
 			t.Errorf("%v accepted: %q", bad, out)

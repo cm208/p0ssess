@@ -57,6 +57,8 @@ func Explain(err error) error {
 		return errors.New("this account is already in a team")
 	case "seats_full":
 		return errors.New("the team has no free seat; its owner can add seats")
+	case "invite_wrong_account":
+		return errors.New("that invite was emailed to another address; sign in with that address to join")
 	case "invite_invalid":
 		return errors.New("that invite is unknown, used up, expired or revoked")
 	case "invite_mail_limit":
@@ -126,6 +128,11 @@ func WriteStatus(w io.Writer, v View) {
 		}
 		fmt.Fprintf(w, "Seats: %d of %d used, %d free, %d pending invites\n", v.SeatsUsed, v.Org.Seats, free, len(v.Invites))
 		fmt.Fprintf(w, "Default monthly share: %s\n", USD(v.DefaultMonthlyUSD))
+	}
+	if v.TeamMonthlyUSD != nil {
+		fmt.Fprintf(w, "Team budget: %s a month for every seat together, %s spent; paid runs stop at it\n", USD(v.TeamMonthlyUSD), Spent(v.TeamSpentUSD))
+	} else if v.Owner() {
+		fmt.Fprintf(w, "Team budget: none (p0ssess team budget USD sets one)\n")
 	}
 	fmt.Fprintf(w, "Your monthly share: %s\n", USD(v.MonthlyShareUSD))
 	if len(v.Members) > 0 {

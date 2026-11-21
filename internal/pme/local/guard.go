@@ -186,6 +186,7 @@ func (e *Engine) Authorize(c Charge) (*Grant, error) {
 	if hold <= 0 {
 		hold = time.Hour
 	}
+	pol := e.TeamPolicy()
 	err = history.Update(e.Dirs.HistoryFile(), func(l *history.Ledger) ([]history.Entry, error) {
 		sp := l.Spend(now)
 		committed := sp.Month + sp.Reserved
@@ -200,6 +201,24 @@ func (e *Engine) Authorize(c Charge) (*Grant, error) {
 		if committed+g.MaxUSD > bud.MonthlyUSD+1e-9 {
 			return nil, refuse("$%.2f spent or reserved this month plus up to $%.2f for this call would pass the $%.2f monthly cap; "+
 				"raise monthly_usd first", committed, g.MaxUSD, bud.MonthlyUSD)
+		}
+		if pol != nil && pol.TeamMonthlyUSD != nil {
+			// The team budget is one cap over every seat: the team's month so far, this seat's runs
+			// since the policy was issued and this seat's open reservations.
+			teamCap := *pol.TeamMonthlyUSD
+			teamSpent := pol.TeamSpent(now, l.SpendSince) + sp.Reserved
+			if room := math.Floor((teamCap-teamSpent)*1e4) / 1e4; c.Fit && room < g.MaxUSD && room >= est-1e-9 && room > 0 {
+				g.MaxUSD = room
+				g.Notes = append(g.Notes, fmt.Sprintf("ceiling lowered to $%.4f to stay within the team budget", room))
+			}
+			if teamSpent+g.MaxUSD > teamCap+1e-9 {
+				if teamSpent >= teamCap-1e-9 {
+					return nil, refuse("the team's $%.2f monthly budget is used up ($%.2f spent this month); paid runs are stopped for every seat until its owner raises it on the team page",
+						teamCap, teamSpent)
+				}
+				return nil, refuse("up to $%.2f for this call would pass the team's $%.2f monthly budget ($%.2f spent this month); its owner can raise it on the team page",
+					g.MaxUSD, teamCap, teamSpent)
+			}
 		}
 		if g.MaxUSD > 0 && today+g.MaxUSD > daily+1e-9 {
 			return nil, refuse("$%.2f spent or reserved today plus up to $%.2f would pass the $%.2f daily soft limit. "+

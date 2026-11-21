@@ -14,6 +14,7 @@ func TestTeamScopeTightenOnly(t *testing.T) {
 		{ID: "t-00000004", Kind: KindBudget, Field: "daily_usd", Value: 0},
 		{ID: "t-00000005", Kind: KindBudget, Field: "monthly_usd", Value: 25},
 		{ID: "t-00000006", Kind: KindOnly},
+		{ID: "t-00000007", Kind: KindApprove, MaxPerRunUSD: 5, MaxStakes: 4},
 	}
 	s, err := Load(f)
 	if err != nil {
@@ -23,8 +24,8 @@ func TestTeamScopeTightenOnly(t *testing.T) {
 	for _, r := range s.Rules {
 		kept[r.ID] = r.Scope
 	}
-	if len(kept) != 2 || kept["t-00000001"] != ScopeTeam || kept["t-00000005"] != ScopeTeam {
-		t.Errorf("kept %v, want the forbid and the budget cap at team scope", kept)
+	if len(kept) != 3 || kept["t-00000001"] != ScopeTeam || kept["t-00000003"] != ScopeTeam || kept["t-00000005"] != ScopeTeam {
+		t.Errorf("kept %v, want the forbid, the owner's pre-approval and the budget cap at team scope", kept)
 	}
 	ignored := map[string]bool{}
 	for _, ig := range s.Ignored {
@@ -33,13 +34,13 @@ func TestTeamScopeTightenOnly(t *testing.T) {
 		}
 		ignored[ig.Rule.ID] = true
 	}
-	for _, id := range []string{"t-00000002", "t-00000003", "t-00000004", "t-00000006"} {
+	for _, id := range []string{"t-00000002", "t-00000004", "t-00000006", "t-00000007"} {
 		if !ignored[id] {
 			t.Errorf("%s should be ignored: %v", id, ignored)
 		}
 	}
 	d := s.Decide("video-understand", "media", now)
-	if d.Forbidden["x-ai/grok"] == nil || d.AllowAll != nil || len(d.Approvals) != 0 {
+	if d.Forbidden["x-ai/grok"] == nil || d.AllowAll != nil || len(d.Approvals) != 1 || d.Approvals[0].ID != "t-00000003" {
 		t.Errorf("team rules applied wrongly: %+v", d)
 	}
 	if _, ok := d.Budget["monthly_usd"]; ok {

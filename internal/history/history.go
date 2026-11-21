@@ -438,6 +438,17 @@ func (l *Ledger) Spend(now time.Time) Spend {
 	return s
 }
 
+// SpendSince is the cash of the runs that ended after t.
+func (l *Ledger) SpendSince(t time.Time) float64 {
+	var sum float64
+	for _, e := range l.Entries {
+		if e.Type == TypeRun && e.TS.After(t) {
+			sum += l.Cost(e)
+		}
+	}
+	return sum
+}
+
 // Runs returns run entries, newest first.
 func (l *Ledger) Runs(n int) []Entry {
 	var out []Entry

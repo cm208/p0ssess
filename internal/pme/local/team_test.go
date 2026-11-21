@@ -217,3 +217,90 @@ func TestTeamPolicyGatesAMembersRun(t *testing.T) {
 		t.Errorf("after leaving: %v", err)
 	}
 }
+
+// writePolicy caches a signed policy issued at issued, with the team's budget and month total.
+func writePolicy(t *testing.T, e *Engine, issued time.Time, cap, spent float64, rs ...map[string]any) {
+	t.Helper()
+	joinTeam(t, e, nil)
+	if rs == nil {
+		rs = []map[string]any{}
+	}
+	p := map[string]any{"v": 1, "type": "team-policy", "org_id": "org_1", "org_name": "Acme", "account_id": "acc_1",
+		"role": "member", "issued": issued.UTC().Format(time.RFC3339), "rules": rs, "report_spend": true,
+		"team_monthly_usd": cap, "team_spent_usd": spent, "month": issued.UTC().Format("2006-01")}
+	b, _ := json.Marshal(p)
+	_, priv := tabletest.Key()
+	os.WriteFile(filepath.Join(e.Dirs.State, "team-policy.json"), tabletest.Seal(priv, b), 0o600)
+}
+
+func TestTeamApprovalCoversEverySeat(t *testing.T) {
+	e, proj := setup(t, "plan = \"api\"\nmonthly_usd = 10\nper_task_usd = 0.05\ndaily_usd = -1\n")
+	_, err := e.Authorize(charge(proj, 0.3))
+	refused(t, err, true, "above your $0.05 auto-approve limit")
+
+	// The owner pre-approves up to $0.50 a task: the member is not asked below it.
+	joinTeam(t, e, nil, map[string]any{"id": "t-00000001", "kind": "approve", "max_per_run_usd": 0.5})
+	g, err := e.Authorize(charge(proj, 0.3))
+	if err != nil || g.ApprovalID != "t-00000001" {
+		t.Fatalf("team approval did not cover it: %+v %v", g, err)
+	}
+	e.Release(g)
+	_, err = e.Authorize(charge(proj, 0.8))
+	refused(t, err, true, "above the $0.50 per-run approval")
+
+	// A team or member ask rule still needs a yes for the run; a team approval does not lift stakes 4.
+	joinTeam(t, e, nil, map[string]any{"id": "t-00000001", "kind": "approve", "max_per_run_usd": 0.5},
+		map[string]any{"id": "t-00000002", "kind": "ask", "models": []string{cheap}})
+	_, err = e.Authorize(charge(proj, 0.3))
+	refused(t, err, true, "your rule says to ask")
+	joinTeam(t, e, nil, map[string]any{"id": "t-00000001", "kind": "approve", "max_per_run_usd": 0.5})
+	c := charge(proj, 0.3)
+	c.Stakes = 4
+	if _, err := e.Authorize(c); err == nil {
+		t.Error("a team approval ran stakes 4 work")
+	}
+	// It applies within the team budget, not past it.
+	writePolicy(t, e, time.Now().Add(-time.Minute), 1, 0.9, map[string]any{"id": "t-00000001", "kind": "approve", "max_per_run_usd": 0.5})
+	_, err = e.Authorize(charge(proj, 0.3))
+	refused(t, err, false, "would pass the team's $1.00 monthly budget")
+}
+
+func TestTeamBudgetIsAHardSharedCap(t *testing.T) {
+	e, proj := setup(t, "plan = \"api\"\nmonthly_usd = 10\nper_task_usd = 1\ndaily_usd = -1\n")
+	issued := time.Now().Add(-time.Minute)
+	writePolicy(t, e, issued, 2, 1.5)
+	g, err := e.Authorize(charge(proj, 0.4))
+	if err != nil {
+		t.Fatalf("under the team budget: %v", err)
+	}
+	// This seat's run after the policy was issued counts toward the team total.
+	if err := e.Settle(g, Run{ID: "d-1", Route: "direct", Model: cheap, CashUSD: 0.4, Cwd: proj}); err != nil {
+		t.Fatal(err)
+	}
+	_, err = e.Authorize(charge(proj, 0.2))
+	refused(t, err, false, "would pass the team's $2.00 monthly budget ($1.90 spent this month)")
+	// Fit lowers the ceiling to the room left when the estimate fits.
+	c := charge(proj, 0.2)
+	c.Fit, c.EstimateUSD = true, 0.05
+	if g, err := e.Authorize(c); err != nil || g.MaxUSD > 0.1+1e-9 {
+		t.Errorf("fit: %+v %v", g, err)
+	} else {
+		e.Release(g)
+	}
+
+	writePolicy(t, e, time.Now().Add(-time.Minute), 2, 2)
+	_, err = e.Authorize(charge(proj, 0.01))
+	refused(t, err, false, "the team's $2.00 monthly budget is used up")
+
+	// A policy from last month does not carry its total into this one.
+	last := time.Now().UTC().AddDate(0, -1, -2)
+	writePolicy(t, e, last, 2, 2)
+	if _, err := e.Authorize(charge(proj, 0.01)); err != nil {
+		t.Errorf("new month: %v", err)
+	}
+	// No team budget, no team cap.
+	joinTeam(t, e, nil)
+	if _, err := e.Authorize(charge(proj, 0.9)); err != nil {
+		t.Errorf("no team budget: %v", err)
+	}
+}

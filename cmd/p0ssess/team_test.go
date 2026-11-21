@@ -300,9 +300,9 @@ value = 0.05
 		t.Errorf("rules %+v", f.rules)
 	}
 	bad := filepath.Join(dir, "bad.toml")
-	os.WriteFile(bad, []byte("[[rule]]\nkind = \"approve\"\nmax_per_run_usd = 1.0\n"), 0o600)
+	os.WriteFile(bad, []byte("[[rule]]\nkind = \"allow\"\ntarget = \"delegation\"\n"), 0o600)
 	if err := runTErr(t, "rules", "set", bad); err == nil {
-		t.Error("approve rule file accepted")
+		t.Error("allow rule file accepted")
 	}
 
 	out = runT(t, "rules")
@@ -325,6 +325,11 @@ func TestTeamShareSpendDelete(t *testing.T) {
 	b := f.bodies["PUT /v1/team/budget"]
 	if b[0] != `{"default_monthly_usd":40}` || b[1] != `{"members":{"acc_2":null}}` || b[2] != `{"members":{"acc_3":12.5}}` {
 		t.Errorf("budget bodies %v", b)
+	}
+	contains2(t, runT(t, "budget", "60"), "Team budget: $60.00 a month.")
+	runT(t, "budget", "none")
+	if b := f.bodies["PUT /v1/team/budget"]; b[3] != `{"team_monthly_usd":60}` || b[4] != `{"team_monthly_usd":null}` {
+		t.Errorf("team budget bodies %v", b[3:])
 	}
 	if err := runTErr(t, "share", "acc_2", "-1"); err == nil {
 		t.Error("negative share accepted")

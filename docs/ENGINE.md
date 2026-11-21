@@ -442,7 +442,7 @@ A reading older than two hours, or none (before the first response in a session,
 | `history_record_outcome` | redo, overridden or declined (or accepted, though a finished run counts as accepted on its own; a run started with `await_outcome` needs one), with the `run_id` whose measured cost it takes and whose implied acceptance it replaces |
 | `tendencies` | learned patterns, suggestions and recent delegations |
 | `shortcuts_suggest`, `shortcuts_create`, `shortcuts_remove` | named shortcut agents (below) |
-| `team_status`, `team_invite`, `team_spend`, `team_rules`, `team_rules_add`, `team_rules_remove` | the user's Team org from chat (`/p0ssess:team`): seats and pending invites, an email invite, spend by member and model with today's column, shared rules and approvals (`ask` rules); short plain text, as `p0ssess team` prints it |
+| `team_status`, `team_invite`, `team_spend`, `team_rules`, `team_rules_add`, `team_rules_remove` | the user's Team org from chat (`/p0ssess:team`): seats and pending invites, an email invite, spend by member and model with today's column, shared rules, the owner's pre-approvals (`approve` rules, honored for every seat within the team budget) and `ask` rules; the team budget (`p0ssess team budget USD`) is a hard cap over every seat, checked in `Authorize` from the signed policy's month total plus this seat's spend since it was issued; short plain text, as `p0ssess team` prints it |
 
 The `direct` and `run` tools enforce every limit before they spend (see Enforcement); both take optional `stakes` and `use_case`. `direct` also takes `await_outcome` ([MEDIA.md](MEDIA.md#calling-it)).
 

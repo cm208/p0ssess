@@ -35,6 +35,7 @@ const teamUsage = `usage: p0ssess team COMMAND
   rules set FILE                   replace the rules from a TOML ([[rule]], as rules.toml) or JSON ({"rules":[...]}) file (owner)
   rule add --kind K [--target T] [--models A,B] [--weights 1,2] [--use-cases U] [--kinds K] [--field F] [--value V] [--note N]   (owner)
   rule remove ID                   (owner)
+  budget USD|none                  the team's monthly budget: paid runs stop for every seat at it (owner)
   share default USD|none           the monthly share of members without their own (owner)
   share ACCOUNT_ID USD|none        one member's monthly share (owner)
   spend [--month YYYY-MM]          spend per member, model, use case and day, with today (owner)
@@ -81,6 +82,8 @@ func runTeam(ctx context.Context, args []string, out io.Writer) error {
 		err = t.rule(ctx, rest)
 	case "share":
 		err = t.share(ctx, rest)
+	case "budget":
+		err = t.budget(ctx, rest)
 	case "spend":
 		err = t.spend(ctx, rest)
 	case "sync":
@@ -475,6 +478,26 @@ func (t *teamCLI) share(ctx context.Context, args []string) error {
 		} else {
 			t.printf("%s now has the default share.\n", args[0])
 		}
+	}
+	t.refresh(ctx)
+	return nil
+}
+
+func (t *teamCLI) budget(ctx context.Context, args []string) error {
+	if len(args) != 1 {
+		return errors.New("usage: p0ssess team budget USD|none")
+	}
+	sh, err := parseShare(args[0])
+	if err != nil {
+		return err
+	}
+	if _, err := t.c.SetTeamBudget(ctx, sh); err != nil {
+		return err
+	}
+	if sh.Set {
+		t.printf("Team budget: %s a month. Paid runs stop for every seat once the team reaches it.\n", shareText(sh))
+	} else {
+		t.printf("No team budget; each seat keeps its own share.\n")
 	}
 	t.refresh(ctx)
 	return nil

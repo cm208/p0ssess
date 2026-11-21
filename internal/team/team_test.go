@@ -384,3 +384,15 @@ func TestWatchSyncsAtStart(t *testing.T) {
 		t.Error("no policy after start")
 	}
 }
+
+func TestCheckTakesTeamApprovals(t *testing.T) {
+	if err := Check([]Rule{{Kind: "approve", MaxPerRunUSD: 0.5, Kinds: []string{"media"}}}); err != nil {
+		t.Errorf("team approval refused: %v", err)
+	}
+	if err := Check([]Rule{{Kind: "approve"}}); err == nil {
+		t.Error("approval without a per-run limit accepted")
+	}
+	if err := Check([]Rule{{Kind: "allow", Target: "delegation"}}); err == nil {
+		t.Error("allow accepted")
+	}
+}

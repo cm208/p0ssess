@@ -15,20 +15,24 @@ import (
 // Team tools: the user's Team org from the main conversation. They answer in short plain text, the
 // same lines as p0ssess team on the command line.
 
-const teamInstructions = `- team_*: the user's p0ssess Team (invite by email, status with seats and pending invites, spend by member and model, shared rules and approvals). Show the tool's text as it is. Shared rule changes: team_rules_add with dry_run true, show the one line, save after the user confirms.
+const teamInstructions = `- team_*: the user's p0ssess Team (invite by email, status with seats and pending invites, spend by member and model, shared rules, pre-approvals and the team budget). Show the tool's text as it is. Shared rule changes: team_rules_add with dry_run true, show the one line, save after the user confirms.
 `
 
 var teamRuleProps = map[string]any{
-	"kind":      map[string]any{"type": "string", "enum": []string{"forbid", "only", "mix", "ask", "budget"}, "description": "ask: every seat asks before matching work (a team approval)"},
-	"target":    map[string]any{"type": "string", "enum": []string{"model", "claude_agents", "opencode", "delegation"}, "description": "For forbid"},
-	"models":    map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "OpenRouter ids, e.g. x-ai/grok-4.20"},
-	"weights":   map[string]any{"type": "array", "items": map[string]any{"type": "number"}, "description": "mix only, one per model"},
-	"use_cases": map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "Catalog ids; empty covers all"},
-	"kinds":     map[string]any{"type": "array", "items": map[string]any{"type": "string", "enum": []string{"media", "generate", "agent", "review", "code", "text"}}},
-	"field":     map[string]any{"type": "string", "enum": []string{"per_task_usd", "daily_usd", "monthly_usd"}, "description": "budget only; the limit for every seat"},
-	"value":     map[string]any{"type": "number", "description": "budget only, USD"},
-	"note":      map[string]any{"type": "string", "description": "Shown to members; the owner's own words, short"},
-	"dry_run":   map[string]any{"type": "boolean", "description": "Check and render without saving"},
+	"kind":            map[string]any{"type": "string", "enum": []string{"forbid", "only", "mix", "ask", "approve", "budget"}, "description": "approve: pre-approve spend for every seat up to max_per_run_usd, within the team budget; ask: every seat asks before matching work"},
+	"max_per_run_usd": map[string]any{"type": "number", "description": "approve only: members are not asked below this per task"},
+	"max_count":       map[string]any{"type": "integer", "description": "approve only: runs per seat per period"},
+	"max_total_usd":   map[string]any{"type": "number", "description": "approve only: USD per seat per period"},
+	"period":          map[string]any{"type": "string", "enum": []string{"day", "total"}},
+	"target":          map[string]any{"type": "string", "enum": []string{"model", "claude_agents", "opencode", "delegation"}, "description": "For forbid"},
+	"models":          map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "OpenRouter ids, e.g. x-ai/grok-4.20"},
+	"weights":         map[string]any{"type": "array", "items": map[string]any{"type": "number"}, "description": "mix only, one per model"},
+	"use_cases":       map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "Catalog ids; empty covers all"},
+	"kinds":           map[string]any{"type": "array", "items": map[string]any{"type": "string", "enum": []string{"media", "generate", "agent", "review", "code", "text"}}},
+	"field":           map[string]any{"type": "string", "enum": []string{"per_task_usd", "daily_usd", "monthly_usd"}, "description": "budget only; the limit for every seat"},
+	"value":           map[string]any{"type": "number", "description": "budget only, USD"},
+	"note":            map[string]any{"type": "string", "description": "Shown to members; the owner's own words, short"},
+	"dry_run":         map[string]any{"type": "boolean", "description": "Check and render without saving"},
 }
 
 func teamTools() []mcp.Tool {
@@ -54,7 +58,7 @@ func teamTools() []mcp.Tool {
 			InputSchema: schema(map[string]any{"month": map[string]any{"type": "string", "description": "YYYY-MM; default this month (UTC)"}}), Annotations: ro},
 		{Name: "team_rules", Description: "The Team's shared rules: routing rules, approvals (ask rules) and spending limits that apply to every seat.",
 			InputSchema: schema(map[string]any{}), Annotations: ro},
-		{Name: "team_rules_add", Description: "Add one shared rule for every seat (owner only). Rules can only tighten: forbid, only, mix, ask (needs the member's yes first) or budget (per_task_usd, daily_usd, monthly_usd). Use dry_run first and show the line.",
+		{Name: "team_rules_add", Description: "Add one shared rule for every seat (owner only). Kinds: forbid, only, mix, ask (needs the member's yes first), approve (pre-approves spend for every seat up to max_per_run_usd, within the team budget) or budget (per_task_usd, daily_usd, monthly_usd caps). Use dry_run first and show the line.",
 			InputSchema: schema(teamRuleProps, "kind")},
 		{Name: "team_rules_remove", Description: "Remove one shared rule by its id (t-xxxxxxxx; owner only).",
 			InputSchema: schema(map[string]any{"id": map[string]any{"type": "string"}}, "id")},
