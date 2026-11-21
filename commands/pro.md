@@ -1,5 +1,5 @@
 ---
-description: p0ssess Pro: see the plans and upgrade (use when the user asks for p0ssess Pro, upgrading, or what Pro costs)
+description: p0ssess Pro keeps you working when Claude's usage limit runs out: see the plans and upgrade (use when the user asks for p0ssess Pro, upgrading, or what Pro costs)
 allowed-tools: Bash(p0ssess account:*)
 ---
 

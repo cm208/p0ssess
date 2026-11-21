@@ -217,7 +217,7 @@ type Facts struct {
 
 // What is step one.
 const What = "p0ssess hands heavy, bulk and media work from Claude to cheaper models on OpenRouter, inside limits you set, " +
-	"and gives back the result with a one-line receipt (model, cost, saving)."
+	"and gives back the result with a one-line receipt (model, cost, saving). When Claude's usage limit nears, Pro keeps heavy users working."
 
 // A DemoTask is one of the live demos step three offers.
 type DemoTask struct {
@@ -343,7 +343,7 @@ func countsCard(on bool) card.Card {
 
 func welcomeCard() card.Card {
 	rows := []string{"Welcome to p0ssess. Glad you're here.", ""}
-	rows = append(rows, card.Wrap("Claude stays in charge. Heavy, bulk and media work goes to cheaper models on OpenRouter, inside limits you set.", 60, "")...)
+	rows = append(rows, card.Wrap("Claude stays in charge. Heavy, bulk and media work goes to cheaper models on OpenRouter, inside limits you set. If Claude's limit runs out, Pro keeps you working.", 60, "")...)
 	rows = append(rows, "",
 		"  you ─▶ Claude ─▶ p0ssess ─▶ cheaper model",
 		"             ◀─ result + (model, cost, saved ~$)",

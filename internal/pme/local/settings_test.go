@@ -135,6 +135,9 @@ func TestSandboxWhereSettings(t *testing.T) {
 			t.Errorf("%q gave %q, want %q", in, b.Sandbox.Where, want)
 		}
 	}
+	if _, err := e.SetSetting("sandbox.where", "auto"); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := e.SetSetting("sandbox.where", "mars"); err == nil {
 		t.Error("an unknown place was accepted")
 	}

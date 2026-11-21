@@ -120,6 +120,9 @@ func accountPro(ctx context.Context, d paths.Dirs, c *account.Client, out io.Wri
 	}
 	funnel.Note(d, funnel.UpgradeViewed, time.Now())
 	fmt.Fprintln(out, "p0ssess Pro")
+	fmt.Fprintln(out, "  Usage-limit rescue: when Claude's limit nears, p0ssess takes the work a cheaper model can do.")
+	fmt.Fprintln(out, "  Savings proof: what p0ssess saved you against Claude, with a monthly report.")
+	fmt.Fprintln(out, "  Cloud sandbox: coding hand-offs on macOS and Windows, 20 sandbox hours a month.")
 	for _, p := range offer.Plans {
 		if p.Tier == "" {
 			continue

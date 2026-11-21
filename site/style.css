@@ -213,6 +213,9 @@ html.hero-go .hero { transition: --at 1.5s var(--io), --to 1.5s var(--io); }
 .hero-cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2.2rem; margin-top: clamp(1.2rem, 2vw, 1.6rem); }
 .lede { max-width: 36rem; font-size: 1.12rem; line-height: 1.55; }
 .cta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem 0.9rem; margin-top: 1.6rem; }
+.reasons { list-style: none; margin: 1.5rem 0 0; padding: 0; display: grid; gap: 0.7rem; max-width: 36rem; font-size: 0.95rem; color: var(--ink-body); }
+.reasons li { padding-left: 0.9rem; border-left: 1px solid var(--violet); }
+.reasons b { color: var(--ink); font-weight: 500; }
 .terms { margin-top: 1rem; font-size: 0.9rem; color: var(--ink-2); }
 
 /* The rule, the switch that turns it on, and what one run of the job then costs. */
