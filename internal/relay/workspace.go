@@ -218,5 +218,64 @@ func applyScratch(rec *SessionRecord, wt string) (applied, reverts, keep, notes 
 		applied = append(applied, orig+" (copied back)")
 		reverts = append(reverts, "cp "+shellQuote(backup)+" "+shellQuote(orig))
 	}
+	a, r, k, n := placeNew(rec, wt)
+	return append(applied, a...), append(reverts, r...), append(keep, k...), append(notes, n...)
+}
+
+// placeNew puts the files a scratch run created into the directory the task named, never over an
+// existing file; without one it says where they are.
+func placeNew(rec *SessionRecord, wt string) (applied, reverts, keep, notes []string) {
+	copied := map[string]bool{}
+	for _, cp := range rec.Copies {
+		copied[filepath.Base(cp)] = true
+	}
+	var fresh []string
+	var total int64
+	filepath.WalkDir(wt, func(p string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		rel, _ := filepath.Rel(wt, p)
+		if d.IsDir() {
+			if rel == ".git" || rel == ".p0ssess" {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if rel == ".git" || copied[rel] || !d.Type().IsRegular() {
+			return nil
+		}
+		if info, err := d.Info(); err == nil && len(fresh) < scratchMaxFiles && total+info.Size() <= scratchMaxBytes {
+			total += info.Size()
+			fresh = append(fresh, rel)
+		}
+		return nil
+	})
+	sort.Strings(fresh)
+	for _, rel := range fresh {
+		src := filepath.Join(wt, rel)
+		if rec.Dest == "" {
+			notes = append(notes, "new file left in the scratch copy: "+src)
+			continue
+		}
+		dst := filepath.Join(rec.Dest, rel)
+		left := "mkdir -p " + shellQuote(filepath.Dir(dst)) + " && cp " + shellQuote(src) + " " + shellQuote(dst)
+		if _, err := os.Lstat(dst); err == nil {
+			keep = append(keep, left)
+			notes = append(notes, "not copied to "+dst+": a file is already there")
+			continue
+		}
+		b, err := os.ReadFile(src)
+		if err == nil {
+			err = paths.WriteFileAtomic(dst, b, 0o644)
+		}
+		if err != nil {
+			keep = append(keep, left)
+			notes = append(notes, "not copied to "+dst+": "+err.Error())
+			continue
+		}
+		applied = append(applied, dst+" (new)")
+		reverts = append(reverts, "rm "+shellQuote(dst))
+	}
 	return applied, reverts, keep, notes
 }

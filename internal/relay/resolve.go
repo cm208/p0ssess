@@ -2,6 +2,7 @@ package relay
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -18,6 +19,9 @@ type Target struct {
 	Repo  string
 	Extra []string
 	Files []string
+	// Dest, with no Repo, is the directory the task names for files it writes: a named directory, or
+	// the existing parent of a named file that does not exist yet.
+	Dest  string
 	Notes []string
 	// Named is set when the repository came from a path the task names, not from the caller's directory.
 	Named bool
@@ -258,6 +262,7 @@ func Resolve(task, cwd string, explicit bool, keyFile string, attachments []stri
 	}
 	if t.Repo == "" {
 		t.Cwd = cwd
+		t.Dest = scratchDest(named)
 		return t
 	}
 	for _, r := range addUnique(append(append([]string{}, direct...), second...)) {
@@ -273,6 +278,34 @@ func Resolve(task, cwd string, explicit bool, keyFile string, attachments []stri
 		t.Cwd = cwd
 	}
 	return t
+}
+
+// scratchDest is the first named directory outside any repository, or the existing parent of a named
+// file still to be written; never / or the home directory itself.
+func scratchDest(named []string) string {
+	home, _ := os.UserHomeDir()
+	for _, p := range named {
+		d := p
+		st, err := os.Stat(p)
+		switch {
+		case err == nil && st.IsDir():
+		case errors.Is(err, os.ErrNotExist):
+			d = filepath.Dir(p)
+			if st, err := os.Stat(d); err != nil || !st.IsDir() {
+				continue
+			}
+		default:
+			continue
+		}
+		if c, err := jail.Canonical(d); err == nil {
+			d = c
+		}
+		if d == "/" || d == home || home != "" && d == filepath.Clean(home) || isRepoDir(d) {
+			continue
+		}
+		return d
+	}
+	return ""
 }
 
 // inside reports whether p is dir or below it.

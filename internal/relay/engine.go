@@ -648,7 +648,7 @@ func (e *Engine) newRecord(cwd string, req RunRequest) (*SessionRecord, error) {
 		if err != nil {
 			return nil, fmt.Errorf("making a scratch repository: %w", err)
 		}
-		rec.Repo, rec.Cwd, rec.Location, rec.Scratch, rec.Copies = dir, dir, dir, true, copies
+		rec.Repo, rec.Cwd, rec.Location, rec.Scratch, rec.Copies, rec.Dest = dir, dir, dir, true, copies, tg.Dest
 		rec.Log = append(rec.Log, "no git repository fits this task, so it ran in a scratch copy")
 		return rec, nil
 	}

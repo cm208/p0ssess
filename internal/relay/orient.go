@@ -50,6 +50,18 @@ func orient(rec *SessionRecord, j *jail.Jail, task string) string {
 		task = strings.ReplaceAll(task, orig, cp)
 		rewritten = true
 	}
+	if rec.Scratch && rec.Dest != "" && rec.Mode == "edit" {
+		root := rec.Repo
+		if rec.Worktree != "" {
+			root = rec.Worktree
+		}
+		if j != nil {
+			root = j.RemotePath(root)
+		}
+		if t, ok := rewritePaths(task, rec.Dest, root); ok {
+			task, rewritten = t, true
+		}
+	}
 	seen := rec.Location
 	if j != nil {
 		seen = j.RemotePath(seen)
@@ -95,7 +107,8 @@ func orient(rec *SessionRecord, j *jail.Jail, task string) string {
 			}
 		}
 		if len(have) > 0 {
-			b.WriteString(" The " + strings.Join(have, " and ") + " toolchain is installed read-only with no network: run the tests offline.")
+			b.WriteString(" The " + strings.Join(have, " and ") + " toolchain is installed read-only with no network and is already set up for offline use: " +
+				"run the project's test command as it is (for example `go test ./...`), with no VAR=value prefixes.")
 		}
 		for _, l := range rec.Log {
 			if strings.Contains(l, "in the sandbox") {

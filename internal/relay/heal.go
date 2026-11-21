@@ -52,6 +52,7 @@ const (
 	failModel
 	failAfford
 	failCredits
+	failKey
 	failStorage
 	failProvider
 	failApproval
@@ -63,6 +64,7 @@ var (
 	affordRe    = regexp.MustCompile(`(?i)can only afford (\d+)`)
 	creditsRe   = regexp.MustCompile(`(?i)insufficient (credits|balance)|out of credits|requires more credits|key limit exceeded|credit limit`)
 	storageRe   = regexp.MustCompile(`(?i)creating container storage|container storage|layer not known|storage driver|overlay[^\n]{0,80}(no such file|invalid argument|dangling)`)
+	keyRe       = regexp.MustCompile(`(?i)(http|status|code|error)[ :"]*401\b|user not found|invalid api key|no auth credentials`)
 	providerRe  = regexp.MustCompile(`(?i)\b(429|502|503|504)\b|rate.?limit|provider returned error|upstream|overloaded|timed? ?out`)
 )
 
@@ -89,6 +91,8 @@ func classify(err error, res *Result) failure {
 		return failAfford
 	case creditsRe.MatchString(text):
 		return failCredits
+	case keyRe.MatchString(text):
+		return failKey
 	case modelGoneRe.MatchString(text):
 		return failModel
 	case providerRe.MatchString(text):
@@ -102,6 +106,8 @@ func classify(err error, res *Result) failure {
 const storageLine = "The sandbox's container storage is damaged: podman could not create container storage. " +
 	"Run `p0ssess jail build` to rebuild the sandbox image. If that fails too, `podman system check --repair` repairs the storage, " +
 	"but it deletes every image no container is using, the sandbox image included; run `p0ssess jail build` after it."
+
+const keyLine = "OpenRouter did not accept your API key. Put a working key in your p0ssess key file (/p0ssess:p0ssess-me shows where), then ask again."
 
 const creditsLine = "Your OpenRouter balance is too low for this run. Add credits at https://openrouter.ai/settings/credits, then ask again."
 
@@ -127,6 +133,8 @@ func Plain(err error) error {
 		msg = storageLine
 	case failCredits:
 		msg = creditsLine
+	case failKey:
+		msg = keyLine
 	case failImage:
 		msg = "The sandbox image is missing and could not be built; run `p0ssess jail build` and check what it says."
 	default:
@@ -159,9 +167,16 @@ func failureKind(text string) string {
 	return "an internal error"
 }
 
-// logError appends raw error text to the relay's error log and returns its path.
+var lastLogged string
+
+// logError appends raw error text to the relay's error log (once, when the same text comes back from
+// two layers) and returns its path.
 func logError(text string) string {
 	p := config.RelayPath("errors.log")
+	if text == lastLogged {
+		return p
+	}
+	lastLogged = text
 	os.MkdirAll(filepath.Dir(p), 0o700)
 	if f, err := os.OpenFile(p, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600); err == nil {
 		fmt.Fprintf(f, "%s %s\n", time.Now().UTC().Format(time.RFC3339), strings.ReplaceAll(text, "\n", " | "))
@@ -196,13 +211,21 @@ func (e *Engine) Do(ctx context.Context, req RunRequest, progress func(float64, 
 		if res.Status == "failed" && res.Error != "" {
 			res.Error = Plain(errors.New(res.Error)).Error()
 		}
-		if e.receipt != nil {
-			res.Receipt = e.receipt(res)
-		} else {
-			res.Receipt = DefaultReceipt(res)
-		}
+		e.setReceipt(res)
 	}
 	return res, Plain(err)
+}
+
+// setReceipt gives a result its receipt line; a failed run that spent nothing gets none.
+func (e *Engine) setReceipt(res *Result) {
+	switch {
+	case res.Status == "failed" && res.CostUSD == 0:
+		res.Receipt = ""
+	case e.receipt != nil:
+		res.Receipt = e.receipt(res)
+	default:
+		res.Receipt = DefaultReceipt(res)
+	}
 }
 
 func (e *Engine) do(ctx context.Context, req RunRequest, progress func(float64, string)) (*Result, error) {
@@ -304,6 +327,7 @@ func (e *Engine) do(ctx context.Context, req RunRequest, progress func(float64, 
 	var res *Result
 	for attempt := 0; attempt < maxAttempts; attempt++ {
 		res, err = e.runOnce(ctx, req, progress)
+		res, log, err = e.unprefix(ctx, req.WaitS, res, err, log, progress)
 		kind := classify(err, res)
 		if kind == failNone {
 			break
@@ -375,10 +399,46 @@ func (e *Engine) do(ctx context.Context, req RunRequest, progress func(float64, 
 	return res, err
 }
 
+// unprefixNote is what a model hears when it asked to run an allowed command behind VAR=value
+// assignments, which the session rules cannot tell from any other command.
+const unprefixNote = "Not run: commands with a VAR=value prefix ask the user. The environment is already set up; " +
+	"run the same command without %s and it runs without asking."
+
+// unprefix answers a permission request that only a VAR=value prefix raised (gate run of 2026-11-21:
+// "GOPROXY=off GOFLAGS=-mod=mod go test ./..."): the model is told to drop it, up to three times, so the
+// user is not asked.
+func (e *Engine) unprefix(ctx context.Context, waitS int, res *Result, err error, log []string,
+	progress func(float64, string)) (*Result, []string, error) {
+	for i := 0; i < 3 && err == nil && res != nil && res.Status == "needs_permission" && res.Permission != nil &&
+		res.Permission.Action == "shell"; i++ {
+		rec, lerr := loadRecord(res.SessionID)
+		if lerr != nil {
+			break
+		}
+		prefix, ok := plainCommand(rec.Mode, rec.ShellInternet, res.Permission.Resources)
+		if !ok {
+			break
+		}
+		res, err = e.Answer(ctx, res.SessionID, res.Permission.RequestID, "reject", fmt.Sprintf(unprefixNote, prefix), waitS, progress)
+		if i == 0 {
+			log = append(log, "the model asked to run a command behind "+prefix+"; p0ssess told it to run it plainly")
+		}
+	}
+	return res, log, err
+}
+
 // Settle finishes a result that wait or answer_permission returned: an edit run that has just ended is
 // checked like one Do waited on, and errors become plain sentences.
 func (e *Engine) Settle(ctx context.Context, res *Result, err error, progress func(float64, string)) (*Result, error) {
+	var healed []string
+	if res, healed, err = e.unprefix(ctx, 60, res, err, nil, progress); res != nil {
+		res.Retries = append(res.Retries, healed...)
+	}
+	checked := false
 	if err == nil && res != nil && res.Status == "done" && res.Mode == "edit" && res.Route == "" {
+		if rec, lerr := loadRecord(res.SessionID); lerr == nil && !rec.Checked {
+			checked = true
+		}
 		var log []string
 		res, log = e.afterEdit(ctx, RunRequest{}, res, log, progress)
 		res.Retries = append(res.Retries, log...)
@@ -387,10 +447,9 @@ func (e *Engine) Settle(ctx context.Context, res *Result, err error, progress fu
 		if res.Status == "failed" && res.Error != "" {
 			res.Error = Plain(errors.New(res.Error)).Error()
 		}
-		if e.receipt != nil {
-			res.Receipt = e.receipt(res)
-		} else {
-			res.Receipt = DefaultReceipt(res)
+		// A result Do already gave its receipt (and recorded it) keeps it.
+		if res.Receipt == "" || checked {
+			e.setReceipt(res)
 		}
 	}
 	return res, Plain(err)
@@ -531,6 +590,9 @@ func DefaultReceipt(r *Result) string {
 	cost := fmt.Sprintf("$%.2f", r.CostUSD)
 	if r.CostUSD > 0 && r.CostUSD < 0.01 {
 		cost = fmt.Sprintf("$%.4f", r.CostUSD)
+	}
+	if r.CostUSD > 0 && r.CostUSD < 0.00005 {
+		cost = "under $0.0001"
 	}
 	if r.CostEstimated {
 		cost = "about " + cost

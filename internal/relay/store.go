@@ -56,6 +56,9 @@ type SessionRecord struct {
 	// the files the task names (Copies maps each original to its copy).
 	Scratch bool              `json:"scratch,omitempty"`
 	Copies  map[string]string `json:"copies,omitempty"`
+	// Dest is the directory a scratch task names for its new files ("write notes.md in /tmp/x"); the
+	// copy's root stands for it, and new files go there after the run.
+	Dest string `json:"dest,omitempty"`
 	// HeadAtStart is the caller's HEAD when the worktree was made; Carried counts the caller's
 	// uncommitted changes copied into it (then BaseRev is the commit holding them).
 	HeadAtStart string           `json:"head_at_start,omitempty"`

@@ -1,6 +1,12 @@
 package relay
 
-import "p0ssess/internal/opencode"
+import (
+	"regexp"
+	"strings"
+
+	"p0ssess/internal/jail"
+	"p0ssess/internal/opencode"
+)
 
 // Session rules are appended after OpenCode's allow-all agent defaults and the last match wins, so the
 // list starts with a catch-all "ask" and narrows from there. The global policies in the jail config
@@ -44,6 +50,70 @@ var editShell = []string{
 var netShell = []string{
 	"pip install *", "pip3 install *", "python3 -m pip install *", "npm install*", "npm ci*", "pnpm install*",
 	"yarn install*", "go mod download*", "go mod tidy*", "go get *", "cargo fetch*", "curl *", "git fetch*", "git clone *",
+}
+
+// envPrefixRe is leading VAR=value assignments on a shell command.
+var envPrefixRe = regexp.MustCompile(`^(?:[A-Za-z_][A-Za-z0-9_]*=[^\s;&|]*\s+)+`)
+
+// plainCommand is a shell request whose only reason to ask is a VAR=value prefix: without it, every
+// command the request names runs without asking in this mode. It returns the prefix it found.
+func plainCommand(mode string, internet bool, resources []string) (string, bool) {
+	if len(resources) == 0 {
+		return "", false
+	}
+	prefix := ""
+	for _, c := range resources {
+		c = strings.TrimSpace(c)
+		p := envPrefixRe.FindString(c)
+		rest := strings.TrimSpace(c[len(p):])
+		if rest == "" || !allowed(mode, internet, rest) {
+			return "", false
+		}
+		if p != "" {
+			prefix = strings.TrimSpace(p)
+		}
+	}
+	return prefix, prefix != ""
+}
+
+// allowed reports whether the session rules let cmd run without asking, the way OpenCode reads them:
+// the last matching rule wins.
+func allowed(mode string, internet bool, cmd string) bool {
+	for _, d := range jail.HardDenyShell {
+		if wildMatch(d, cmd) {
+			return false
+		}
+	}
+	effect := ""
+	for _, r := range Rules(mode, internet) {
+		if (r.Action == "shell" || r.Action == "*") && wildMatch(r.Resource, cmd) {
+			effect = r.Effect
+		}
+	}
+	return effect == "allow"
+}
+
+// wildMatch matches s against a pattern where * stands for any run of characters.
+func wildMatch(pattern, s string) bool {
+	parts := strings.Split(pattern, "*")
+	if len(parts) == 1 {
+		return pattern == s
+	}
+	if !strings.HasPrefix(s, parts[0]) {
+		return false
+	}
+	s = s[len(parts[0]):]
+	for i, p := range parts[1:] {
+		if i == len(parts)-2 {
+			return strings.HasSuffix(s, p)
+		}
+		j := strings.Index(s, p)
+		if j < 0 {
+			return false
+		}
+		s = s[j+len(p):]
+	}
+	return true
 }
 
 func rule(action, resource, effect string) opencode.Rule {

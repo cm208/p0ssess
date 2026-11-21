@@ -215,6 +215,10 @@ func TestDoSelfHeals(t *testing.T) {
 	if err == nil || strings.Contains(err.Error(), "dial tcp") || !strings.Contains(err.Error(), "errors.log") {
 		t.Errorf("raw: %v", err)
 	}
+	// A key OpenRouter rejects (text seen in the gate run of 2026-11-21) names the one fix.
+	if got := Plain(errors.New("openrouter: HTTP 401: User not found.")).Error(); !strings.Contains(got, "did not accept your API key") {
+		t.Errorf("key: %v", got)
+	}
 	// Decisions for the user keep their full text.
 	appr := errors.New(`needs approval: about $0.42 on openai/gpt-6.1-sol, above your $0.25 auto-approve limit; approvals_add {"model":"openai/gpt-6.1-sol"}`)
 	if got := Plain(appr); !strings.Contains(got.Error(), `approvals_add {"model":"openai/gpt-6.1-sol"}`) {
@@ -425,5 +429,96 @@ func TestScratchCopyBack(t *testing.T) {
 	res, _ = e2.afterEdit(context.Background(), RunRequest{}, res, nil, nil)
 	if b, _ := os.ReadFile(todo); string(b) != "buy milk\n" || len(res.Applied) != 0 {
 		t.Errorf("never: %q %+v", b, res)
+	}
+}
+
+// A scratch task that names a directory for a new file gets it there (gate run of 2026-11-21: the
+// model wrote m5gate/nongit/haiku.txt inside the copy, and nothing reached /tmp/m5gate/nongit).
+func TestScratchNewFilesGoToTheNamedDirectory(t *testing.T) {
+	home, _, _ := testHome(t)
+	dest := filepath.Join(home, "poems")
+	os.MkdirAll(dest, 0o755)
+	os.WriteFile(filepath.Join(dest, "taken.txt"), []byte("mine\n"), 0o644)
+	task := "Write a file named haiku.txt in " + dest + " with a haiku about rain."
+	tg := Resolve(task, home, false, "", nil)
+	if tg.Repo != "" || tg.Dest != dest {
+		t.Fatalf("target %+v", tg)
+	}
+	dir, copies, err := scratchRepo(tg.Files)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(dir)
+	e := NewEngine(config.Config{}, "test", io.Discard)
+	wt, base, head, _, err := e.editCopy(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rec := &SessionRecord{SessionID: "ses_scratch_new", Repo: dir, Cwd: dir, Location: wt, Mode: "edit", Worktree: wt, BaseRev: base,
+		HeadAtStart: head, Scratch: true, Copies: copies, Dest: tg.Dest}
+	rec.save()
+	if p := orient(rec, nil, task); !strings.Contains(p, "haiku.txt in "+wt+" with") {
+		t.Errorf("the named directory is not the copy's root in the prompt:\n%s", p)
+	}
+	os.WriteFile(filepath.Join(wt, "haiku.txt"), []byte("rain\n"), 0o644)
+	os.WriteFile(filepath.Join(wt, "taken.txt"), []byte("theirs\n"), 0o644)
+	res := &Result{Status: "done", Mode: "edit", SessionID: rec.SessionID}
+	e.collectDiffs(res, rec)
+	res, log := e.afterEdit(context.Background(), RunRequest{}, res, nil, nil)
+	if b, _ := os.ReadFile(filepath.Join(dest, "haiku.txt")); string(b) != "rain\n" {
+		t.Errorf("new file not placed: %q %+v %v", b, res, log)
+	}
+	if b, _ := os.ReadFile(filepath.Join(dest, "taken.txt")); string(b) != "mine\n" {
+		t.Errorf("an existing file was overwritten: %q", b)
+	}
+	if !strings.Contains(res.Apply, "taken.txt") || !strings.Contains(strings.Join(log, " "), "a file is already there") {
+		t.Errorf("%+v %v", res, log)
+	}
+	if out, err := exec.Command("sh", "-c", res.Revert).CombinedOutput(); err != nil {
+		t.Fatalf("revert: %v %s", err, out)
+	}
+	if _, err := os.Stat(filepath.Join(dest, "haiku.txt")); err == nil {
+		t.Error("revert left the new file")
+	}
+}
+
+// The command line runs Do and then Settle on the same result; its receipt is recorded once.
+func TestSettleKeepsDoReceipt(t *testing.T) {
+	testHome(t)
+	e := NewEngine(config.Config{}, "test", io.Discard)
+	n := 0
+	e.SetReceipt(func(r *Result) string { n++; return "(m, $0.01)" })
+	res := &Result{Status: "done", Mode: "read", Model: "x/m", CostUSD: 0.01, Receipt: "(m, $0.01)"}
+	if res, _ = e.Settle(context.Background(), res, nil, nil); n != 0 || res.Receipt != "(m, $0.01)" {
+		t.Errorf("receipt recomputed %d times: %q", n, res.Receipt)
+	}
+	if res, _ = e.Settle(context.Background(), &Result{Status: "done", Mode: "read", Model: "x/m"}, nil, nil); n != 1 || res.Receipt == "" {
+		t.Errorf("a result from wait gets its receipt: %d %q", n, res.Receipt)
+	}
+}
+
+// A shell request that asks only because of a VAR=value prefix is answered by p0ssess; anything the
+// rules would ask about without the prefix still reaches the user.
+func TestPlainCommand(t *testing.T) {
+	for _, c := range []struct {
+		mode string
+		cmd  []string
+		want bool
+	}{
+		{"edit", []string{"GOPROXY=off GOFLAGS=-mod=mod go test ./... 2>&1"}, true},
+		{"edit", []string{"CGO_ENABLED=0 go build ./...", "echo done"}, true},
+		{"edit", []string{"go test ./..."}, false},
+		{"edit", []string{"FOO=1 curl https://example.com"}, false},
+		{"edit", []string{"FOO=1 sh -c 'go test'"}, false},
+		{"read", []string{"GOFLAGS=-mod=mod go test ./..."}, false},
+		{"read", []string{"LC_ALL=C grep -r foo ."}, true},
+		{"edit", nil, false},
+	} {
+		if _, got := plainCommand(c.mode, false, c.cmd); got != c.want {
+			t.Errorf("%s %q: %v", c.mode, c.cmd, got)
+		}
+	}
+	if !wildMatch("go test*", "go test ./...") || wildMatch("go test*", "go vet") || !wildMatch("git -C * status", "git -C /x status") {
+		t.Error("wildMatch")
 	}
 }
