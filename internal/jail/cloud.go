@@ -175,8 +175,14 @@ func startCloud(ctx context.Context, spec Spec, cfg config.Config, log io.Writer
 	meter.Lookup = cloudsandbox.GenerationLookup(plain, CloudUpstream, key)
 	model := proxy.WithDeadline(meter.Guard(proxy.Handler(CloudUpstream, key, spec.ZDR)), filepath.Join(ctlDir(j.Name), "deadline"))
 
+	var decl []cloudsandbox.ModelDecl
+	for _, m := range spec.Models {
+		decl = append(decl, cloudsandbox.ModelDecl{ID: m.ID, Name: m.Name, Context: m.Context, Output: m.Output,
+			InPerM: m.InPerM, OutPerM: m.OutPerM, CacheRead: m.CacheReadPerM})
+	}
 	s, err := cloudsandbox.Create(ctx, hc, cloudsandbox.Spec{URL: host, Ticket: ticket.Ticket, Workdir: j.RemoteDir,
-		Internet: spec.ShellInternet, Client: "p0ssess " + clientVersion() + " " + runtime.GOOS + "/" + runtime.GOARCH, Model: model})
+		Internet: spec.ShellInternet, Client: "p0ssess " + clientVersion() + " " + runtime.GOOS + "/" + runtime.GOARCH, Model: model,
+		Models: decl})
 	if err != nil {
 		os.RemoveAll(jailDir(j.Name))
 		return nil, err

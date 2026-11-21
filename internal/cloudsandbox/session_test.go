@@ -33,6 +33,7 @@ type fakeHost struct {
 	gone    bool
 	deleted bool
 	diff    string
+	created map[string]any
 }
 
 type fakeCall struct {
@@ -64,6 +65,11 @@ func (h *fakeHost) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			io.WriteString(w, `{"error":"invalid_ticket","message":"bad ticket"}`)
 			return
 		}
+		var body map[string]any
+		json.NewDecoder(r.Body).Decode(&body)
+		h.mu.Lock()
+		h.created = body
+		h.mu.Unlock()
 		w.WriteHeader(201)
 		io.WriteString(w, `{"session":"sbx_1","secret":"`+fakeSecret+`","expires_at":"2030-01-01T00:00:00Z","limits":{"cpus":2}}`)
 		return
@@ -331,4 +337,25 @@ func mustGit(t *testing.T, dir string, args ...string) string {
 		t.Fatalf("git %v: %v", args, err)
 	}
 	return out.String()
+}
+
+// TestCreateDeclaresModels: the run's model goes to the sandbox host, which declares it to its OpenCode.
+func TestCreateDeclaresModels(t *testing.T) {
+	h, srv, _ := newFakeHost(t)
+	s, err := Create(context.Background(), srv.Client(), Spec{URL: srv.URL, Ticket: "p0t1.a.b", Workdir: "/work/r", Model: http.NotFoundHandler(),
+		Models: []ModelDecl{{ID: "google/gemini-4-carbon", Context: 1048576, Output: 9000, InPerM: 2, OutPerM: 10}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Close(context.Background())
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	ms, _ := h.created["models"].([]any)
+	if len(ms) != 1 {
+		t.Fatalf("create body %v", h.created)
+	}
+	m := ms[0].(map[string]any)
+	if m["id"] != "google/gemini-4-carbon" || m["output"].(float64) != 9000 || m["usd_out_per_m"].(float64) != 10 {
+		t.Errorf("declared %v", m)
+	}
 }

@@ -88,6 +88,20 @@ type Spec struct {
 	Client   string
 	// Model handles the sandbox's model calls: the cost guard around the key proxy.
 	Model http.Handler
+	// Models are declared to the sandbox's OpenCode, so ids newer than its catalog run.
+	Models []ModelDecl
+}
+
+// ModelDecl is one model the sandbox's OpenCode is told about: its context, the largest answer per
+// call (tokens) and its prices in USD per million tokens.
+type ModelDecl struct {
+	ID        string  `json:"id"`
+	Name      string  `json:"name,omitempty"`
+	Context   int     `json:"context,omitempty"`
+	Output    int     `json:"output,omitempty"`
+	InPerM    float64 `json:"usd_in_per_m,omitempty"`
+	OutPerM   float64 `json:"usd_out_per_m,omitempty"`
+	CacheRead float64 `json:"usd_cache_read_per_m,omitempty"`
 }
 
 // Session is a live cloud sandbox session.
@@ -149,7 +163,11 @@ func Create(ctx context.Context, hc *http.Client, spec Spec) (*Session, error) {
 	if spec.Internet {
 		network = "internet"
 	}
-	body, _ := json.Marshal(map[string]any{"v": 1, "workdir": spec.Workdir, "network": network, "client": spec.Client})
+	req0 := map[string]any{"v": 1, "workdir": spec.Workdir, "network": network, "client": spec.Client}
+	if len(spec.Models) > 0 {
+		req0["models"] = spec.Models
+	}
+	body, _ := json.Marshal(req0)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String()+"/v1/sessions", bytes.NewReader(body))
 	if err != nil {
 		return nil, err
