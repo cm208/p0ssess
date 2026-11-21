@@ -2,12 +2,12 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/readme/hero-dark.svg">
     <source media="(prefers-color-scheme: light)" srcset="assets/readme/hero-light.svg">
-    <img src="assets/readme/hero-light.svg" width="100%" alt="p0ssess, for when Claude’s usage limit runs out and for the work that never needed Claude’s rates. The artwork reads: stop paying full Claude price for repetitive work. Four measured hand-offs, each with the receipt line its answer ends with: unit tests for 15 Python modules, (deepseek-v4.1-flash-1017, $0.03). 300 support tickets triaged, (deepseek-v4.1-flash-1017, $0.08). A ten-minute film watched with its sound, (qwen3.8-omni-flash, $0.02). A 1024-pixel image, (recraft-v4.1-flash, $0.0070).">
+    <img src="assets/readme/hero-light.svg" width="100%" alt="p0ssess. Stop paying full Claude price for repetitive work. Four measured hand-offs, each with the receipt line its answer ends with: unit tests for 15 Python modules, (deepseek-v4.1-flash-1017, $0.03). 300 support tickets triaged, (deepseek-v4.1-flash-1017, $0.08). A ten-minute film watched with its sound, (qwen3.8-omni-flash, $0.02). A 1024-pixel image, (recraft-v4.1-flash, $0.0070).">
   </picture>
 </p>
 
-<p align="center">Keep working when Claude's limit runs out, for cents.<br>
-A Claude Code plugin that hands work to cheaper models through OpenRouter. Claude stays in charge.</p>
+<p align="center">A Claude Code plugin that hands heavy, bulk and media work to cheaper models through OpenRouter.<br>
+Claude stays in charge.</p>
 
 <p align="center">
   <a href="https://github.com/cm208/p0ssess/releases/latest"><img src="https://img.shields.io/github/v/release/cm208/p0ssess?style=flat-square&color=7457e0&label=release" alt="Latest release"></a>
@@ -29,7 +29,7 @@ A Claude Code plugin that hands work to cheaper models through OpenRouter. Claud
   <a href="https://p0ssess.me">p0ssess.me</a>
 </p>
 
-When Claude's 5-hour or weekly usage limit is close, Pro takes over the work a cheaper model can do, inside the spending envelope you set, says so in one line and hands back when the window resets. On any day, on any plan, tell p0ssess once which chores don't need Claude's rates. From then on Claude hands them to a cheaper model, checks what comes back and answers you as usual. It also does what Claude can't: watch a video, hear a recording, make an image. Small edits and plain questions never leave Claude.
+Tell p0ssess once which chores don't need Claude's rates. From then on Claude hands them to a cheaper model, checks what comes back and answers you as usual. It also does what Claude can't: watch a video, hear a recording, make an image. Small edits and plain questions never leave Claude.
 
 Four hand-offs we measured, by the other model's bill: unit tests for 15 Python modules, $0.0291; 300 support tickets triaged, $0.0781; a ten-minute film watched with its sound, $0.0162; a 1024-pixel image, $0.0070. Each answer ends with one receipt line: the model, the cost, and the saving against Claude when there is one.
 
