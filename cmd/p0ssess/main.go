@@ -19,6 +19,7 @@ import (
 	"p0ssess/internal/egress"
 	"p0ssess/internal/jail"
 	"p0ssess/internal/pme/cli"
+	"p0ssess/internal/pme/hook"
 	"p0ssess/internal/pme/local"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/pme/remote"
@@ -62,6 +63,7 @@ The OpenRouter key is read from ~/.config/p0ssess/secrets/openrouter_key, or $P0
 func main() {
 	cli.Version = version
 	remote.Version = version
+	hook.Version = version
 	if len(os.Args) < 2 {
 		fmt.Fprintf(os.Stderr, usage, version)
 		os.Exit(2)
@@ -118,6 +120,7 @@ func main() {
 	switch cmd {
 	case "mcp":
 		refreshStableCopy()
+		go exitWhenOrphaned(ctx, stop)
 		go account.Watch(ctx, paths.Default())
 		go team.Watch(ctx, paths.Default(), table.PinnedKeys())
 		err = server.Serve(ctx, os.Stdin, os.Stdout, version)
@@ -154,6 +157,29 @@ func main() {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "p0ssess:", err)
 		os.Exit(1)
+	}
+}
+
+// exitWhenOrphaned stops the MCP server once the Claude Code process that started it is gone (its
+// parent changes), so servers of ended sessions never linger on an old binary.
+func exitWhenOrphaned(ctx context.Context, stop func()) {
+	parent := os.Getppid()
+	if parent <= 1 {
+		return
+	}
+	t := time.NewTicker(15 * time.Second)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			if os.Getppid() != parent {
+				fmt.Fprintln(os.Stderr, "p0ssess: the Claude Code session that started this server has ended; exiting")
+				stop()
+				return
+			}
+		}
 	}
 }
 

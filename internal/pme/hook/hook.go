@@ -169,6 +169,9 @@ func Run(raw []byte, d paths.Dirs, now time.Time) string {
 		return ""
 	}
 	out := strings.TrimSpace(Hint(in, d, now))
+	if n := updateNotice(d, in.SessionID); n != "" {
+		out = strings.TrimSpace(out + " p0ssess: tell the user this once, in one line, as written: " + n)
+	}
 	if n := account.Notice(d); n != "" {
 		out = strings.TrimSpace(out + " p0ssess: tell the user this once, in one line, as written: " + n)
 	} else if n := calibrationOffer(d); n != "" {
