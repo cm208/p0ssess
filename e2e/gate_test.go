@@ -305,17 +305,17 @@ func TestGate(t *testing.T) {
 		tg.home = filepath.Join(filepath.Dir(g.home), "tour-home")
 		os.MkdirAll(tg.home, 0o700)
 		show := tg.must(t, g.nongit, nil, "tour", "show")
-		if !strings.Contains(show, "the defaults for a new install: $1 a day") || !strings.Contains(show, "$0.25 a task") {
+		if !strings.Contains(show, "$1/day · $10/month · asks above $0.25 (recommended to start)") {
 			t.Errorf("tour show:\n%s", show)
 		}
-		out := tg.must(t, g.nongit, nil, "tour", "demo")
-		if !strings.Contains(out, "answer   ") || !strings.Contains(out, "receipt  (") {
+		out := tg.must(t, g.nongit, nil, "tour", "demo", "--task", "summarize")
+		if !strings.Contains(out, "3 / 4 · live demo") || !strings.Contains(out, "asked    summarize") || !strings.Contains(out, "cost     ") {
 			t.Errorf("demo:\n%s", out)
 		}
 		if s := tg.spent(t); s > 0.01 {
 			t.Errorf("the demo cost $%.4f", s)
 		}
-		if again := tg.must(t, g.nongit, nil, "tour", "show"); !strings.Contains(again, "the defaults for a new install") {
+		if again := tg.must(t, g.nongit, nil, "tour", "show"); !strings.Contains(again, "(recommended to start)") {
 			t.Errorf("after the demo the install no longer counts as new:\n%s", again)
 		}
 		t.Logf("demo spent $%.4f", tg.spent(t))
