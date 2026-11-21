@@ -1,11 +1,15 @@
 package relay
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
+
+	"p0ssess/internal/pme/paths"
 )
 
 const (
@@ -169,4 +173,50 @@ func applyToCaller(repo, headAtStart, patch string) string {
 		return "applying failed"
 	}
 	return ""
+}
+
+// applyScratch copies a scratch run's changed files back over the originals they were copied from, each
+// only when the original is unchanged since the copy; the original is kept in the run's directory first.
+// It returns what it copied back, the commands that undo that, the copy commands left for files it did
+// not touch, and why it left them.
+func applyScratch(rec *SessionRecord, wt string) (applied, reverts, keep, notes []string) {
+	origs := make([]string, 0, len(rec.Copies))
+	for o := range rec.Copies {
+		origs = append(origs, o)
+	}
+	sort.Strings(origs)
+	for i, orig := range origs {
+		cp := rec.Copies[orig]
+		changed := filepath.Join(wt, filepath.Base(cp))
+		st, err := os.Lstat(changed)
+		if err != nil || !st.Mode().IsRegular() {
+			continue
+		}
+		now, err1 := os.ReadFile(changed)
+		base, err2 := os.ReadFile(cp)
+		if err1 != nil || err2 != nil || bytes.Equal(now, base) {
+			continue
+		}
+		left := "cp " + shellQuote(changed) + " " + shellQuote(orig)
+		ost, err := os.Stat(orig)
+		cur, rerr := os.ReadFile(orig)
+		if err != nil || rerr != nil || !ost.Mode().IsRegular() || !bytes.Equal(cur, base) {
+			keep = append(keep, left)
+			notes = append(notes, "not copied back to "+orig+": it changed during the run")
+			continue
+		}
+		backup := filepath.Join(RunDir(rec.SessionID), "originals", fmt.Sprintf("%d-%s", i+1, filepath.Base(orig)))
+		if err := paths.WriteFileAtomic(backup, cur, 0o600); err != nil {
+			keep = append(keep, left)
+			continue
+		}
+		if err := paths.WriteFileAtomic(orig, now, ost.Mode().Perm()); err != nil {
+			keep = append(keep, left)
+			notes = append(notes, "not copied back to "+orig+": "+err.Error())
+			continue
+		}
+		applied = append(applied, orig+" (copied back)")
+		reverts = append(reverts, "cp "+shellQuote(backup)+" "+shellQuote(orig))
+	}
+	return applied, reverts, keep, notes
 }

@@ -478,7 +478,15 @@ func (e *Engine) afterEdit(ctx context.Context, req RunRequest, res *Result, log
 	rec.Checked = true
 	rec.save()
 	e.recMu.Unlock()
-	if e.cfg.ApplyEdits == "never" || rec.Scratch || len(res.copies) == 0 {
+	if e.cfg.ApplyEdits == "never" || len(res.copies) == 0 {
+		return res, log
+	}
+	if rec.Scratch {
+		applied, reverts, keep, notes := applyScratch(rec, res.copies[0].wt)
+		res.Applied = append(res.Applied, applied...)
+		res.Apply, res.Revert = strings.Join(keep, " && "), strings.Join(reverts, " && ")
+		log = append(log, notes...)
+		saveFinal(res)
 		return res, log
 	}
 	var keep, reverts []string

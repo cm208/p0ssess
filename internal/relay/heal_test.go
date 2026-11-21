@@ -373,3 +373,57 @@ func TestApprovalFallsBackInsideLimits(t *testing.T) {
 		t.Errorf("%+v %v %v", res, err, models)
 	}
 }
+
+// A scratch edit run's changed copies go back over the originals that did not change meanwhile; the
+// originals are kept for the revert line, and a file changed during the run gets the copy line instead.
+func TestScratchCopyBack(t *testing.T) {
+	home, _, _ := testHome(t)
+	todo := filepath.Join(home, "notes", "todo.txt")
+	other := filepath.Join(home, "notes", "plan.txt")
+	os.WriteFile(other, []byte("plan\n"), 0o600)
+	dir, copies, err := scratchRepo([]string{todo, other})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(dir)
+	e := NewEngine(config.Config{}, "test", io.Discard)
+	wt, base, head, _, err := e.editCopy(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rec := &SessionRecord{SessionID: "ses_scratch", Repo: dir, Cwd: dir, Location: wt, Mode: "edit", Worktree: wt, BaseRev: base,
+		HeadAtStart: head, Scratch: true, Copies: copies}
+	rec.save()
+	os.WriteFile(filepath.Join(wt, "todo.txt"), []byte("buy milk\nbuy eggs\n"), 0o644)
+	os.WriteFile(filepath.Join(wt, "plan.txt"), []byte("new plan\n"), 0o644)
+	os.WriteFile(other, []byte("plan, edited by hand\n"), 0o600)
+	res := &Result{Status: "done", Mode: "edit", SessionID: rec.SessionID}
+	e.collectDiffs(res, rec)
+	res, log := e.afterEdit(context.Background(), RunRequest{}, res, nil, nil)
+	if b, _ := os.ReadFile(todo); string(b) != "buy milk\nbuy eggs\n" {
+		t.Errorf("todo not copied back: %q %+v %v", b, res, log)
+	}
+	if b, _ := os.ReadFile(other); string(b) != "plan, edited by hand\n" {
+		t.Errorf("a file changed during the run was overwritten: %q", b)
+	}
+	if len(res.Applied) != 1 || !strings.Contains(res.Apply, "plan.txt") || !strings.Contains(strings.Join(log, " "), "changed during the run") {
+		t.Errorf("%+v %v", res, log)
+	}
+	if st, _ := os.Stat(todo); st.Mode().Perm() != 0o644 {
+		t.Errorf("mode %v", st.Mode())
+	}
+	if out, err := exec.Command("sh", "-c", res.Revert).CombinedOutput(); err != nil {
+		t.Fatalf("revert: %v %s", err, out)
+	}
+	if b, _ := os.ReadFile(todo); string(b) != "buy milk\n" {
+		t.Errorf("revert: %q", b)
+	}
+	// apply_edits = "never" leaves every file alone.
+	e2 := NewEngine(config.Config{ApplyEdits: "never"}, "test", io.Discard)
+	res = &Result{Status: "done", Mode: "edit", SessionID: rec.SessionID}
+	e2.collectDiffs(res, rec)
+	res, _ = e2.afterEdit(context.Background(), RunRequest{}, res, nil, nil)
+	if b, _ := os.ReadFile(todo); string(b) != "buy milk\n" || len(res.Applied) != 0 {
+		t.Errorf("never: %q %+v", b, res)
+	}
+}
