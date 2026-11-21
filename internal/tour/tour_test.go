@@ -169,7 +169,7 @@ func TestShowNewUser(t *testing.T) {
 		"=== QUESTION 2", "option  Keep these | $1/day · $10/month · asks above $0.25 (recommended to start) | none",
 		"option  Lower | $0.50/day · $5/month · asks above $0.10 | p0ssess tour envelope --daily 0.5 --monthly 5 --task 0.1",
 		"option  Higher | $2/day · $25/month · asks above $0.50", "option  Skip the tour",
-		"=== QUESTION 3", "p0ssess tour demo --task summarize", "p0ssess tour demo --task translate", "p0ssess tour demo --task brainstorm",
+		"=== QUESTION 3", "p0ssess tour demo --task summarize --done", "p0ssess tour demo --task translate --done", "p0ssess tour demo --task brainstorm --done",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in\n%s", want, out)

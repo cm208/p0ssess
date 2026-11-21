@@ -30,7 +30,7 @@ import (
 	"p0ssess/internal/team"
 )
 
-var version = "1.1.0-rc.4"
+var version = "1.1.0-rc.5"
 
 const usage = `p0ssess %s: Claude Code hands work to other models through OpenRouter
 

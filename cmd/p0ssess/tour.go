@@ -42,31 +42,27 @@ func tourCmd(ctx context.Context, args []string) error {
 		}
 		fs := flag.NewFlagSet("tour demo", flag.ContinueOnError)
 		task := fs.String("task", "summarize", "summarize, translate or brainstorm")
+		finish := fs.Bool("done", false, "also finish the tour: the farewell and the last card")
 		if err := fs.Parse(args); err != nil {
 			return err
 		}
 		out, err := tour.Demo(ctx, demoRunner(cfg, d), tour.FindDemo(*task), keyReady(cfg), cfg.OpenRouterKeyFile)
 		if err != nil {
-			return errors.New("the demo did not run: " + err.Error())
+			if !*finish {
+				return errors.New("the demo did not run: " + err.Error())
+			}
+			out = "The demo could not run this time (" + err.Error() + ").\n"
 		}
 		fmt.Print(out)
+		if *finish {
+			fmt.Println()
+			return tourDone(d)
+		}
 		return nil
 	case "skip":
 		return tour.Set(d, tour.Skipped, time.Now())
 	case "done":
-		if err := tour.Set(d, tour.Done, time.Now()); err != nil {
-			return err
-		}
-		f, err := tourFacts(d)
-		if err != nil {
-			return err
-		}
-		df := tour.DoneFacts{Team: f.Team}
-		if f.StatusLine {
-			df.StatusLine = statusLinePreview(d)
-		}
-		fmt.Print(tour.DoneCard(df))
-		return nil
+		return tourDone(d)
 	}
 	return fmt.Errorf("tour: unknown step %q (show, envelope, demo, skip, done)", sub)
 }
@@ -160,4 +156,21 @@ func statusLinePreview(d paths.Dirs) string {
 		return s + fmt.Sprintf(" · %d running", n)
 	}
 	return s + " · nothing running"
+}
+
+// tourDone marks the tour done and prints the farewell and the last card.
+func tourDone(d paths.Dirs) error {
+	if err := tour.Set(d, tour.Done, time.Now()); err != nil {
+		return err
+	}
+	f, err := tourFacts(d)
+	if err != nil {
+		return err
+	}
+	df := tour.DoneFacts{Team: f.Team}
+	if f.StatusLine {
+		df.StatusLine = statusLinePreview(d)
+	}
+	fmt.Print(tour.DoneCard(df))
+	return nil
 }

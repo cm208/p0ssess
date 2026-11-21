@@ -287,7 +287,7 @@ func Show(f Facts) string {
 		fmt.Fprintf(&b, "nokey   put an OpenRouter key in %s (mode 0600), then run p0ssess tour demo\n", f.KeyFile)
 	}
 	for _, d := range Demos {
-		fmt.Fprintf(&b, "option  %s | %s, capped at %s | p0ssess tour demo --task %s\n", d.Label, d.Ask, Money(DemoMaxUSD), d.ID)
+		fmt.Fprintf(&b, "option  %s | %s, capped at %s | p0ssess tour demo --task %s --done\n", d.Label, d.Ask, Money(DemoMaxUSD), d.ID)
 		b.WriteString(card.Card{Title: "demo · " + strings.ToLower(d.Label), Rows: []string{
 			card.Pair("you ask", d.Ask, 12),
 			card.Pair("goes to", "the cheapest model that fits, capped at "+Money(DemoMaxUSD), 12),
