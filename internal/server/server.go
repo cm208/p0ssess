@@ -375,6 +375,25 @@ func RunDirect(ctx context.Context, cfg config.Config, eng *local.Engine, req di
 		req.AudioPrep = direct.AudioPrepSpeech
 	}
 	res, runID, err := runAuthorized(ctx, cfg, eng, c, req, job, cwd)
+	// The engine ranks without the call's extras (web search, the prompt itself), so its pick can land
+	// just above the auto-approve limit: the next option inside it runs instead of asking.
+	var ref *local.Refusal
+	if res == nil && !req.DryRun && picked && errors.As(err, &ref) && ref.NeedsApproval {
+		first := req.Model
+		for i, alt := range alts {
+			next, nj := req, job
+			next.Model, nj.OfferID = alt, ""
+			r2, id2, e2 := runAuthorized(ctx, cfg, eng, c, next, nj, cwd)
+			if r2 == nil && errors.As(e2, &ref) && ref.NeedsApproval {
+				continue
+			}
+			res, runID, err, req, job, alts = r2, id2, e2, next, nj, alts[i+1:]
+			if res != nil {
+				res.Warnings = append(res.Warnings, fmt.Sprintf("%s needs approval above your limit; used %s inside it", history.Short(first), history.Short(alt)))
+			}
+			break
+		}
+	}
 	if err != nil && !req.DryRun && picked && direct.ProviderFailed(err) && ctx.Err() == nil {
 		if len(alts) > 0 {
 			res, runID, err = fallback(ctx, cfg, eng, c, req, job, cwd, alts[0], res, runID, err)

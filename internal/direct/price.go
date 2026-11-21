@@ -37,6 +37,9 @@ type ModelInfo struct {
 	// Free is a ":free" variant, or a text model the registry snapshot lists at zero token prices.
 	// Any other zero price is unknown.
 	Free bool `json:"free,omitempty"`
+	// WebSearchUSD is the model's own web search price per search request (OpenAI, Perplexity), which the
+	// web plugin uses instead of priced results; the highest across endpoints.
+	WebSearchUSD float64 `json:"web_search_usd,omitempty"`
 }
 
 type LongContextPrice struct {
@@ -277,6 +280,7 @@ func (c *Catalog) fetch(ctx context.Context, id string, base ModelInfo) (ModelIn
 			mi.OutPerM = math.Max(mi.OutPerM, p("completion")*1e6)
 			mi.AudioPerM = math.Max(mi.AudioPerM, p("audio")*1e6)
 			mi.ReasonPerM = math.Max(mi.ReasonPerM, p("internal_reasoning")*1e6)
+			mi.WebSearchUSD = math.Max(mi.WebSearchUSD, p("web_search"))
 			if mi.Makes("transcription") {
 				mi.STTRaw = math.Max(mi.STTRaw, p("prompt"))
 			}
@@ -351,11 +355,13 @@ type Estimate struct {
 }
 
 // OpenRouter's web plugin: results per call, its price per result, and about how many prompt tokens each
-// result adds.
+// result adds (a five-result research call measured 38,446 prompt tokens). A model with its own search
+// is billed per search request instead; one research call on gpt-6-luna made about four.
 const (
 	WebResults         = 5
 	WebUSDPerResult    = 0.004
-	webTokensPerResult = 1200
+	webTokensPerResult = 7500
+	webNativeSearches  = 4
 )
 
 // ErrOverBudget is returned when the estimate is above Request.MaxCostUSD.
@@ -433,8 +439,13 @@ func estimateChat(m ModelInfo, req Request, inputs []Input, engine string) Estim
 	if req.Web {
 		// The plugin's search results are added to the prompt and billed per result.
 		tok += WebResults * webTokensPerResult
-		e.FeeUSD += WebResults * WebUSDPerResult
-		e.Notes = append(e.Notes, fmt.Sprintf("web search: %d results, about $%.3f", WebResults, WebResults*WebUSDPerResult))
+		if m.WebSearchUSD > 0 {
+			e.FeeUSD += webNativeSearches * m.WebSearchUSD
+			e.Notes = append(e.Notes, fmt.Sprintf("web search: about %d searches, about $%.3f", webNativeSearches, webNativeSearches*m.WebSearchUSD))
+		} else {
+			e.FeeUSD += WebResults * WebUSDPerResult
+			e.Notes = append(e.Notes, fmt.Sprintf("web search: %d results, about $%.3f", WebResults, WebResults*WebUSDPerResult))
+		}
 	}
 	e.InputTokens = int(tok + audioTok)
 	e.OutputTokens = req.MaxTokens

@@ -42,7 +42,7 @@ var ToolSchema = json.RawMessage(`{
     "out_dir": {"type": "string", "description": "folder for generated files; existing files there are never replaced (the next free name is used)"},
     "out_file": {"type": "string", "description": "image output only: the file to write, absolute or inside out_dir; refused before sending if it exists, unless overwrite"},
     "overwrite": {"type": "boolean", "description": "let out_file replace an existing file"},
-    "web": {"type": "boolean", "description": "answer from current web search results (news, prices, recent months); adds about $0.02"},
+    "web": {"type": "boolean", "description": "answer from current web search results (news, prices, recent months); adds about $0.02 to $0.05"},
     "dry_run": {"type": "boolean"}
   },
   "required": ["prompt"],

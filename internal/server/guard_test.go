@@ -762,3 +762,75 @@ func TestRunThatNeverReachedAModel(t *testing.T) {
 		}
 	}
 }
+
+// TestDirectPickAboveLimitFallsBackInside: the engine ranks without the call's extras (web search, the
+// prompt), so its pick can cost just above the per-task limit; the next option inside it runs instead
+// of asking (gate run of 2026-11-21: gpt-6-luna about $0.0253 against a $0.02 limit).
+func TestDirectPickAboveLimitFallsBackInside(t *testing.T) {
+	var models []string
+	f := &fakeRouter{}
+	f.chat = func() (int, string) {
+		var b struct {
+			Model string `json:"model"`
+		}
+		json.Unmarshal([]byte(f.bodies[len(f.bodies)-1]), &b)
+		models = append(models, b.Model)
+		return 200, strings.Replace(okChat, `"model":"test/cheap"`, `"model":"`+b.Model+`"`, 1)
+	}
+	withFake(t, f)
+	cfg, eng, proj := directEnv(t, "monthly_usd = 5\nper_task_usd = 1\ndaily_usd = -1\n")
+	// Input and the web results dominate the cost, so a smaller output limit cannot fit it.
+	req := direct.Request{Prompt: strings.Repeat("what changed in AI pricing this month? ", 400), MaxTokens: 50, Web: true}
+	job := DirectJob{UseCase: "video-understand", Stakes: 1}
+	ms, err := pickModels(eng, newClient(""), req, &job, proj)
+	if err != nil || len(ms) < 2 {
+		t.Fatalf("pick: %v %v", ms, err)
+	}
+	// The registry the call is priced from makes the engine's pick the pricier one.
+	reg := filepath.Join(t.TempDir(), "models.json")
+	var doc struct {
+		Models []map[string]any `json:"models"`
+	}
+	for i, m := range ms[:2] {
+		p := []float64{40, 1}[i]
+		doc.Models = append(doc.Models, map[string]any{"id": m, "kind": "text", "input_modalities": []string{"text"},
+			"output_modalities": []string{"text"}, "api_routes": []string{"/api/v1/chat/completions"},
+			"pricing": map[string]float64{"input_per_m": p, "output_per_m": p}})
+	}
+	b, _ := json.Marshal(doc)
+	os.WriteFile(reg, b, 0o600)
+	t.Setenv("P0SSESS_REGISTRY", reg)
+	est := func(m string) float64 {
+		dry := req
+		dry.Model, dry.DryRun = m, true
+		res, _, err := RunDirect(context.Background(), cfg, eng, dry, DirectJob{UseCase: "video-understand", Stakes: 1})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return res.Estimate.CostUSD
+	}
+	limit := (est(ms[0]) + est(ms[1])) / 2
+	if _, err := eng.SetSetting("per_task_usd", fmt.Sprintf("%.6f", limit)); err != nil {
+		t.Fatal(err)
+	}
+	job.OfferID = ""
+	res, _, err := RunDirect(context.Background(), cfg, eng, req, DirectJob{UseCase: "video-understand", Stakes: 1})
+	if err != nil {
+		t.Fatalf("want the option inside the limit to run: %v", err)
+	}
+	if len(models) != 1 || history.Short(models[0]) != history.Short(ms[1]) {
+		t.Errorf("ran %v (estimate %v, limit %v, %v/%v), want %s", models, res.Estimate.CostUSD, limit, est(ms[0]), est(ms[1]), ms[1])
+	}
+	if !strings.Contains(strings.Join(res.Warnings, "|"), "needs approval above your limit; used "+history.Short(ms[1])) {
+		t.Errorf("warnings: %v", res.Warnings)
+	}
+	// Nothing inside the limit: the ask is kept, once, for the best pick.
+	if _, err := eng.SetSetting("per_task_usd", "0.000001"); err != nil {
+		t.Fatal(err)
+	}
+	models = nil
+	if _, _, err := RunDirect(context.Background(), cfg, eng, req, DirectJob{UseCase: "video-understand", Stakes: 1}); err == nil ||
+		!strings.Contains(err.Error(), "needs approval") || len(models) != 0 {
+		t.Errorf("nothing inside: %v, ran %v", err, models)
+	}
+}

@@ -35,3 +35,19 @@ func TestWebSearchPlugin(t *testing.T) {
 		t.Error("web on the images route")
 	}
 }
+
+// A model with its own search is priced per search request, not per plugin result (gate run of
+// 2026-11-21: gpt-6-luna estimated $0.025, billed $0.045 for about four searches at $0.01).
+func TestWebSearchNativePrice(t *testing.T) {
+	_, c := newFake(t)
+	c.Catalog.Add(ModelInfo{ID: "openai/gpt-6-luna", Input: []string{"text"}, Output: []string{"text"}, Routes: chatRoutes,
+		InPerM: 0.1, OutPerM: 0.5, WebSearchUSD: 0.01})
+	req := Request{Model: "openai/gpt-6-luna", Prompt: "AI news this week", Web: true, MaxTokens: 1000, MaxCostUSD: 1, MaxGiven: true}
+	p, err := c.Plan(context.Background(), req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e := p.Estimate(); e.FeeUSD != webNativeSearches*0.01 {
+		t.Errorf("fee $%.4f, want $%.4f", e.FeeUSD, webNativeSearches*0.01)
+	}
+}
