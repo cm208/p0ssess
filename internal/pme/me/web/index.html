@@ -26,19 +26,20 @@
   <section class="figures" aria-label="Spend and usage">
     <div class="fig">
       <h2>Today</h2>
-      <p class="big" id="today">&nbsp;</p>
+      <p class="big"><span id="today">&nbsp;</span><span class="of" id="today-cap"></span></p>
+      <div class="meter" id="today-meter" role="img" aria-label="Spend today"><span></span></div>
       <p class="sub" id="today-sub">&nbsp;</p>
     </div>
-    <div class="fig wide">
+    <div class="fig">
       <h2>This month</h2>
       <p class="big"><span id="month">&nbsp;</span><span class="of" id="month-cap"></span></p>
-      <div class="meter" id="month-meter" role="img" aria-label="Monthly spend"><span></span></div>
+      <div class="meter" id="month-meter" role="img" aria-label="Spend this month"><span></span></div>
       <p class="sub" id="month-sub">&nbsp;</p>
     </div>
     <div class="fig">
       <h2>Running</h2>
       <p class="big" id="running-n">&nbsp;</p>
-      <p class="sub" id="running">&nbsp;</p>
+      <ul class="jobs" id="running"></ul>
     </div>
     <div class="fig">
       <h2>Claude</h2>
@@ -47,20 +48,52 @@
     </div>
   </section>
 
-  <section class="lower">
-    <div class="col">
-      <h2>Recent</h2>
-      <ol class="runs" id="runs"></ol>
-      <h2 class="next">Outcome records</h2>
-      <p class="note" id="records-note"></p>
-      <ol class="records" id="records"></ol>
+  <section class="envelope" aria-labelledby="env-h">
+    <div class="env-head">
+      <h2 id="env-h">Envelope</h2>
+      <p class="env-state" id="env-state" role="status"></p>
     </div>
+    <form id="envelope" class="env-form" autocomplete="off" novalidate>
+      <label><span class="lbl">Daily limit</span><span class="field"><span class="cur" aria-hidden="true">$</span><input name="daily_usd" inputmode="decimal" aria-describedby="env-daily-help"></span><small id="env-daily-help">Warns when passed. 0 paces it from the month, −1 turns it off.</small></label>
+      <label><span class="lbl">Monthly cap</span><span class="field"><span class="cur" aria-hidden="true">$</span><input name="monthly_usd" inputmode="decimal" aria-describedby="env-month-help"></span><small id="env-month-help">Stops paid runs when reached.</small></label>
+      <label><span class="lbl">Runs without asking up to</span><span class="field"><span class="cur" aria-hidden="true">$</span><input name="per_task_usd" inputmode="decimal" aria-describedby="env-task-help"></span><small id="env-task-help">Per task. Above it, Claude asks you once.</small></label>
+      <div class="env-actions"><button class="pill solid" type="submit">Save</button><span class="saved" id="env-saved" role="status"></span></div>
+    </form>
+  </section>
+
+  <section class="lower">
+    <div class="col wide">
+      <h2>Recent runs</h2>
+      <div class="receipts" role="table" aria-label="Recent runs">
+        <div class="r head" role="row"><span role="columnheader">Task</span><span role="columnheader">Model</span><span role="columnheader" class="num">Cost</span><span role="columnheader" class="num">Saved</span><span role="columnheader">Result</span><span role="columnheader" class="num">When</span></div>
+        <div id="runs" role="rowgroup"></div>
+      </div>
+    </div>
+    <div class="col">
+      <h2>Notices</h2>
+      <ol class="notices" id="notices"></ol>
+      <div class="team" id="team" hidden>
+        <h2 class="next">Team</h2>
+        <p class="team-name" id="team-name"></p>
+        <p class="team-budget" id="team-budget"></p>
+        <div class="meter" id="team-meter" role="img" aria-label="Team budget"><span></span></div>
+        <p class="sub"><a class="link" id="team-link" href="#" rel="noreferrer" target="_blank">Team page</a> · <code>/p0ssess:team</code> in Claude Code</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="lower">
     <div class="col">
       <h2>Limits</h2>
       <ul class="pills" id="limits"></ul>
       <h2 class="next">Rules</h2>
       <ul class="rules" id="rules"></ul>
       <div id="suggestions"></div>
+    </div>
+    <div class="col">
+      <h2>Outcome records</h2>
+      <p class="note" id="records-note"></p>
+      <ol class="records" id="records"></ol>
     </div>
   </section>
 
@@ -76,7 +109,7 @@
 </main>
 
 <footer class="foot">
-  <p>Served from <span id="where">this machine</span>; no outside requests. To change a limit or add a rule, tell Claude in plain words.</p>
+  <p>Served from <span id="where">this machine</span>; no outside requests. Limits and rules also change in plain words in Claude Code (“cap p0ssess at $5 a month”).</p>
 </footer>
 
 <dialog class="sheet" id="settings-sheet" aria-labelledby="settings-h">
@@ -86,9 +119,6 @@
       <button class="pill quiet" type="button" id="close-settings">Close</button>
     </div>
     <div class="grid">
-      <label>Monthly cap, US$<input name="monthly_usd" inputmode="decimal"></label>
-      <label>Run without asking up to, per task<input name="per_task_usd" inputmode="decimal"></label>
-      <label>Daily limit (0 paces, −1 off)<input name="daily_usd" inputmode="decimal"></label>
       <label>Claude plan<select name="plan"><option value="auto">Detect</option><option value="subscription">Subscription</option><option value="api">API key</option></select></label>
       <label>Pressure curve<select name="lambda.preset" id="preset"></select></label>
       <label>Privacy<select name="privacy.mode"><option value="no-training">No training</option><option value="zdr">Zero retention only</option></select></label>

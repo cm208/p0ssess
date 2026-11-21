@@ -19,7 +19,7 @@
   const pct = (v) => Math.round((v || 0) * 100) + "%";
   const short = (id) => (id || "").split("/").pop();
   const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
-  const words = (id) => cap((id || "").replace(/-/g, " "));
+  const words = (id) => cap((id || "").replace(/-/g, " ").replace(/\bqa\b/g, "Q&A"));
   const span = (secs) => {
     secs = Math.max(0, Math.round(secs));
     if (secs < 60) return secs + " s";
@@ -35,6 +35,7 @@
   };
   let token = "";
   let dirty = false;
+  let envDirty = false;
   const PRESETS = { list: "Always list price", gentle: "Gentle", balanced: "Balanced", eager: "Eager" };
 
   async function post(path, body) {
@@ -45,28 +46,44 @@
     return j;
   }
 
-  function renderFigures(s) {
-    const st = s.status, b = st.budget, sp = st.spend;
-    $("#today").textContent = money(sp.today_usd);
-    const paced = b.daily_usd === 0 ? " (paced)" : "";
-    $("#today-sub").textContent = st.daily_limit_usd < 0 || b.daily_usd < 0 ? "No daily limit" : "of " + money(st.daily_limit_usd) + " today" + paced;
+  // A limit as people say it: $1, $10, $0.25.
+  const lim = (v) => (v >= 100 || Number.isInteger(v) ? "$" + Math.round(v).toLocaleString("en-US") : "$" + v.toFixed(2));
+  const meter = (node, frac, level, label) => {
+    node.className = "meter" + (level ? " " + level : "");
+    node.firstElementChild.style.width = (Math.min(1, Math.max(0, frac)) * 100).toFixed(1) + "%";
+    node.setAttribute("aria-label", label);
+  };
+  const LEVEL = { calm: "", near: "near", stopped: "stopped" };
 
-    const spent = sp.month_usd + (sp.reserved_usd || 0);
-    const frac = b.monthly_usd > 0 ? spent / b.monthly_usd : 0;
-    const month = $("#month");
-    month.textContent = money(spent);
-    month.parentElement.classList.toggle("near", !!st.near_budget);
-    $("#month-cap").textContent = b.monthly_usd > 0 ? "of " + money(b.monthly_usd) : "no cap";
-    const m = $("#month-meter");
-    m.classList.toggle("near", !!st.near_budget);
-    m.firstElementChild.style.width = (Math.min(1, frac) * 100).toFixed(1) + "%";
-    m.setAttribute("aria-label", "Monthly spend, " + pct(frac) + " of the cap");
+  function renderFigures(s) {
+    const st = s.status, env = s.envelope, sp = st.spend;
+    const daily = env.daily_limit_usd;
+    const todayNear = daily > 0 && env.today_usd >= 0.8 * daily;
+    $("#today").textContent = cost(env.today_usd);
+    $("#today-cap").textContent = daily > 0 ? "of " + lim(daily) : "";
+    $("#today").parentElement.classList.toggle("near", todayNear);
+    meter($("#today-meter"), daily > 0 ? env.today_usd / daily : 0, todayNear ? "near" : "", daily > 0 ? "Today, " + pct(env.today_usd / daily) + " of the daily limit" : "No daily limit");
+    $("#today-sub").textContent = daily < 0 ? "No daily limit" : daily > 0 && env.today_usd > daily
+      ? "Past the daily limit by " + cost(env.today_usd - daily) + "; work goes on, the month still holds"
+      : (env.paced ? "Paced from the month · " : "") + "Warns when passed";
+
+    const cap = env.monthly_cap_usd, frac = cap > 0 ? env.month_usd / cap : 0;
+    const level = env.month_usd >= cap && cap > 0 ? "stopped" : st.near_budget ? "near" : "";
+    $("#month").textContent = money(env.month_usd);
+    $("#month").parentElement.classList.toggle("near", level === "near");
+    $("#month").parentElement.classList.toggle("stopped", level === "stopped");
+    $("#month-cap").textContent = cap > 0 ? "of " + lim(cap) : "no cap";
+    meter($("#month-meter"), frac, level, "This month, " + pct(frac) + " of the cap");
     const runs = sp.runs_this_month || 0;
-    $("#month-sub").textContent = runs + (runs === 1 ? " run" : " runs") + " · " + money(st.month_left_usd) + " left" + (sp.reserved_usd ? " · " + money(sp.reserved_usd) + " held for running calls" : "");
+    $("#month-sub").textContent = level === "stopped" ? "Cap reached: paid runs are stopped until you raise it"
+      : runs + (runs === 1 ? " run" : " runs") + " · " + money(st.month_left_usd) + " left" + (sp.reserved_usd ? " · " + cost(sp.reserved_usd) + " held for running calls" : "");
 
     const jobs = list(st.running);
     $("#running-n").textContent = String(jobs.length);
-    $("#running").textContent = jobs.length ? jobs.map((j) => short(j.model) + (j.use_case ? " · " + words(j.use_case).toLowerCase() : "")).join(", ") : "Nothing handed off right now";
+    $("#running").replaceChildren(...(jobs.length
+      ? jobs.map((j) => el("li", {}, el("span", { class: "m", text: short(j.model) }), j.use_case ? el("span", { text: words(j.use_case).toLowerCase() }) : null,
+        j.started ? el("span", { class: "t", text: span((Date.now() - new Date(j.started).getTime()) / 1000) }) : null))
+      : [el("li", { class: "quiet", text: "Nothing handed off right now" })]));
 
     const lam = st.lambda || {};
     const wins = list(s.windows);
@@ -81,6 +98,38 @@
     }
   }
 
+  function renderEnvelope(s) {
+    const env = s.envelope, out = $("#env-state");
+    const t = s.team && s.team.stopped;
+    out.className = "env-state " + (LEVEL[env.level] || "");
+    out.textContent = t ? "Team budget used up: paid runs are stopped for every seat"
+      : env.level === "stopped" ? "Monthly cap reached: paid runs are stopped"
+      : env.level === "near" ? "Near the limit: p0ssess warns, the monthly cap still holds"
+      : "Inside the envelope";
+    if (envDirty) return;
+    const f = $("#envelope"), b = s.status.budget;
+    for (const [k, v] of Object.entries({ daily_usd: b.daily_usd, monthly_usd: b.monthly_usd, per_task_usd: b.per_task_usd })) {
+      f.elements[k].value = String(v);
+      f.elements[k].dataset.orig = String(v);
+    }
+  }
+
+  function renderTeam(t) {
+    const box = $("#team");
+    box.hidden = !t;
+    if (!t) return;
+    $("#team-name").textContent = (t.org || "Your team") + " · " + (t.role === "owner" ? "owner" : "member");
+    const cap = t.cap_usd;
+    $("#team-budget").textContent = cap != null && cap > 0
+      ? money(t.spent_usd) + " of " + lim(cap) + " team budget this month" + (t.stopped ? " · paid runs stopped" : "")
+      : "No shared team budget" + (t.share_usd != null ? " · your share " + lim(t.share_usd) : "");
+    $("#team-budget").classList.toggle("stopped", !!t.stopped);
+    const m = $("#team-meter");
+    m.hidden = !(cap > 0);
+    if (cap > 0) meter(m, t.spent_usd / cap, t.stopped ? "stopped" : t.spent_usd >= 0.8 * cap ? "near" : "", "Team budget, " + pct(t.spent_usd / cap));
+    $("#team-link").href = t.url;
+  }
+
   // How a run's cost was arrived at, from the ledger's cost_basis.
   const BASIS = {
     reported: ["", "OpenRouter's reported cost"],
@@ -88,20 +137,48 @@
     tokens: ["from tokens", "priced from the call's tokens at the model's list price; OpenRouter did not report the cost"],
     reserved: ["max held", "counted at the maximum reserved for the call; the cost could not be read or priced"],
   };
+  const RESULT = { done: ["Done", ""], ok: ["Done", ""], accepted: ["Done", ""], failed: ["Failed", "bad"], error: ["Failed", "bad"],
+    aborted: ["Stopped", "warn"], canceled: ["Stopped", "warn"], timeout: ["Timed out", "bad"], partial: ["Partial", "warn"] };
 
   function renderRuns(runs) {
     const box = $("#runs");
-    runs = list(runs).slice(0, 7);
+    runs = list(runs).slice(0, 10);
     if (!runs.length) {
-      box.replaceChildren(el("li", { class: "empty", text: "Nothing handed off yet. Ask Claude to watch a video or make an image." }));
+      box.replaceChildren(el("p", { class: "empty", text: "Nothing handed off yet. Ask Claude to watch a video, make an image or summarize a long file." }));
       return;
     }
-    box.replaceChildren(...runs.map((r) => el("li", {},
-      el("span", { class: "what", text: words(r.use_case || r.route || "run") }, r.status && r.status !== "done" ? el("span", { class: "tag", text: r.status }) : null,
-        BASIS[r.cost_basis] && BASIS[r.cost_basis][0] ? el("span", { class: "tag", text: BASIS[r.cost_basis][0], title: BASIS[r.cost_basis][1] }) : null),
-      el("span", { class: "who", text: short(r.model) }),
-      el("span", { class: "cost", text: cost(r.cash_usd) + (r.estimated ? "*" : ""), title: BASIS[r.cost_basis] ? BASIS[r.cost_basis][1] : null }),
-      el("span", { class: "when", text: ago(r.ts) }))));
+    box.replaceChildren(...runs.map((r) => {
+      const st = RESULT[r.status || "done"] || [cap(r.status), ""];
+      const basis = BASIS[r.cost_basis];
+      return el("div", { class: "r", role: "row", title: r.receipt || null },
+        el("span", { class: "what", role: "cell" }, words(r.use_case || r.route || "run"), r.route && r.route !== "direct" ? el("small", { text: r.route }) : null),
+        el("span", { class: "who", role: "cell", text: short(r.model), title: r.model }),
+        el("span", { class: "num cost", role: "cell", text: cost(r.cash_usd) + (r.estimated ? "*" : ""), title: basis ? basis[1] : null },
+          basis && basis[0] ? el("small", { text: basis[0] }) : null),
+        el("span", { class: "num saved" + (r.saved_usd > 0 ? "" : " none"), role: "cell", text: r.saved_usd > 0 ? "~" + cost(r.saved_usd) : "–",
+          "aria-label": r.saved_usd > 0 ? "saved about " + cost(r.saved_usd) : "no saving measured" }),
+        el("span", { class: "res " + st[1], role: "cell", text: st[0] }),
+        el("span", { class: "num when", role: "cell", text: ago(r.ts) }));
+    }));
+  }
+
+  const TAGS = [[/provisional/i, "provisional", "prov"], [/retr|another model|fell back|rebuilt|tried first/i, "retry", ""],
+    [/passes|used up|reached|near the|ceiling lowered|stopped/i, "warning", "warn"], [/\bpicked\b|chosen/i, "pick", "prov"]];
+  function renderNotices(ns) {
+    const box = $("#notices");
+    ns = list(ns).slice(0, 12);
+    if (!ns.length) {
+      box.replaceChildren(el("li", { class: "empty", text: "Nothing to report. Retries, limit warnings and why a model was picked show here." }));
+      return;
+    }
+    box.replaceChildren(...ns.map((n) => {
+      const text = list(n.notes).join(" · ");
+      const tags = TAGS.filter(([re]) => re.test(text));
+      return el("li", {},
+        el("p", { class: "meta" }, el("span", { text: ago(n.ts) }), n.model ? el("span", { text: short(n.model) }) : null,
+          ...tags.slice(0, 2).map(([, t, c]) => el("span", { class: "tag " + c, text: t }))),
+        ...list(n.notes).slice(0, 4).map((t) => el("p", { class: "line", text: cap(t) })));
+    }));
   }
 
   function renderRecords(o) {
@@ -413,6 +490,31 @@
     }
   });
 
+  const envSaved = (text, err) => { const o = $("#env-saved"); o.textContent = text; o.classList.toggle("err", !!err); };
+  $("#envelope").addEventListener("input", () => { envDirty = true; envSaved(""); });
+  $("#envelope").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const f = ev.target, changes = {};
+    for (const k of ["daily_usd", "monthly_usd", "per_task_usd"]) {
+      const v = f.elements[k].value.trim().replace(/^\$/, "");
+      if (v === "" || !Number.isFinite(Number(v))) { envSaved("That needs a number.", true); f.elements[k].focus(); return; }
+      if (v !== f.elements[k].dataset.orig) changes[k] = v;
+    }
+    if (!Object.keys(changes).length) { envSaved("Nothing changed."); return; }
+    const btn = f.querySelector("button");
+    btn.disabled = true;
+    try {
+      await post("api/settings", { changes });
+      envDirty = false;
+      envSaved("Saved.");
+      load();
+    } catch (e) {
+      envSaved("Not saved: " + e.message, true);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
   async function load() {
     const up = $("#updated");
     try {
@@ -422,7 +524,10 @@
       token = s.token;
       $("#where").textContent = location.host;
       renderFigures(s);
+      renderEnvelope(s);
+      renderTeam(s.team);
       renderRuns(s.runs);
+      renderNotices(s.notices);
       renderLimits(s);
       renderRules(s.rules, s.learned);
       renderRecords(s.outcomes);

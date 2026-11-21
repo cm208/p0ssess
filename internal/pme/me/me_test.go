@@ -9,7 +9,10 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
+	"p0ssess/internal/history"
+	"p0ssess/internal/notices"
 	"p0ssess/internal/pme/local"
 	"p0ssess/internal/pme/paths"
 )
@@ -144,5 +147,70 @@ func TestScriptMatchesPage(t *testing.T) {
 	code := strings.ReplaceAll(string(js), `/ \((session|project|global)[^)]*\)$/`, "")
 	if strings.Count(code, "(") != strings.Count(code, ")") || strings.Count(code, "{") != strings.Count(code, "}") || strings.Count(code, "[") != strings.Count(code, "]") {
 		t.Error("app.js brackets do not balance")
+	}
+}
+
+// The state carries the envelope with its level, each run's receipt from the notices file (a relay
+// session's notes name the session; its runs are "<session>/<turn>") and the notices feed.
+func TestStateEnvelopeReceiptsNotices(t *testing.T) {
+	s, _ := start(t)
+	d := s.E.Dirs
+	now := time.Now().UTC()
+	history.Append(d.HistoryFile(), history.Entry{TS: now.Add(-time.Hour), Type: history.TypeRun, RunID: "d-1", Model: "moonshotai/kimi-k3.1-pro", CashUSD: 0.10, Status: "done", UseCase: "summarize-long-doc"})
+	history.Append(d.HistoryFile(), history.Entry{TS: now, Type: history.TypeRun, RunID: "ses_a/1", Model: "z-ai/glm-5.3", CashUSD: 0.62, Status: "failed"})
+	notices.Append(d.NoticesFile(), notices.Record{Run: "d-1", Receipt: "(kimi-k3.1-pro, $0.10, saved ~$0.80)", SavedUSD: 0.8})
+	notices.Append(d.NoticesFile(), notices.Record{Run: "ses_a", Notes: []string{"retried on another model after a provider error"}, Receipt: "(glm-5.3, $0.62)"})
+	os.WriteFile(d.BudgetFile(), []byte("monthly_usd = 10\ndaily_usd = 1\nper_task_usd = 0.25\n"), 0o600)
+	var st struct {
+		Envelope envelope         `json:"envelope"`
+		Runs     []runView        `json:"runs"`
+		Notices  []notices.Record `json:"notices"`
+		Team     *teamView        `json:"team"`
+	}
+	_, body, _ := get(t, s.URL()+"api/state", "")
+	if err := json.Unmarshal([]byte(body), &st); err != nil {
+		t.Fatal(err)
+	}
+	e := st.Envelope
+	if e.DailyLimit != 1 || e.MonthlyCap != 10 || e.PerTask != 0.25 || e.Level != "calm" || e.Today < 0.71 || e.Today > 0.73 {
+		t.Errorf("envelope %+v", e)
+	}
+	if len(st.Runs) != 2 || st.Runs[1].Receipt != "(kimi-k3.1-pro, $0.10, saved ~$0.80)" || st.Runs[1].SavedUSD != 0.8 ||
+		st.Runs[0].Receipt != "(glm-5.3, $0.62)" || st.Runs[0].Status != "failed" {
+		t.Errorf("runs %+v", st.Runs)
+	}
+	if len(st.Notices) != 1 || !strings.Contains(st.Notices[0].Notes[0], "another model") {
+		t.Errorf("notices %+v", st.Notices)
+	}
+	if st.Team != nil {
+		t.Errorf("no team policy, no team: %+v", st.Team)
+	}
+	history.Append(d.HistoryFile(), history.Entry{TS: now, Type: history.TypeRun, RunID: "d-2", Model: "m/x", CashUSD: 0.2})
+	_, body, _ = get(t, s.URL()+"api/state", "")
+	json.Unmarshal([]byte(body), &st)
+	if st.Envelope.Level != "near" {
+		t.Errorf("past 80%% of the daily limit: %+v", st.Envelope)
+	}
+	history.Append(d.HistoryFile(), history.Entry{TS: now, Type: history.TypeRun, RunID: "d-3", Model: "m/x", CashUSD: 9.5})
+	_, body, _ = get(t, s.URL()+"api/state", "")
+	json.Unmarshal([]byte(body), &st)
+	if st.Envelope.Level != "stopped" {
+		t.Errorf("monthly cap reached: %+v", st.Envelope)
+	}
+}
+
+func TestEnvelopeSettingsFromThePage(t *testing.T) {
+	s, _ := start(t)
+	req, _ := http.NewRequest("POST", s.URL()+"api/settings", strings.NewReader(`{"changes":{"daily_usd":"2","monthly_usd":"25","per_task_usd":"0.5"}}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-P0ssess-Token", s.Token)
+	r, err := http.DefaultClient.Do(req)
+	if err != nil || r.StatusCode != 200 {
+		t.Fatalf("%v %v", r, err)
+	}
+	r.Body.Close()
+	b, _ := s.E.Budget()
+	if b.DailyUSD != 2 || b.MonthlyUSD != 25 || b.PerTaskUSD != 0.5 {
+		t.Errorf("%+v", b)
 	}
 }

@@ -26,6 +26,7 @@ import (
 	"p0ssess/internal/account"
 	"p0ssess/internal/calibrate"
 	"p0ssess/internal/history"
+	"p0ssess/internal/notices"
 	"p0ssess/internal/pme/local"
 	"p0ssess/internal/pme/statusline"
 	"p0ssess/internal/rules"
@@ -161,12 +162,47 @@ type outcomesView struct {
 	Pending []string `json:"pending"`
 }
 
+// runView is a ledger run with its receipt from the notices file.
+type runView struct {
+	history.Entry
+	Receipt  string  `json:"receipt,omitempty"`
+	SavedUSD float64 `json:"saved_usd,omitempty"`
+}
+
+// envelope is the spending envelope at a glance; Level is calm, near (the daily limit or a cap is
+// close or passed) or stopped (the monthly cap or the team budget stops paid runs).
+type envelope struct {
+	Today      float64 `json:"today_usd"`
+	DailyLimit float64 `json:"daily_limit_usd"` // -1: none
+	Paced      bool    `json:"paced"`
+	Month      float64 `json:"month_usd"`
+	MonthlyCap float64 `json:"monthly_cap_usd"`
+	PerTask    float64 `json:"per_task_usd"`
+	Level      string  `json:"level"`
+}
+
+type teamView struct {
+	Org     string   `json:"org"`
+	Role    string   `json:"role"`
+	CapUSD  *float64 `json:"cap_usd,omitempty"`
+	Spent   float64  `json:"spent_usd"`
+	Share   *float64 `json:"share_usd,omitempty"`
+	URL     string   `json:"url"`
+	Stopped bool     `json:"stopped"`
+}
+
+// TeamURL is the team page.
+const TeamURL = "https://p0ssess.me/team"
+
 type state struct {
 	Status     *local.Status       `json:"status"`
+	Envelope   envelope            `json:"envelope"`
+	Team       *teamView           `json:"team,omitempty"`
+	Notices    []notices.Record    `json:"notices"`
 	Windows    []window            `json:"windows"`
 	ReadingAge int64               `json:"reading_age_seconds"`
 	Learned    local.Learned       `json:"learned"`
-	Runs       []history.Entry     `json:"runs"`
+	Runs       []runView           `json:"runs"`
 	Rules      []local.RuleView    `json:"rules"`
 	Preset     string              `json:"lambda_preset"`
 	Presets    []string            `json:"presets"`
@@ -191,9 +227,29 @@ func (s *Server) state(w http.ResponseWriter, r *http.Request) {
 	if out.Outcomes.Pending == nil {
 		out.Outcomes.Pending = []string{}
 	}
-	out.Runs = s.E.Ledger().Runs(20)
-	if out.Runs == nil {
-		out.Runs = []history.Entry{}
+	l := s.E.Ledger()
+	recent := notices.Recent(s.E.Dirs.NoticesFile(), 200)
+	out.Runs = []runView{}
+	for _, r := range l.Runs(20) {
+		v := runView{Entry: r}
+		for _, n := range recent {
+			if n.Receipt != "" && n.For(r.RunID) {
+				v.Receipt, v.SavedUSD = n.Receipt, n.SavedUSD
+				break
+			}
+		}
+		out.Runs = append(out.Runs, v)
+	}
+	out.Notices = []notices.Record{}
+	for _, n := range recent {
+		if len(n.Notes) > 0 && len(out.Notices) < 30 {
+			out.Notices = append(out.Notices, n)
+		}
+	}
+	out.Envelope = envelopeOf(st)
+	out.Team = s.teamOf(l, st)
+	if out.Team != nil && out.Team.Stopped {
+		out.Envelope.Level = "stopped"
 	}
 	us := s.E.Usage()
 	p := st.Lambda.Usage
@@ -207,6 +263,34 @@ func (s *Server) state(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+func envelopeOf(st *local.Status) envelope {
+	b, sp := st.Budget, st.Spend
+	e := envelope{Today: sp.Today + sp.Reserved, DailyLimit: st.DailyLimit, Paced: b.DailyUSD == 0, Month: sp.Month + sp.Reserved,
+		MonthlyCap: b.MonthlyUSD, PerTask: b.PerTaskUSD, Level: "calm"}
+	if b.DailyUSD < 0 {
+		e.DailyLimit = -1
+	}
+	switch {
+	case e.MonthlyCap > 0 && e.Month >= e.MonthlyCap-1e-9:
+		e.Level = "stopped"
+	case e.DailyLimit > 0 && e.Today >= 0.8*e.DailyLimit, st.NearBudget:
+		e.Level = "near"
+	}
+	return e
+}
+
+func (s *Server) teamOf(l *history.Ledger, st *local.Status) *teamView {
+	pol := s.E.TeamPolicy()
+	if pol == nil {
+		return nil
+	}
+	now := s.E.Now()
+	t := &teamView{Org: pol.OrgName, Role: pol.Role, CapUSD: pol.TeamMonthlyUSD, Share: pol.MonthlyShareUSD, URL: TeamURL,
+		Spent: pol.TeamSpent(now, l.SpendSince) + st.Spend.Reserved}
+	t.Stopped = t.CapUSD != nil && *t.CapUSD > 0 && t.Spent >= *t.CapUSD-1e-9
+	return t
 }
 
 func (s *Server) settings(body json.RawMessage) (any, error) {
