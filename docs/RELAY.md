@@ -25,6 +25,24 @@ Status: built, tested and shipped in the plugin. The relay tools live on the plu
 
 The client refuses any server that does not report version 2.2.5. To upgrade OpenCode: add the new spec next to the old one, run the contract test against it, record a new event stream, and add the version to `SupportedVersions`.
 
+## Where it runs
+
+Each agent session runs in one of two places: the local jail (rootless podman on this machine) or the hosted cloud sandbox (Pro and Team). The choice is the `sandbox.where` setting, one of `auto` (the default), `local` or `cloud`. Set it in plain words ("run agent jobs in the cloud") through `settings_set`, or in budget.toml under `[sandbox]` as `where`. `P0SSESS_SANDBOX` overrides it for tests and development, and `sandbox` in config.json is the last fallback.
+
+| Setting | Linux with rootless podman | macOS, Windows, Linux without podman |
+|---|---|---|
+| `auto` | local | cloud for Pro and Team, otherwise the plain line below |
+| `local` | local | the job does not run; it says so |
+| `cloud` | cloud for Pro and Team | cloud for Pro and Team |
+
+A missing jail image does not move a job to the cloud; the image is built as before.
+
+**A Free install** that needs a sandbox it does not have gets one line instead of a failure: `This job needs a sandbox, and it can run in the p0ssess cloud sandbox with Pro (/p0ssess:pro). For now, read-only questions still run on the direct path, or use Linux with rootless podman.` (On Linux it says `install rootless podman`.) Read-only work keeps running on the direct path. The offer counts as `upgrade_viewed` only when the user opted in to usage counts.
+
+**The queue.** The hosted sandbox runs a fixed number of sessions at once. When all are busy, the host queues the request (first in, first out, one place per account, accounts that just ran go behind others, at most 16 waiting) and answers with a place and an estimate from the durations of recent sessions. The client keeps the request alive, writes the place to `sandbox-queue.json` in the state directory, and the status line shows `queued 2nd, ~4 min` (just `queued 2nd` until the host has enough finished sessions to estimate). When a slot frees up it is held for the head of the queue and the session starts at once. The wait is capped by `sandbox.wait_minutes` (default 10); past it the request is withdrawn with `The cloud sandbox stayed busy for 10 min, so this job was not started. Try again in a while, or say "wait longer for the cloud sandbox" to raise the limit.`
+
+**Hours.** Pro and Team include 20 cloud sandbox hours a month (session wall time, counted per calendar month in UTC). When they are used up the host answers with `This month's sandbox hours are used up (20h of 20h).` and the client adds that they come back on the 1st. The p0ssess page and `/p0ssess:p0ssess-me` show `3h used, 17h left this month`.
+
 ## The jail
 
 Every relay session gets its own jail. The first `run` of a session creates it, follow-ups in the same session reuse it, and it is removed when the session ends (see [Session lifetime](#session-lifetime)). Nothing is shared between sessions: not the server, not OpenCode's database, not a worktree, not a volume. A cold jail starts in about 0.65 seconds (0.75 with shell internet) and is removed in about 0.2 seconds; see [Tests](#tests) for the measurement.

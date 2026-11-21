@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -16,6 +17,7 @@ import (
 	"p0ssess/internal/config"
 	"p0ssess/internal/notices"
 	"p0ssess/internal/pme/local"
+	"p0ssess/internal/pme/me"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/proc"
 	"p0ssess/internal/savings"
@@ -143,6 +145,10 @@ func brief(st *local.Status, eng *local.Engine, url string, gaps []string) strin
 		if len(ws) > 0 {
 			rows = append(rows, "Claude  "+strings.Join(ws, " · "))
 		}
+	}
+
+	if l := me.SandboxLine(context.Background(), eng.Dirs, b.Sandbox, time.Now()); l != "" {
+		rows = append(rows, "sandbox "+l)
 	}
 
 	var out strings.Builder

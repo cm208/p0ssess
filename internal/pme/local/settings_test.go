@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"p0ssess/internal/pme/statusline"
 )
@@ -120,5 +121,38 @@ func TestOutcomesSetting(t *testing.T) {
 	}
 	if _, err := e.SetSetting("outcomes.send", "maybe"); err == nil {
 		t.Error("not a boolean")
+	}
+}
+
+// Where agent jobs run and how long a job waits for the cloud sandbox are plain-words settings.
+func TestSandboxWhereSettings(t *testing.T) {
+	e, _ := setup(t, "")
+	for in, want := range map[string]string{"cloud": "cloud", "The Cloud": "cloud", "local": "local", "here": "local", "automatic": "auto", "auto": "auto"} {
+		if _, err := e.SetSetting("sandbox.where", in); err != nil {
+			t.Fatalf("%q: %v", in, err)
+		}
+		if b, _ := e.Budget(); b.Sandbox.Where != want {
+			t.Errorf("%q gave %q, want %q", in, b.Sandbox.Where, want)
+		}
+	}
+	if _, err := e.SetSetting("sandbox.where", "mars"); err == nil {
+		t.Error("an unknown place was accepted")
+	}
+	if b, _ := e.Budget(); b.Sandbox.Where != "auto" {
+		t.Errorf("a refused value changed the setting: %q", b.Sandbox.Where)
+	}
+	if _, err := e.SetSetting("sandbox.wait_minutes", "25"); err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := e.Budget(); b.Sandbox.QueueWait() != 25*time.Minute {
+		t.Errorf("wait %v", b.Sandbox.QueueWait())
+	}
+	for _, bad := range []string{"0", "500", "soon"} {
+		if _, err := e.SetSetting("sandbox.wait_minutes", bad); err == nil {
+			t.Errorf("wait %q accepted", bad)
+		}
+	}
+	if b, _ := e.Budget(); b.Sandbox.QueueWait() != 25*time.Minute {
+		t.Error("a refused wait changed the setting")
 	}
 }

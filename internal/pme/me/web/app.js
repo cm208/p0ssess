@@ -162,6 +162,24 @@
     }));
   }
 
+  function hoursText(sec) {
+    const h = (sec || 0) / 3600;
+    return (Number.isInteger(h) ? h : h.toFixed(1)) + "h";
+  }
+
+  function renderSandbox(x) {
+    x = x || {};
+    const note = $("#sandbox-note"), hours = $("#sandbox-hours");
+    const where = { auto: "Agent jobs run on this machine when podman works, and in the cloud sandbox otherwise.",
+      local: "Agent jobs run only on this machine.", cloud: "Agent jobs always run in the cloud sandbox." }[x.where || "auto"];
+    note.textContent = !x.pro ? "The cloud sandbox runs agent jobs on any computer, no podman needed. It is a Pro feature (/p0ssess:pro)."
+      : x.queued ? "The sandbox is busy: your job is " + x.queue + ". It starts by itself, and gives up after " + x.wait_minutes + " min."
+        : where;
+    hours.textContent = x.pro && x.hours ? hoursText(x.used_s) + " used, " + hoursText(x.left_s) + " left of " + hoursText(x.allowance_s) + " this month."
+      : x.pro ? "Hours used this month: not available right now." : "";
+    hours.hidden = !hours.textContent;
+  }
+
   function renderRescue(r) {
     r = r || {};
     const note = $("#rescue-note"), box = $("#rescue");
@@ -695,6 +713,7 @@
       renderRuns(s.runs);
       renderNotices(s.notices);
       renderRescue(s.rescue);
+      renderSandbox(s.sandbox);
       renderLimits(s);
       renderRules(s.rules, s.learned);
       renderRecords(s.outcomes);

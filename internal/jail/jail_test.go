@@ -205,7 +205,8 @@ func TestCheckMountable(t *testing.T) {
 	if _, err := RepoRoot(plain); err != nil {
 		t.Errorf("inside home's repository now: %v", err)
 	}
-	// Start checks before it reads the key or touches podman.
+	// Start checks before it reads the key or touches podman or the cloud.
+	t.Setenv("P0SSESS_SANDBOX", "cloud")
 	_, err := Start(context.Background(), Spec{Repo: home}, config.Config{OpenRouterKeyFile: key}, io.Discard)
 	var nm *NotMountable
 	if !errors.As(err, &nm) || !strings.Contains(err.Error(), "Pass cwd") {

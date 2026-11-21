@@ -358,6 +358,20 @@ func TestNoSandboxReadGoesDirect(t *testing.T) {
 	}
 }
 
+// A Free install without podman gets the one plain line for edit work, with no wrapper around it.
+func TestNoSandboxFreeLine(t *testing.T) {
+	_, _, client := testHome(t)
+	e := NewEngine(config.Config{MaxRunCostUSD: 0.5}, "test", io.Discard)
+	e.Unguarded = true
+	e.SandboxCheck = func() error { return &jail.NeedsPro{GOOS: "darwin"} }
+	_, err := e.Do(context.Background(), RunRequest{Task: "fix " + client + "/main.go", Mode: "edit"}, nil)
+	want := "This job needs a sandbox, and it can run in the p0ssess cloud sandbox with Pro (/p0ssess:pro). " +
+		"For now, read-only questions still run on the direct path, or use Linux with rootless podman."
+	if err == nil || !strings.HasPrefix(err.Error(), want) || strings.Contains(err.Error(), "unavailable here") {
+		t.Errorf("%v", err)
+	}
+}
+
 // A model p0ssess picked that needs approval gives way to the next option inside the limits.
 func TestApprovalFallsBackInsideLimits(t *testing.T) {
 	_, _, client := testHome(t)

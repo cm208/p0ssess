@@ -149,7 +149,12 @@ func main() {
 		err = egressCmd(args)
 	case "run", "wait", "abort", "answer":
 		if aerr := server.AgentAvailable(); aerr != nil {
-			err = fmt.Errorf("the agent path is unavailable here: %w", aerr)
+			var np *jail.NeedsPro
+			if errors.As(aerr, &np) {
+				err = aerr
+			} else {
+				err = fmt.Errorf("the agent path is unavailable here: %w", aerr)
+			}
 			break
 		}
 		err = runCmd(ctx, cmd, args)

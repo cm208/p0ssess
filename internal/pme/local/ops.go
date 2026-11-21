@@ -370,7 +370,7 @@ func (e *Engine) Learned(s Scope) Learned {
 // Settings that can be changed in plain language through Claude or the page.
 var settingKeys = []string{"monthly_usd", "per_task_usd", "daily_usd", "save_claude", "plan", "usage_credits",
 	"privacy.mode", "privacy.allow_safety_retention", "models.allow", "models.deny", "providers.allow", "providers.deny",
-	"sandbox.shell_internet", "sandbox.shell_internet.add", "sandbox.shell_internet.remove",
+	"sandbox.where", "sandbox.wait_minutes", "sandbox.shell_internet", "sandbox.shell_internet.add", "sandbox.shell_internet.remove",
 	"ask.first_use", "ask.code_edits", "outcomes.send", "funnel.send", "rescue.enabled", "rescue.threshold", "report.send", "lambda.preset", "statusline.command", "statusline.mark", "statusline.width", "lead"}
 
 func SettingKeys() []string { return append([]string(nil), settingKeys...) }
@@ -483,6 +483,25 @@ func (e *Engine) setBudget(key, value string) (string, error) {
 		b.Providers.Allow = list()
 	case "providers.deny":
 		b.Providers.Deny = list()
+	case "sandbox.where":
+		switch w := strings.ToLower(strings.TrimSpace(value)); w {
+		case "auto", "automatic", "":
+			b.Sandbox.Where = "auto"
+		case "local", "here", "this machine", "podman":
+			b.Sandbox.Where = "local"
+		case "cloud", "hosted", "the cloud":
+			b.Sandbox.Where = "cloud"
+		default:
+			err = errors.New("say auto, local or cloud")
+		}
+		value = b.Sandbox.Where
+	case "sandbox.wait_minutes":
+		var n float64
+		n, err = num()
+		b.Sandbox.WaitMin = int(n)
+		if err == nil && (n < 1 || n > budget.MaxWaitMin) {
+			err = fmt.Errorf("must be between 1 and %d minutes", budget.MaxWaitMin)
+		}
 	case "sandbox.shell_internet":
 		var ps []string
 		for _, p := range list() {
@@ -531,6 +550,16 @@ func (e *Engine) setBudget(key, value string) (string, error) {
 		return "Anonymous usage counts are off (saved to " + e.Dirs.BudgetFile() + "). Nothing is counted or sent, and the counts not sent were deleted.", nil
 	}
 	switch key {
+	case "sandbox.where":
+		switch b.Sandbox.Where {
+		case "local":
+			return "Agent jobs now run only on this machine (saved to " + e.Dirs.BudgetFile() + "). Without rootless podman they will not run.", nil
+		case "cloud":
+			return "Agent jobs now always run in the p0ssess cloud sandbox (saved to " + e.Dirs.BudgetFile() + "). That needs Pro or Team.", nil
+		}
+		return "Agent jobs run on this machine when rootless podman works, and in the p0ssess cloud sandbox (Pro or Team) when it does not (saved to " + e.Dirs.BudgetFile() + ").", nil
+	case "sandbox.wait_minutes":
+		return fmt.Sprintf("A job now waits up to %d minutes for a cloud sandbox slot before giving up (saved to %s).", b.Sandbox.WaitMin, e.Dirs.BudgetFile()), nil
 	case "report.send":
 		if b.Report.Send {
 			return "The monthly savings report is on (saved to " + e.Dirs.BudgetFile() + "). With Pro, once a month p0ssess sends last month's totals " +

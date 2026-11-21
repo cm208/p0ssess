@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"p0ssess/internal/cloudsandbox"
 	"p0ssess/internal/history"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/proc"
@@ -218,5 +219,39 @@ func TestRescueMarker(t *testing.T) {
 	s.Rescue = false
 	if got := Segment(s, Settings{}, 0); strings.Contains(got, "rescue") {
 		t.Errorf("marker without rescue: %q", got)
+	}
+}
+
+func TestSegmentQueued(t *testing.T) {
+	s := State{SpentToday: 0.42, DailyLimit: 1, IsQueued: true,
+		Queued: cloudsandbox.QueueInfo{Position: 2, ETA: 4 * time.Minute, HasETA: true}}
+	if got := Segment(s, Settings{}, 0); got != "p0ssess $0.42/$1 · queued 2nd, ~4 min" {
+		t.Errorf("%q", got)
+	}
+	if got := Segment(s, Settings{}, 30); !strings.Contains(got, "queued 2nd") || strings.Contains(got, "~4") {
+		t.Errorf("narrow: %q", got)
+	}
+	if got := Segment(s, Settings{}, 19); !strings.Contains(got, "queued") {
+		t.Errorf("tight: %q", got)
+	}
+	s.Queued.HasETA = false
+	if got := Segment(s, Settings{}, 0); got != "p0ssess $0.42/$1 · queued 2nd" {
+		t.Errorf("no estimate: %q", got)
+	}
+	s.IsQueued = false
+	if got := Segment(s, Settings{}, 0); strings.Contains(got, "queued") {
+		t.Errorf("not queued: %q", got)
+	}
+}
+
+func TestGatherReadsQueue(t *testing.T) {
+	d := paths.Dirs{Config: t.TempDir(), State: t.TempDir(), Cache: t.TempDir()}
+	now := time.Now()
+	if Gather(d, "s", now).IsQueued {
+		t.Fatal("nothing waits")
+	}
+	cloudsandbox.SaveQueue(d, cloudsandbox.QueueInfo{Position: 3}, now, now)
+	if st := Gather(d, "s", now); !st.IsQueued || st.Queued.Position != 3 {
+		t.Errorf("%+v", st)
 	}
 }

@@ -252,6 +252,10 @@ func (e *Engine) do(ctx context.Context, req RunRequest, progress func(float64, 
 		noSandbox = e.SandboxCheck()
 	}
 	if noSandbox != nil && req.Mode != "read" {
+		var np *jail.NeedsPro
+		if errors.As(noSandbox, &np) {
+			return nil, noSandbox
+		}
 		return nil, fmt.Errorf("edit work runs in the sandboxed agent path, which is unavailable here: %v", noSandbox)
 	}
 	if noSandbox != nil {

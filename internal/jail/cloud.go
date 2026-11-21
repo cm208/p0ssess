@@ -19,8 +19,12 @@ import (
 	"sync"
 	"time"
 
+	"p0ssess/internal/account"
+	"p0ssess/internal/budget"
 	"p0ssess/internal/cloudsandbox"
 	"p0ssess/internal/config"
+	"p0ssess/internal/funnel"
+	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/proxy"
 )
 
@@ -54,9 +58,14 @@ func liveCloud(name string) *cloudLive {
 // DeviceTokenFile is where the account link keeps its token (auth.md).
 func DeviceTokenFile() string { return config.Path("secrets", "p0ssess_token") }
 
+// sandboxSetting is where the user asked for agent jobs to run: the environment (tests, development),
+// then the plain-words setting in budget.toml, then config.json. Empty or "auto" lets p0ssess pick.
 func sandboxSetting(cfg config.Config) string {
 	if v := os.Getenv("P0SSESS_SANDBOX"); v != "" {
 		return v
+	}
+	if b, err := budget.Load(paths.Default().BudgetFile()); err == nil && b.Sandbox.Where != "" {
+		return b.Sandbox.Where
 	}
 	return cfg.Sandbox
 }
@@ -66,8 +75,8 @@ var (
 	localErr  error
 )
 
-// LocalAvailable reports whether the local jail can run here: Linux with working rootless podman and the
-// jail image built. It asks podman once per process.
+// LocalAvailable reports whether the local jail can run here: Linux with working rootless podman. It
+// asks podman once per process. A missing jail image is not a reason to leave: the relay builds it.
 func LocalAvailable(cfg config.Config) error {
 	if runtime.GOOS != "linux" {
 		return fmt.Errorf("it needs Linux with rootless podman (this is %s)", runtime.GOOS)
@@ -84,48 +93,90 @@ func LocalAvailable(cfg config.Config) error {
 			localErr = errors.New("rootless podman is not working")
 		}
 	})
-	if localErr != nil {
-		return localErr
-	}
-	image := cfg.Image
-	if image == "" {
-		image = DefaultImage
-	}
-	if exec.Command("podman", "image", "exists", image).Run() != nil {
-		return fmt.Errorf("jail image %s is missing; run `p0ssess jail build`", image)
-	}
-	return nil
+	return localErr
 }
 
-// UseCloud decides where a session runs (D27): the `sandbox` setting ("local", "cloud", or "auto", the
-// default) or P0SSESS_SANDBOX. Auto keeps the local jail where it works and uses the cloud sandbox
-// everywhere else, for an install linked to an account.
-func UseCloud(cfg config.Config) bool {
-	switch sandboxSetting(cfg) {
+// Where is the place an agent job runs.
+type Where int
+
+const (
+	Local       Where = iota // the local jail
+	Cloud                    // the hosted sandbox
+	NeedPro                  // it would run in the cloud sandbox, which needs Pro or Team
+	Unavailable              // nowhere: the setting asks for local and this machine cannot
+)
+
+// Placement is what Decide looks at; tests fill it in.
+type Placement struct {
+	Setting  string // "local", "cloud", "auto" or ""
+	LocalErr error  // why the local jail cannot run here, nil when it can
+	Pro      bool   // a linked Pro or Team install
+	Env      bool   // Setting came from P0SSESS_SANDBOX, which forces the choice for tests and development
+	GOOS     string
+}
+
+// NeedsPro is the plain line a Free install gets when an agent job needs a sandbox it does not have.
+type NeedsPro struct{ GOOS string }
+
+func (e *NeedsPro) Error() string {
+	fix := "use Linux with rootless podman"
+	if e.GOOS == "linux" {
+		fix = "install rootless podman"
+	}
+	return "This job needs a sandbox, and it can run in the p0ssess cloud sandbox with Pro (/p0ssess:pro). " +
+		"For now, read-only questions still run on the direct path, or " + fix + "."
+}
+
+var proOnce sync.Once
+
+// noteUpgradeViewed counts the offer as seen, once per process; the count goes nowhere unless the user
+// opted in to usage counts.
+func noteUpgradeViewed() {
+	proOnce.Do(func() { funnel.Note(paths.Default(), funnel.UpgradeViewed, time.Now()) })
+}
+
+func decide(p Placement) (Where, error) {
+	switch p.Setting {
 	case "cloud":
-		return true
+		if p.Pro || p.Env {
+			return Cloud, nil
+		}
+		return NeedPro, &NeedsPro{p.GOOS}
 	case "local":
-		return false
+		if p.LocalErr == nil {
+			return Local, nil
+		}
+		return Unavailable, fmt.Errorf("agent jobs are set to run on this machine only, and %v", p.LocalErr)
 	}
-	if LocalAvailable(cfg) == nil {
-		return false
+	if p.LocalErr == nil {
+		return Local, nil
 	}
-	return cloudsandbox.DeviceToken(DeviceTokenFile()) != ""
+	if p.Pro {
+		return Cloud, nil
+	}
+	return NeedPro, &NeedsPro{p.GOOS}
 }
 
-// CloudReady reports whether the cloud sandbox could take a session from this install.
-func CloudReady(cfg config.Config) bool {
-	return sandboxSetting(cfg) != "local" && cloudsandbox.DeviceToken(DeviceTokenFile()) != ""
+// Decide says where an agent job runs (D27): the sandbox setting ("auto", the default, "local" or
+// "cloud"), or P0SSESS_SANDBOX. Auto keeps the local jail where rootless podman works and uses the
+// cloud sandbox everywhere else for a Pro or Team install. A Free install gets *NeedsPro.
+func Decide(cfg config.Config) (Where, error) {
+	p := Placement{Setting: sandboxSetting(cfg), GOOS: runtime.GOOS, Env: os.Getenv("P0SSESS_SANDBOX") != ""}
+	if p.Setting != "cloud" {
+		p.LocalErr = LocalAvailable(cfg)
+	}
+	p.Pro = account.Current(paths.Default()).Pro() && cloudsandbox.DeviceToken(DeviceTokenFile()) != ""
+	w, err := decide(p)
+	if w == NeedPro {
+		noteUpgradeViewed()
+	}
+	return w, err
 }
 
-func sandboxURL(t *cloudsandbox.Ticket) (string, error) {
-	if v := os.Getenv("P0SSESS_SANDBOX_URL"); v != "" {
-		return v, nil
-	}
-	if t.SandboxURL != "" {
-		return t.SandboxURL, nil
-	}
-	return "", errors.New("the cloud sandbox is not available yet (no sandbox host was assigned)")
+// UseCloud reports whether a session runs in the cloud sandbox.
+func UseCloud(cfg config.Config) bool {
+	w, _ := Decide(cfg)
+	return w == Cloud
 }
 
 func startCloud(ctx context.Context, spec Spec, cfg config.Config, log io.Writer) (*Jail, error) {
@@ -142,13 +193,14 @@ func startCloud(ctx context.Context, spec Spec, cfg config.Config, log io.Writer
 		return nil, err
 	}
 	plain := &http.Client{Timeout: 30 * time.Second}
-	ticket, err := cloudsandbox.FetchTicket(ctx, plain, cloudsandbox.CloudURL(), cloudsandbox.DeviceToken(DeviceTokenFile()))
-	if err != nil {
-		return nil, err
-	}
-	host, err := sandboxURL(ticket)
-	if err != nil {
-		return nil, err
+	token := cloudsandbox.DeviceToken(DeviceTokenFile())
+	fetch := func(ctx context.Context) (*cloudsandbox.Ticket, error) {
+		t, err := cloudsandbox.FetchTicket(ctx, plain, cloudsandbox.CloudURL(), token)
+		if errors.Is(err, cloudsandbox.ErrNotPro) {
+			noteUpgradeViewed()
+			return nil, &NeedsPro{runtime.GOOS}
+		}
+		return t, err
 	}
 	hc, err := cloudsandbox.Transport(os.Getenv("P0SSESS_SANDBOX_CA"))
 	if err != nil {
@@ -180,9 +232,9 @@ func startCloud(ctx context.Context, spec Spec, cfg config.Config, log io.Writer
 		decl = append(decl, cloudsandbox.ModelDecl{ID: m.ID, Name: m.Name, Context: m.Context, Output: m.Output,
 			InPerM: m.InPerM, OutPerM: m.OutPerM, CacheRead: m.CacheReadPerM})
 	}
-	s, err := cloudsandbox.Create(ctx, hc, cloudsandbox.Spec{URL: host, Ticket: ticket.Ticket, Workdir: j.RemoteDir,
+	s, err := createSession(ctx, hc, fetch, cloudsandbox.Spec{Workdir: j.RemoteDir,
 		Internet: spec.ShellInternet, Client: "p0ssess " + clientVersion() + " " + runtime.GOOS + "/" + runtime.GOARCH, Model: model,
-		Models: decl})
+		Models: decl}, cfg, log)
 	if err != nil {
 		os.RemoveAll(jailDir(j.Name))
 		return nil, err
@@ -359,4 +411,76 @@ func clientVersion() string {
 		return bi.Main.Version
 	}
 	return "dev"
+}
+
+// createSession opens a session on the host, waiting in its queue when every slot is taken. A job that
+// waits shows its place in the status line and gives up after the user's limit (sandbox.wait_minutes).
+func createSession(ctx context.Context, hc *http.Client, fetch func(context.Context) (*cloudsandbox.Ticket, error), spec cloudsandbox.Spec, cfg config.Config, log io.Writer) (*cloudsandbox.Session, error) {
+	d := paths.Default()
+	limit := budget.Sandbox{}.QueueWait()
+	if b, err := budget.Load(d.BudgetFile()); err == nil {
+		limit = b.Sandbox.QueueWait()
+	}
+	queued := false
+	since := time.Now()
+	defer func() {
+		if queued {
+			cloudsandbox.ClearQueue(d)
+		}
+	}()
+	used := func(m string) error {
+		return errors.New(m + " They come back on the 1st; read-only questions still run on the direct path.")
+	}
+	for attempt := 0; ; attempt++ {
+		t, err := fetch(ctx)
+		if err != nil {
+			return nil, err
+		}
+		host, err := cloudsandbox.HostURL(t)
+		if err != nil {
+			return nil, err
+		}
+		spec.URL, spec.Ticket = host, t.Ticket
+		s, err := cloudsandbox.Create(ctx, hc, spec)
+		var ae *cloudsandbox.APIError
+		switch {
+		case err == nil:
+			cloudsandbox.ForgetUsage(d)
+			return s, nil
+		case !errors.As(err, &ae):
+			return nil, err
+		case ae.Code == "not_entitled":
+			noteUpgradeViewed()
+			return nil, &NeedsPro{runtime.GOOS}
+		case ae.Code == "allowance_used":
+			return nil, used(ae.Message)
+		case ae.Code != "at_capacity" || attempt >= 5:
+			return nil, err
+		}
+		if !queued {
+			queued, since = true, time.Now()
+		}
+		werr := cloudsandbox.WaitForSlot(ctx, hc, host, cloudsandbox.WaitOptions{MaxWait: limit - time.Since(since),
+			Ticket: func(ctx context.Context) (string, error) {
+				t, err := fetch(ctx)
+				if err != nil {
+					return "", err
+				}
+				return t.Ticket, nil
+			},
+			OnUpdate: func(q cloudsandbox.QueueInfo) {
+				cloudsandbox.SaveQueue(d, q, since, time.Now())
+				if !q.Ready {
+					fmt.Fprintln(log, "cloud sandbox busy:", q.QueuedText())
+				}
+			}})
+		var ae2 *cloudsandbox.APIError
+		switch {
+		case werr == nil:
+		case errors.As(werr, &ae2) && ae2.Code == "allowance_used":
+			return nil, used(ae2.Message)
+		default:
+			return nil, werr
+		}
+	}
 }

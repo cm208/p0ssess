@@ -37,6 +37,26 @@ type Sandbox struct {
 	// ShellInternet lists project directories whose sandboxed shell commands may reach the public internet
 	// through the jail's egress proxy. Off for every project not listed.
 	ShellInternet []string `toml:"shell_internet" json:"shell_internet"`
+	// Where picks where agent jobs run: "auto" (default: here when rootless podman works, the cloud
+	// sandbox for Pro and Team otherwise), "local" or "cloud". Empty means auto.
+	Where string `toml:"where,omitempty" json:"where,omitempty"`
+	// WaitMin is how many minutes a job waits in the cloud sandbox queue before giving up; 0 means the
+	// default, DefaultWaitMin.
+	WaitMin int `toml:"wait_min,omitempty" json:"wait_min,omitempty"`
+}
+
+// DefaultWaitMin is how long a job waits for a cloud sandbox slot.
+const DefaultWaitMin = 10
+
+// MaxWaitMin bounds the wait setting.
+const MaxWaitMin = 120
+
+// QueueWait is the wait limit in effect.
+func (s Sandbox) QueueWait() time.Duration {
+	if s.WaitMin <= 0 {
+		return DefaultWaitMin * time.Minute
+	}
+	return time.Duration(s.WaitMin) * time.Minute
 }
 
 // ShellInternetFor reports whether repo (a canonical path) is, or is inside, a listed project.
@@ -211,6 +231,14 @@ func (b Budget) Validate() error {
 	}
 	if t := b.Rescue.Threshold; t != 0 && (math.IsNaN(t) || t < 0.5 || t > 0.99) {
 		return errors.New("rescue.threshold must be between 50% and 99%")
+	}
+	switch b.Sandbox.Where {
+	case "", "auto", "local", "cloud":
+	default:
+		return fmt.Errorf("sandbox.where must be auto, local or cloud, not %q", b.Sandbox.Where)
+	}
+	if b.Sandbox.WaitMin < 0 || b.Sandbox.WaitMin > MaxWaitMin {
+		return fmt.Errorf("sandbox.wait_minutes must be between 1 and %d", MaxWaitMin)
 	}
 	for _, p := range b.Sandbox.ShellInternet {
 		if !filepath.IsAbs(p) || filepath.Clean(p) == "/" {

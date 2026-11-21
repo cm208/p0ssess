@@ -441,8 +441,11 @@ func binary() (string, error) {
 // written before the pod exists, so a sweep in another process never takes a jail being built for an
 // orphan.
 func Start(ctx context.Context, spec Spec, cfg config.Config, log io.Writer) (*Jail, error) {
-	if UseCloud(cfg) {
+	switch w, err := Decide(cfg); w {
+	case Cloud:
 		return startCloud(ctx, spec, cfg, log)
+	case NeedPro, Unavailable:
+		return nil, err
 	}
 	t0 := time.Now()
 	repo, err := Canonical(spec.Repo)

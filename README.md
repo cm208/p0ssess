@@ -68,7 +68,7 @@ Start Claude Code. The tour opens in your first session and takes about a minute
   <img src="assets/readme/tour.svg" width="100%" alt="The tour's first card, as the terminal shows it. p0ssess tour, 1 of 4. Welcome to p0ssess. Glad you're here. Claude stays in charge. Heavy, bulk and media work goes to cheaper models on OpenRouter, inside limits you set. You, then Claude, then p0ssess, then a cheaper model; back comes the result plus (model, cost, saved). Three quick steps: your limits, a live demo, where to look. The two choices beside it: Start the tour, or Skip the tour.">
 </p>
 
-The plugin runs one Go binary, for Linux (amd64, arm64), macOS (Apple silicon) and Windows (x64). The launcher runs it only when its SHA-256 matches `dist/SHA256SUMS` for this version, or builds it from the plugin's own vendored source with Go 1.27 or later. The sandboxed agent path needs Linux with rootless podman; on macOS and Windows, media and one-shot jobs work without it. [docs/INSTALL.md](docs/INSTALL.md) has the details, Windows notes, updating, and [how to remove everything](docs/INSTALL-NOTES.md).
+The plugin runs one Go binary, for Linux (amd64, arm64), macOS (Apple silicon) and Windows (x64). The launcher runs it only when its SHA-256 matches `dist/SHA256SUMS` for this version, or builds it from the plugin's own vendored source with Go 1.27 or later. The sandboxed agent path runs locally on Linux with rootless podman. On macOS and Windows, with Pro or Team, it runs in the hosted cloud sandbox with nothing to install; without Pro, media, read-only and one-shot jobs still work, and an edit job says plainly that it needs Pro. [docs/INSTALL.md](docs/INSTALL.md) has the details, Windows notes, updating, and [how to remove everything](docs/INSTALL-NOTES.md).
 
 ## Quick start
 
@@ -117,6 +117,10 @@ Every result carries one line: `(model, $cost)`, plus `saved ~$X` when the same 
 ### Edits
 
 Agent work on files runs in a sandbox on a separate git worktree and carries your uncommitted changes in. Afterwards p0ssess runs the project's tests on the result. When they pass and your checkout is clean, the change is applied with a line that reverts it; otherwise it stays a diff for Claude to review. [docs/RELAY.md](docs/RELAY.md) covers the agent path.
+
+#### Where the sandbox runs
+
+On Linux with rootless podman the sandbox runs on your machine. On macOS, Windows, and Linux without podman, a Pro or Team install sends agent jobs to the hosted sandbox by itself; no setting or environment variable is needed. When the hosted sandbox is busy, your job waits in a queue and the status line says where it stands (`queued 2nd, ~4 min`); it gives up with one line after 10 minutes. Pro includes 20 sandbox hours a month, and the p0ssess page shows what is used and left. To choose yourself, tell Claude "run agent jobs locally", "in the cloud" or "automatically". Only the files git tracks go up, never anything that looks like a secret. [docs/RELAY.md](docs/RELAY.md#where-it-runs) has the details.
 
 ## Where to look
 

@@ -183,15 +183,15 @@ func Serve(ctx context.Context, in io.Reader, out io.Writer, version string) err
 	return err
 }
 
-// AgentAvailable reports whether the jailed OpenCode path can run: Linux with podman and nft, or the
-// cloud sandbox for an install linked to an account.
+// AgentAvailable reports whether the sandboxed agent path can run: locally with rootless podman, or in
+// the cloud sandbox for a Pro or Team install. A Free install without podman gets *jail.NeedsPro, whose
+// text is the one plain line to show.
 func AgentAvailable() error {
-	err := localAgentAvailable()
+	cfg, err := config.Load()
 	if err != nil {
-		if cfg, cerr := config.Load(); cerr == nil && jail.CloudReady(cfg) {
-			return nil
-		}
+		return localAgentAvailable()
 	}
+	_, err = jail.Decide(cfg)
 	return err
 }
 

@@ -25,6 +25,7 @@ import (
 
 	"p0ssess/internal/account"
 	"p0ssess/internal/budget"
+	"p0ssess/internal/cloudsandbox"
 	"p0ssess/internal/history"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/pme/table"
@@ -101,6 +102,9 @@ type State struct {
 	Stale string
 	// Rescue is set while usage-limit rescue is on.
 	Rescue bool
+	// Queued is the place of a job waiting for a cloud sandbox slot; IsQueued says whether one waits.
+	Queued   cloudsandbox.QueueInfo
+	IsQueued bool
 }
 
 // Level is how the segment is colored.
@@ -148,6 +152,15 @@ func Segment(s State, st Settings, room int) string {
 	}
 	if s.Team && s.TeamCap > 0 && !s.teamStopped() {
 		extras = append(extras, []string{"team " + money(s.TeamSpent) + "/" + limit(s.TeamCap), ""})
+	}
+	if s.IsQueued {
+		q := s.Queued
+		v := []string{q.QueuedText()}
+		if q.HasETA {
+			q.HasETA = false
+			v = append(v, q.QueuedText())
+		}
+		extras = append(extras, append(v, "queued"))
 	}
 	if s.Rescue {
 		extras = append(extras, []string{"rescue"})
@@ -352,7 +365,8 @@ func Gather(d paths.Dirs, session string, now time.Time) State {
 		}
 	}
 	_, err := os.Stat(d.OfflineMarker())
-	return State{SpentToday: c.SpentToday, DailyLimit: c.DailyLimit, SpentMonth: c.SpentMonth, MonthlyCap: c.MonthlyCap,
+	q, _, queued := cloudsandbox.Queued(d, now)
+	return State{Queued: q, IsQueued: queued, SpentToday: c.SpentToday, DailyLimit: c.DailyLimit, SpentMonth: c.SpentMonth, MonthlyCap: c.MonthlyCap,
 		Team: c.Team, TeamSpent: c.TeamSpent, TeamCap: c.TeamCap, Running: usage.Running(d.RunningDir(), now),
 		Offline: err == nil, Stale: staleMark(d, session), Rescue: rescueOn(d, now)}
 }
