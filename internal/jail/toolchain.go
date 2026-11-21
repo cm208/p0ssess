@@ -25,6 +25,33 @@ type Toolchain struct {
 	Path   []string          `json:"path,omitempty"`
 	// Test is the project's test command, for the check after an edit run.
 	Test string `json:"test,omitempty"`
+	// Image, when set, is a local container image that has the toolchain: the host has none to lend
+	// the jail, so only the check after the edit can run the tests, in that image.
+	Image string `json:"image,omitempty"`
+}
+
+// localImages lists the host's container images; tests replace it.
+var localImages = func() []string {
+	out, err := exec.Command("podman", "images", "--format", "{{.Repository}}:{{.Tag}}").Output()
+	if err != nil {
+		return nil
+	}
+	return strings.Fields(string(out))
+}
+
+// imageWith is the newest local image of a toolchain (docker.io/library/golang:1.27-bookworm), or "".
+func imageWith(name string) string {
+	best := ""
+	for _, im := range localImages() {
+		repo, tag, ok := strings.Cut(im, ":")
+		if !ok || tag == "<none>" || !(repo == name || strings.HasSuffix(repo, "/"+name)) {
+			continue
+		}
+		if best == "" || tag > best[strings.LastIndex(best, ":")+1:] {
+			best = im
+		}
+	}
+	return best
 }
 
 // lookTool finds a host program; tests replace it.
@@ -85,6 +112,10 @@ func Toolchains(repos ...string) (found []Toolchain, missing []string) {
 	if kinds["go"] {
 		if tc, why := goToolchain(); why == "" {
 			found = append(found, tc)
+		} else if im := imageWith("golang"); im != "" {
+			found = append(found, Toolchain{Kind: "go", Image: im, Test: "go test ./...",
+				Env: []string{"GOTOOLCHAIN=local", "GOCACHE=/tmp/go-build", "GOPATH=/tmp/go", "GOPROXY=off", "GOSUMDB=off"}})
+			missing = append(missing, "Go is not installed on this machine, so the model cannot run the Go tests in the sandbox (p0ssess runs them after the edit, in "+im+")")
 		} else {
 			missing = append(missing, why)
 		}
@@ -106,10 +137,15 @@ func Toolchains(repos ...string) (found []Toolchain, missing []string) {
 	return found, missing
 }
 
+// goCandidates are the usual Go installs off PATH; tests replace it.
+var goCandidates = func() []string {
+	return []string{"/usr/local/go/bin/go", filepath.Join(os.Getenv("HOME"), ".local", "go", "bin", "go")}
+}
+
 func goToolchain() (Toolchain, string) {
 	bin, err := lookTool("go")
 	if err != nil {
-		for _, c := range []string{"/usr/local/go/bin/go", filepath.Join(os.Getenv("HOME"), ".local", "go", "bin", "go")} {
+		for _, c := range goCandidates() {
 			if fileIn(filepath.Dir(c), "go") {
 				bin, err = c, nil
 				break
@@ -186,6 +222,9 @@ const basePath = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 func toolArgs(cfg config.Config, tcs []Toolchain) []string {
 	var args, path []string
 	for _, tc := range tcs {
+		if tc.Image != "" {
+			continue
+		}
 		for host, at := range tc.Mounts {
 			args = append(args, "-v", host+":"+at+":"+mountOpt(cfg, "ro"))
 		}
@@ -232,6 +271,9 @@ func RunTests(ctx context.Context, cfg config.Config, dir string, tc Toolchain, 
 	if image == "" {
 		image = DefaultImage
 	}
+	if tc.Image != "" {
+		image = tc.Image
+	}
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	inner := "cd " + shq(dir) + " && { " + tc.Test + " ; } >/tmp/p0ssess-test.out 2>&1; s=$?; tail -n 25 /tmp/p0ssess-test.out; exit $s"
@@ -239,6 +281,11 @@ func RunTests(ctx context.Context, cfg config.Config, dir string, tc Toolchain, 
 		"--security-opt", "label=disable", "--pids-limit", "2048", "--tmpfs", "/tmp:rw,size=2g,mode=1777",
 		"-e", "HOME=/tmp", "-v", dir + ":" + dir + ":O"}
 	args = append(args, toolArgs(config.Config{SELinux: "disable"}, all)...)
+	if tc.Image != "" {
+		for _, e := range tc.Env {
+			args = append(args, "-e", e)
+		}
+	}
 	args = append(args, "--label", "p0ssess=1", image, "sh", "-c", inner)
 	out, code, err := runTests(ctx, args)
 	switch {

@@ -10,10 +10,11 @@ import (
 var keepRe = regexp.MustCompile(`(?i)\b(keep (this|it|that|the work) (on|with|in) claude|(do|run) (it|this) (yourself|on claude|here)|(don'?t|do not|no) (use |route (it |this )?(to |through )?)?p0ssess|without p0ssess|not (through|via) p0ssess)\b`)
 
 // currentRe is work that needs information newer than any model's training: news, prices, recent periods.
-var currentRe = regexp.MustCompile(`(?i)\b(latest|breaking|trending|up-to-date|today'?s|right now|as of today|this (week|month|quarter|year)'?s?)\b` +
+var currentRe = regexp.MustCompile(`(?i)\b(latest|newest|recent|current) (news|headlines|developments|trends?|prices?|rates?|research|releases?|versions?|events|figures|numbers|reports?|data|studies|polls?)\b` +
+	`|\b(trending|today'?s (news|headlines|prices?|rates?|weather)|as of today|(this|last) (week|month|quarter|year)'s|exchange rates?)\b` +
 	`|\b(news|headlines?)\b` +
 	`|\b(past|last|previous|recent) (\d+|few|several|couple of|two|three|four|five|six|nine|twelve|eighteen) (days?|weeks?|months?|quarters?|years?)\b` +
-	`|\b(current|live|latest) (prices?|rates?|events|weather|scores?|standings|market)\b` +
+	`|\b(live|current) (scores?|standings|weather|market)\b` +
 	`|\bmarket (trends?|data|insights?|research|conditions)\b` +
 	`|\b(stock|share|crypto|bitcoin) prices?\b`)
 

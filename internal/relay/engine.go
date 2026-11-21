@@ -357,7 +357,9 @@ func (e *Engine) startSession(ctx context.Context, rec *SessionRecord, req RunRe
 	if !rec.Scratch {
 		tcs, missing := jail.Toolchains(repos...)
 		rec.Toolchains = tcs
-		rec.Log = append(rec.Log, missing...)
+		if rec.Mode == "edit" {
+			rec.Log = append(rec.Log, missing...)
+		}
 	}
 	rec.ShellInternet = grant.ShellInternet
 	cfg := e.cfg

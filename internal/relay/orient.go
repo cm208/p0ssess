@@ -90,13 +90,15 @@ func orient(rec *SessionRecord, j *jail.Jail, task string) string {
 	if rec.Mode == "edit" && !rec.Scratch {
 		var have []string
 		for _, tc := range rec.Toolchains {
-			have = append(have, tc.Kind)
+			if tc.Image == "" {
+				have = append(have, tc.Kind)
+			}
 		}
 		if len(have) > 0 {
 			b.WriteString(" The " + strings.Join(have, " and ") + " toolchain is installed read-only with no network: run the tests offline.")
 		}
 		for _, l := range rec.Log {
-			if strings.Contains(l, "cannot run in the sandbox") {
+			if strings.Contains(l, "in the sandbox") {
 				b.WriteString(" " + l + ": do not try to install it; say in the report that tests were not run.")
 			}
 		}

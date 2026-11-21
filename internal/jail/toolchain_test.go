@@ -93,3 +93,36 @@ func TestRepoMountArgs(t *testing.T) {
 		}
 	}
 }
+
+// Without Go on the host, a local golang image runs the check after the edit.
+func TestGoFromLocalImage(t *testing.T) {
+	SetLookTool(func(string) (string, error) { return "", errors.New("not found") }, nil)
+	defer SetLookTool(nil, nil)
+	oldCands := goCandidates
+	goCandidates = func() []string { return nil }
+	defer func() { goCandidates = oldCands }()
+	old := localImages
+	localImages = func() []string {
+		return []string{"docker.io/library/golang:1.26-bookworm", "docker.io/library/golang:1.27-bookworm", "localhost/p0ssess-opencode:2.2.5-1"}
+	}
+	defer func() { localImages = old }()
+	repo := t.TempDir()
+	os.WriteFile(filepath.Join(repo, "go.mod"), []byte("module x\n"), 0o644)
+	found, missing := Toolchains(repo)
+	if len(found) != 1 || found[0].Image != "docker.io/library/golang:1.27-bookworm" || len(missing) != 1 || !strings.Contains(missing[0], "after the edit") {
+		t.Fatalf("%+v %v", found, missing)
+	}
+	if a := toolArgs(config.Config{}, found); len(a) != 0 {
+		t.Errorf("an image toolchain mounts nothing in the jail: %v", a)
+	}
+	oldRun := runTests
+	defer func() { runTests = oldRun }()
+	var args []string
+	runTests = func(_ context.Context, a []string) (string, int, error) { args = a; return "ok", 0, nil }
+	if tr := RunTests(context.Background(), config.Config{}, repo, found[0], found, time.Minute); !tr.Passed {
+		t.Errorf("%+v", tr)
+	}
+	if !strings.Contains(strings.Join(args, " "), "golang:1.27-bookworm sh -c") {
+		t.Errorf("args %v", args)
+	}
+}

@@ -267,9 +267,15 @@ func TestResearchRoutesByDefault(t *testing.T) {
 	if got := hint(Input{Prompt: owner, Cwd: proj}, d, now, true); !strings.Contains(got, "current web data") {
 		t.Errorf("web: %q", got)
 	}
-	for _, p := range []string{"fix the off-by-one in parse.go", "what does this function do?", "explain the price calculation in cost.go"} {
-		if NeedsCurrentInfo(p) && !strings.Contains(p, "news") {
+	for _, p := range []string{"fix the off-by-one in parse.go", "what does this function do?", "explain the price calculation in cost.go",
+		"summarize the latest commit", "keep the docs up-to-date", "is this a breaking change?", "what changed this week in the repo"} {
+		if NeedsCurrentInfo(p) {
 			t.Errorf("%q does not need the web", p)
+		}
+	}
+	for _, p := range []string{"what are the latest releases of htmx", "bitcoin price today", "consumer trends over the past 6 months"} {
+		if !NeedsCurrentInfo(p) {
+			t.Errorf("%q needs the web", p)
 		}
 	}
 	// "keep this on Claude" overrides.
