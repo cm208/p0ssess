@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"p0ssess/internal/budget"
+	"p0ssess/internal/card"
 	"p0ssess/internal/pme/paths"
 )
 
@@ -217,107 +218,209 @@ type Facts struct {
 const What = "p0ssess hands heavy, bulk and media work from Claude to cheaper models on OpenRouter, inside limits you set, " +
 	"and gives back the result with a one-line receipt (model, cost, saving)."
 
-// DemoTask is the sample task of step three: a short summary of a paragraph about p0ssess, so the demo
-// shows a real hand-off on something the user cares about. DemoAsk is how the tour names it.
-const (
-	DemoTask = "Summarize this for a busy developer in one sentence of at most 20 words, no preamble:\n\n" +
-		"p0ssess is a Claude Code plugin. When a task is heavy, repetitive or about media, it hands the work to a " +
-		"cheaper model on OpenRouter, keeps Claude in charge of the conversation, stays inside the spending limits " +
-		"the user set, and returns the result with a one-line receipt that names the model, the cost and the saving."
-	DemoAsk     = "summarize a paragraph about p0ssess in one sentence"
-	DemoUseCase = "summarize-long-doc"
-	DemoMaxUSD  = 0.01
-	// demoFallbackUseCase is tried when the route table has nothing for the first one.
-	demoFallbackUseCase = "qa-factual"
-)
+// A DemoTask is one of the live demos step three offers.
+type DemoTask struct {
+	ID      string
+	Label   string // the pop-up option
+	Ask     string // what the result card says was asked
+	Prompt  string
+	UseCase string
+}
 
-// Show is the text of the four steps, one keyed line each, for the tour command to present.
+// Demos are the step-three choices: each is a tiny text task, capped at DemoMaxUSD.
+var Demos = []DemoTask{
+	{ID: "summarize", Label: "Summarize", Ask: "summarize a paragraph about p0ssess",
+		Prompt: "Summarize this for a busy developer in one sentence of at most 20 words, no preamble:\n\n" +
+			"p0ssess is a Claude Code plugin. When a task is heavy, repetitive or about media, it hands the work to a " +
+			"cheaper model on OpenRouter, keeps Claude in charge of the conversation, stays inside the spending limits " +
+			"the user set, and returns the result with a one-line receipt that names the model, the cost and the saving.",
+		UseCase: "summarize-long-doc"},
+	{ID: "translate", Label: "Translate", Ask: `translate "It just works." into Japanese`,
+		Prompt:  "Translate into natural Japanese. Answer with the translation only, no quotes or notes: It just works.",
+		UseCase: "translate-text"},
+	{ID: "brainstorm", Label: "Brainstorm", Ask: "name a coffee shop run by robots",
+		Prompt:  "Give exactly three short, witty names for a coffee shop run by robots. One line, separated by \" · \", nothing else.",
+		UseCase: "brainstorm"},
+}
+
+// DemoMaxUSD caps a demo run.
+const DemoMaxUSD = 0.01
+
+// demoFallbackUseCase is tried when the route table has nothing for a demo's own use case.
+const demoFallbackUseCase = "summarize-long-doc"
+
+// FindDemo returns the demo with this id, else the first.
+func FindDemo(id string) DemoTask {
+	for _, d := range Demos {
+		if d.ID == id {
+			return d
+		}
+	}
+	return Demos[0]
+}
+
+// Show is what /p0ssess:tour reads: the first card to show verbatim, then the two pop-ups (envelope and
+// demo) with each option's label, description, command and preview card.
 func Show(f Facts) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "step 1 what      %s\n", What)
-	who := "your limits"
-	if f.New {
-		who = "the defaults for a new install"
-	}
-	fmt.Fprintf(&b, "step 2 envelope  %s: %s\n", who, f.Envelope.Line())
+	b.WriteString("=== CARD 1: show verbatim in a text code block ===\n")
+	b.WriteString(welcomeCard().String())
+
+	b.WriteString("\n=== QUESTION 2: Your spending envelope (2 / 4) ===\n")
 	for _, c := range Choices(f.Envelope) {
 		label := map[string]string{"keep": "Keep these", "lower": "Lower", "higher": "Higher"}[c.Name]
-		if c.Name == "keep" && !f.New {
-			fmt.Fprintf(&b, "       choice    %s: no change\n", label)
-			continue
+		cmd := c.SetCommand()
+		desc := c.Short()
+		if c.Name == "keep" {
+			cmd = "none"
+			if f.New {
+				desc += " (recommended to start)"
+			}
 		}
-		fmt.Fprintf(&b, "       choice    %s: %s, %s a month, %s a task -> %s\n", label, dailyShort(c), Money(c.Monthly), Money(c.Task), c.SetCommand())
+		fmt.Fprintf(&b, "option  %s | %s | %s\n", label, desc, cmd)
+		b.WriteString(envelopeCard(c).String())
 	}
-	if f.KeyReady {
-		fmt.Fprintf(&b, "step 3 demo      one live route on a tiny sample task, capped at %s -> p0ssess tour demo\n", Money(DemoMaxUSD))
-	} else {
-		fmt.Fprintf(&b, "step 3 demo      needs an OpenRouter key first: put it in %s (mode 0600), then p0ssess tour demo\n", f.KeyFile)
+	b.WriteString("option  Skip the tour | stop here; /p0ssess:tour runs it again | p0ssess tour skip\n")
+
+	b.WriteString("\n=== QUESTION 3: Pick a live demo (3 / 4) ===\n")
+	if !f.KeyReady {
+		fmt.Fprintf(&b, "nokey   put an OpenRouter key in %s (mode 0600), then run p0ssess tour demo\n", f.KeyFile)
 	}
-	see := "status line: p0ssess $0.42/$1 · 1 running"
-	if !f.StatusLine {
-		see = "status line: not set up yet (p0ssess setup statusline adds it; ask first)"
+	for _, d := range Demos {
+		fmt.Fprintf(&b, "option  %s | %s, capped at %s | p0ssess tour demo --task %s\n", d.Label, d.Ask, Money(DemoMaxUSD), d.ID)
+		b.WriteString(card.Card{Title: "demo · " + strings.ToLower(d.Label), Rows: []string{
+			card.Pair("you ask", d.Ask, 12),
+			card.Pair("goes to", "the cheapest model that fits, capped at "+Money(DemoMaxUSD), 12),
+			card.Pair("you get", "the answer, the time and the cost vs Claude", 12),
+		}}.String())
 	}
-	see += " · the p0ssess page: /p0ssess:p0ssess-me"
-	if f.Team {
-		see += " · your team: /p0ssess:team"
-	}
-	fmt.Fprintf(&b, "step 4 see       %s\n", see)
 	return b.String()
 }
 
-func dailyShort(e Envelope) string {
-	if e.Daily <= 0 {
-		return "no fixed daily limit"
+func welcomeCard() card.Card {
+	rows := card.Wrap("Claude stays in charge. Heavy, bulk and media work goes to cheaper models on OpenRouter, inside limits you set.", 60, "")
+	rows = append(rows, "",
+		"  you ─▶ Claude ─▶ p0ssess ─▶ cheaper model",
+		"             ◀─ result + (model, cost, saved ~$)",
+		"",
+		"Next: your spending limits, then a live demo.")
+	return card.Card{Title: "ᗣ p0ssess tour", Right: "1 / 4", Rows: rows}
+}
+
+func envelopeCard(e Envelope) card.Card {
+	day := Money(e.Daily) + " a day (warns)"
+	switch {
+	case e.Daily < 0:
+		day = "no daily limit"
+	case e.Daily == 0:
+		day = "paced from the month (warns)"
 	}
-	return Money(e.Daily) + " a day"
+	return card.Card{Title: "envelope · " + e.Name, W: 48, Rows: []string{
+		card.Pair("daily", day, 9),
+		card.Pair("month", Money(e.Monthly)+" (stops paid runs)", 9),
+		card.Pair("asks", "above "+Money(e.Task)+" a task", 9),
+	}}
+}
+
+// Short is the envelope in a few words for a pop-up option.
+func (e Envelope) Short() string {
+	d := Money(e.Daily) + "/day"
+	switch {
+	case e.Daily < 0:
+		d = "no daily limit"
+	case e.Daily == 0:
+		d = "paced daily"
+	}
+	return d + " · " + Money(e.Monthly) + "/month · asks above " + Money(e.Task)
 }
 
 // DemoResult is what one demo run gave.
 type DemoResult struct {
-	Model   string
-	Answer  string
-	Receipt string
-	CostUSD float64
+	Model    string
+	Answer   string
+	Receipt  string
+	CostUSD  float64
+	SavedUSD float64
+	Took     time.Duration
 }
 
-// Runner runs the demo task on the direct path under every limit, capped at maxUSD.
+// Runner runs a demo prompt on the direct path under every limit, capped at maxUSD.
 type Runner func(ctx context.Context, task, useCase string, maxUSD float64) (DemoResult, error)
 
 // ErrNoKey means there is no OpenRouter key to run the demo with.
 var ErrNoKey = errors.New("no OpenRouter key")
 
-// Demo runs step three and returns its lines.
-func Demo(ctx context.Context, run Runner, keyReady bool, keyFile string) (string, error) {
+// Demo runs step three and returns its result card.
+func Demo(ctx context.Context, run Runner, d DemoTask, keyReady bool, keyFile string) (string, error) {
 	if !keyReady {
-		return fmt.Sprintf("skip     no OpenRouter key yet: put it in %s (mode 0600), then run p0ssess tour demo\n", keyFile), nil
+		return card.Card{Title: "3 / 4 · live demo", Rows: append([]string{"No OpenRouter key yet."},
+			card.Wrap("Put it in "+keyFile+" (mode 0600), then run p0ssess tour demo.", 60, "")...)}.String(), nil
 	}
-	res, err := run(ctx, DemoTask, DemoUseCase, DemoMaxUSD)
+	t0 := time.Now()
+	res, err := run(ctx, d.Prompt, d.UseCase, DemoMaxUSD)
 	if err != nil && (strings.Contains(err.Error(), "no model fits") || strings.Contains(err.Error(), "unknown use case")) {
-		res, err = run(ctx, DemoTask, demoFallbackUseCase, DemoMaxUSD)
+		res, err = run(ctx, d.Prompt, demoFallbackUseCase, DemoMaxUSD)
 	}
 	if err != nil {
 		return "", err
 	}
-	var b strings.Builder
-	fmt.Fprintf(&b, "asked    %s\n", DemoAsk)
-	if res.Model != "" {
-		fmt.Fprintf(&b, "model    %s\n", res.Model)
+	if res.Took == 0 {
+		res.Took = time.Since(t0)
 	}
-	fmt.Fprintf(&b, "answer   %s\n", strings.Join(strings.Fields(res.Answer), " "))
-	fmt.Fprintf(&b, "receipt  %s\n", res.Receipt)
-	fmt.Fprintf(&b, "cost     %s\n", DemoCost(res.CostUSD))
-	return b.String(), nil
+	model := res.Model
+	if _, after, ok := strings.Cut(model, "/"); ok {
+		model = after
+	}
+	rows := []string{
+		card.Spread(card.Pair("model", model, 9), fmt.Sprintf("%.1f s", res.Took.Seconds()), 60),
+		card.Pair("asked", d.Ask, 9),
+		"",
+	}
+	rows = append(rows, card.Wrap("“"+strings.Join(strings.Fields(res.Answer), " ")+"”", 58, "  ")...)
+	rows = append(rows, "")
+	cost := card.Pair("cost", DemoCost(res.CostUSD), 9)
+	if res.SavedUSD > 0 {
+		cost += "  ·  on Claude ~" + DemoCost(res.CostUSD+res.SavedUSD) + "  ·  saved ~" + DemoCost(res.SavedUSD)
+	}
+	rows = append(rows, cost)
+	return card.Card{Title: "3 / 4 · live demo", Right: "done", Rows: rows}.String(), nil
 }
 
-// DemoCost says what the demo cost in a few words.
+// DemoCost is a small amount in a few characters.
 func DemoCost(v float64) string {
 	switch {
 	case v <= 0:
-		return "nothing (a free route)"
+		return "$0 (free route)"
 	case v < 0.0001:
-		return "under a hundredth of a cent"
+		return "<$0.0001"
 	case v < 0.01:
-		return fmt.Sprintf("$%.4f, under a cent", v)
+		return fmt.Sprintf("$%.4f", v)
 	}
 	return fmt.Sprintf("$%.2f", v)
+}
+
+// DoneFacts is what the last card shows.
+type DoneFacts struct {
+	StatusLine string // the status line as it reads now, or "" when it is not set up
+	Team       bool
+}
+
+// DoneCard is step four.
+func DoneCard(f DoneFacts) string {
+	sl := f.StatusLine
+	if sl == "" {
+		sl = "off · say \"add the p0ssess status line\""
+	}
+	rows := []string{
+		card.Pair("status line", sl, 14),
+		card.Pair("your page", "/p0ssess:p0ssess-me", 14),
+	}
+	if f.Team {
+		rows = append(rows, card.Pair("your team", "/p0ssess:team", 14))
+	}
+	rows = append(rows,
+		card.Pair("limits", "say it: \"cap p0ssess at $5 a month\"", 14),
+		"",
+		card.Pair("try now", "\"summarize the README with p0ssess\"", 14))
+	return card.Card{Title: "4 / 4 · you're set", Right: "ᗣ", Rows: rows}.String()
 }

@@ -165,30 +165,39 @@ func TestConcurrentStartClaimsOnce(t *testing.T) {
 func TestShowNewUser(t *testing.T) {
 	out := Show(Facts{Envelope: Defaults(), New: true, KeyReady: true, StatusLine: true})
 	for _, want := range []string{
-		"step 1 what", "step 2 envelope  the defaults for a new install: $1 a day (warns) · $10 a month (stops paid runs) · runs without asking up to $0.25 a task",
-		"Keep these: $1 a day, $10 a month, $0.25 a task -> p0ssess tour envelope --daily 1 --monthly 10 --task 0.25",
-		"Lower: $0.50 a day, $5 a month, $0.10 a task", "Higher: $2 a day, $25 a month, $0.50 a task",
-		"capped at $0.01 -> p0ssess tour demo", "status line: p0ssess $0.42/$1 · 1 running", "/p0ssess:p0ssess-me",
+		"=== CARD 1", "ᗣ p0ssess tour", "1 / 4",
+		"=== QUESTION 2", "option  Keep these | $1/day · $10/month · asks above $0.25 (recommended to start) | none",
+		"option  Lower | $0.50/day · $5/month · asks above $0.10 | p0ssess tour envelope --daily 0.5 --monthly 5 --task 0.1",
+		"option  Higher | $2/day · $25/month · asks above $0.50", "option  Skip the tour",
+		"=== QUESTION 3", "p0ssess tour demo --task summarize", "p0ssess tour demo --task translate", "p0ssess tour demo --task brainstorm",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in\n%s", want, out)
 		}
 	}
-	if strings.Contains(out, "/p0ssess:team") {
-		t.Error("team line for a solo user")
-	}
-	if n := strings.Count(out, "step "); n != 4 {
-		t.Errorf("%d steps", n)
+	if strings.Contains(out, "nokey") {
+		t.Error("key line with a key")
 	}
 }
 
-func TestShowExistingNoKeyTeam(t *testing.T) {
+func TestShowExistingNoKey(t *testing.T) {
 	out := Show(Facts{Envelope: Envelope{Daily: 0, Monthly: 20, Task: 0.02}, KeyFile: "/k", Team: true})
-	for _, want := range []string{"your limits: a daily limit paced from the month · $20 a month", "Keep these: no change",
-		"needs an OpenRouter key first: put it in /k", "not set up yet (p0ssess setup statusline", "your team: /p0ssess:team"} {
+	for _, want := range []string{"option  Keep these | paced daily · $20/month · asks above $0.02 | none", "nokey   put an OpenRouter key in /k"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in\n%s", want, out)
 		}
+	}
+}
+
+func TestDoneCard(t *testing.T) {
+	out := DoneCard(DoneFacts{StatusLine: "p0ssess $0.11/$1.76 · nothing running", Team: true})
+	for _, want := range []string{"4 / 4 · you're set", "p0ssess $0.11/$1.76", "/p0ssess:team", "summarize the README"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q in\n%s", want, out)
+		}
+	}
+	if !strings.Contains(DoneCard(DoneFacts{}), "add the p0ssess status line") {
+		t.Error("no status line offer")
 	}
 }
 
@@ -199,13 +208,14 @@ func TestDemo(t *testing.T) {
 	var gotTask string
 	fake := func(_ context.Context, task, uc string, max float64) (DemoResult, error) {
 		gotTask, gotMax = task, max
-		return DemoResult{Model: "xiaomi/mimo-v2.6-flash", Answer: "p0ssess hands heavy work\n to cheaper models.", Receipt: "(mimo-v2.6-flash, $0.0001)", CostUSD: 0.00012}, nil
+		return DemoResult{Model: "xiaomi/mimo-v2.6-flash", Answer: "「ちゃんと\n 動く」", CostUSD: 0.00012, SavedUSD: 0.009, Took: 1400 * time.Millisecond}, nil
 	}
-	out, err := Demo(context.Background(), fake, true, "")
-	if err != nil || gotMax != 0.01 || gotTask != DemoTask {
+	tr := FindDemo("translate")
+	out, err := Demo(context.Background(), fake, tr, true, "")
+	if err != nil || gotMax != 0.01 || gotTask != tr.Prompt {
 		t.Fatalf("%v %v %q", err, gotMax, gotTask)
 	}
-	for _, want := range []string{"asked    summarize a paragraph about p0ssess", "model    xiaomi/mimo-v2.6-flash", "answer   p0ssess hands heavy work to cheaper models.", "receipt  (mimo-v2.6-flash, $0.0001)", "cost     $0.0001, under a cent"} {
+	for _, want := range []string{"3 / 4 · live demo", "mimo-v2.6-flash", "1.4 s", "「ちゃんと 動く」", "$0.0001", "saved ~$0.0090"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in %s", want, out)
 		}
@@ -214,26 +224,26 @@ func TestDemo(t *testing.T) {
 	out, _ = Demo(context.Background(), func(context.Context, string, string, float64) (DemoResult, error) {
 		called = true
 		return DemoResult{}, nil
-	}, false, "/home/u/.config/p0ssess/secrets/openrouter_key")
-	if called || !strings.HasPrefix(out, "skip") {
+	}, Demos[0], false, "/home/u/.config/p0ssess/secrets/openrouter_key")
+	if called || !strings.Contains(out, "No OpenRouter key yet") {
 		t.Errorf("no key: %v %q", called, out)
 	}
 	if _, err := Demo(context.Background(), func(context.Context, string, string, float64) (DemoResult, error) {
 		return DemoResult{}, errors.New("no model fits")
-	}, true, ""); err == nil {
+	}, Demos[0], true, ""); err == nil {
 		t.Error("error lost")
 	}
 	var ucs []string
 	if _, err := Demo(context.Background(), func(_ context.Context, _, uc string, _ float64) (DemoResult, error) {
 		ucs = append(ucs, uc)
-		if uc == DemoUseCase {
-			return DemoResult{}, errors.New("no model fits summarize-long-doc within your rules and limits")
+		if uc == "brainstorm" {
+			return DemoResult{}, errors.New("no model fits brainstorm within your rules and limits")
 		}
-		return DemoResult{Answer: "p0ssess routes work.", Receipt: "(deepseek-v4.1-flash, $0.0001)"}, nil
-	}, true, ""); err != nil || len(ucs) != 2 {
-		t.Errorf("a table that keeps the question on Claude: %v %v", err, ucs)
+		return DemoResult{Answer: "Bean There · Brewbot · Latte Logic"}, nil
+	}, FindDemo("brainstorm"), true, ""); err != nil || len(ucs) != 2 {
+		t.Errorf("fallback: %v %v", err, ucs)
 	}
-	if DemoCost(0) != "nothing (a free route)" || DemoCost(0.00001) != "under a hundredth of a cent" {
-		t.Error(DemoCost(0), DemoCost(0.00001))
+	if FindDemo("nope").ID != "summarize" || DemoCost(0) != "$0 (free route)" {
+		t.Error(FindDemo("nope").ID, DemoCost(0))
 	}
 }

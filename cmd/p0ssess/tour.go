@@ -40,7 +40,12 @@ func tourCmd(ctx context.Context, args []string) error {
 		if err != nil {
 			return err
 		}
-		out, err := tour.Demo(ctx, demoRunner(cfg, d), keyReady(cfg), cfg.OpenRouterKeyFile)
+		fs := flag.NewFlagSet("tour demo", flag.ContinueOnError)
+		task := fs.String("task", "summarize", "summarize, translate or brainstorm")
+		if err := fs.Parse(args); err != nil {
+			return err
+		}
+		out, err := tour.Demo(ctx, demoRunner(cfg, d), tour.FindDemo(*task), keyReady(cfg), cfg.OpenRouterKeyFile)
 		if err != nil {
 			return errors.New("the demo did not run: " + err.Error())
 		}
@@ -49,7 +54,19 @@ func tourCmd(ctx context.Context, args []string) error {
 	case "skip":
 		return tour.Set(d, tour.Skipped, time.Now())
 	case "done":
-		return tour.Set(d, tour.Done, time.Now())
+		if err := tour.Set(d, tour.Done, time.Now()); err != nil {
+			return err
+		}
+		f, err := tourFacts(d)
+		if err != nil {
+			return err
+		}
+		df := tour.DoneFacts{Team: f.Team}
+		if f.StatusLine {
+			df.StatusLine = statusLinePreview(d)
+		}
+		fmt.Print(tour.DoneCard(df))
+		return nil
 	}
 	return fmt.Errorf("tour: unknown step %q (show, envelope, demo, skip, done)", sub)
 }
@@ -120,6 +137,27 @@ func demoRunner(cfg config.Config, d paths.Dirs) tour.Runner {
 		if err != nil {
 			return tour.DemoResult{}, err
 		}
-		return tour.DemoResult{Model: res.Model, Answer: res.Text, Receipt: server.DirectReceipt(eng, res, runID), CostUSD: server.DirectCost(res)}, nil
+		line, saved := server.DirectReceiptSaved(eng, res, runID)
+		return tour.DemoResult{Model: res.Model, Answer: res.Text, Receipt: line, CostUSD: server.DirectCost(res), SavedUSD: saved}, nil
 	}
+}
+
+// statusLinePreview is the p0ssess status line segment as it reads now, without colors.
+func statusLinePreview(d paths.Dirs) string {
+	eng, err := local.Load(d)
+	if err != nil {
+		return "p0ssess"
+	}
+	st, err := eng.Status(local.Scope{})
+	if err != nil {
+		return "p0ssess"
+	}
+	s := "p0ssess " + money(st.Spend.Today)
+	if st.DailyLimit > 0 {
+		s += "/" + strings.TrimSuffix(money(st.DailyLimit), ".00")
+	}
+	if n := len(st.Running); n > 0 {
+		return s + fmt.Sprintf(" · %d running", n)
+	}
+	return s + " · nothing running"
 }

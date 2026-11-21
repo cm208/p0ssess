@@ -898,11 +898,17 @@ func (d *directTool) call(ctx context.Context, raw json.RawMessage, _ mcp.Progre
 // DirectReceipt is a direct result's receipt line; it also records the receipt and the result's notes in
 // the notices file.
 func DirectReceipt(eng *local.Engine, res *direct.Result, runID string) string {
+	line, _ := DirectReceiptSaved(eng, res, runID)
+	return line
+}
+
+// DirectReceiptSaved is DirectReceipt that also returns the estimated saving against Claude.
+func DirectReceiptSaved(eng *local.Engine, res *direct.Result, runID string) (string, float64) {
 	t := &opencode.Tokens{Input: float64(res.Usage.PromptTokens), Output: float64(res.Usage.CompletionTokens), Reasoning: float64(res.Usage.ReasoningTokens)}
 	cost := DirectCost(res)
 	line, saved := receiptSaved(eng, res.Model, cost, !res.Measured(), t)
 	record(eng, notices.Record{Run: runID, Notes: res.Warnings, Receipt: line, Model: res.Model, CostUSD: cost, SavedUSD: saved})
-	return line
+	return line, saved
 }
 
 // DirectCost is what a direct result cost: the measured figure, else the estimate.
