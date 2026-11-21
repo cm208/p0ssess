@@ -41,6 +41,7 @@ usage:
   p0ssess account pro|link|status|notify|signout   p0ssess Pro: upgrade, link this install, check the plan, get notified, sign out
   p0ssess team COMMAND ...            p0ssess Team: create, invite, join, leave, rules, shares, spend, sync (p0ssess team for the list)
   p0ssess calibrate [plan|run|status|baseline|report|forget]   Pro: measure models on samples with known answers
+  p0ssess savings [--month YYYY-MM]            what p0ssess saved against Claude, as a card (this month by default)
   p0ssess tour [show|envelope|demo|skip|done]   the first-run tour (/p0ssess:tour)
   p0ssess engine COMMAND ...          the routing engine (recommend, status, set, rules, outcome, ...)
   p0ssess direct COMMAND ...          one-shot OpenRouter calls with local files, and ffmpeg helpers
@@ -132,6 +133,8 @@ func main() {
 		err = teamCmd(ctx, args)
 	case "calibrate":
 		err = calibrateCmd(ctx, args)
+	case "savings":
+		err = savingsCmd(args)
 	case "tour":
 		err = tourCmd(ctx, args)
 	case "direct":

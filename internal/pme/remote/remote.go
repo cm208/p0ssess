@@ -249,6 +249,24 @@ func (c *Client) PostFunnel(ctx context.Context, body []byte) (status int, err e
 	return r.StatusCode, nil
 }
 
+// PostMonthlySavings sends last month's savings figures (POST /v1/savings/month). Only a linked Pro or
+// Team install calls it; the status is the HTTP status, with the server's error as an *Error.
+func (c *Client) PostMonthlySavings(ctx context.Context, body []byte) (int, error) {
+	if !c.Linked() {
+		return 0, errors.New("the monthly report needs a linked install")
+	}
+	r, err := c.do(ctx, http.MethodPost, "/v1/savings/month", body, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer r.Body.Close()
+	if r.StatusCode/100 != 2 {
+		return r.StatusCode, apiError(r)
+	}
+	io.Copy(io.Discard, io.LimitReader(r.Body, 8<<10))
+	return r.StatusCode, nil
+}
+
 // PutCalibration sends the account's whole set of calibration scores (POST /v1/calibration); with an
 // empty body it forgets them (DELETE). Only a linked install calls it.
 func (c *Client) PutCalibration(ctx context.Context, body []byte) error {

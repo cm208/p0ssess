@@ -309,6 +309,7 @@
       "ask.first_use": b.ask && b.ask.first_use, "ask.code_edits": b.ask && b.ask.code_edits,
       "outcomes.send": s.outcomes && s.outcomes.send,
       "funnel.send": s.funnel && s.funnel.send,
+      "report.send": s.status && s.status.budget && s.status.budget.report && s.status.budget.report.send,
       "models.deny": list(b.models && b.models.deny).join(", "), "providers.deny": list(b.providers && b.providers.deny).join(", "),
       "statusline.command": (s.statusline && s.statusline.command) || "",
     };
@@ -558,6 +559,128 @@
     }
   });
 
+
+  // Savings: the receipts on this machine, rolled up. Figures are Claude's list price for the same tokens
+  // against what OpenRouter reported; a run Claude would have done cheaper counts against the total.
+  let proof = null;
+  let period = "this";
+  const usd = (v) => {
+    v = Number(v) || 0;
+    const a = Math.abs(v), sign = v < 0 ? "-" : "";
+    if (a >= 100) return sign + "$" + Math.round(a).toLocaleString("en-US");
+    if (a >= 0.1 || a === 0) return sign + "$" + a.toFixed(2);
+    if (a >= 0.001) return sign + "$" + a.toFixed(3);
+    return sign + "<$0.001";
+  };
+  const tokens = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1e4 ? Math.round(n / 1e3) + "k" : n >= 1e3 ? (n / 1e3).toFixed(1) + "k" : String(n));
+  const KIND = { "agent-edit": "Agent edits", "agent-read": "Agent reading", agent: "Agent work", other: "Other" };
+  const kindName = (k) => KIND[k] || words(k);
+  const monthName = (m) => {
+    const [y, mo] = (m || "").split("-").map(Number);
+    return y ? new Date(y, mo - 1, 1).toLocaleString(undefined, { month: "long", year: "numeric" }) : "All time";
+  };
+  // The headline never claims more than the figures: under half a cent is no saving, a net loss says so.
+  const headline = (t) => {
+    if (!t.priced) return { kind: "none", amount: 0 };
+    if (t.saved_usd >= 0.005) return { kind: "saved", amount: t.saved_usd };
+    if (t.saved_usd <= -0.005) return { kind: "worse", amount: -t.saved_usd };
+    return { kind: "none", amount: 0 };
+  };
+  const savedText = (t) => {
+    const h = headline(t);
+    return h.kind === "saved" ? "~" + usd(h.amount) + " saved" : h.kind === "worse" ? usd(h.amount) + " more than Claude" : t.priced ? "no saving" : "not priced";
+  };
+
+  function splitList(box, rows, name) {
+    rows = list(rows);
+    if (!rows.length) { box.replaceChildren(el("li", { class: "empty", text: "Nothing yet." })); return; }
+    const max = Math.max(0.0001, ...rows.map((r) => Math.abs(r.saved_usd)));
+    box.replaceChildren(...rows.slice(0, 8).map((r) => {
+      const h = headline(r);
+      return el("li", {},
+        el("p", { class: "line" }, el("span", { class: "k", text: name(r.key), title: r.key }),
+          el("span", { class: "v" + (h.kind === "saved" ? "" : " none"), text: savedText(r) })),
+        el("p", { class: "meta" }, el("span", { text: r.runs + (r.runs === 1 ? " run" : " runs") + " · cost " + usd(r.cost_usd) })),
+        el("span", { class: "rail" + (r.saved_usd < 0 ? " neg" : ""), style: null }));
+    }));
+    const rails = box.querySelectorAll(".rail");
+    rows.slice(0, 8).forEach((r, i) => { rails[i].style.setProperty("--w", (Math.min(1, Math.abs(r.saved_usd) / max) * 100).toFixed(1) + "%"); });
+  }
+
+  function renderProof() {
+    if (!proof) return;
+    const p = proof[period];
+    const label = period === "all" ? "all" : p.label;
+    document.querySelectorAll(".tabs button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.period === period)));
+    $("#proof-when").textContent = (period === "all" ? "All time" : monthName(p.label)) + " · against Claude's list price for the same tokens";
+    const h = headline(p);
+    const big = $("#proof-big"), sub = $("#proof-sub");
+    big.className = "proof-big" + (h.kind === "saved" ? "" : " plain");
+    big.textContent = h.kind === "saved" ? "~" + usd(h.amount) : "No saving";
+    if (!p.runs) sub.textContent = "No runs yet in this period.";
+    else if (h.kind === "saved") sub.textContent = "saved against Claude" + (p.claude_usd > 0 ? " (" + Math.round(p.saved_usd / p.claude_usd * 100) + "%)" : "") + ".";
+    else if (h.kind === "worse") sub.textContent = "Claude would have cost " + usd(h.amount) + " less for these runs.";
+    else sub.textContent = p.priced ? "Nothing to claim for these runs." : "No run had token counts, so none could be priced.";
+    const stats = [["Runs", String(p.runs)], ["Cost", usd(p.cost_usd)]];
+    if (p.priced) stats.push(["Claude would have cost", usd(p.claude_usd)]);
+    if (p.claude_cheaper) stats.push(["Claude was cheaper on", p.claude_cheaper + " of " + p.priced + " runs"]);
+    if (p.tokens_kept) stats.push(["Claude usage kept", tokens(p.tokens_kept) + " tokens"]);
+    $("#proof-stats").replaceChildren(...stats.flatMap(([k, v]) => [el("dt", { text: k }), el("dd", { text: v })]));
+    splitList($("#proof-models"), p.by_model, short);
+    splitList($("#proof-kinds"), p.by_kind, kindName);
+    const modes = [["Rescue", p.rescue], ["Normal", p.normal]].filter(([, t]) => t.runs);
+    splitList($("#proof-modes"), modes.map(([k, t]) => Object.assign({ key: k }, t)), (k) => k);
+    const parts = [];
+    if (p.measured) parts.push(p.measured + " measured");
+    if (p.estimated) parts.push(p.estimated + " estimated");
+    if (p.unpriced) parts.push(p.unpriced + " without token counts");
+    $("#proof-basis").textContent = (parts.length ? "Runs: " + parts.join(" · ") + ". " : "") +
+      "Measured is OpenRouter's reported cost against Claude's price for the same tokens; estimated priced the cost from tokens. " +
+      "Claude usage kept counts the tokens other models handled; it is not a share of a window, which depends on your plan.";
+    $("#proof-svg").href = "savings-card.svg?dl=1&month=" + encodeURIComponent(label);
+    $("#proof-term").textContent = period === "all" ? "p0ssess savings --all" : "p0ssess savings --month " + p.label;
+    const m = proof.monthly || {}, box = $("#proof-report"), note = $("#proof-report-note"), body = $("#proof-report-body");
+    box.hidden = false;
+    body.hidden = !m.pending;
+    body.textContent = m.pending || "";
+    if (!m.pro) note.textContent = "With Pro, the first days of each month p0ssess emails you last month's summary. Free installs send nothing.";
+    else if (!m.enabled) note.textContent = "The monthly report is off. Nothing is sent and no email is made. Say \"turn on the monthly report\" to bring it back.";
+    else if (m.pending) note.textContent = "This is exactly what goes to p0ssess Cloud for " + monthName(m.month) + ", to make the summary email: figures only, no prompts, files, paths or task text. It goes once, at your next session. Say \"turn off the monthly report\" to stop it.";
+    else note.textContent = "Last month's figures were sent, or there was nothing to send. Each month's totals (never prompts, files or paths) go to p0ssess Cloud once, to make the summary email.";
+  }
+
+  async function loadProof() {
+    try {
+      const r = await fetch("api/proof", { cache: "no-store" });
+      if (!r.ok) throw new Error(r.statusText);
+      proof = await r.json();
+      renderProof();
+    } catch (e) { /* the rest of the page still works */ }
+  }
+  document.querySelectorAll(".tabs button").forEach((b) => b.addEventListener("click", () => { period = b.dataset.period; renderProof(); }));
+  $("#proof-png").addEventListener("click", async () => {
+    const out = $("#proof-saved"), p = proof && proof[period];
+    if (!p) return;
+    out.textContent = "";
+    try {
+      const img = new Image();
+      img.src = "savings-card.svg?month=" + encodeURIComponent(period === "all" ? "all" : p.label);
+      await img.decode();
+      const c = document.createElement("canvas");
+      c.width = 2400; c.height = 1260;
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      const blob = await new Promise((res) => c.toBlob(res, "image/png"));
+      const a = el("a", { href: URL.createObjectURL(blob), download: "p0ssess-savings-" + (period === "all" ? "all" : p.label) + ".png" });
+      document.body.append(a);
+      a.click();
+      a.remove();
+      out.textContent = "Saved.";
+    } catch (e) {
+      out.textContent = "The PNG could not be made here; use the SVG.";
+      out.classList.add("err");
+    }
+  });
+
   async function load() {
     const up = $("#updated");
     try {
@@ -585,6 +708,8 @@
     }
   }
   load();
+  loadProof();
+  setInterval(loadProof, 60000);
   setInterval(load, 10000);
   loadSavings();
   setInterval(loadSavings, 60000);

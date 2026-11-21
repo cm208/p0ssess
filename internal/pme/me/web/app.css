@@ -65,8 +65,8 @@ a.pill { display: inline-flex; align-items: center; text-decoration: none; white
 .pill[hidden] { display: none; }
 
 /* The frameless grid: a hairline with a 24 px violet start. */
-.fig, .col, .savings, .foot, .envelope { position: relative; border-top: 1px solid var(--line); }
-.fig::before, .col::before, .savings::before, .foot::before, .envelope::before {
+.fig, .col, .savings, .proof, .foot, .envelope { position: relative; border-top: 1px solid var(--line); }
+.fig::before, .col::before, .savings::before, .proof::before, .foot::before, .envelope::before {
   content: ""; position: absolute; top: -1px; left: 0; width: 24px; height: 1px; background: var(--violet);
 }
 
@@ -227,6 +227,46 @@ a.pill { display: inline-flex; align-items: center; text-decoration: none; white
 .models th:last-child, .models td:last-child { padding-right: 0; }
 .small-print { list-style: none; padding: 0; margin: 14px 0 0; font-size: 12px; color: var(--ink-2); max-width: 100ch; }
 .small-print li + li { margin-top: 4px; }
+
+/* Savings proof: one headline figure, the sums under it, then the same sums split three ways. */
+.proof { padding-top: 14px; }
+.tabs { display: flex; gap: 8px; }
+.tabs .pill[aria-pressed="true"] { background: var(--violet-deep); border-color: var(--violet); }
+.proof-hero { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 20px clamp(28px, 6vw, 88px); padding: 22px 0 8px; }
+.proof-big { font: 700 clamp(44px, 8vw, 84px)/1 var(--mono); color: var(--violet-ink); letter-spacing: -0.01em; }
+.proof-big.plain { color: var(--ink); }
+.proof-sub { margin-top: 8px; font-size: 15px; color: var(--ink-body); }
+.proof-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px 28px; margin: 0; flex: 1; min-width: 260px; }
+.proof-stats dt { font-size: 12px; color: var(--ink-2); }
+.proof-stats dd { margin: 2px 0 0; font: 700 18px/1.2 var(--mono); color: var(--ink); font-variant-numeric: tabular-nums; }
+.proof-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px clamp(20px, 3vw, 44px); margin-top: 22px; }
+.proof h3 { margin: 0 0 8px; font: 400 12px/1.3 var(--sans); color: var(--ink-2); }
+.split { list-style: none; padding: 0; margin: 0; }
+.split li { position: relative; padding: 8px 0 10px; border-bottom: 1px solid var(--line); }
+.split li:last-child { border-bottom: 0; }
+.split .line { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.split .k { color: var(--ink); font-size: 14px; overflow-wrap: anywhere; }
+.split .v { font: 700 13px/1.3 var(--mono); color: var(--violet-ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.split .v.none { color: var(--ink-2); font-weight: 400; }
+.split .meta { margin-top: 2px; font-size: 12px; color: var(--ink-2); }
+.split .rail { display: block; height: 2px; margin-top: 6px; width: var(--w, 0); background: var(--violet); }
+.split .rail.neg { background: var(--amber); }
+.split .empty { color: var(--ink-2); font-size: 13px; border-bottom: 0; }
+.proof > .note { margin-top: 16px; max-width: 100ch; }
+.proof-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin-top: 16px; }
+.proof-actions .note { margin: 0 0 0 auto; }
+.proof-actions a.pill, .proof-actions button.pill { display: inline-flex; align-items: center; text-decoration: none; }
+.proof code { font: 400 12.5px/1 var(--mono); color: var(--violet-ink); }
+.proof-report { margin-top: 24px; }
+.sent { margin: 8px 0 0; padding: 10px 12px; max-height: 180px; overflow: auto; border: 1px solid var(--line); border-radius: 4px;
+  background: var(--surface); color: var(--ink-body); font: 400 11.5px/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 780px) {
+  .proof-cols { grid-template-columns: minmax(0, 1fr); }
+  .proof-actions .note { margin-left: 0; flex-basis: 100%; }
+  .proof .savings-head { flex-wrap: wrap; row-gap: 8px; }
+  .proof .savings-head .when { order: 3; flex-basis: 100%; }
+  .tabs { flex-wrap: wrap; }
+}
 
 .foot { padding-top: 12px; font-size: 12px; color: var(--ink-2); }
 

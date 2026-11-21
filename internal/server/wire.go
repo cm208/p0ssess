@@ -16,20 +16,24 @@ import (
 	"p0ssess/internal/pme/hook"
 	"p0ssess/internal/pme/local"
 	"p0ssess/internal/relay"
+	"p0ssess/internal/rescue"
+	"p0ssess/internal/savings"
 )
-
-// claudeBaseline is the model a receipt's saving is measured against: what the same tokens would cost
-// on Claude.
-const claudeBaseline = "anthropic/claude-sonnet-5.5"
 
 // Wire gives a relay engine the direct path (for read-only work that needs the web or names no
 // repository) and the receipt line with its saving.
 func Wire(re *relay.Engine, cfg config.Config, eng *local.Engine) {
 	re.SetDirect(directRunner(cfg, eng))
 	re.SetReceipt(func(r *relay.Result) string {
-		line, saved := receiptSaved(eng, r.Model, r.CostUSD, r.CostEstimated, r.Tokens)
-		record(eng, notices.Record{Run: r.SessionID + r.RunID, Notes: append(append([]string{}, r.Retries...), r.Note, r.Chosen),
-			Receipt: line, Model: r.Model, CostUSD: r.CostUSD, SavedUSD: saved})
+		line, m := receiptMeasured(eng, r.Model, r.CostUSD, r.CostEstimated, r.Tokens)
+		kind := r.UseCase
+		if kind == "" && r.Mode != "" {
+			kind = "agent-" + r.Mode
+		}
+		rec := notices.Record{Run: r.SessionID + r.RunID, Notes: append(append([]string{}, r.Retries...), r.Note, r.Chosen),
+			Receipt: line, Model: r.Model, CostUSD: r.CostUSD, Kind: kind}
+		m.Fill(&rec, tokensOf(r.Tokens))
+		record(eng, rec)
 		return line
 	})
 }
@@ -40,16 +44,37 @@ func receipt(eng *local.Engine, model string, cost float64, estimated bool, t *o
 	return line
 }
 
+// receiptSaved is the receipt line and the estimated saving it names (0 when it names none).
 func receiptSaved(eng *local.Engine, model string, cost float64, estimated bool, t *opencode.Tokens) (string, float64) {
+	line, m := receiptMeasured(eng, model, cost, estimated, t)
+	return line, max(m.SavedUSD, 0)
+}
+
+// receiptMeasured prices a run against Claude (docs/ENGINE.md, savings proof). The line claims a saving
+// only when the run saved at least half a cent; a run Claude would have done cheaper says nothing about
+// money, and the notices record keeps the negative figure.
+func receiptMeasured(eng *local.Engine, model string, cost float64, estimated bool, t *opencode.Tokens) (string, savings.Result) {
 	r := relay.DefaultReceipt(&relay.Result{Model: model, CostUSD: cost, CostEstimated: estimated})
-	if r == "" || t == nil || eng == nil {
-		return r, 0
+	if r == "" || t == nil {
+		return r, savings.Result{Basis: savings.Unpriced}
 	}
-	claude, ok := eng.TokenCost(claudeBaseline, t.Input, t.Output+t.Reasoning, t.Cache.Read, t.Cache.Write)
-	if !ok || claude-cost < 0.005 {
-		return r, 0
+	lead := ""
+	if eng != nil {
+		lead = eng.Usage().LeadModel
 	}
-	return strings.TrimSuffix(r, ")") + fmt.Sprintf(", saved ~$%.2f)", claude-cost), claude - cost
+	m := savings.Price(savings.Input{CostUSD: cost, CostEstimated: estimated, Tokens: tokensOf(t), Lead: lead})
+	if m.SavedUSD < 0.005 {
+		return r, m
+	}
+	return strings.TrimSuffix(r, ")") + fmt.Sprintf(", saved ~$%.2f)", m.SavedUSD), m
+}
+
+func tokensOf(t *opencode.Tokens) notices.Tokens {
+	if t == nil {
+		return notices.Tokens{}
+	}
+	return notices.Tokens{Prompt: int(t.Input + 0.5), Completion: int(t.Output + 0.5), Reasoning: int(t.Reasoning + 0.5),
+		CacheRead: int(t.Cache.Read + 0.5), CacheWrite: int(t.Cache.Write + 0.5)}
 }
 
 // notice keeps a run's notes out of the conversation: they go to the notices file the status line and
@@ -72,6 +97,9 @@ func notice(eng *local.Engine, id string, lines []string, more ...string) {
 func record(eng *local.Engine, r notices.Record) {
 	if eng == nil {
 		return
+	}
+	if r.Receipt != "" {
+		_, r.Rescue = rescue.Active(eng.Dirs, eng.Now())
 	}
 	notices.Append(eng.Dirs.NoticesFile(), r)
 	if r.Receipt != "" {
@@ -129,7 +157,7 @@ func directRunner(cfg config.Config, eng *local.Engine) relay.DirectRunner {
 			}
 			return nil, err
 		}
-		out := &relay.Result{Answer: strings.TrimSpace(res.Text), Status: "done", Model: res.Model, Mode: "read", CostUSD: res.Usage.CostUSD,
+		out := &relay.Result{Answer: strings.TrimSpace(res.Text), Status: "done", Model: res.Model, Mode: "read", UseCase: res.UseCase, CostUSD: res.Usage.CostUSD,
 			CostEstimated: !res.Measured(), Route: "direct", RunID: runID, DurationS: time.Since(start).Round(100 * time.Millisecond).Seconds(),
 			Tokens: &opencode.Tokens{Input: float64(res.Usage.PromptTokens), Output: float64(res.Usage.CompletionTokens), Reasoning: float64(res.Usage.ReasoningTokens)}}
 		for _, f := range res.Files {

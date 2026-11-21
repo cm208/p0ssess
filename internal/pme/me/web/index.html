@@ -103,9 +103,45 @@
     </div>
   </section>
 
+  <section class="proof" aria-labelledby="proof-h">
+    <div class="savings-head">
+      <h2 id="proof-h">Savings</h2>
+      <p class="when" id="proof-when">against Claude's list price for the same tokens</p>
+      <div class="tabs" role="group" aria-label="Period">
+        <button class="pill quiet" type="button" data-period="this" aria-pressed="true">This month</button>
+        <button class="pill quiet" type="button" data-period="last" aria-pressed="false">Last month</button>
+        <button class="pill quiet" type="button" data-period="all" aria-pressed="false">All time</button>
+      </div>
+    </div>
+    <div class="proof-hero">
+      <div>
+        <p class="proof-big" id="proof-big"></p>
+        <p class="proof-sub" id="proof-sub"></p>
+      </div>
+      <dl class="proof-stats" id="proof-stats"></dl>
+    </div>
+    <div class="proof-cols">
+      <div><h3>By model</h3><ol class="split" id="proof-models"></ol></div>
+      <div><h3>By kind of work</h3><ol class="split" id="proof-kinds"></ol></div>
+      <div><h3>Rescue and normal</h3><ol class="split" id="proof-modes"></ol></div>
+    </div>
+    <p class="note" id="proof-basis"></p>
+    <div class="proof-actions">
+      <a class="pill" id="proof-svg" href="savings-card.svg" download>Card as SVG</a>
+      <button class="pill" type="button" id="proof-png">Card as PNG</button>
+      <span class="saved" id="proof-saved" role="status"></span>
+      <p class="note">In a terminal: <code id="proof-term">p0ssess savings</code></p>
+    </div>
+    <div class="proof-report" id="proof-report" hidden>
+      <h3>Monthly report</h3>
+      <p class="note" id="proof-report-note"></p>
+      <pre class="sent" id="proof-report-body" hidden></pre>
+    </div>
+  </section>
+
   <section class="savings" aria-labelledby="savings-h">
     <div class="savings-head">
-      <h2 id="savings-h">Savings</h2>
+      <h2 id="savings-h">Calibrated savings</h2>
       <p class="when" id="savings-when"></p>
       <a class="pill quiet" id="savings-pdf" href="savings.pdf" download hidden>Download PDF</a>
     </div>
@@ -135,6 +171,7 @@
         <label class="check"><input type="checkbox" name="ask.first_use"> Ask before a model's first run</label>
         <label class="check"><input type="checkbox" name="outcomes.send"> Send anonymous outcome records when a session ends</label>
         <label class="check"><input type="checkbox" name="funnel.send"> Share anonymous usage counts, weekly</label>
+        <label class="check"><input type="checkbox" name="report.send"> Send last month's savings figures (Pro), for the monthly email</label>
         <label class="check"><input type="checkbox" name="ask.code_edits"> Ask before agent edits</label>
         <label class="check"><input type="checkbox" name="save_claude"> Save Claude</label>
         <label class="check"><input type="checkbox" name="usage_credits"> Usage credits on</label>

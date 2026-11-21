@@ -98,6 +98,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET "+prefix+"/fonts/plex-sans-400.woff2", file("fonts/plex-sans-400.woff2", "font/woff2", static))
 	mux.HandleFunc("GET "+prefix+"/api/state", s.state)
 	mux.HandleFunc("GET "+prefix+"/api/savings", s.savings)
+	mux.HandleFunc("GET "+prefix+"/api/proof", s.proof)
+	mux.HandleFunc("GET "+prefix+"/savings-card.svg", s.savingsCard)
 	mux.HandleFunc("GET "+prefix+"/savings.pdf", s.savingsPDF)
 	mux.HandleFunc("POST "+prefix+"/api/settings", s.post(s.settings))
 	mux.HandleFunc("POST "+prefix+"/api/rules/remove", s.post(s.removeRule))

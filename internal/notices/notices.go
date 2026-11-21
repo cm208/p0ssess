@@ -19,10 +19,36 @@ type Record struct {
 	Run   string    `json:"run,omitempty"`
 	Notes []string  `json:"notes,omitempty"`
 	// Receipt is the line the conversation got, e.g. "(kimi-k3.1-pro, $0.10, saved ~$0.80)".
-	Receipt  string  `json:"receipt,omitempty"`
-	Model    string  `json:"model,omitempty"`
-	CostUSD  float64 `json:"cost_usd,omitempty"`
+	Receipt string  `json:"receipt,omitempty"`
+	Model   string  `json:"model,omitempty"`
+	CostUSD float64 `json:"cost_usd,omitempty"`
+	// SavedUSD is Claude's price for the same tokens minus CostUSD. It is negative when Claude would have
+	// been cheaper.
 	SavedUSD float64 `json:"saved_usd,omitempty"`
+
+	// The fields below come with the savings proof (1.2). Older records lack them.
+	Kind        string  `json:"kind,omitempty"`         // kind of work: a use case id, or agent-read / agent-edit
+	Rescue      bool    `json:"rescue,omitempty"`       // the run happened in a rescue period
+	Tok         *Tokens `json:"tok,omitempty"`          // the run's measured token counts
+	ClaudeModel string  `json:"claude_model,omitempty"` // the Claude model the saving is measured against
+	ClaudeUSD   float64 `json:"claude_usd,omitempty"`   // Claude's price for the same tokens
+	// Basis is "measured" (OpenRouter's reported cost and the call's token counts), "estimated" (the cost
+	// was priced from tokens) or "unpriced" (no token counts, so no saving is claimed).
+	Basis string `json:"basis,omitempty"`
+}
+
+// Tokens are one run's token counts. Prompt excludes cache reads and writes when they are listed apart.
+type Tokens struct {
+	Prompt     int `json:"in,omitempty"`
+	Completion int `json:"out,omitempty"`
+	Reasoning  int `json:"reason,omitempty"`
+	CacheRead  int `json:"cache_read,omitempty"`
+	CacheWrite int `json:"cache_write,omitempty"`
+}
+
+// Total is every token the run used.
+func (t Tokens) Total() int {
+	return t.Prompt + t.Completion + t.Reasoning + t.CacheRead + t.CacheWrite
 }
 
 // Append adds one record. A record with neither notes nor a receipt is not written.
@@ -103,4 +129,23 @@ func Recent(path string, n int) []Record {
 // run ids are "<session>/<turn>".
 func (r Record) For(runID string) bool {
 	return r.Run != "" && (r.Run == runID || strings.HasPrefix(runID, r.Run+"/"))
+}
+
+// Receipts returns every receipt in the file, oldest first. Unlike Recent it reads the whole file.
+func Receipts(path string) []Record {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil
+	}
+	defer f.Close()
+	var out []Record
+	sc := bufio.NewScanner(f)
+	sc.Buffer(make([]byte, 0, 64<<10), 1<<20)
+	for sc.Scan() {
+		var r Record
+		if json.Unmarshal(sc.Bytes(), &r) == nil && !r.TS.IsZero() && r.Receipt != "" {
+			out = append(out, r)
+		}
+	}
+	return out
 }

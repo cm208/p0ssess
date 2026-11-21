@@ -371,7 +371,7 @@ func (e *Engine) Learned(s Scope) Learned {
 var settingKeys = []string{"monthly_usd", "per_task_usd", "daily_usd", "save_claude", "plan", "usage_credits",
 	"privacy.mode", "privacy.allow_safety_retention", "models.allow", "models.deny", "providers.allow", "providers.deny",
 	"sandbox.shell_internet", "sandbox.shell_internet.add", "sandbox.shell_internet.remove",
-	"ask.first_use", "ask.code_edits", "outcomes.send", "funnel.send", "rescue.enabled", "rescue.threshold", "lambda.preset", "statusline.command", "statusline.mark", "statusline.width", "lead"}
+	"ask.first_use", "ask.code_edits", "outcomes.send", "funnel.send", "rescue.enabled", "rescue.threshold", "report.send", "lambda.preset", "statusline.command", "statusline.mark", "statusline.width", "lead"}
 
 func SettingKeys() []string { return append([]string(nil), settingKeys...) }
 
@@ -461,6 +461,8 @@ func (e *Engine) setBudget(key, value string) (string, error) {
 		b.Outcomes.Send, err = flag()
 	case "funnel.send":
 		b.Funnel.Send, err = flag()
+	case "report.send":
+		b.Report.Send, err = flag()
 	case "rescue.enabled":
 		b.Rescue.Enabled, err = flag()
 	case "rescue.threshold":
@@ -529,6 +531,13 @@ func (e *Engine) setBudget(key, value string) (string, error) {
 		return "Anonymous usage counts are off (saved to " + e.Dirs.BudgetFile() + "). Nothing is counted or sent, and the counts not sent were deleted.", nil
 	}
 	switch key {
+	case "report.send":
+		if b.Report.Send {
+			return "The monthly savings report is on (saved to " + e.Dirs.BudgetFile() + "). With Pro, once a month p0ssess sends last month's totals " +
+				"(runs, cost, saving, tokens, and the same by model and kind) so the server can email you the summary. No prompt, file, path or task text. " +
+				"The page shows the exact figures first. \"Turn off the monthly report\" stops it.", nil
+		}
+		return "The monthly savings report is off (saved to " + e.Dirs.BudgetFile() + "). Nothing is sent and no summary email is made.", nil
 	case "rescue.enabled":
 		if b.Rescue.Enabled {
 			return fmt.Sprintf("Usage-limit rescue is on (saved to %s). With Pro, when Claude's 5-hour or weekly window passes %d%% used, p0ssess takes routable work inside your limits until the window resets.",

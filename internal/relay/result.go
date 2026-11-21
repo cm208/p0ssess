@@ -19,11 +19,13 @@ import (
 // Result is what run, wait, abort and answer_permission return. The answer comes first: Claude Code
 // spills tool results over 50k characters to a file, and the relay agent must still see the session id.
 type Result struct {
-	Answer        string  `json:"answer"`
-	Status        string  `json:"status"`
-	SessionID     string  `json:"session_id"`
-	Model         string  `json:"model"`
-	Mode          string  `json:"mode"`
+	Answer    string `json:"answer"`
+	Status    string `json:"status"`
+	SessionID string `json:"session_id"`
+	Model     string `json:"model"`
+	Mode      string `json:"mode"`
+	// UseCase is the catalog use case of a run on the direct path, when known.
+	UseCase       string  `json:"use_case,omitempty"`
 	CostUSD       float64 `json:"cost_usd"`
 	CostEstimated bool    `json:"cost_estimated,omitempty"`
 	// NoModelCall says the run never reached a model (the meter saw no call and no tokens were used): it

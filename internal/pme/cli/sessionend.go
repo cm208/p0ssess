@@ -71,5 +71,6 @@ func sendAll(ctx context.Context, e *local.Engine) {
 	}()
 	_, _ = e.SendOutcomes(ctx)
 	_, _ = e.SendFunnel(ctx)
+	_, _ = e.SendSavingsReport(ctx)
 	<-done
 }

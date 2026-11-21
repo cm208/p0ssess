@@ -266,14 +266,16 @@ func upstreamPart(basis string, upstream *float64) float64 {
 }
 
 type Result struct {
-	Text     string        `json:"text"`
-	Files    []OutFile     `json:"files,omitempty"`
-	Model    string        `json:"model"`
-	Provider string        `json:"provider,omitempty"`
-	IDs      []string      `json:"generation_ids,omitempty"`
-	Usage    Usage         `json:"usage"`
-	Estimate Estimate      `json:"estimate"`
-	Route    string        `json:"route"`
+	Text     string    `json:"text"`
+	Files    []OutFile `json:"files,omitempty"`
+	Model    string    `json:"model"`
+	Provider string    `json:"provider,omitempty"`
+	IDs      []string  `json:"generation_ids,omitempty"`
+	Usage    Usage     `json:"usage"`
+	Estimate Estimate  `json:"estimate"`
+	Route    string    `json:"route"`
+	// UseCase is the catalog use case the run was routed as, when known.
+	UseCase  string        `json:"use_case,omitempty"`
 	Warnings []string      `json:"warnings,omitempty"`
 	Elapsed  time.Duration `json:"elapsed_ns"`
 	// Sent counts the requests sent to OpenRouter; Rejected those answered with an error status.

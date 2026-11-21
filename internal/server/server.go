@@ -153,6 +153,7 @@ func New(opt Options) (s *mcp.Server, closeFn func(), err error) {
 			ctx, cancel := context.WithTimeout(refreshCtx, 30*time.Second)
 			eng.SendOutcomes(ctx)
 			eng.SendFunnel(ctx)
+			eng.SendSavingsReport(ctx)
 			d := eng.Dirs
 			calibrate.SendPending(ctx, d, account.Current(d).Pro(), remote.New(d).PutCalibration)
 			cancel()
@@ -405,6 +406,9 @@ func RunDirect(ctx context.Context, cfg config.Config, eng *local.Engine, req di
 	var pe *direct.PartialError
 	if errors.As(err, &pe) && res != nil {
 		res.Warnings = append(res.Warnings, fmt.Sprintf("partial answer: segment %d of %d and any after it are missing (%v)", pe.Failed+1, pe.Total, pe.Err))
+	}
+	if res != nil {
+		res.UseCase = job.UseCase
 	}
 	return res, runID, err
 }
@@ -907,9 +911,11 @@ func DirectReceipt(eng *local.Engine, res *direct.Result, runID string) string {
 func DirectReceiptSaved(eng *local.Engine, res *direct.Result, runID string) (string, float64) {
 	t := &opencode.Tokens{Input: float64(res.Usage.PromptTokens), Output: float64(res.Usage.CompletionTokens), Reasoning: float64(res.Usage.ReasoningTokens)}
 	cost := DirectCost(res)
-	line, saved := receiptSaved(eng, res.Model, cost, !res.Measured(), t)
-	record(eng, notices.Record{Run: runID, Notes: res.Warnings, Receipt: line, Model: res.Model, CostUSD: cost, SavedUSD: saved})
-	return line, saved
+	line, m := receiptMeasured(eng, res.Model, cost, !res.Measured(), t)
+	rec := notices.Record{Run: runID, Notes: res.Warnings, Receipt: line, Model: res.Model, CostUSD: cost, Kind: res.UseCase}
+	m.Fill(&rec, tokensOf(t))
+	record(eng, rec)
+	return line, max(m.SavedUSD, 0)
 }
 
 // DirectCost is what a direct result cost: the measured figure, else the estimate.

@@ -76,6 +76,12 @@ type Funnel struct {
 	Send bool `toml:"send" json:"send"`
 }
 
+// Report holds whether a linked Pro or Team install sends last month's savings figures so the server can
+// email the monthly summary. On by default for those plans; Free installs never send it.
+type Report struct {
+	Send bool `toml:"send" json:"send"`
+}
+
 // Rescue holds usage-limit rescue (Pro): when Claude's 5-hour or weekly window is near its limit,
 // p0ssess takes routable work inside the envelope. On by default.
 type Rescue struct {
@@ -113,6 +119,7 @@ type Budget struct {
 	Outcomes     Outcomes `toml:"outcomes" json:"outcomes"`
 	Funnel       Funnel   `toml:"funnel" json:"funnel"`
 	Rescue       Rescue   `toml:"rescue" json:"rescue"`
+	Report       Report   `toml:"report" json:"report"`
 	// DailyCapUSD is a lower daily limit set by project rules; 0 means none. It is never saved.
 	DailyCapUSD float64 `toml:"-" json:"daily_cap_usd,omitempty"`
 }
@@ -128,7 +135,7 @@ func Default() Budget {
 // legacy is what an install from before 1.1 ran under: a daily limit paced from the monthly cap.
 func legacy() Budget {
 	return Budget{MonthlyUSD: 10, PerTaskUSD: 0.02, DailyUSD: 0, Plan: "auto", Privacy: Privacy{Mode: "no-training"}, Outcomes: Outcomes{Send: true},
-		Rescue: Rescue{Enabled: true, Threshold: DefaultRescueThreshold}}
+		Rescue: Rescue{Enabled: true, Threshold: DefaultRescueThreshold}, Report: Report{Send: true}}
 }
 
 // newInstallMarker is created in the state directory the first time a new install's limits are read,

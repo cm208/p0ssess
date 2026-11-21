@@ -18,6 +18,7 @@ import (
 	"p0ssess/internal/pme/local"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/proc"
+	"p0ssess/internal/savings"
 )
 
 // pageState is what a running page server writes so the next /p0ssess-me reuses it.
@@ -107,11 +108,14 @@ func brief(st *local.Status, eng *local.Engine, url string, gaps []string) strin
 	}
 	rows = append(rows, meterRow("month", sp.Month+sp.Reserved, monthFrac, monthOf))
 
-	saved, cost, runs, last := monthReceipts(eng.Dirs.NoticesFile(), time.Now())
-	if runs > 0 {
-		line := fmt.Sprintf("%d this month", runs)
-		if saved > 0 {
-			line += fmt.Sprintf(" · ~%s saved (%d%%)", money(saved), int(saved/(saved+cost)*100+0.5))
+	month, last := monthReceipts(eng.Dirs.NoticesFile(), time.Now())
+	if month.Runs > 0 {
+		line := fmt.Sprintf("%d this month", month.Runs)
+		switch h := savings.HeadlineOf(month.Totals); h.Kind {
+		case "saved":
+			line += fmt.Sprintf(" · ~%s saved (%d%%)", money(h.Amount), savings.SharePct(month.Totals))
+		case "worse":
+			line += " · no saving (Claude would have cost " + money(h.Amount) + " less)"
 		}
 		rows = append(rows, "runs    "+line)
 	}
@@ -174,22 +178,18 @@ func clip(s string, n int) string {
 	return string(r[:n-1]) + "…"
 }
 
-// monthReceipts sums this month's receipts from the notices file: the saving, the number of runs and
-// the newest one.
-func monthReceipts(path string, now time.Time) (saved, cost float64, runs int, last *notices.Record) {
-	for _, r := range notices.Recent(path, 0) {
-		if r.Receipt == "" || r.TS.Year() != now.Year() || r.TS.Month() != now.Month() {
-			continue
+// monthReceipts rolls up this month's receipts from the notices file and returns the newest one.
+func monthReceipts(path string, now time.Time) (savings.Period, *notices.Record) {
+	recs := notices.Receipts(path)
+	p := savings.Roll(recs, savings.Month(now, now.Location()), now.Location())
+	var last *notices.Record
+	for i := len(recs) - 1; i >= 0; i-- {
+		if savings.Month(recs[i].TS, now.Location()) == p.Label {
+			last = &recs[i]
+			break
 		}
-		if last == nil {
-			rec := r
-			last = &rec
-		}
-		runs++
-		saved += r.SavedUSD
-		cost += r.CostUSD
 	}
-	return
+	return p, last
 }
 
 func smallMoney(v float64) string {
