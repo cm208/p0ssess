@@ -350,6 +350,14 @@ type Estimate struct {
 	Notes       []string `json:"notes,omitempty"`
 }
 
+// OpenRouter's web plugin: results per call, its price per result, and about how many prompt tokens each
+// result adds.
+const (
+	WebResults         = 5
+	WebUSDPerResult    = 0.004
+	webTokensPerResult = 1200
+)
+
 // ErrOverBudget is returned when the estimate is above Request.MaxCostUSD.
 var ErrOverBudget = errors.New("estimated cost is above the limit")
 
@@ -421,6 +429,12 @@ func estimateChat(m ModelInfo, req Request, inputs []Input, engine string) Estim
 		if in.Duration == "size" {
 			e.Notes = append(e.Notes, in.Path+": duration guessed from file size")
 		}
+	}
+	if req.Web {
+		// The plugin's search results are added to the prompt and billed per result.
+		tok += WebResults * webTokensPerResult
+		e.FeeUSD += WebResults * WebUSDPerResult
+		e.Notes = append(e.Notes, fmt.Sprintf("web search: %d results, about $%.3f", WebResults, WebResults*WebUSDPerResult))
 	}
 	e.InputTokens = int(tok + audioTok)
 	e.OutputTokens = req.MaxTokens

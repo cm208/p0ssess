@@ -48,6 +48,9 @@ type Request struct {
 	FitUSD    float64
 	StrictZDR bool   // provider.zdr = true on top of data_collection = deny
 	Reasoning string // optional reasoning effort ("low", "medium", "high", "none")
+	// Web adds OpenRouter's web search plugin: the model answers from current search results, for work
+	// that needs news, prices or anything newer than its training. Chat only.
+	Web bool
 
 	PDFEngine       string // "native", "cloudflare-ai" or "mistral-ocr"; empty picks per model
 	VideoProcessing string // Gemini only: "agentic" or "static"

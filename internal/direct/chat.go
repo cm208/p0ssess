@@ -132,8 +132,15 @@ func (c *Client) chatBody(p *plan, inputs []Input, prompt string, labels map[str
 		"max_tokens": p.req.MaxTokens,
 		"provider":   pr,
 	}
+	var plugins []any
 	if p.engine != "" {
-		body["plugins"] = []any{map[string]any{"id": "file-parser", "pdf": map[string]any{"engine": p.engine}}}
+		plugins = append(plugins, map[string]any{"id": "file-parser", "pdf": map[string]any{"engine": p.engine}})
+	}
+	if p.req.Web {
+		plugins = append(plugins, map[string]any{"id": "web", "max_results": WebResults})
+	}
+	if len(plugins) > 0 {
+		body["plugins"] = plugins
 	}
 	if p.req.Output == OutJSON {
 		body["response_format"] = map[string]any{"type": "json_object"}

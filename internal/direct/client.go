@@ -162,6 +162,9 @@ func (c *Client) Plan(ctx context.Context, req Request) (*plan, error) {
 		}
 		p.route = "chat"
 	}
+	if req.Web && p.route != "chat" {
+		return nil, fmt.Errorf("web search works only on chat completions, and %s answers on the %s route", m.ID, p.route)
+	}
 	if req.StrictZDR && p.route == "images" {
 		return nil, fmt.Errorf("strict ZDR: the image API does not document zdr or data_collection routing, so %s cannot be used; pick an image model served on chat completions", m.ID)
 	}
