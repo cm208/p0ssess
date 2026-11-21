@@ -181,7 +181,16 @@ func updateNotice(d paths.Dirs, session string) string {
 	if old == "" {
 		old = registeredStale(d, claudePID(), Version)
 	}
+	dir := filepath.Dir(d.SessionRulesFile(session))
 	if old == "" {
+		// The session's server is current again (restarted or reconnected): drop the status line's marker.
+		if ents, err := os.ReadDir(dir); err == nil {
+			for _, e := range ents {
+				if strings.HasPrefix(e.Name(), "stale-") {
+					os.Remove(filepath.Join(dir, e.Name()))
+				}
+			}
+		}
 		return ""
 	}
 	mark := filepath.Join(filepath.Dir(d.SessionRulesFile(session)), "stale-"+old)
@@ -189,5 +198,5 @@ func updateNotice(d paths.Dirs, session string) string {
 		return ""
 	}
 	touch(mark)
-	return "p0ssess updated to " + Version + " (this session still runs " + old + "): restart this Claude Code session to use it."
+	return "p0ssess updated to " + Version + " (this session still runs " + old + "): restart this Claude Code session, or run /mcp and reconnect plugin:p0ssess:p0ssess, to use it."
 }

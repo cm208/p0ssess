@@ -89,3 +89,16 @@ func TestStaleServerRegistry(t *testing.T) {
 		t.Errorf("after the server exits: %q", got)
 	}
 }
+
+// Once the session's server is current again, the status line's restart marker goes away.
+func TestStaleMarkerClearsWhenCurrent(t *testing.T) {
+	d, _ := dirs(t)
+	dir := filepath.Dir(d.SessionRulesFile("s-clear"))
+	os.MkdirAll(dir, 0o700)
+	mark := filepath.Join(dir, "stale-1.0.3")
+	os.WriteFile(mark, nil, 0o600)
+	updateNotice(d, "s-clear")
+	if _, err := os.Stat(mark); err == nil {
+		t.Error("marker kept with no stale server")
+	}
+}
