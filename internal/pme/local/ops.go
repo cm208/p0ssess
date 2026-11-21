@@ -148,8 +148,8 @@ func (e *Engine) RuleAdd(s Scope, r rules.Rule, dryRun bool, expiresIn int) (Rul
 	// Ids are checked against the route table once one is verified.
 	if t := e.facts(); !t.Empty() {
 		for _, m := range r.Models {
-			if t.Model(m) == nil {
-				return RuleView{}, fmt.Errorf("unknown model %q", m)
+			if e.model(m) == nil {
+				return RuleView{}, fmt.Errorf("unknown model %q: OpenRouter does not list it", m)
 			}
 		}
 		for _, u := range r.UseCases {

@@ -34,6 +34,8 @@ type Engine struct {
 	obs   Observer
 	// pricer prices runs whose cost was not reported (cost.go).
 	pricer Pricer
+	// facts describe models to the jail and the cost meter (cost.go).
+	facts Facts
 	// recMu serializes recording a finished run, which both a waiting caller and the watch may do.
 	recMu sync.Mutex
 	// Unguarded lets tests run without an observer; nothing else sets it. TestShellInternet is the
@@ -197,6 +199,9 @@ func (e *Engine) Run(ctx context.Context, req RunRequest, progress func(float64,
 				return nil, err
 			}
 			if m.String() != "openrouter/"+rec.Model {
+				if has, ok := c.HasModel(ctx, m); ok && !has {
+					return nil, fmt.Errorf("this session's sandbox was started for %s and cannot run %s, which is newer than OpenCode's catalog; start a new run with that model", rec.Model, m.ID)
+				}
 				if err := c.SwitchModel(ctx, rec.SessionID, m); err != nil {
 					return nil, err
 				}
@@ -215,7 +220,7 @@ func (e *Engine) Run(ctx context.Context, req RunRequest, progress func(float64,
 		return nil, fmt.Errorf("jail: %w", err)
 	}
 	rec.MeterRun = newMeterRun()
-	if err := j.StartRun(rec.MeterRun, grant.CapUSD, rec.Model); err != nil {
+	if err := j.StartRun(rec.MeterRun, grant.CapUSD, rec.Model, e.modelFacts(rec.Model).Rates); err != nil {
 		return nil, err
 	}
 	rec.Grant = grant
@@ -288,7 +293,8 @@ func (e *Engine) startSession(ctx context.Context, rec *SessionRecord, req RunRe
 	rec.ShellInternet = grant.ShellInternet
 	cfg := e.cfg
 	cfg.ZDR = grant.ZDR
-	j, err := jail.Start(ctx, jail.Spec{Repo: rec.Repo, Worktree: rec.Worktree, ShellInternet: grant.ShellInternet, ZDR: grant.ZDR}, cfg, e.log)
+	j, err := jail.Start(ctx, jail.Spec{Repo: rec.Repo, Worktree: rec.Worktree, ShellInternet: grant.ShellInternet, ZDR: grant.ZDR,
+		Models: []jail.Model{e.declared(rec.Model, grant.CapUSD)}}, cfg, e.log)
 	if err != nil {
 		cleanup()
 		return nil, nil, fmt.Errorf("jail: %w", err)

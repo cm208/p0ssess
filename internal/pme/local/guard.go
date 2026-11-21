@@ -128,7 +128,7 @@ func (e *Engine) Authorize(c Charge) (*Grant, error) {
 	bud, _ = effectiveBudget(bud, d, &rs)
 	g := &Grant{MaxUSD: c.MaxUSD, Stakes: stakes, Session: c.Session, Cwd: c.Cwd, Notes: e.IgnoredNotes(c.Scope, rs)}
 
-	m := t.Model(c.Model)
+	m := e.model(c.Model)
 	switch {
 	case d.ForbidDelegation != nil:
 		return nil, refuse("rule: %s", d.ForbidDelegation)
@@ -290,7 +290,7 @@ func (e *Engine) AgentEstimate(model, useCase string) (float64, bool) {
 		turns = uc.Turns
 	}
 	bud, _ := e.Budget()
-	m := t.Model(model)
+	m := e.model(model)
 	tp, ok := m.Prices(bud.Privacy.Mode == "zdr", false)
 	if !ok {
 		return 0, false
@@ -302,12 +302,27 @@ func (e *Engine) AgentEstimate(model, useCase string) (float64, bool) {
 	return v, true
 }
 
+// Rates are model's token prices per million (output includes reasoning, whichever is higher), as the
+// guard prices it: the cheapest zero-retention endpoint in zero-retention mode, else the list price.
+func (e *Engine) Rates(model string) (table.TokenPrices, bool) {
+	bud, _ := e.Budget()
+	m := e.model(model)
+	tp, ok := m.Prices(bud.Privacy.Mode == "zdr", false)
+	if !ok {
+		return tp, false
+	}
+	if r := m.Pricing.ReasoningPerM; r != nil && *r > tp.Out {
+		tp.Out = *r
+	}
+	return tp, true
+}
+
 // TokenCost prices tokens on model at the route table's prices (the cheapest zero-retention endpoint's in
 // zero-retention mode, else the list price). ok is false when no price is known. It prices runs whose
 // cost OpenRouter did not report.
 func (e *Engine) TokenCost(model string, in, out, cacheRead, cacheWrite float64) (float64, bool) {
 	bud, _ := e.Budget()
-	tp, ok := e.facts().Model(model).Prices(bud.Privacy.Mode == "zdr", false)
+	tp, ok := e.model(model).Prices(bud.Privacy.Mode == "zdr", false)
 	if !ok {
 		return 0, false
 	}

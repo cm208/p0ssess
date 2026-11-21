@@ -63,7 +63,15 @@ type Model struct {
 	MaxOutput  *int       `json:"max_output_tokens,omitempty"`
 	Pricing    Pricing    `json:"pricing"`
 	Endpoints  *Endpoints `json:"endpoints,omitempty"`
+	Name       string     `json:"name,omitempty"`
+	// Live marks a model known only from OpenRouter's live list, not from the signed table: its quality
+	// is a provisional prior until it is calibrated.
+	Live bool `json:"live,omitempty"`
 }
+
+// ProvisionalPFail is the failure probability assumed for a model no route table has scored yet. It is
+// pessimistic, like the engine's prior for a model with no clean evidence.
+const ProvisionalPFail = 0.30
 
 // Data policy tiers, best first.
 const (
@@ -156,6 +164,11 @@ type TokenPrices struct {
 func (m *Model) Prices(zdr, cheapest bool) (TokenPrices, bool) {
 	if m == nil {
 		return TokenPrices{}, false
+	}
+	if zdr && m.Live && m.Endpoints == nil {
+		// The live list has no endpoint data: the list price stands in, and OpenRouter refuses the call
+		// when no zero-retention endpoint exists.
+		return m.listPrices()
 	}
 	if zdr {
 		if m.Endpoints == nil || m.Endpoints.CheapestZDR == nil {

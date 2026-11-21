@@ -929,3 +929,28 @@ func TestBYOKWithoutUpstreamIsPricedFromTokens(t *testing.T) {
 		t.Errorf("non-byok usage = %+v", res.Usage)
 	}
 }
+
+// A caller's ceiling bounds the answer limit even when max_tokens was named, and the guard's estimate (a
+// dry plan) already shows the fitted figure (1.0.4 item 14: an expensive model was estimated at its
+// whole output limit and refused although the caller asked to limit output).
+func TestAnswerLimitFollowsTheCeiling(t *testing.T) {
+	_, c := newFake(t)
+	p, err := c.Plan(context.Background(), Request{Model: "google/gemini-3.8-flash", Prompt: "x", MaxTokens: 128000, MaxCostUSD: 0.01, MaxGiven: true, DryRun: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if est := p.Estimate(); est.CostUSD > 0.01 || est.OutputTokens >= 128000 || est.OutputTokens < minFitTokens {
+		t.Errorf("explicit ceiling: estimate %+v", est)
+	}
+	p, err = c.Plan(context.Background(), Request{Model: "google/gemini-3.8-flash", Prompt: "x", FitUSD: 0.005, DryRun: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if est := p.Estimate(); est.CostUSD > 0.005 || est.OutputTokens >= DefaultMaxTokens {
+		t.Errorf("auto-approve fit: estimate %+v", est)
+	}
+	p, _ = c.Plan(context.Background(), Request{Model: "google/gemini-3.8-flash", Prompt: "x", MaxTokens: 8000, FitUSD: 0.005, DryRun: true})
+	if p.Estimate().OutputTokens != 8000 {
+		t.Errorf("without a ceiling a named max_tokens is kept: %+v", p.Estimate())
+	}
+}

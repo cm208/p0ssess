@@ -428,3 +428,86 @@ func (s *Store) ModelsFile() (string, error) {
 	}
 	return p, nil
 }
+
+// WithLive returns a copy of the table that also knows the models in live (OpenRouter's current list):
+// a model the table lacks is added as Live, and a model it has takes the live list prices when the list
+// has them. Use cases and routes are the table's own. A nil or empty live leaves t as it is.
+func (t *Table) WithLive(live []Model) *Table {
+	if t == nil || len(live) == 0 {
+		return t
+	}
+	c := *t
+	c.byM = make(map[string]*Model, len(t.byM)+len(live))
+	c.Models = make([]Model, len(t.Models), len(t.Models)+len(live))
+	copy(c.Models, t.Models)
+	for i := range c.Models {
+		c.byM[c.Models[i].ID] = &c.Models[i]
+	}
+	var added []Model
+	for _, lm := range live {
+		if lm.ID == "" {
+			continue
+		}
+		if m, ok := c.byM[lm.ID]; ok {
+			if lm.Pricing.InputPerM != nil && lm.Pricing.OutputPerM != nil {
+				m.Pricing.InputPerM, m.Pricing.OutputPerM = lm.Pricing.InputPerM, lm.Pricing.OutputPerM
+				if lm.Pricing.CacheReadPerM != nil {
+					m.Pricing.CacheReadPerM = lm.Pricing.CacheReadPerM
+				}
+			}
+			continue
+		}
+		added = append(added, lm)
+	}
+	start := len(c.Models)
+	c.Models = append(c.Models, added...)
+	for i := start; i < len(c.Models); i++ {
+		c.byM[c.Models[i].ID] = &c.Models[i]
+	}
+	if len(added) > 0 {
+		extra, err := json.Marshal(added)
+		if err == nil {
+			c.models = joinArrays(t.models, extra)
+		}
+	}
+	return &c
+}
+
+// joinArrays concatenates two JSON arrays.
+func joinArrays(a, b []byte) json.RawMessage {
+	a, b = bytes.TrimSpace(a), bytes.TrimSpace(b)
+	switch {
+	case len(a) < 2 || string(a) == "null" || string(a) == "[]":
+		return append(json.RawMessage(nil), b...)
+	case len(b) < 2 || string(b) == "[]":
+		return append(json.RawMessage(nil), a...)
+	}
+	out := append(json.RawMessage(nil), a[:len(a)-1]...)
+	out = append(out, ',')
+	return append(out, b[1:]...)
+}
+
+// WriteModelsFile writes t's models section in the {"models":[...]} shape to dir, named by its content,
+// and removes older copies. It returns the path.
+func WriteModelsFile(dir string, t *Table) (string, error) {
+	b := t.ModelsJSON()
+	if b == nil {
+		return "", errors.New("no route table yet")
+	}
+	sum := sha256.Sum256(b)
+	p := filepath.Join(dir, "models-"+hex.EncodeToString(sum[:8])+".json")
+	if _, err := os.Stat(p); err == nil {
+		return p, nil
+	}
+	if err := paths.WriteFileAtomic(p, b, 0o600); err != nil {
+		return "", err
+	}
+	if old, _ := filepath.Glob(filepath.Join(dir, "models-*.json")); len(old) > 1 {
+		for _, o := range old {
+			if o != p {
+				os.Remove(o)
+			}
+		}
+	}
+	return p, nil
+}

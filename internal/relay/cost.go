@@ -3,6 +3,7 @@ package relay
 import (
 	"fmt"
 	"math"
+	"strings"
 
 	"p0ssess/internal/costbasis"
 	"p0ssess/internal/jail"
@@ -46,6 +47,51 @@ type Pricer func(model string, t opencode.Tokens) (float64, bool)
 
 // SetPricer sets how runs whose cost was not reported are priced from their tokens.
 func (e *Engine) SetPricer(p Pricer) { e.pricer = p }
+
+// ModelFacts is what the relay needs about a model to declare it to OpenCode and to size each call's
+// output limit from the run's cap.
+type ModelFacts struct {
+	Name      string
+	Context   int
+	MaxOutput int
+	Rates     proxy.Rates
+	CacheRead float64
+}
+
+// Facts looks a model up; ok is false when nothing is known about it.
+type Facts func(model string) (ModelFacts, bool)
+
+// SetFacts sets where model facts come from.
+func (e *Engine) SetFacts(f Facts) { e.facts = f }
+
+func (e *Engine) modelFacts(model string) ModelFacts {
+	if e.facts == nil {
+		return ModelFacts{}
+	}
+	f, _ := e.facts(BaseID(model))
+	return f
+}
+
+// BaseID is a model id without "openrouter/" or a "#variant".
+func BaseID(model string) string {
+	model = strings.TrimPrefix(strings.TrimSpace(model), "openrouter/")
+	if i := strings.Index(model, "#"); i >= 0 {
+		model = model[:i]
+	}
+	return model
+}
+
+// declared is the jail declaration of model for a run capped at capUSD: its answers per call are
+// limited to what the cap buys at the model's output price.
+func (e *Engine) declared(model string, capUSD float64) jail.Model {
+	f := e.modelFacts(model)
+	out := f.MaxOutput
+	if n := proxy.OutputLimit(capUSD, 0, f.Rates); n > 0 && (out == 0 || n < out) {
+		out = n
+	}
+	return jail.Model{ID: BaseID(model), Name: f.Name, Context: f.Context, Output: out,
+		InPerM: f.Rates.InPerM, OutPerM: f.Rates.OutPerM, CacheReadPerM: f.CacheRead}
+}
 
 // metered is what the jail's cost meter charged the record's current run.
 func (e *Engine) metered(rec *SessionRecord) (proxy.RunCost, bool) {

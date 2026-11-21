@@ -362,6 +362,7 @@ func runCmd(ctx context.Context, name string, args []string) error {
 	}
 	e.SetObserver(server.NewObserver(eng))
 	e.SetPricer(server.Pricer(eng))
+	e.SetFacts(server.Facts(eng))
 	progress := func(v float64, msg string) { fmt.Fprintf(os.Stderr, "progress: %s\n", msg) }
 	var res *relay.Result
 	switch name {

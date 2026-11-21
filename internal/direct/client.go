@@ -216,9 +216,15 @@ func (c *Client) Plan(ctx context.Context, req Request) (*plan, error) {
 		}
 		req.ImageResolution, p.req.ImageResolution = res, res
 	}
-	if tokensDefaulted && !req.DryRun && p.route == "chat" && req.VideoPrep == PrepNone &&
-		req.MaxCostUSD > 0 && p.est.CostUSD > req.MaxCostUSD && m.priceGap(p.route, req.Output) == "" {
-		p.fitTokens(req)
+	// The answer limit follows the cost: a caller's ceiling (or, for a default limit, the room the guard
+	// offers) lowers max_tokens rather than refusing a call whose prompt fits.
+	fit := req.MaxCostUSD
+	if !req.MaxGiven && req.FitUSD > 0 && (fit <= 0 || req.FitUSD < fit) {
+		fit = req.FitUSD
+	}
+	if (tokensDefaulted || req.MaxGiven) && p.route == "chat" && req.VideoPrep == PrepNone &&
+		fit > 0 && p.est.CostUSD > fit && m.priceGap(p.route, req.Output) == "" {
+		p.fitTokens(req, fit)
 		req = p.req
 	}
 	if gap := m.priceGap(p.route, req.Output); gap != "" {
@@ -242,7 +248,7 @@ const minFitTokens = 1024
 // fitTokens lowers the default answer cap so the estimate fits the cost limit. The estimate prices the
 // whole cap, so for a short answer it is far above the bill (a 5 s clip estimated $0.028 and billed
 // $0.0013); OpenRouter stops at max_tokens, so the lower cap keeps the bound true.
-func (p *plan) fitTokens(req Request) {
+func (p *plan) fitTokens(req Request, limit float64) {
 	base := req
 	base.MaxTokens = 0
 	fixed := estimateChat(p.model, base, p.inputs, p.engine).CostUSD
@@ -250,14 +256,14 @@ func (p *plan) fitTokens(req Request) {
 	if !(perToken > 0) {
 		return
 	}
-	n := int((req.MaxCostUSD - fixed) / perToken)
+	n := int((limit - fixed) / perToken)
 	if n < minFitTokens || n >= req.MaxTokens {
 		return
 	}
 	req.MaxTokens = n
 	p.req = req
 	p.est = estimateChat(p.model, req, p.inputs, p.engine)
-	p.warn = append(p.warn, fmt.Sprintf("answer capped at %d tokens to stay within the $%.4f limit", n, req.MaxCostUSD))
+	p.warn = append(p.warn, fmt.Sprintf("answer capped at %d tokens to stay within the $%.4f limit", n, limit))
 }
 
 func transcribePrompt(req Request) string {

@@ -91,22 +91,38 @@ type Budget struct {
 	DailyCapUSD float64 `toml:"-" json:"daily_cap_usd,omitempty"`
 }
 
+// Default is a new Free install's envelope: $1 a day, $10 a month.
 func Default() Budget {
+	b := legacy()
+	b.DailyUSD = 1
+	return b
+}
+
+// legacy is what an install from before 1.1 ran under: a daily limit paced from the monthly cap.
+func legacy() Budget {
 	return Budget{MonthlyUSD: 10, PerTaskUSD: 0.02, DailyUSD: 0, Plan: "auto", Privacy: Privacy{Mode: "no-training"}, Outcomes: Outcomes{Send: true}}
 }
 
 // Load reads path, filling defaults for anything missing.
-func Load(path string) (Budget, error) {
-	b := Default()
+func Load(path string) (Budget, error) { return LoadFor(path, false) }
+
+// LoadFor reads path. A field the file leaves out takes the pre-1.1 default when the file exists or
+// existing is set (an install that has run work), so an upgrade never changes a user's limits; only a
+// new install gets Default.
+func LoadFor(path string, existing bool) (Budget, error) {
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
-		return b, nil
+		if existing {
+			return legacy(), nil
+		}
+		return Default(), nil
 	}
+	b := legacy()
 	if err != nil {
 		return b, err
 	}
 	if _, err := toml.Decode(string(data), &b); err != nil {
-		return Default(), fmt.Errorf("%s: %w", path, err)
+		return legacy(), fmt.Errorf("%s: %w", path, err)
 	}
 	return b, b.Validate()
 }

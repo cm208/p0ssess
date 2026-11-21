@@ -58,6 +58,8 @@ type Spec struct {
 	Worktree      string
 	ShellInternet bool
 	ZDR           bool
+	// Models are declared to the jailed OpenCode, so ids newer than its catalog run.
+	Models []Model
 }
 
 // Jail is the record of one session's pod, kept in <state>/relay/jails/<name>/jail.json.
@@ -454,7 +456,7 @@ func Start(ctx context.Context, spec Spec, cfg config.Config, log io.Writer) (*J
 	if err != nil {
 		return nil, err
 	}
-	ocCfg, err := OpenCodeConfig()
+	ocCfg, err := OpenCodeConfig(spec.Models...)
 	if err != nil {
 		return nil, err
 	}

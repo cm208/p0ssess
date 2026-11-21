@@ -201,7 +201,8 @@ func Run(input []byte, d paths.Dirs, now time.Time) string {
 }
 
 func gather(d paths.Dirs, now time.Time) State {
-	b, _ := budget.Load(d.BudgetFile())
+	_, herr := os.Stat(d.HistoryFile())
+	b, _ := budget.LoadFor(d.BudgetFile(), herr == nil)
 	es, _ := history.Read(d.HistoryFile())
 	sp := history.NewLedger(es).Spend(now)
 	_, err := os.Stat(d.OfflineMarker())

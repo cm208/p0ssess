@@ -33,6 +33,7 @@ import (
 	"p0ssess/internal/pme/mcpserver"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/pme/remote"
+	"p0ssess/internal/proxy"
 	"p0ssess/internal/relay"
 	"p0ssess/internal/usage"
 )
@@ -82,6 +83,7 @@ func New(opt Options) (s *mcp.Server, closeFn func(), err error) {
 	re := relay.NewEngine(cfg, opt.Version, opt.Log)
 	re.SetObserver(obs)
 	re.SetPricer(Pricer(eng))
+	re.SetFacts(Facts(eng))
 	s = relay.NewServer(re, opt.Version)
 	s.Name = Name
 	s.Instructions = instructions + teamInstructions + "\nEngine:\n" + mcpserver.Instructions
@@ -275,6 +277,28 @@ func (o *observer) RunFinished(r relay.RunInfo, res *relay.Result) error {
 func Pricer(eng *local.Engine) relay.Pricer {
 	return func(model string, t opencode.Tokens) (float64, bool) {
 		return eng.TokenCost(model, t.Input, t.Output+t.Reasoning, t.Cache.Read, t.Cache.Write)
+	}
+}
+
+// Facts describes models to the relay from the route table and OpenRouter's live list.
+func Facts(eng *local.Engine) relay.Facts {
+	return func(model string) (relay.ModelFacts, bool) {
+		m := eng.Model(model)
+		if m == nil {
+			return relay.ModelFacts{}, false
+		}
+		f := relay.ModelFacts{Name: m.Name}
+		if m.Context != nil {
+			f.Context = *m.Context
+		}
+		if m.MaxOutput != nil {
+			f.MaxOutput = *m.MaxOutput
+		}
+		if r, ok := eng.Rates(model); ok {
+			f.Rates = proxy.Rates{InPerM: r.In, OutPerM: r.Out}
+			f.CacheRead = r.CacheRead
+		}
+		return f, true
 	}
 }
 
@@ -476,6 +500,11 @@ func uniqueAppend(have []string, add ...string) []string {
 func runAuthorized(ctx context.Context, cfg config.Config, eng *local.Engine, c *direct.Client, req direct.Request, job DirectJob, cwd string) (*direct.Result, string, error) {
 	var grant *local.Grant
 	if !req.DryRun {
+		if !req.MaxGiven && req.FitUSD == 0 {
+			if b, err := eng.Budget(); err == nil {
+				req.FitUSD = b.PerTaskUSD
+			}
+		}
 		dry := req
 		dry.DryRun = true
 		p, err := c.Plan(ctx, dry)

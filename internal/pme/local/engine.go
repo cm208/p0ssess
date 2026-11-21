@@ -5,6 +5,7 @@
 package local
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -17,6 +18,7 @@ import (
 	"time"
 
 	"p0ssess/internal/budget"
+	"p0ssess/internal/catalog"
 	"p0ssess/internal/history"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/pme/remote"
@@ -31,6 +33,15 @@ type Engine struct {
 	Table  *table.Store
 	Remote *remote.Client
 	Now    func() time.Time
+	// Catalog is OpenRouter's live model list; nil knows only the route table's models.
+	Catalog *catalog.Store
+
+	merged struct {
+		sync.Mutex
+		base  *table.Table
+		stamp time.Time
+		t     *table.Table
+	}
 
 	// reported holds the ignored rules already reported, per session.
 	reported   sync.Map
@@ -39,11 +50,18 @@ type Engine struct {
 
 // Load opens the route table (the cached one, else the one built in) and the engine client.
 func Load(d paths.Dirs) (*Engine, error) {
-	return &Engine{Dirs: d, Table: table.Open(d.Cache), Remote: remote.New(d), Now: time.Now}, nil
+	return &Engine{Dirs: d, Table: table.Open(d.Cache), Remote: remote.New(d), Now: time.Now, Catalog: catalog.Open(d.Cache)}, nil
 }
 
 func (e *Engine) Config() (Config, error)        { return LoadConfig(e.Dirs.EngineFile()) }
-func (e *Engine) Budget() (budget.Budget, error) { return budget.Load(e.Dirs.BudgetFile()) }
+func (e *Engine) Budget() (budget.Budget, error) { return LoadBudget(e.Dirs) }
+
+// LoadBudget reads budget.toml. With no file, a new install gets the Free defaults ($1 a day, $10 a
+// month); an install that has already run work keeps the defaults it ran under.
+func LoadBudget(d paths.Dirs) (budget.Budget, error) {
+	_, err := os.Stat(d.HistoryFile())
+	return budget.LoadFor(d.BudgetFile(), err == nil)
+}
 
 // OutcomesEnabled reports whether anonymous outcome records may be queued and sent (outcomes.send in
 // budget.toml). A budget that cannot be read counts as off.
@@ -65,13 +83,43 @@ func (e *Engine) Usage() usage.State {
 	return s
 }
 
-// facts returns the current route table.
+// facts returns the current route table, with the models of OpenRouter's live list it lacks.
 func (e *Engine) facts() *table.Table {
 	if e.Table == nil {
 		return nil
 	}
-	return e.Table.Table()
+	base := e.Table.Table()
+	if e.Catalog == nil {
+		return base
+	}
+	stamp := e.Catalog.Stamp()
+	e.merged.Lock()
+	defer e.merged.Unlock()
+	if e.merged.t == nil || e.merged.base != base || !e.merged.stamp.Equal(stamp) {
+		e.merged.base, e.merged.stamp = base, stamp
+		e.merged.t = base.WithLive(e.Catalog.Table())
+	}
+	return e.merged.t
 }
+
+// Facts is the route table the engine works from, live models included.
+func (e *Engine) Facts() *table.Table { return e.facts() }
+
+// model looks a model up in the route table and OpenRouter's live list, fetching the list once when
+// the id is in neither (a model newer than both).
+func (e *Engine) model(id string) *table.Model {
+	t := e.facts()
+	if m := t.Model(id); m != nil || e.Catalog == nil || id == "" || !strings.Contains(id, "/") {
+		return m
+	}
+	if e.Catalog.Find(context.Background(), id) == nil {
+		return nil
+	}
+	return e.facts().Model(id)
+}
+
+// Model is model for other packages: what is known about an OpenRouter id, or nil.
+func (e *Engine) Model(id string) *table.Model { return e.model(id) }
 
 // Scope tells which rule files apply.
 type Scope struct {

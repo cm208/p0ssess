@@ -143,6 +143,24 @@ func (c *Client) Prompt(ctx context.Context, id string, p Prompt) (InboxItem, er
 	return v.Data, err
 }
 
+// HasModel reports whether the server's catalog has m (a model it would run). ok is false when the
+// server could not be asked.
+func (c *Client) HasModel(ctx context.Context, m ModelRef) (has, ok bool) {
+	var v envelope[[]struct {
+		ID         string `json:"id"`
+		ProviderID string `json:"providerID"`
+	}]
+	if err := c.do(ctx, "GET", "/api/model", nil, nil, &v); err != nil {
+		return false, false
+	}
+	for _, x := range v.Data {
+		if x.ID == m.ID && x.ProviderID == m.ProviderID {
+			return true, true
+		}
+	}
+	return false, true
+}
+
 func (c *Client) SwitchModel(ctx context.Context, id string, m ModelRef) error {
 	return c.do(ctx, "POST", "/api/session/"+url.PathEscape(id)+"/model", nil, map[string]any{"model": m}, nil)
 }

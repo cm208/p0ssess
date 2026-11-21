@@ -49,13 +49,20 @@ func (e *Engine) RefreshTable(ctx context.Context) (string, error) {
 // RefreshInBackground fetches a newer route table when the last check is a day old. It never blocks
 // the caller, and at most one fetch runs at a time.
 func (e *Engine) RefreshInBackground() {
-	if e.Table == nil || !e.Table.Due(e.Now()) || !e.refreshing.CompareAndSwap(false, true) {
+	tableDue := e.Table != nil && e.Table.Due(e.Now())
+	listDue := e.Catalog != nil && e.Catalog.URL != "" && e.Catalog.Due()
+	if !tableDue && !listDue || !e.refreshing.CompareAndSwap(false, true) {
 		return
 	}
 	go func() {
 		defer e.refreshing.Store(false)
 		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		defer cancel()
-		e.RefreshTable(ctx)
+		if tableDue {
+			e.RefreshTable(ctx)
+		}
+		if listDue {
+			e.Catalog.Refresh(ctx, false)
+		}
 	}()
 }

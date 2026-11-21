@@ -42,7 +42,10 @@ type Request struct {
 	MaxCostUSD float64 // refuse when the estimate is above this; 0 means no call is made
 	// MaxGiven is true when the caller chose MaxCostUSD. Without it the plugin's guard sets MaxCostUSD to
 	// the estimate before sending.
-	MaxGiven  bool
+	MaxGiven bool
+	// FitUSD, without MaxGiven, is the cost a default answer limit is lowered to fit, when the prompt
+	// leaves room for at least a short answer: the envelope's auto-approve limit, so a call need not ask.
+	FitUSD    float64
 	StrictZDR bool   // provider.zdr = true on top of data_collection = deny
 	Reasoning string // optional reasoning effort ("low", "medium", "high", "none")
 

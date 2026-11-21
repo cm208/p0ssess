@@ -32,6 +32,8 @@ type RunSpec struct {
 	Run    string  `json:"run"`
 	CapUSD float64 `json:"cap_usd"`
 	Model  string  `json:"model,omitempty"`
+	// Rates size each call's output limit to what is left of the cap.
+	Rates
 }
 
 // Call is one metered model call. It never holds prompt or answer content.
@@ -186,12 +188,13 @@ func (m *Meter) Wrap(next http.Handler) http.Handler {
 		}
 		if haveSpec && spec.CapUSD > 0 {
 			m.mu.Lock()
-			over := m.spentOn(spec.Run) >= spec.CapUSD-1e-12
+			spent := m.spentOn(spec.Run)
 			m.mu.Unlock()
-			if over {
+			if spent >= spec.CapUSD-1e-12 {
 				APIError(w, http.StatusPaymentRequired, "this run's cost cap is reached")
 				return
 			}
+			body = CapOutput(r.Method, r.URL.Path, body, OutputLimit(spec.CapUSD-spent, len(body), spec.Rates))
 		}
 		r.Body = io.NopCloser(bytes.NewReader(body))
 		r.ContentLength = int64(len(body))

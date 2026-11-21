@@ -21,6 +21,7 @@ type Meter struct {
 	spent   float64
 	limit   float64
 	model   string
+	rates   proxy.Rates
 	pending float64 // charged for calls whose cost could not be read
 
 	// The current run: where its spend starts, its billed calls, their known cost, and how many were
@@ -41,10 +42,15 @@ type Meter struct {
 
 func NewMeter() *Meter { return &Meter{one: make(chan struct{}, 1)} }
 
-// StartRun lets the session spend capUSD more, on model (an OpenRouter id, without "openrouter/").
-func (m *Meter) StartRun(capUSD float64, model string) {
+// StartRun lets the session spend capUSD more, on model (an OpenRouter id, without "openrouter/"). rates
+// size each call's output limit to what is left of the cap.
+func (m *Meter) StartRun(capUSD float64, model string, rates ...proxy.Rates) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	m.rates = proxy.Rates{}
+	if len(rates) > 0 {
+		m.rates = rates[0]
+	}
 	if capUSD < 0 || capUSD != capUSD {
 		capUSD = 0
 	}
@@ -143,7 +149,7 @@ func (m *Meter) Guard(next http.Handler) http.Handler {
 		}
 		defer func() { <-m.one }()
 		m.mu.Lock()
-		allowed, over := m.model, m.spent >= m.limit
+		allowed, over, rest, rates := m.model, m.spent >= m.limit, m.limit-m.spent, m.rates
 		m.mu.Unlock()
 		if allowed == "" || model != allowed {
 			apiError(w, http.StatusForbidden, fmt.Sprintf("model %q is not this run's model", model))
@@ -153,6 +159,7 @@ func (m *Meter) Guard(next http.Handler) http.Handler {
 			apiError(w, http.StatusPaymentRequired, "this run's cost cap is reached")
 			return
 		}
+		body = proxy.CapOutput(r.Method, r.URL.Path, body, proxy.OutputLimit(rest, len(body), rates))
 		r.Body = io.NopCloser(bytes.NewReader(body))
 		r.ContentLength = int64(len(body))
 		r.Header.Del("Content-Encoding")

@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"p0ssess/internal/catalog"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/pme/table"
 )
@@ -136,7 +137,8 @@ func (c Config) RegistryPath() (string, error) {
 	if c.RegistryFile != "" {
 		return c.RegistryFile, nil
 	}
-	return table.Open(CacheDir()).ModelsFile()
+	t := table.Open(CacheDir()).Table().WithLive(catalog.Open(CacheDir()).Table())
+	return table.WriteModelsFile(CacheDir(), t)
 }
 
 // CacheDir is ~/.cache/p0ssess ($XDG_CACHE_HOME honored), or $P0SSESS_HOME/cache.

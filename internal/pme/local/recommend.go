@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"p0ssess/internal/budget"
+	"p0ssess/internal/calibrate"
 	"p0ssess/internal/history"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/pme/remote"
@@ -377,6 +378,7 @@ func (e *Engine) finish(req Request, resp *remote.Response, fromTable, private b
 	}
 	for i := range opts {
 		opts[i].Rank = i + 1
+		e.provisional(&opts[i], uc.ID)
 		approve(&opts[i], d, bud, cfg, ledger, spend, daily, resp.Stakes, uc.EditsCode, now)
 	}
 	if len(opts) > 0 {
@@ -648,4 +650,33 @@ func applied(d rules.Decision) []string {
 		add(&d.Approvals[i])
 	}
 	return out
+}
+
+// provisional gives an option no engine has scored a quality figure: the user's own calibration runs of
+// the model on the use case when there are some, else table.ProvisionalPFail for a model known only
+// from OpenRouter's live list.
+func (e *Engine) provisional(o *Option, useCase string) {
+	if o.PFail > 0 || (o.Route != RouteDirect && o.Route != RouteAgent) {
+		return
+	}
+	m := e.facts().Model(o.Model)
+	if m == nil || !m.Live {
+		return
+	}
+	p, why := Provisional(e.Dirs, o.Model, useCase)
+	o.PFail, o.PFailUpper = p, min(1, p+0.2)
+	o.Notes = append(o.Notes, why)
+}
+
+// Provisional is the failure probability for a model the route table has not scored: from the user's
+// calibration runs of it on useCase (a Beta(1,1) posterior), else table.ProvisionalPFail.
+func Provisional(d paths.Dirs, model, useCase string) (float64, string) {
+	if rs, err := calibrate.LoadResults(d); err == nil {
+		for _, s := range rs.Scores() {
+			if s.Model == model && s.UseCase == useCase && s.N > 0 {
+				return float64(s.N-s.Correct+1) / float64(s.N+2), fmt.Sprintf("quality from %d calibration runs", s.N)
+			}
+		}
+	}
+	return table.ProvisionalPFail, "new model: provisional quality score until calibrated"
 }

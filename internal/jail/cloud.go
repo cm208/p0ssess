@@ -232,9 +232,13 @@ const runFileName = "run.json"
 
 // StartRun names the next run and its cost cap and model for the jail's cost meter: the local key proxy
 // reads them from the run file, a cloud session's meter is told directly.
-func (j *Jail) StartRun(run string, capUSD float64, model string) error {
+func (j *Jail) StartRun(run string, capUSD float64, model string, rates ...proxy.Rates) error {
+	var r proxy.Rates
+	if len(rates) > 0 {
+		r = rates[0]
+	}
 	if !j.Cloud {
-		return proxy.WriteRunSpec(filepath.Join(ctlDir(j.Name), runFileName), proxy.RunSpec{Run: run, CapUSD: capUSD, Model: model})
+		return proxy.WriteRunSpec(filepath.Join(ctlDir(j.Name), runFileName), proxy.RunSpec{Run: run, CapUSD: capUSD, Model: model, Rates: r})
 	}
 	live := liveCloud(j.Name)
 	if live == nil {
@@ -243,7 +247,7 @@ func (j *Jail) StartRun(run string, capUSD float64, model string) error {
 	live.mu.Lock()
 	live.run = run
 	live.mu.Unlock()
-	live.meter.StartRun(capUSD, model)
+	live.meter.StartRun(capUSD, model, r)
 	return nil
 }
 

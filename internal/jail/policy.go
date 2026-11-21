@@ -86,8 +86,51 @@ func Policies() []policy {
 	return p
 }
 
+// Model declares one OpenRouter model to the jailed OpenCode. OpenCode 2.x runs only models in its
+// catalog (a models.dev snapshot built into the binary, which the jail never refreshes); a model the
+// config declares under providers.openrouter.models joins that catalog, so an id newer than the
+// snapshot runs too. A declared output limit also bounds what OpenCode asks for per call
+// (max_completion_tokens), which OpenRouter otherwise reserves at the model's full maximum.
+type Model struct {
+	ID      string
+	Name    string
+	Context int
+	// Output is the largest answer per call, in tokens; 0 leaves OpenCode's own.
+	Output int
+	// Prices in USD per million tokens; 0 is unknown.
+	InPerM, OutPerM, CacheReadPerM float64
+}
+
+func (m Model) config() map[string]any {
+	d := map[string]any{"name": m.ID}
+	if m.Name != "" {
+		d["name"] = m.Name
+	}
+	lim := map[string]any{}
+	if m.Context > 0 {
+		lim["context"] = m.Context
+	}
+	if m.Output > 0 {
+		lim["output"] = m.Output
+	}
+	if len(lim) > 0 {
+		d["limit"] = lim
+	}
+	if m.InPerM > 0 || m.OutPerM > 0 {
+		d["cost"] = map[string]any{"input": m.InPerM, "output": m.OutPerM, "cache": map[string]any{"read": m.CacheReadPerM}}
+	}
+	return d
+}
+
 // OpenCodeConfig is the global config passed to the jailed server through OPENCODE_CONFIG_CONTENT.
-func OpenCodeConfig() ([]byte, error) {
+// models are declared to OpenCode (see Model).
+func OpenCodeConfig(models ...Model) ([]byte, error) {
+	declared := map[string]any{}
+	for _, m := range models {
+		if m.ID != "" {
+			declared[m.ID] = m.config()
+		}
+	}
 	cfg := map[string]any{
 		"share":  "disabled",
 		"update": "disable",
@@ -111,6 +154,9 @@ func OpenCodeConfig() ([]byte, error) {
 				"body":     map[string]any{"provider": map[string]any{"data_collection": "deny"}},
 			},
 		},
+	}
+	if len(declared) > 0 {
+		cfg["providers"].(map[string]any)["openrouter"].(map[string]any)["models"] = declared
 	}
 	return json.Marshal(cfg)
 }
