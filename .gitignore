@@ -6,3 +6,4 @@
 /dist/*.tmp*
 /release/
 /site-docs-dist/
+/.p0ssess/wt/
