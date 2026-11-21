@@ -109,3 +109,5 @@ A new version gets its binary on first use, the same way as the first install. T
 ## Checking it end to end
 
 `scripts/e2e-claude.sh DIR` runs the plugin in a real Claude Code session inside a scratch config directory, so your own `~/.claude` is untouched. It checks the prompt hint, a named-model request through the relay agent, a video on the direct path, a plain-language standing approval covering a repeat job, `/p0ssess:p0ssess-me` and the status line. It spends a few cents. The first run asks you to log in once inside the scratch config.
+
+`scripts/e2e-gate.sh` is the release gate: the owner's trials (a research prompt with web search, a model newer than the sandbox's catalog, an edit that lands and runs its tests, work from a directory that is not a repository, an over-limit pick, a failed run that keeps its approval, the tour demo, the quiet result) as real runs in a scratch `P0SSESS_HOME`, about $0.07 in all.

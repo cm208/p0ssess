@@ -19,6 +19,7 @@ In the repository, `dist/SHA256SUMS` (the binaries only) and `dist/VERSION` (the
 
 Needs Go 1.27 or later, git, GNU tar, gzip and sha256sum. Use the same Go version for every step.
 
+0. Run the release gate, `scripts/e2e-gate.sh`: the owner's trials as real runs against OpenRouter in a scratch install (about $0.07, capped at `P0SSESS_E2E_MAX_USD`, default $1). A release ships only when every scenario passes with no question to the user. See `e2e/gate_test.go` for the scenarios.
 1. Bump the version in `bin/p0ssess` (`version=`), `.claude-plugin/plugin.json` and `cmd/p0ssess/main.go`; update the docs; commit. `go test ./...` checks that the three agree.
    If `cmd/launcher` changed, commit it, then run `scripts/build-release.sh launcher` and commit the `bin/p0ssess.exe` it writes. The Windows launcher reads the version from `.claude-plugin/plugin.json`, so a release that does not touch `cmd/launcher` leaves it alone.
 2. Check reproducibility: `scripts/build-release.sh --check` builds twice (with a clean build cache in between) and compares, and checks that `bin/p0ssess.exe` is the build of `cmd/launcher`.
