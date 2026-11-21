@@ -35,6 +35,9 @@ func BaseURL() string {
 func tokenFile(d paths.Dirs) string { return filepath.Join(d.Config, "secrets", "p0ssess_token") }
 func stateFile(d paths.Dirs) string { return filepath.Join(d.State, "account.json") }
 
+// Files are the files the cached account lives in, for callers that cache what they read from it.
+func Files(d paths.Dirs) []string { return []string{tokenFile(d), stateFile(d)} }
+
 // Token returns the device token, or "" when this install is not linked. It reads the file on every
 // call, so a link finished by another process turns Pro on without a restart. Cloud requests send it as
 // "Authorization: Bearer <token>".

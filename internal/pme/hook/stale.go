@@ -1,6 +1,7 @@
 package hook
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -8,6 +9,7 @@ import (
 	"strings"
 
 	"p0ssess/internal/pme/paths"
+	"p0ssess/internal/proc"
 )
 
 // Version is this binary's version; main sets it.
@@ -41,7 +43,8 @@ func ppidOf(pid int) int {
 }
 
 // staleServer returns the version of a p0ssess MCP server of this Claude Code session (a child of one of
-// this process's ancestors) that is older than version, or "". Only Linux has the process table to look.
+// this process's ancestors) that is older than version, or "". Only Linux has the process table to look;
+// elsewhere the server registry answers (registeredStale).
 func staleServer(self int, version string) string {
 	if version == "" {
 		return ""
@@ -109,6 +112,65 @@ func semver(s string) ver {
 	return v
 }
 
+// serverEntry is one running MCP server in the registry: the portable way to find this session's
+// servers where there is no /proc to look in.
+type serverEntry struct {
+	PID     int    `json:"pid"`
+	Claude  int    `json:"claude"`
+	Version string `json:"version"`
+}
+
+func serversDir(d paths.Dirs) string { return filepath.Join(d.Cache, "servers") }
+
+// claudePID is the Claude Code process this one runs under: $CLAUDE_PID when Claude Code sets it, else
+// the parent.
+func claudePID() int {
+	if n, err := strconv.Atoi(os.Getenv("CLAUDE_PID")); err == nil && n > 1 {
+		return n
+	}
+	return os.Getppid()
+}
+
+// RegisterServer records this MCP server's version for its Claude Code session; the returned function
+// removes the entry.
+func RegisterServer(d paths.Dirs, version string) func() {
+	p := filepath.Join(serversDir(d), strconv.Itoa(os.Getpid())+".json")
+	b, _ := json.Marshal(serverEntry{PID: os.Getpid(), Claude: claudePID(), Version: version})
+	if paths.WriteFileAtomic(p, b, 0o600) != nil {
+		return func() {}
+	}
+	return func() { os.Remove(p) }
+}
+
+// alive is proc.Alive; tests fake it.
+var alive = proc.Alive
+
+// registeredStale is the oldest registered server of this Claude Code process older than version.
+// Entries of servers that are gone are removed.
+func registeredStale(d paths.Dirs, claude int, version string) string {
+	ents, err := os.ReadDir(serversDir(d))
+	if err != nil || version == "" || claude <= 1 {
+		return ""
+	}
+	oldest := ""
+	for _, e := range ents {
+		p := filepath.Join(serversDir(d), e.Name())
+		b, err := os.ReadFile(p)
+		var s serverEntry
+		if err != nil || json.Unmarshal(b, &s) != nil {
+			continue
+		}
+		if !alive(s.PID) {
+			os.Remove(p)
+			continue
+		}
+		if s.Claude == claude && older(s.Version, version) && (oldest == "" || older(s.Version, oldest)) {
+			oldest = s.Version
+		}
+	}
+	return oldest
+}
+
 // updateNotice is said once per session when a server older than the installed plugin still serves it:
 // /reload-plugins leaves the running server on the old binary.
 func updateNotice(d paths.Dirs, session string) string {
@@ -116,6 +178,9 @@ func updateNotice(d paths.Dirs, session string) string {
 		return ""
 	}
 	old := staleServer(selfPID(), Version)
+	if old == "" {
+		old = registeredStale(d, claudePID(), Version)
+	}
 	if old == "" {
 		return ""
 	}

@@ -77,6 +77,9 @@ func (p *Policy) LocalRules() []rules.Rule {
 
 func policyFile(d paths.Dirs) string { return filepath.Join(d.State, "team-policy.json") }
 
+// PolicyFile is where the cached policy lives.
+func PolicyFile(d paths.Dirs) string { return policyFile(d) }
+
 // parse checks the signature and the payload's shape, but not whose it is.
 func parse(raw []byte, keys map[string]ed25519.PublicKey) (*Policy, error) {
 	payload, err := table.Unseal(raw, keys, "team policy")

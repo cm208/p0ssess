@@ -1,6 +1,8 @@
 // Package statusline wraps the user's Claude Code status line. It saves the
 // rate-limit reading Claude Code passes on stdin, runs the user's own status
-// line command with the same input, and appends a quiet p0ssess segment.
+// line command with the same input, and appends the p0ssess segment:
+// today's spend against the daily limit and running jobs, e.g.
+// "p0ssess $0.42/$1 · 1 running".
 package statusline
 
 import (
@@ -9,8 +11,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -19,10 +23,13 @@ import (
 
 	"github.com/BurntSushi/toml"
 
+	"p0ssess/internal/account"
 	"p0ssess/internal/budget"
 	"p0ssess/internal/history"
 	"p0ssess/internal/pme/paths"
+	"p0ssess/internal/pme/table"
 	"p0ssess/internal/proc"
+	"p0ssess/internal/team"
 	"p0ssess/internal/usage"
 )
 
@@ -62,64 +69,130 @@ func LoadSettings(path string) Settings {
 	return f.Statusline
 }
 
-// Colors, in 256-color codes. Never red, never blinking.
+// Colors, in 256-color codes. Amber means near or over the daily limit; red only when paid runs are
+// stopped (the monthly cap or the team budget is used up). Never blinking.
 const (
 	colorIdle    = "\x1b[38;5;244m"
 	colorOffline = "\x1b[38;5;240m"
 	colorRunning = "\x1b[38;5;250m"
 	colorAmber   = "\x1b[38;5;214m"
+	colorRed     = "\x1b[38;5;203m"
 	reset        = "\x1b[0m"
 )
 
 // State is what the segment shows.
 type State struct {
 	SpentToday float64
+	// DailyLimit is today's limit; 0 or less means none.
+	DailyLimit float64
+	// SpentMonth counts open reservations too.
 	SpentMonth float64
 	MonthlyCap float64
-	Running    []usage.Job
+	// Team is set for a Team seat whose team has a shared budget.
+	Team      bool
+	TeamSpent float64
+	TeamCap   float64
+	Running   []usage.Job
 	// Offline is true while the last call to the engine service failed: the mark dims a little.
 	Offline bool
+	// Stale is the older p0ssess version this session's server still runs, or "".
+	Stale string
 }
 
-// Segment renders the p0ssess part for a given width budget. It returns ""
-// when idle with nothing spent today.
-func Segment(s State, st Settings, room int) string {
-	near := s.MonthlyCap > 0 && s.SpentMonth >= 0.8*s.MonthlyCap
-	running := len(s.Running)
-	if running == 0 && s.SpentToday <= 0 && !near {
-		return ""
-	}
-	var variants []string
+// Level is how the segment is colored.
+type Level int
+
+const (
+	Calm    Level = iota
+	Near          // near or over the daily limit, or near a cap
+	Stopped       // the monthly cap or the team budget stops paid runs
+)
+
+func (s State) monthStopped() bool { return s.MonthlyCap > 0 && s.SpentMonth >= s.MonthlyCap-1e-9 }
+func (s State) teamStopped() bool  { return s.Team && s.TeamCap > 0 && s.TeamSpent >= s.TeamCap-1e-9 }
+
+func (s State) Level() Level {
 	switch {
-	case near:
-		variants = []string{fmt.Sprintf("%s of %s this month", money(s.SpentMonth), money(s.MonthlyCap)), money(s.SpentMonth)}
-		if running > 0 {
-			variants = append([]string{fmt.Sprintf("%d running  %s of %s this month", running, money(s.SpentMonth), money(s.MonthlyCap))}, variants...)
-		}
-	case running > 0:
-		models := modelNames(s.Running)
-		variants = []string{
-			fmt.Sprintf("%d running  %s today  %s", running, money(s.SpentToday), models),
-			fmt.Sprintf("%d running  %s today", running, money(s.SpentToday)),
-			fmt.Sprintf("%d running  %s", running, money(s.SpentToday)),
-			fmt.Sprintf("%d running", running),
-		}
+	case s.monthStopped() || s.teamStopped():
+		return Stopped
+	case s.DailyLimit > 0 && s.SpentToday >= 0.8*s.DailyLimit,
+		s.MonthlyCap > 0 && s.SpentMonth >= 0.8*s.MonthlyCap,
+		s.Team && s.TeamCap > 0 && s.TeamSpent >= 0.8*s.TeamCap:
+		return Near
+	}
+	return Calm
+}
+
+// Segment renders the p0ssess part for a given width budget (0: no limit), longest variant that fits.
+func Segment(s State, st Settings, room int) string {
+	running := len(s.Running)
+	var main []string
+	switch {
+	case s.teamStopped():
+		main = []string{"team budget " + money(s.TeamSpent) + "/" + limit(s.TeamCap) + " · paid runs stopped", "team budget used up", "stopped"}
+	case s.monthStopped():
+		main = []string{"month cap " + money(s.SpentMonth) + "/" + limit(s.MonthlyCap) + " · paid runs stopped", "month cap reached", "stopped"}
+	case s.DailyLimit > 0:
+		main = []string{money(s.SpentToday) + "/" + limit(s.DailyLimit)}
 	default:
-		variants = []string{money(s.SpentToday) + " today", money(s.SpentToday)}
+		main = []string{money(s.SpentToday) + " today", money(s.SpentToday)}
+	}
+	var extras [][]string
+	if running > 0 {
+		n := fmt.Sprintf("%d running", running)
+		extras = append(extras, []string{n + " (" + modelNames(s.Running) + ")", n, ""})
+	}
+	if s.Team && s.TeamCap > 0 && !s.teamStopped() {
+		extras = append(extras, []string{"team " + money(s.TeamSpent) + "/" + limit(s.TeamCap), ""})
+	}
+	if s.Stale != "" {
+		extras = append(extras, []string{"restart to update", "restart"})
 	}
 	prefix := "p0ssess"
 	if st.Mark != "" {
 		prefix = st.Mark + " " + prefix
 	}
-	text := variants[len(variants)-1]
-	for _, v := range variants {
-		if room <= 0 || utf8.RuneCountInString(prefix+"  "+v) <= room {
-			text = v
+	// Variants shrink the extras first (most detail first), then the main text.
+	pick := make([]int, len(extras))
+	build := func(m string) (string, []string) {
+		parts := []string{m}
+		var ex []string
+		for i, e := range extras {
+			if v := e[pick[i]]; v != "" {
+				parts = append(parts, v)
+				ex = append(ex, v)
+			}
+		}
+		return strings.Join(parts, " · "), ex
+	}
+	fits := func(t string) bool { return room <= 0 || utf8.RuneCountInString(prefix+" "+t) <= room }
+	text, mi := "", 0
+	for {
+		t, _ := build(main[mi])
+		if fits(t) {
+			text = t
 			break
 		}
+		// Shrink the extra that still has the most detail, the first one on a tie.
+		best := -1
+		for i := range extras {
+			if pick[i] < len(extras[i])-1 && (best < 0 || pick[i] < pick[best]) {
+				best = i
+			}
+		}
+		if best >= 0 {
+			pick[best]++
+			continue
+		}
+		if mi < len(main)-1 {
+			mi++
+			continue
+		}
+		text = t
+		break
 	}
 	if !st.Color {
-		return prefix + "  " + text
+		return prefix + " " + text
 	}
 	textColor, markColor := colorIdle, colorIdle
 	if running > 0 {
@@ -128,21 +201,44 @@ func Segment(s State, st Settings, room int) string {
 	if s.Offline {
 		markColor = colorOffline
 	}
-	if near {
-		markColor = colorAmber
+	switch s.Level() {
+	case Near:
+		textColor, markColor = colorAmber, colorAmber
+	case Stopped:
+		textColor, markColor = colorRed, colorRed
 	}
 	mark := ""
 	if st.Mark != "" {
 		mark = markColor + st.Mark + reset + " "
 	}
-	return mark + textColor + "p0ssess  " + text + reset
+	body := "p0ssess " + text
+	if s.Stale != "" && textColor != colorAmber {
+		// The restart marker is amber whatever the rest says.
+		for _, v := range []string{" · restart to update", " · restart"} {
+			if i := strings.LastIndex(body, v); i >= 0 {
+				return mark + textColor + body[:i] + reset + colorAmber + v + reset
+			}
+		}
+	}
+	return mark + textColor + body + reset
 }
 
+// money is spend: $0.42, $0, <$0.01, $12.
 func money(v float64) string {
-	if v > 0 && v < 0.005 {
+	switch {
+	case v <= 0:
+		return "$0"
+	case v < 0.005:
 		return "<$0.01"
+	case v >= 100:
+		return "$" + strconv.Itoa(int(v+0.5))
 	}
-	if v >= 100 || v == float64(int(v)) && v >= 1 {
+	return fmt.Sprintf("$%.2f", v)
+}
+
+// limit is a limit: $1, $10, $0.50.
+func limit(v float64) string {
+	if v >= 100 || v == float64(int(v)) {
 		return "$" + strconv.Itoa(int(v+0.5))
 	}
 	return fmt.Sprintf("$%.2f", v)
@@ -188,10 +284,7 @@ func Run(input []byte, d paths.Dirs, now time.Time) string {
 	if last == "" {
 		room = width
 	}
-	seg := Segment(gather(d, now), st, room)
-	if seg == "" {
-		return strings.TrimRight(user, "\n")
-	}
+	seg := Segment(Gather(d, in.SessionID, now), st, room)
 	if last == "" {
 		lines[len(lines)-1] = seg
 	} else {
@@ -200,14 +293,95 @@ func Run(input []byte, d paths.Dirs, now time.Time) string {
 	return strings.Join(lines, "\n")
 }
 
-func gather(d paths.Dirs, now time.Time) State {
+// cached is the part of the state that needs the ledger, kept between refreshes in the cache dir.
+type cached struct {
+	Key        string    `json:"key"`
+	At         time.Time `json:"at"`
+	SpentToday float64   `json:"spent_today"`
+	SpentMonth float64   `json:"spent_month"`
+	DailyLimit float64   `json:"daily_limit"`
+	MonthlyCap float64   `json:"monthly_cap"`
+	Team       bool      `json:"team,omitempty"`
+	TeamSpent  float64   `json:"team_spent,omitempty"`
+	TeamCap    float64   `json:"team_cap,omitempty"`
+}
+
+// cacheTTL bounds how long a reading stands when no file changed (open reservations expire with time).
+const cacheTTL = 30 * time.Second
+
+func cacheFile(d paths.Dirs) string { return filepath.Join(d.Cache, "statusline.json") }
+
+// inputsKey changes whenever a file the spend reading depends on changes, or the day does.
+func inputsKey(d paths.Dirs, now time.Time) string {
+	var b strings.Builder
+	b.WriteString(now.Format("2006-01-02"))
+	for _, p := range append([]string{d.HistoryFile(), d.BudgetFile(), team.PolicyFile(d)}, account.Files(d)...) {
+		if st, err := os.Stat(p); err == nil {
+			fmt.Fprintf(&b, "|%d.%d", st.Size(), st.ModTime().UnixNano())
+		} else {
+			b.WriteString("|-")
+		}
+	}
+	return b.String()
+}
+
+// Gather reads the state. The ledger part comes from the cache while no input file changed; running
+// jobs, the offline marker and the session's stale marker are read every time. No network.
+func Gather(d paths.Dirs, session string, now time.Time) State {
+	key := inputsKey(d, now)
+	var c cached
+	if b, err := os.ReadFile(cacheFile(d)); err != nil || json.Unmarshal(b, &c) != nil || c.Key != key ||
+		now.Sub(c.At) > cacheTTL || now.Before(c.At) {
+		c = read(d, now)
+		c.Key, c.At = key, now
+		if b, err := json.Marshal(c); err == nil {
+			paths.WriteFileAtomic(cacheFile(d), b, 0o600)
+		}
+	}
+	_, err := os.Stat(d.OfflineMarker())
+	return State{SpentToday: c.SpentToday, DailyLimit: c.DailyLimit, SpentMonth: c.SpentMonth, MonthlyCap: c.MonthlyCap,
+		Team: c.Team, TeamSpent: c.TeamSpent, TeamCap: c.TeamCap, Running: usage.Running(d.RunningDir(), now),
+		Offline: err == nil, Stale: staleMark(d, session)}
+}
+
+func read(d paths.Dirs, now time.Time) cached {
 	_, herr := os.Stat(d.HistoryFile())
 	b, _ := budget.LoadFor(d.BudgetFile(), herr == nil)
 	es, _ := history.Read(d.HistoryFile())
-	sp := history.NewLedger(es).Spend(now)
-	_, err := os.Stat(d.OfflineMarker())
-	return State{SpentToday: sp.Today, SpentMonth: sp.Month, MonthlyCap: b.MonthlyUSD, Running: usage.Running(d.RunningDir(), now),
-		Offline: err == nil}
+	l := history.NewLedger(es)
+	sp := l.Spend(now)
+	c := cached{SpentToday: sp.Today + sp.Reserved, SpentMonth: sp.Month + sp.Reserved, MonthlyCap: b.MonthlyUSD}
+	if dl := b.DailyLimit(sp.MonthBeforeToday, now); !math.IsInf(dl, 1) {
+		c.DailyLimit = dl
+	}
+	if pol := team.Load(d, table.PinnedKeys()); pol != nil {
+		if pol.MonthlyShareUSD != nil && *pol.MonthlyShareUSD < c.MonthlyCap {
+			c.MonthlyCap = *pol.MonthlyShareUSD
+		}
+		if pol.TeamMonthlyUSD != nil {
+			c.Team, c.TeamCap = true, *pol.TeamMonthlyUSD
+			c.TeamSpent = pol.TeamSpent(now, l.SpendSince) + sp.Reserved
+		}
+	}
+	return c
+}
+
+// staleMark is the version named by the marker the prompt hook leaves when this session's server is
+// older than the installed plugin.
+func staleMark(d paths.Dirs, session string) string {
+	if session == "" {
+		return ""
+	}
+	ents, err := os.ReadDir(filepath.Dir(d.SessionRulesFile(session)))
+	if err != nil {
+		return ""
+	}
+	for _, e := range ents {
+		if v, ok := strings.CutPrefix(e.Name(), "stale-"); ok && v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 func runUser(st Settings, input []byte) string {

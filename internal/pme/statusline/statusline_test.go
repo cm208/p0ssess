@@ -2,6 +2,7 @@ package statusline
 
 import (
 	"os"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -15,45 +16,79 @@ import (
 )
 
 func TestSegment(t *testing.T) {
-	plain := Settings{Mark: "ᗣ"}
+	plain := Settings{}
 	jobs := []usage.Job{{Model: "xiaomi/mimo-v2.6-flash"}, {Model: "google/gemini-3.1-pro"}}
+	one := jobs[:1]
 	cases := []struct {
 		name string
 		s    State
 		room int
 		want string
 	}{
-		{"idle nothing spent", State{MonthlyCap: 10}, 0, ""},
-		{"idle spent", State{SpentToday: 0.14, SpentMonth: 1, MonthlyCap: 10}, 0, "ᗣ p0ssess  $0.14 today"},
-		{"working narrow", State{SpentToday: 0.14, MonthlyCap: 10, Running: jobs}, 30, "ᗣ p0ssess  2 running  $0.14"},
-		{"working wide", State{SpentToday: 0.14, MonthlyCap: 10, Running: jobs}, 200, "ᗣ p0ssess  2 running  $0.14 today  mimo-v2.6-flash, gemini-3.1-pro"},
-		{"near budget", State{SpentToday: 0, SpentMonth: 8.10, MonthlyCap: 10}, 0, "ᗣ p0ssess  $8.10 of $10 this month"},
-		{"under a cent", State{SpentToday: 0.0035, MonthlyCap: 10}, 0, "ᗣ p0ssess  <$0.01 today"},
-		{"tiny room keeps the shortest", State{SpentToday: 0.14, Running: jobs}, 5, "ᗣ p0ssess  2 running"},
+		{"idle", State{DailyLimit: 1, MonthlyCap: 10}, 0, "p0ssess $0/$1"},
+		{"spent", State{SpentToday: 0.42, DailyLimit: 1, SpentMonth: 1, MonthlyCap: 10}, 0, "p0ssess $0.42/$1"},
+		{"running, the spec's example", State{SpentToday: 0.42, DailyLimit: 1, MonthlyCap: 10, Running: one}, 28, "p0ssess $0.42/$1 · 1 running"},
+		{"running wide names the models", State{SpentToday: 0.42, DailyLimit: 1, MonthlyCap: 10, Running: jobs}, 0,
+			"p0ssess $0.42/$1 · 2 running (mimo-v2.6-flash, gemini-3.1-pro)"},
+		{"tiny room keeps spend", State{SpentToday: 0.42, DailyLimit: 1, Running: jobs}, 10, "p0ssess $0.42/$1"},
+		{"paced daily limit", State{SpentToday: 0.1, DailyLimit: 0.33, MonthlyCap: 10}, 0, "p0ssess $0.10/$0.33"},
+		{"no daily limit", State{SpentToday: 0.14, MonthlyCap: 10}, 0, "p0ssess $0.14 today"},
+		{"under a cent", State{SpentToday: 0.0035, DailyLimit: 1}, 0, "p0ssess <$0.01/$1"},
+		{"month cap", State{SpentToday: 0.2, DailyLimit: 1, SpentMonth: 10, MonthlyCap: 10}, 0, "p0ssess month cap $10.00/$10 · paid runs stopped"},
+		{"month cap narrow", State{SpentMonth: 10, MonthlyCap: 10, DailyLimit: 1}, 20, "p0ssess stopped"},
+		{"team member", State{SpentToday: 0.42, DailyLimit: 1, MonthlyCap: 10, Team: true, TeamSpent: 41, TeamCap: 50}, 0,
+			"p0ssess $0.42/$1 · team $41.00/$50"},
+		{"team budget used up", State{SpentToday: 0.42, DailyLimit: 1, MonthlyCap: 10, Team: true, TeamSpent: 50, TeamCap: 50, Running: one}, 0,
+			"p0ssess team budget $50.00/$50 · paid runs stopped · 1 running (mimo-v2.6-flash)"},
+		{"stale server", State{SpentToday: 0.42, DailyLimit: 1, Stale: "1.0.3"}, 0, "p0ssess $0.42/$1 · restart to update"},
+		{"stale narrow", State{SpentToday: 0.42, DailyLimit: 1, Stale: "1.0.3", Running: one}, 40, "p0ssess $0.42/$1 · 1 running · restart"},
 	}
 	for _, tc := range cases {
 		if got := Segment(tc.s, plain, tc.room); got != tc.want {
 			t.Errorf("%s: got %q want %q", tc.name, got, tc.want)
 		}
 	}
-	colored := Segment(State{SpentMonth: 9, MonthlyCap: 10}, Settings{Mark: "ᗣ", Color: true}, 0)
-	if !strings.Contains(colored, colorAmber+"ᗣ") || strings.Contains(colored, "\x1b[31m") || strings.Contains(colored, "\x1b[5m") {
-		t.Errorf("near budget should be an amber ghost, never red or blinking: %q", colored)
+	if got := Segment(State{SpentToday: 1, DailyLimit: 2}, Settings{Mark: "ᗣ"}, 0); got != "ᗣ p0ssess $1.00/$2" {
+		t.Errorf("mark: %q", got)
 	}
-	online := Segment(State{SpentToday: 0.14, MonthlyCap: 10}, Settings{Mark: "ᗣ", Color: true}, 0)
-	offline := Segment(State{SpentToday: 0.14, MonthlyCap: 10, Offline: true}, Settings{Mark: "ᗣ", Color: true}, 0)
-	if !strings.HasPrefix(online, colorIdle+"ᗣ") || !strings.HasPrefix(offline, colorOffline+"ᗣ") || colorOffline == colorIdle ||
-		!strings.Contains(offline, colorIdle+"p0ssess") || strings.Contains(offline, "\x1b[31m") || strings.Contains(offline, "\x1b[5m") {
-		t.Errorf("offline should dim only the mark, never red or blinking: %q vs %q", offline, online)
+}
+
+func TestLevelsAndColors(t *testing.T) {
+	col := Settings{Mark: "ᗣ", Color: true}
+	calm := Segment(State{SpentToday: 0.42, DailyLimit: 1, MonthlyCap: 10}, col, 0)
+	if !strings.HasPrefix(calm, colorIdle+"ᗣ") || strings.Contains(calm, colorAmber) || strings.Contains(calm, colorRed) {
+		t.Errorf("calm: %q", calm)
 	}
-	if got := Segment(State{SpentToday: 0.14, MonthlyCap: 10, Offline: true}, plain, 0); got != "ᗣ p0ssess  $0.14 today" {
-		t.Errorf("offline without color: %q", got)
+	near := State{SpentToday: 0.85, DailyLimit: 1, MonthlyCap: 10}
+	over := State{SpentToday: 1.4, DailyLimit: 1, SpentMonth: 3, MonthlyCap: 10}
+	for _, s := range []State{near, over, {SpentMonth: 8.5, MonthlyCap: 10, DailyLimit: 1}, {Team: true, TeamSpent: 45, TeamCap: 50, DailyLimit: 1}} {
+		if s.Level() != Near {
+			t.Errorf("%+v: level %v", s, s.Level())
+		}
+		if got := Segment(s, col, 0); !strings.Contains(got, colorAmber+"p0ssess") || strings.Contains(got, colorRed) {
+			t.Errorf("amber: %q", got)
+		}
 	}
-	if got := Segment(State{SpentMonth: 9, MonthlyCap: 10, Offline: true}, Settings{Mark: "ᗣ", Color: true}, 0); !strings.HasPrefix(got, colorAmber) {
-		t.Errorf("near the budget stays amber offline: %q", got)
+	for _, s := range []State{{SpentMonth: 10, MonthlyCap: 10}, {Team: true, TeamSpent: 50, TeamCap: 50, MonthlyCap: 10}} {
+		if got := Segment(s, col, 0); s.Level() != Stopped || !strings.Contains(got, colorRed+"p0ssess") {
+			t.Errorf("red: %q", got)
+		}
 	}
-	if got := Segment(State{SpentToday: 1}, Settings{}, 0); got != "p0ssess  $1 today" {
-		t.Errorf("no mark: %q", got)
+	for _, s := range []State{near, {SpentMonth: 10, MonthlyCap: 10}} {
+		if got := Segment(s, col, 0); strings.Contains(got, "\x1b[5m") {
+			t.Errorf("blinking: %q", got)
+		}
+	}
+	off := Segment(State{SpentToday: 0.14, DailyLimit: 1, Offline: true}, col, 0)
+	if !strings.HasPrefix(off, colorOffline+"ᗣ") || !strings.Contains(off, colorIdle+"p0ssess") {
+		t.Errorf("offline dims only the mark: %q", off)
+	}
+	stale := Segment(State{SpentToday: 0.14, DailyLimit: 1, Stale: "1.0.3"}, col, 0)
+	if !strings.HasSuffix(stale, colorAmber+" · restart to update"+reset) || !strings.Contains(stale, colorIdle+"p0ssess $0.14/$1"+reset) {
+		t.Errorf("stale marker in amber: %q", stale)
+	}
+	if got := Segment(near, Settings{Mark: "ᗣ"}, 0); strings.Contains(got, "\x1b") {
+		t.Errorf("no color asked: %q", got)
 	}
 }
 
@@ -82,7 +117,7 @@ func TestRunWrapsUserCommand(t *testing.T) {
 	history.Append(d.HistoryFile(), history.Entry{Type: history.TypeRun, RunID: "d-1", Model: "m/x", CashUSD: 0.14, TS: now})
 	in := []byte(strings.ReplaceAll(strings.ReplaceAll(input, "%d", "1"), "\"resets_at\":1", "\"resets_at\":"+itoa(now.Add(2*time.Hour).Unix())))
 	got := Run(in, d, now)
-	if got != "[Opus] repo  ᗣ p0ssess  $0.14 today" {
+	if got != "[Opus] repo  ᗣ p0ssess $0.14/$1" {
 		t.Errorf("Run = %q", got)
 	}
 	st, _ := usage.Load(d.UsageFile())
@@ -91,12 +126,8 @@ func TestRunWrapsUserCommand(t *testing.T) {
 	}
 	// Broken JSON and a failing command still print what they can.
 	os.WriteFile(d.EngineFile(), []byte("[statusline]\ncommand = \"exit 3\"\n"), 0o600)
-	if got := Run([]byte("{"), d, now); got != "ᗣ p0ssess  $0.14 today" {
+	if got := Run([]byte("{"), d, now); got != "ᗣ p0ssess $0.14/$1" {
 		t.Errorf("degraded Run = %q", got)
-	}
-	os.Remove(d.HistoryFile())
-	if got := Run(in, d, now); got != "" {
-		t.Errorf("idle with no spend should print nothing, got %q", got)
 	}
 }
 
@@ -105,12 +136,69 @@ func itoa(n int64) string { return strconv.FormatInt(n, 10) }
 func TestOfflineMarker(t *testing.T) {
 	t.Setenv("P0SSESS_HOME", t.TempDir())
 	d := paths.Default()
-	if gather(d, time.Now()).Offline {
+	if Gather(d, "", time.Now()).Offline {
 		t.Fatal("offline with no marker")
 	}
 	os.MkdirAll(d.Cache, 0o700)
 	os.WriteFile(d.OfflineMarker(), nil, 0o600)
-	if !gather(d, time.Now()).Offline {
+	if !Gather(d, "", time.Now()).Offline {
 		t.Error("the marker should dim the ghost")
+	}
+}
+
+// The ledger is read once; later refreshes take the cache until a file it depends on changes, so a
+// refresh stays well under 20 ms however long the history is.
+func TestGatherCachedAndFast(t *testing.T) {
+	t.Setenv("P0SSESS_HOME", t.TempDir())
+	d := paths.Default()
+	now := time.Date(2026, 11, 20, 15, 0, 0, 0, time.Local)
+	var es []history.Entry
+	for i := 0; i < 20000; i++ {
+		es = append(es, history.Entry{Type: history.TypeRun, RunID: "d-" + strconv.Itoa(i), Model: "m/x", CashUSD: 0.0001,
+			TS: now.Add(-time.Duration(i) * time.Minute)})
+	}
+	os.MkdirAll(d.Config, 0o700)
+	os.WriteFile(d.BudgetFile(), []byte("monthly_usd = 10\ndaily_usd = 1\n"), 0o600)
+	if err := history.Update(d.HistoryFile(), func(*history.Ledger) ([]history.Entry, error) { return es, nil }); err != nil {
+		t.Fatal(err)
+	}
+	first := Gather(d, "s1", now)
+	if first.DailyLimit != 1 || first.SpentToday <= 0 || first.SpentMonth <= first.SpentToday {
+		t.Fatalf("first: %+v", first)
+	}
+	start := time.Now()
+	const n = 50
+	for i := 0; i < n; i++ {
+		Gather(d, "s1", now.Add(time.Second))
+	}
+	if per := time.Since(start) / n; per > 20*time.Millisecond {
+		t.Errorf("cached refresh took %v", per)
+	}
+	// A new run invalidates the cache at once.
+	history.Append(d.HistoryFile(), history.Entry{Type: history.TypeRun, RunID: "new", Model: "m/x", CashUSD: 0.5, TS: now})
+	if got := Gather(d, "s1", now.Add(2*time.Second)); got.SpentToday < first.SpentToday+0.49 {
+		t.Errorf("cache not invalidated: %v then %v", first.SpentToday, got.SpentToday)
+	}
+	// So does a new budget.
+	os.WriteFile(d.BudgetFile(), []byte("monthly_usd = 10\ndaily_usd = 3\n"), 0o600)
+	if got := Gather(d, "s1", now.Add(3*time.Second)); got.DailyLimit != 3 {
+		t.Errorf("budget change: %+v", got)
+	}
+}
+
+func TestStaleMarker(t *testing.T) {
+	t.Setenv("P0SSESS_HOME", t.TempDir())
+	d := paths.Default()
+	if Gather(d, "sess-1", time.Now()).Stale != "" {
+		t.Fatal("stale with no marker")
+	}
+	dir := filepath.Dir(d.SessionRulesFile("sess-1"))
+	os.MkdirAll(dir, 0o700)
+	os.WriteFile(filepath.Join(dir, "stale-1.0.3"), nil, 0o600)
+	if got := Gather(d, "sess-1", time.Now()).Stale; got != "1.0.3" {
+		t.Errorf("stale %q", got)
+	}
+	if Gather(d, "sess-2", time.Now()).Stale != "" {
+		t.Error("another session is not stale")
 	}
 }

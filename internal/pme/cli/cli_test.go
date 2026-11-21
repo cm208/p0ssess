@@ -91,7 +91,7 @@ func TestCLI(t *testing.T) {
 		t.Errorf("hook: %s", out)
 	}
 	t.Setenv("NO_COLOR", "1")
-	if code, out, _ := run(t, `{"session_id":"s","model":{"id":"claude-sonnet-5-5"}}`, "statusline"); code != 0 || strings.TrimSpace(out) != "ᗣ p0ssess  $0.04 today" {
+	if code, out, _ := run(t, `{"session_id":"s","model":{"id":"claude-sonnet-5-5"}}`, "statusline"); code != 0 || strings.TrimSpace(out) != "ᗣ p0ssess $0.04/$1" {
 		t.Errorf("statusline: %q", out)
 	}
 	if code, out, _ := run(t, "", "usecases"); code != 0 || strings.Count(out, "\n") != len(tabletest.UseCases()) {
