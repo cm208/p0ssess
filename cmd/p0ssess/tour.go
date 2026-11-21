@@ -120,6 +120,6 @@ func demoRunner(cfg config.Config, d paths.Dirs) tour.Runner {
 		if err != nil {
 			return tour.DemoResult{}, err
 		}
-		return tour.DemoResult{Answer: res.Text, Receipt: server.DirectReceipt(eng, res, runID), CostUSD: server.DirectCost(res)}, nil
+		return tour.DemoResult{Model: res.Model, Answer: res.Text, Receipt: server.DirectReceipt(eng, res, runID), CostUSD: server.DirectCost(res)}, nil
 	}
 }

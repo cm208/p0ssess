@@ -11,8 +11,10 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"p0ssess/internal/config"
+	"p0ssess/internal/notices"
 	"p0ssess/internal/pme/local"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/proc"
@@ -67,47 +69,65 @@ func outcomesNotice(eng *local.Engine) string {
 	if os.MkdirAll(eng.Dirs.State, 0o700) != nil || os.WriteFile(mark, nil, 0o600) != nil {
 		return ""
 	}
-	return "records  when a Claude Code session ends, p0ssess sends anonymous outcome records; the page shows each one first. To stop: \"turn off outcome records\"\n" +
-		`         one record: {"v":1,"kind":"image.generate","model":"google/gemini-3.4-flash-image","route":"direct","stakes":2,"outcome":"accepted","cost":"<1c","week":"2026-W46"}` + "\n"
+	return "  records when a Claude Code session ends, p0ssess sends anonymous outcome records; the page shows each one first. To stop: \"turn off outcome records\"\n" +
+		`          one record: {"v":1,"kind":"image.generate","model":"google/gemini-3.4-flash-image","route":"direct","stakes":2,"outcome":"accepted","cost":"<1c","week":"2026-W46"}` + "\n"
 }
 
-// brief renders the summary: spend against the cap, what runs, the limits, and how to change them.
+// brief renders the summary as a small card: spend against the envelope with meters, what this month
+// saved, the last run, the limits, then the page and how to change things below the card.
 func brief(st *local.Status, eng *local.Engine, url string, gaps []string) string {
 	b, sp := st.Budget, st.Spend
-	var out strings.Builder
-	frac := 0.0
-	if b.MonthlyUSD > 0 {
-		frac = (sp.Month + sp.Reserved) / b.MonthlyUSD
-	}
 	running := "nothing running"
 	if n := len(st.Running); n > 0 {
 		var ms []string
 		for _, j := range st.Running {
 			ms = append(ms, short(j.Model))
 		}
-		running = fmt.Sprintf("%d running: %s", n, strings.Join(ms, ", "))
+		running = fmt.Sprintf("● %d running: %s", n, strings.Join(ms, ", "))
 	}
-	near := ""
-	if st.NearBudget {
-		near = "  near the cap"
-	}
-	fmt.Fprintf(&out, "ᗣ p0ssess %s   today %s   month %s of %s %s%s   %s\n",
-		version, money(sp.Today), money(sp.Month+sp.Reserved), money(b.MonthlyUSD), bar(frac, 10), near, running)
 
-	daily := "no daily limit"
-	switch {
-	case b.DailyUSD > 0:
-		daily = money(st.DailyLimit) + " a day"
-	case b.DailyUSD == 0:
-		daily = money(st.DailyLimit) + " today (paced)"
+	var rows []string
+	head := "ᗣ  p0ssess " + version
+	rows = append(rows, head+strings.Repeat(" ", max(2, cardWidth-4-runes(head)-runes(running)))+running, "")
+
+	dayOf, dayFrac := "no daily limit", 0.0
+	if st.DailyLimit > 0 {
+		dayOf, dayFrac = "of "+money(st.DailyLimit), sp.Today/st.DailyLimit
+		if b.DailyUSD == 0 {
+			dayOf += " paced"
+		}
 	}
-	limits := []string{"asks above " + money(b.PerTaskUSD) + " a task", daily, b.Privacy.Mode}
+	rows = append(rows, meterRow("today", sp.Today, dayFrac, dayOf))
+	monthFrac, monthOf := 0.0, "no monthly cap"
+	if b.MonthlyUSD > 0 {
+		monthFrac, monthOf = (sp.Month+sp.Reserved)/b.MonthlyUSD, "of "+money(b.MonthlyUSD)
+		if st.NearBudget {
+			monthOf += "  near the cap"
+		}
+	}
+	rows = append(rows, meterRow("month", sp.Month+sp.Reserved, monthFrac, monthOf))
+
+	saved, runs, last := monthReceipts(eng.Dirs.NoticesFile(), time.Now())
+	if runs > 0 {
+		line := fmt.Sprintf("%d this month", runs)
+		if saved > 0 {
+			line += " · ~" + money(saved) + " saved"
+		}
+		rows = append(rows, "runs    "+line)
+	}
+	if last != nil {
+		rows = append(rows, fmt.Sprintf("last    %s · %s · %s", short(last.Model), smallMoney(last.CostUSD), ago(time.Since(last.TS))))
+	}
+	rows = append(rows, "")
+
+	limits := []string{"asks above " + money(b.PerTaskUSD) + " a task", b.Privacy.Mode}
 	if b.Ask.FirstUse {
 		limits = append(limits, "asks on a model's first run")
 	}
 	if b.Ask.CodeEdits {
 		limits = append(limits, "asks before edits")
 	}
+	rows = append(rows, "limits  "+strings.Join(limits, " · "))
 	if us := eng.Usage(); us.RateLimits != nil && st.Lambda.Usage.Known {
 		var ws []string
 		if w := us.RateLimits.FiveHour; w != nil && w.UsedPercentage != nil {
@@ -117,19 +137,77 @@ func brief(st *local.Status, eng *local.Engine, url string, gaps []string) strin
 			ws = append(ws, fmt.Sprintf("weekly %.0f%%", *w.UsedPercentage))
 		}
 		if len(ws) > 0 {
-			limits = append(limits, "Claude "+strings.Join(ws, ", "))
+			rows = append(rows, "Claude  "+strings.Join(ws, " · "))
 		}
 	}
-	fmt.Fprintf(&out, "limits   %s\n", strings.Join(limits, " · "))
-	change := `tell Claude ("cap OpenRouter at $5", "always ask before grok")`
-	if url != "" {
-		change += " · page " + url
+
+	var out strings.Builder
+	out.WriteString("╭" + strings.Repeat("─", cardWidth-2) + "╮\n")
+	for _, r := range rows {
+		r = clip(r, cardWidth-4)
+		out.WriteString("│ " + r + strings.Repeat(" ", cardWidth-4-runes(r)) + " │\n")
 	}
-	fmt.Fprintf(&out, "change   %s\n", change)
+	out.WriteString("╰" + strings.Repeat("─", cardWidth-2) + "╯\n")
+	if url != "" {
+		fmt.Fprintf(&out, "  page    %s\n", url)
+	}
+	fmt.Fprintf(&out, "  change  tell Claude: \"cap OpenRouter at $5\", \"always ask before grok\"\n")
 	if len(gaps) > 0 {
-		fmt.Fprintf(&out, "setup    %s\n", strings.Join(gaps, " · "))
+		fmt.Fprintf(&out, "  setup   %s\n", strings.Join(gaps, " · "))
 	}
 	return out.String()
+}
+
+const cardWidth = 64
+
+func meterRow(label string, v, frac float64, of string) string {
+	return fmt.Sprintf("%-8s%-7s  %s  %s", label, money(v), bar(frac, 16), of)
+}
+
+func runes(s string) int { return utf8.RuneCountInString(s) }
+
+func clip(s string, n int) string {
+	if runes(s) <= n {
+		return s
+	}
+	r := []rune(s)
+	return string(r[:n-1]) + "…"
+}
+
+// monthReceipts sums this month's receipts from the notices file: the saving, the number of runs and
+// the newest one.
+func monthReceipts(path string, now time.Time) (saved float64, runs int, last *notices.Record) {
+	for _, r := range notices.Recent(path, 0) {
+		if r.Receipt == "" || r.TS.Year() != now.Year() || r.TS.Month() != now.Month() {
+			continue
+		}
+		if last == nil {
+			rec := r
+			last = &rec
+		}
+		runs++
+		saved += r.SavedUSD
+	}
+	return
+}
+
+func smallMoney(v float64) string {
+	if v > 0 && v < 0.01 {
+		return "<$0.01"
+	}
+	return money(v)
+}
+
+func ago(d time.Duration) string {
+	switch {
+	case d < time.Minute:
+		return "just now"
+	case d < time.Hour:
+		return fmt.Sprintf("%d min ago", int(d.Minutes()))
+	case d < 48*time.Hour:
+		return fmt.Sprintf("%d h ago", int(d.Hours()))
+	}
+	return fmt.Sprintf("%d days ago", int(d.Hours()/24))
 }
 
 func bar(frac float64, n int) string {

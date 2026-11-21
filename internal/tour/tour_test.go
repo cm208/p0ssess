@@ -199,13 +199,13 @@ func TestDemo(t *testing.T) {
 	var gotTask string
 	fake := func(_ context.Context, task, uc string, max float64) (DemoResult, error) {
 		gotTask, gotMax = task, max
-		return DemoResult{Answer: "Canberra,\n a compromise between Sydney and Melbourne.", Receipt: "(mimo-v2.6-flash, $0.0001)", CostUSD: 0.00012}, nil
+		return DemoResult{Model: "xiaomi/mimo-v2.6-flash", Answer: "p0ssess hands heavy work\n to cheaper models.", Receipt: "(mimo-v2.6-flash, $0.0001)", CostUSD: 0.00012}, nil
 	}
 	out, err := Demo(context.Background(), fake, true, "")
 	if err != nil || gotMax != 0.01 || gotTask != DemoTask {
 		t.Fatalf("%v %v %q", err, gotMax, gotTask)
 	}
-	for _, want := range []string{"answer   Canberra, a compromise", "receipt  (mimo-v2.6-flash, $0.0001)", "cost     $0.0001, under a cent"} {
+	for _, want := range []string{"asked    summarize a paragraph about p0ssess", "model    xiaomi/mimo-v2.6-flash", "answer   p0ssess hands heavy work to cheaper models.", "receipt  (mimo-v2.6-flash, $0.0001)", "cost     $0.0001, under a cent"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in %s", want, out)
 		}
@@ -227,9 +227,9 @@ func TestDemo(t *testing.T) {
 	if _, err := Demo(context.Background(), func(_ context.Context, _, uc string, _ float64) (DemoResult, error) {
 		ucs = append(ucs, uc)
 		if uc == DemoUseCase {
-			return DemoResult{}, errors.New("no model fits qa-factual within your rules and limits")
+			return DemoResult{}, errors.New("no model fits summarize-long-doc within your rules and limits")
 		}
-		return DemoResult{Answer: "Canberra.", Receipt: "(deepseek-v4.1-flash, $0.0001)"}, nil
+		return DemoResult{Answer: "p0ssess routes work.", Receipt: "(deepseek-v4.1-flash, $0.0001)"}, nil
 	}, true, ""); err != nil || len(ucs) != 2 {
 		t.Errorf("a table that keeps the question on Claude: %v %v", err, ucs)
 	}

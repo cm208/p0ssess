@@ -217,14 +217,18 @@ type Facts struct {
 const What = "p0ssess hands heavy, bulk and media work from Claude to cheaper models on OpenRouter, inside limits you set, " +
 	"and gives back the result with a one-line receipt (model, cost, saving)."
 
-// DemoTask is the sample task of step three; DemoMaxUSD caps it.
+// DemoTask is the sample task of step three: a short summary of a paragraph about p0ssess, so the demo
+// shows a real hand-off on something the user cares about. DemoAsk is how the tour names it.
 const (
-	DemoTask    = "In one sentence: what is the capital of Australia, and why was it chosen?"
-	DemoUseCase = "qa-factual"
+	DemoTask = "Summarize this for a busy developer in one sentence of at most 20 words, no preamble:\n\n" +
+		"p0ssess is a Claude Code plugin. When a task is heavy, repetitive or about media, it hands the work to a " +
+		"cheaper model on OpenRouter, keeps Claude in charge of the conversation, stays inside the spending limits " +
+		"the user set, and returns the result with a one-line receipt that names the model, the cost and the saving."
+	DemoAsk     = "summarize a paragraph about p0ssess in one sentence"
+	DemoUseCase = "summarize-long-doc"
 	DemoMaxUSD  = 0.01
-	// demoFallbackUseCase is tried when the route table keeps short factual questions on Claude (as the
-	// live one did on 2026-11-21: "no model fits qa-factual").
-	demoFallbackUseCase = "summarize-long-doc"
+	// demoFallbackUseCase is tried when the route table has nothing for the first one.
+	demoFallbackUseCase = "qa-factual"
 )
 
 // Show is the text of the four steps, one keyed line each, for the tour command to present.
@@ -270,6 +274,7 @@ func dailyShort(e Envelope) string {
 
 // DemoResult is what one demo run gave.
 type DemoResult struct {
+	Model   string
 	Answer  string
 	Receipt string
 	CostUSD float64
@@ -294,7 +299,10 @@ func Demo(ctx context.Context, run Runner, keyReady bool, keyFile string) (strin
 		return "", err
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "task     %s\n", DemoTask)
+	fmt.Fprintf(&b, "asked    %s\n", DemoAsk)
+	if res.Model != "" {
+		fmt.Fprintf(&b, "model    %s\n", res.Model)
+	}
 	fmt.Fprintf(&b, "answer   %s\n", strings.Join(strings.Fields(res.Answer), " "))
 	fmt.Fprintf(&b, "receipt  %s\n", res.Receipt)
 	fmt.Fprintf(&b, "cost     %s\n", DemoCost(res.CostUSD))

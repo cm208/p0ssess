@@ -5,7 +5,7 @@ allowed-tools: Bash(p0ssess me:*), Bash(p0ssess setup:*), mcp__plugin_p0ssess_p0
 
 !`p0ssess me --brief`
 
-Show the lines above to the user exactly as they are, in one code block, with nothing before or after it. If they are not a p0ssess summary (the command failed), run `p0ssess me --brief` with Bash and show its output the same way; if that fails too, say in one line that the p0ssess plugin is not working and to check `/mcp`.
+Show the lines above to the user exactly as they are, inside one fenced code block that starts with ```text, keeping every space and box character, with nothing before or after it. If they are not a p0ssess summary (the command failed), run `p0ssess me --brief` with Bash and show its output the same way; if that fails too, say in one line that the p0ssess plugin is not working and to check `/mcp`.
 
 Only when the summary has a `setup` line, add one short sentence offering its first item, and run that command only after the user says yes:
 - `p0ssess setup allow` adds allow rules for the plugin's tools to the user's Claude Code settings, so delegation runs without permission prompts. Rule, approval and settings changes keep asking: those prompts are how the user approves spending.
