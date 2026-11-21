@@ -91,10 +91,11 @@ type Budget struct {
 	DailyCapUSD float64 `toml:"-" json:"daily_cap_usd,omitempty"`
 }
 
-// Default is a new Free install's envelope: $1 a day, $10 a month.
+// Default is a new Free install's envelope: $1 a day, $10 a month, and up to $0.25 a task without asking.
 func Default() Budget {
 	b := legacy()
 	b.DailyUSD = 1
+	b.PerTaskUSD = 0.25
 	return b
 }
 

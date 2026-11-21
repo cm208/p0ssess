@@ -2,16 +2,15 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"p0ssess/internal/config"
 	"p0ssess/internal/direct"
+	"p0ssess/internal/notices"
 	"p0ssess/internal/opencode"
 	"p0ssess/internal/pme/hook"
 	"p0ssess/internal/pme/local"
@@ -27,22 +26,29 @@ const claudeBaseline = "anthropic/claude-sonnet-5.5"
 func Wire(re *relay.Engine, cfg config.Config, eng *local.Engine) {
 	re.SetDirect(directRunner(cfg, eng))
 	re.SetReceipt(func(r *relay.Result) string {
-		notice(eng, r.SessionID+r.RunID, r.Retries, r.Note, r.Chosen)
-		return receipt(eng, r.Model, r.CostUSD, r.CostEstimated, r.Tokens)
+		line, saved := receiptSaved(eng, r.Model, r.CostUSD, r.CostEstimated, r.Tokens)
+		record(eng, notices.Record{Run: r.SessionID + r.RunID, Notes: append(append([]string{}, r.Retries...), r.Note, r.Chosen),
+			Receipt: line, Model: r.Model, CostUSD: r.CostUSD, SavedUSD: saved})
+		return line
 	})
 }
 
 // receipt is the one line that goes with an answer: (model, $cost, saved ~$X).
 func receipt(eng *local.Engine, model string, cost float64, estimated bool, t *opencode.Tokens) string {
+	line, _ := receiptSaved(eng, model, cost, estimated, t)
+	return line
+}
+
+func receiptSaved(eng *local.Engine, model string, cost float64, estimated bool, t *opencode.Tokens) (string, float64) {
 	r := relay.DefaultReceipt(&relay.Result{Model: model, CostUSD: cost, CostEstimated: estimated})
 	if r == "" || t == nil || eng == nil {
-		return r
+		return r, 0
 	}
 	claude, ok := eng.TokenCost(claudeBaseline, t.Input, t.Output+t.Reasoning, t.Cache.Read, t.Cache.Write)
 	if !ok || claude-cost < 0.005 {
-		return r
+		return r, 0
 	}
-	return strings.TrimSuffix(r, ")") + fmt.Sprintf(", saved ~$%.2f)", claude-cost)
+	return strings.TrimSuffix(r, ")") + fmt.Sprintf(", saved ~$%.2f)", claude-cost), claude - cost
 }
 
 // notice keeps a run's notes out of the conversation: they go to the notices file the status line and
@@ -59,12 +65,12 @@ func notice(eng *local.Engine, id string, lines []string, more ...string) {
 	if len(lines) == 0 {
 		return
 	}
-	p := eng.Dirs.NoticesFile()
-	os.MkdirAll(filepath.Dir(p), 0o700)
-	b, _ := json.Marshal(map[string]any{"ts": time.Now().UTC(), "run": id, "notes": lines})
-	if f, err := os.OpenFile(p, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600); err == nil {
-		f.Write(append(b, '\n'))
-		f.Close()
+	record(eng, notices.Record{Run: id, Notes: lines})
+}
+
+func record(eng *local.Engine, r notices.Record) {
+	if eng != nil {
+		notices.Append(eng.Dirs.NoticesFile(), r)
 	}
 }
 

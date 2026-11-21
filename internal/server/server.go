@@ -27,6 +27,7 @@ import (
 	"p0ssess/internal/history"
 	"p0ssess/internal/jail"
 	"p0ssess/internal/mcp"
+	"p0ssess/internal/notices"
 	"p0ssess/internal/opencode"
 	"p0ssess/internal/pme/hook"
 	"p0ssess/internal/pme/local"
@@ -875,6 +876,24 @@ func (d *directTool) call(ctx context.Context, raw json.RawMessage, _ mcp.Progre
 	return mcp.Text(directText(d.eng, res, runID))
 }
 
+// DirectReceipt is a direct result's receipt line; it also records the receipt and the result's notes in
+// the notices file.
+func DirectReceipt(eng *local.Engine, res *direct.Result, runID string) string {
+	t := &opencode.Tokens{Input: float64(res.Usage.PromptTokens), Output: float64(res.Usage.CompletionTokens), Reasoning: float64(res.Usage.ReasoningTokens)}
+	cost := DirectCost(res)
+	line, saved := receiptSaved(eng, res.Model, cost, !res.Measured(), t)
+	record(eng, notices.Record{Run: runID, Notes: res.Warnings, Receipt: line, Model: res.Model, CostUSD: cost, SavedUSD: saved})
+	return line
+}
+
+// DirectCost is what a direct result cost: the measured figure, else the estimate.
+func DirectCost(res *direct.Result) float64 {
+	if res.Usage.CostSource == "" {
+		return res.Estimate.CostUSD
+	}
+	return res.Usage.CostUSD
+}
+
 // directText is the direct tool's result: the answer, the generated files, and one receipt line. Notes
 // go to the notices file, not the conversation.
 func directText(eng *local.Engine, res *direct.Result, runID string) string {
@@ -888,15 +907,10 @@ func directText(eng *local.Engine, res *direct.Result, runID string) string {
 		js, _ := json.Marshal(hints)
 		fmt.Fprintf(&b, "files: %s\n", js)
 	}
-	t := &opencode.Tokens{Input: float64(res.Usage.PromptTokens), Output: float64(res.Usage.CompletionTokens), Reasoning: float64(res.Usage.ReasoningTokens)}
-	cost := res.Usage.CostUSD
-	if res.Usage.CostSource == "" {
-		cost = res.Estimate.CostUSD
-	}
-	b.WriteString("receipt: " + receipt(eng, res.Model, cost, !res.Measured(), t) + "\n")
+	line := DirectReceipt(eng, res, runID)
+	b.WriteString("receipt: " + line + "\n")
 	if runID != "" {
 		b.WriteString("run: " + runID + "\n")
 	}
-	notice(eng, runID, res.Warnings)
 	return strings.TrimRight(b.String(), "\n")
 }

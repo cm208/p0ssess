@@ -12,8 +12,11 @@ func TestLoadDefaultsAndRoundTrip(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "budget.toml")
 	b, err := Load(path)
-	if err != nil || b.MonthlyUSD != 10 || b.PerTaskUSD != 0.02 || b.Privacy.Mode != "no-training" {
-		t.Fatalf("defaults: %+v %v", b, err)
+	if err != nil || b.MonthlyUSD != 10 || b.DailyUSD != 1 || b.PerTaskUSD != 0.25 || b.Privacy.Mode != "no-training" {
+		t.Fatalf("new-user defaults: %+v %v", b, err)
+	}
+	if b, _ := LoadFor(path, true); b.PerTaskUSD != 0.02 || b.DailyUSD != 0 {
+		t.Fatalf("an existing user keeps the old defaults: %+v", b)
 	}
 	os.WriteFile(path, []byte("monthly_usd = 25\n[privacy]\nmode = \"zdr\"\n"), 0o600)
 	b, err = Load(path)

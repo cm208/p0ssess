@@ -18,6 +18,7 @@ import (
 	"p0ssess/internal/history"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/rules"
+	"p0ssess/internal/tour"
 	"p0ssess/internal/usage"
 )
 
@@ -176,6 +177,11 @@ func Run(raw []byte, d paths.Dirs, now time.Time) string {
 		out = strings.TrimSpace(out + " p0ssess: tell the user this once, in one line, as written: " + n)
 	} else if n := calibrationOffer(d); n != "" {
 		out = strings.TrimSpace(out + " p0ssess: tell the user this once, in one line, as written: " + n)
+	}
+	if !paths.Private(in.Cwd) {
+		if t := tour.Hook(d, in.Prompt, os.Getenv, now); t != "" {
+			out = strings.TrimSpace(out + " " + t)
+		}
 	}
 	return out
 }
