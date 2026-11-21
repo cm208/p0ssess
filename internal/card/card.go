@@ -124,3 +124,6 @@ func Pair(label, value string, col int) string {
 func Spread(left, right string, n int) string {
 	return left + strings.Repeat(" ", max(2, n-Cols(left)-Cols(right))) + right
 }
+
+// Fenced wraps rendered cards in a text code block, so whoever shows them keeps them exact.
+func Fenced(s string) string { return "```text\n" + s + "```\n" }

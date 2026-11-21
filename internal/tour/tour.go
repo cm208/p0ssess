@@ -263,8 +263,8 @@ func FindDemo(id string) DemoTask {
 // demo) with each option's label, description, command and preview card.
 func Show(f Facts) string {
 	var b strings.Builder
-	b.WriteString("=== CARD 1: show verbatim in a text code block ===\n")
-	b.WriteString(welcomeCard().String())
+	b.WriteString("=== CARD 1: your first message is exactly this code block ===\n")
+	b.WriteString(card.Fenced(welcomeCard().String()))
 
 	b.WriteString("\n=== QUESTION 2: Your spending envelope (2 / 4) ===\n")
 	for _, c := range Choices(f.Envelope) {
@@ -298,12 +298,13 @@ func Show(f Facts) string {
 }
 
 func welcomeCard() card.Card {
-	rows := card.Wrap("Claude stays in charge. Heavy, bulk and media work goes to cheaper models on OpenRouter, inside limits you set.", 60, "")
+	rows := []string{"Welcome to p0ssess. Glad you're here.", ""}
+	rows = append(rows, card.Wrap("Claude stays in charge. Heavy, bulk and media work goes to cheaper models on OpenRouter, inside limits you set.", 60, "")...)
 	rows = append(rows, "",
 		"  you ─▶ Claude ─▶ p0ssess ─▶ cheaper model",
 		"             ◀─ result + (model, cost, saved ~$)",
 		"",
-		"Next: your spending limits, then a live demo.")
+		"Three quick steps: your limits, a live demo, where to look.")
 	return card.Card{Title: "ᗣ p0ssess tour", Right: "1 / 4", Rows: rows}
 }
 
@@ -353,8 +354,8 @@ var ErrNoKey = errors.New("no OpenRouter key")
 // Demo runs step three and returns its result card.
 func Demo(ctx context.Context, run Runner, d DemoTask, keyReady bool, keyFile string) (string, error) {
 	if !keyReady {
-		return card.Card{Title: "3 / 4 · live demo", Rows: append([]string{"No OpenRouter key yet."},
-			card.Wrap("Put it in "+keyFile+" (mode 0600), then run p0ssess tour demo.", 60, "")...)}.String(), nil
+		return card.Fenced(card.Card{Title: "3 / 4 · live demo", Rows: append([]string{"No OpenRouter key yet."},
+			card.Wrap("Put it in "+keyFile+" (mode 0600), then run p0ssess tour demo.", 60, "")...)}.String()), nil
 	}
 	t0 := time.Now()
 	res, err := run(ctx, d.Prompt, d.UseCase, DemoMaxUSD)
@@ -380,10 +381,13 @@ func Demo(ctx context.Context, run Runner, d DemoTask, keyReady bool, keyFile st
 	rows = append(rows, "")
 	cost := card.Pair("cost", DemoCost(res.CostUSD), 9)
 	if res.SavedUSD > 0 {
-		cost += "  ·  on Claude ~" + DemoCost(res.CostUSD+res.SavedUSD) + "  ·  saved ~" + DemoCost(res.SavedUSD)
+		claude := res.CostUSD + res.SavedUSD
+		cost += "  ·  ~" + DemoCost(claude) + " on Claude"
+		rows = append(rows, cost, card.Pair("saved", fmt.Sprintf("%d%%  (~%s)", SavedPct(res.SavedUSD, claude), DemoCost(res.SavedUSD)), 9))
+	} else {
+		rows = append(rows, cost)
 	}
-	rows = append(rows, cost)
-	return card.Card{Title: "3 / 4 · live demo", Right: "done", Rows: rows}.String(), nil
+	return card.Fenced(card.Card{Title: "3 / 4 · live demo", Right: "done", Rows: rows}.String()), nil
 }
 
 // DemoCost is a small amount in a few characters.
@@ -422,5 +426,17 @@ func DoneCard(f DoneFacts) string {
 		card.Pair("limits", "say it: \"cap p0ssess at $5 a month\"", 14),
 		"",
 		card.Pair("try now", "\"summarize the README with p0ssess\"", 14))
-	return card.Card{Title: "4 / 4 · you're set", Right: "ᗣ", Rows: rows}.String()
+	return Farewell + "\n\n" + card.Fenced(card.Card{Title: "4 / 4 · you're set", Right: "ᗣ", Rows: rows}.String())
+}
+
+// Farewell is the line above the last card.
+const Farewell = "That's the tour. Thanks for giving p0ssess a try. If anything feels off, write to support@p0ssess.me " +
+	"or open an issue at github.com/cm208/p0ssess/issues."
+
+// SavedPct is the saving as a whole percentage of what Claude would have cost.
+func SavedPct(saved, claude float64) int {
+	if claude <= 0 {
+		return 0
+	}
+	return int(saved/claude*100 + 0.5)
 }

@@ -165,7 +165,7 @@ func TestConcurrentStartClaimsOnce(t *testing.T) {
 func TestShowNewUser(t *testing.T) {
 	out := Show(Facts{Envelope: Defaults(), New: true, KeyReady: true, StatusLine: true})
 	for _, want := range []string{
-		"=== CARD 1", "ᗣ p0ssess tour", "1 / 4",
+		"=== CARD 1", "ᗣ p0ssess tour", "1 / 4", "Welcome to p0ssess",
 		"=== QUESTION 2", "option  Keep these | $1/day · $10/month · asks above $0.25 (recommended to start) | none",
 		"option  Lower | $0.50/day · $5/month · asks above $0.10 | p0ssess tour envelope --daily 0.5 --monthly 5 --task 0.1",
 		"option  Higher | $2/day · $25/month · asks above $0.50", "option  Skip the tour",
@@ -191,7 +191,7 @@ func TestShowExistingNoKey(t *testing.T) {
 
 func TestDoneCard(t *testing.T) {
 	out := DoneCard(DoneFacts{StatusLine: "p0ssess $0.11/$1.76 · nothing running", Team: true})
-	for _, want := range []string{"4 / 4 · you're set", "p0ssess $0.11/$1.76", "/p0ssess:team", "summarize the README"} {
+	for _, want := range []string{"4 / 4 · you're set", "p0ssess $0.11/$1.76", "/p0ssess:team", "summarize the README", "support@p0ssess.me", "```text"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in\n%s", want, out)
 		}
@@ -215,7 +215,7 @@ func TestDemo(t *testing.T) {
 	if err != nil || gotMax != 0.01 || gotTask != tr.Prompt {
 		t.Fatalf("%v %v %q", err, gotMax, gotTask)
 	}
-	for _, want := range []string{"3 / 4 · live demo", "mimo-v2.6-flash", "1.4 s", "「ちゃんと 動く」", "$0.0001", "saved ~$0.0090"} {
+	for _, want := range []string{"3 / 4 · live demo", "mimo-v2.6-flash", "1.4 s", "「ちゃんと 動く」", "$0.0001", "99%  (~$0.0090)", "```text"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in %s", want, out)
 		}

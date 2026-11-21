@@ -107,11 +107,11 @@ func brief(st *local.Status, eng *local.Engine, url string, gaps []string) strin
 	}
 	rows = append(rows, meterRow("month", sp.Month+sp.Reserved, monthFrac, monthOf))
 
-	saved, runs, last := monthReceipts(eng.Dirs.NoticesFile(), time.Now())
+	saved, cost, runs, last := monthReceipts(eng.Dirs.NoticesFile(), time.Now())
 	if runs > 0 {
 		line := fmt.Sprintf("%d this month", runs)
 		if saved > 0 {
-			line += " · ~" + money(saved) + " saved"
+			line += fmt.Sprintf(" · ~%s saved (%d%%)", money(saved), int(saved/(saved+cost)*100+0.5))
 		}
 		rows = append(rows, "runs    "+line)
 	}
@@ -176,7 +176,7 @@ func clip(s string, n int) string {
 
 // monthReceipts sums this month's receipts from the notices file: the saving, the number of runs and
 // the newest one.
-func monthReceipts(path string, now time.Time) (saved float64, runs int, last *notices.Record) {
+func monthReceipts(path string, now time.Time) (saved, cost float64, runs int, last *notices.Record) {
 	for _, r := range notices.Recent(path, 0) {
 		if r.Receipt == "" || r.TS.Year() != now.Year() || r.TS.Month() != now.Month() {
 			continue
@@ -187,6 +187,7 @@ func monthReceipts(path string, now time.Time) (saved float64, runs int, last *n
 		}
 		runs++
 		saved += r.SavedUSD
+		cost += r.CostUSD
 	}
 	return
 }
