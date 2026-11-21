@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="381" viewBox="0 0 1200 381" role="img" aria-labelledby="t d">
+  <title id="t">The first card of the p0ssess tour</title>
+  <desc id="d">A terminal card titled p0ssess tour, 1 of 4. Welcome to p0ssess. Glad you're here. Claude stays in charge. Heavy, bulk and media work goes to cheaper models on OpenRouter, inside limits you set. You, then Claude, then p0ssess, then a cheaper model; back comes the result plus (model, cost, saved). Three quick steps: your limits, a live demo, where to look. Beside it, the two choices: Start the tour, about a minute with one live demo capped at $0.01, or Skip the tour, which /p0ssess:tour runs again any time.</desc>
+  <rect x="0.75" y="0.75" width="1198.5" height="379.5" rx="8" fill="#0b0b0b" stroke="#2a2a2a" stroke-width="1.5"/>
+  <g id="output" font-family="'Obel Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, 'Cascadia Mono', Consolas, 'Noto Sans Mono', 'DejaVu Sans Mono', 'Liberation Mono', monospace">
+    <path d="M34.6 51V42.1A6.6 6.6 0 0 1 41.2 35.5M41.2 35.5H54.4M265.6 35.5H754M846.4 35.5H859.6M859.6 35.5A6.6 6.6 0 0 1 866.2 42.1V51M133.6 221.5H146.8M265.6 221.5H278.8M410.8 221.5H424M239.2 252.5H252.4M34.6 330V338.9A6.6 6.6 0 0 0 41.2 345.5M41.2 345.5H859.6M859.6 345.5A6.6 6.6 0 0 0 866.2 338.9V330M34.6 51V330M866.2 51V330" fill="none" stroke="#7d7d7d" stroke-width="1.5" stroke-linecap="square"/>
+    <path d="M68.92 42.1V33.74A5.28 5.28 0 0 1 79.48 33.74V42.1L74.2 37.94Z" fill="none" stroke="#c9c9c9" stroke-width="1.76" stroke-linejoin="round"/>
+    <polygon points="147.46,215.78 159.34,221.5 147.46,227.22" fill="#c9c9c9"/>
+    <polygon points="279.46,215.78 291.34,221.5 279.46,227.22" fill="#c9c9c9"/>
+    <polygon points="424.66,215.78 436.54,221.5 424.66,227.22" fill="#c9c9c9"/>
+    <polygon points="238.54,246.78 226.66,252.5 238.54,258.22" fill="#c9c9c9"/>
+    <text x="94" y="42.98" font-size="22" fill="#c9c9c9" textLength="158.4" lengthAdjust="spacing">p0ssess tour</text>
+    <text x="767.2" y="42.98" font-size="22" fill="#c9c9c9" textLength="66" lengthAdjust="spacing">1 / 4</text>
+    <text x="54.4" y="73.98" font-size="22" fill="#c9c9c9" textLength="488.4" lengthAdjust="spacing">Welcome to p0ssess. Glad you're here.</text>
+    <text x="54.4" y="135.98" font-size="22" fill="#c9c9c9" textLength="765.6" lengthAdjust="spacing">Claude stays in charge. Heavy, bulk and media work goes to</text>
+    <text x="54.4" y="166.98" font-size="22" fill="#c9c9c9" textLength="686.4" lengthAdjust="spacing">cheaper models on OpenRouter, inside limits you set.</text>
+    <text x="80.8" y="228.98" font-size="22" fill="#c9c9c9" textLength="39.6" lengthAdjust="spacing">you</text>
+    <text x="173.2" y="228.98" font-size="22" fill="#c9c9c9" textLength="79.2" lengthAdjust="spacing">Claude</text>
+    <text x="305.2" y="228.98" font-size="22" fill="#c9c9c9" textLength="92.4" lengthAdjust="spacing">p0ssess</text>
+    <text x="450.4" y="228.98" font-size="22" fill="#c9c9c9" textLength="171.6" lengthAdjust="spacing">cheaper model</text>
+    <text x="265.6" y="259.98" font-size="22" fill="#c9c9c9" textLength="422.4" lengthAdjust="spacing">result + (model, cost, saved ~$)</text>
+    <text x="54.4" y="321.98" font-size="22" fill="#c9c9c9" textLength="778.8" lengthAdjust="spacing">Three quick steps: your limits, a live demo, where to look.</text>
+  </g>
+  <g id="notes" font-family="'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif">
+    <text x="912.8" y="73.98" font-size="18" fill="#c9c9c9">Start the tour</text>
+    <text x="912.8" y="104.98" font-size="18" fill="#8a8a8a">about a minute; one live demo</text>
+    <text x="912.8" y="135.98" font-size="18" fill="#8a8a8a">capped at $0.01</text>
+    <text x="912.8" y="228.98" font-size="18" fill="#c9c9c9">Skip the tour</text>
+    <text x="912.8" y="259.98" font-size="18" fill="#8a8a8a">/p0ssess:tour runs it again</text>
+    <text x="912.8" y="290.98" font-size="18" fill="#8a8a8a">any time</text>
+  </g>
+</svg>

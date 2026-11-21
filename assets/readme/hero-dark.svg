@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="538" viewBox="0 0 1200 538" role="img" aria-labelledby="t d">
+  <title id="t">p0ssess: stop paying full Claude price for repetitive work</title>
+  <desc id="d">The p0ssess ghost and wordmark, the headline, and four measured hand-offs with the receipt line each answer ends with: unit tests for 15 Python modules, (deepseek-v4.1-flash-1017, $0.03); 300 support tickets triaged, (deepseek-v4.1-flash-1017, $0.08); a ten-minute film watched with its sound, (qwen3.8-omni-flash, $0.02); a 1024-pixel image, (recraft-v4.1-flash, $0.0070).</desc>
+  <!-- The lockup: the mark on a 4-unit pixel, the wordmark hanging two pixels below it. The mark's
+       grid has two empty columns on each side, so it starts left of the edge to line up with the type. -->
+  <g id="lockup">
+    <g transform="translate(-5 6) scale(4)" shape-rendering="crispEdges">
+      <path fill="#2a1b4e" d="M6 1h4v1h-4zM4 2h8v1h-8zM3 3h3v1h-3zM10 3h3v1h-3zM3 4h2v1h-2zM11 4h2v1h-2zM3 5h2v1h-2zM11 5h2v1h-2zM3 6h2v1h-2zM11 6h2v1h-2zM3 7h2v1h-2zM11 7h2v1h-2zM3 8h2v1h-2zM11 8h2v1h-2zM3 9h2v1h-2zM11 9h2v1h-2zM3 10h3v1h-3zM10 10h3v1h-3zM3 11h10v1h-10zM3 12h10v1h-10zM3 13h2v1h-2zM6 13h4v1h-4zM11 13h2v1h-2zM3 14h1v1h-1zM7 14h2v1h-2zM12 14h1v1h-1z"/>
+      <path fill="#7457e0" d="M6 0h4v1h-4zM4 1h2v1h-2zM10 1h2v1h-2zM3 2h1v1h-1zM12 2h1v1h-1zM2 3h1v1h-1zM13 3h1v1h-1zM2 4h1v1h-1zM13 4h1v1h-1zM2 5h1v1h-1zM13 5h1v1h-1zM2 6h1v1h-1zM13 6h1v1h-1zM2 7h1v1h-1zM13 7h1v1h-1zM2 8h1v1h-1zM13 8h1v1h-1zM2 9h1v1h-1zM13 9h1v1h-1zM2 10h1v1h-1zM13 10h1v1h-1zM2 11h1v1h-1zM13 11h1v1h-1zM2 12h1v1h-1zM13 12h1v1h-1zM2 13h1v1h-1zM5 13h1v1h-1zM10 13h1v1h-1zM13 13h1v1h-1zM2 14h1v1h-1zM4 14h1v1h-1zM6 14h1v1h-1zM9 14h1v1h-1zM11 14h1v1h-1zM13 14h1v1h-1zM3 15h2v1h-2zM7 15h2v1h-2zM11 15h2v1h-2z"/>
+      <path fill="#eef1ff" d="M6 3h4v1h-4zM5 4h6v1h-6zM5 5h1v1h-1zM7 5h2v1h-2zM10 5h1v1h-1zM5 6h1v1h-1zM7 6h2v1h-2zM10 6h1v1h-1zM5 7h1v1h-1zM7 7h2v1h-2zM10 7h1v1h-1zM5 8h6v1h-6zM5 9h6v1h-6zM6 10h4v1h-4z"/>
+      <path fill="#0b0b0b" d="M6 5h1v1h-1zM9 5h1v1h-1zM6 6h1v1h-1zM9 6h1v1h-1zM6 7h1v1h-1zM9 7h1v1h-1z"/>
+    </g>
+    <g transform="translate(71 42) scale(4)" shape-rendering="crispEdges">
+      <path fill="#ffffff" d="M0 2h3v1h-3zM0 3h1v1h-1zM3 3h1v1h-1zM0 4h1v1h-1zM3 4h1v1h-1zM0 5h3v1h-3zM0 6h1v1h-1zM0 7h1v1h-1zM0 8h1v1h-1zM11 2h3v1h-3zM10 3h1v1h-1zM11 4h2v1h-2zM13 5h1v1h-1zM10 6h3v1h-3zM16 2h3v1h-3zM15 3h1v1h-1zM16 4h2v1h-2zM18 5h1v1h-1zM15 6h3v1h-3zM21 2h2v1h-2zM20 3h1v1h-1zM23 3h1v1h-1zM20 4h4v1h-4zM20 5h1v1h-1zM21 6h3v1h-3zM26 2h3v1h-3zM25 3h1v1h-1zM26 4h2v1h-2zM28 5h1v1h-1zM25 6h3v1h-3zM31 2h3v1h-3zM30 3h1v1h-1zM31 4h2v1h-2zM33 5h1v1h-1zM30 6h3v1h-3z"/>
+      <path fill="#7457e0" d="M6 0h2v1h-2zM5 1h1v1h-1zM8 1h1v1h-1zM5 2h1v1h-1zM8 2h1v1h-1zM5 3h1v1h-1zM8 3h1v1h-1zM5 4h1v1h-1zM8 4h1v1h-1zM5 5h1v1h-1zM8 5h1v1h-1zM6 6h2v1h-2z"/>
+    </g>
+  </g>
+  <g font-family="'Obel Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, 'Cascadia Mono', Consolas, 'Noto Sans Mono', 'DejaVu Sans Mono', 'Liberation Mono', monospace">
+    <text x="1198" y="70" font-size="20" fill="#8f8f8f" text-anchor="end" textLength="240" lengthAdjust="spacing">A Claude Code plugin</text>
+    <g id="headline" font-weight="700">
+      <text x="-1" y="178" font-size="68" fill="#ffffff" textLength="883.66" lengthAdjust="spacing">Stop paying full Claude</text>
+      <text x="-1" y="252" font-size="68" fill="#ffffff" textLength="998.92" lengthAdjust="spacing">price for repetitive work.</text>
+    </g>
+  </g>
+  <!-- The ledger: a hairline with a violet start, then one hand-off a row. -->
+  <g id="rules">
+    <rect x="0" y="334" width="1200" height="1.5" fill="#383838" shape-rendering="crispEdges"/>
+    <rect x="0" y="385" width="1200" height="1.5" fill="#383838" shape-rendering="crispEdges"/>
+    <rect x="0" y="436" width="1200" height="1.5" fill="#383838" shape-rendering="crispEdges"/>
+    <rect x="0" y="487" width="1200" height="1.5" fill="#383838" shape-rendering="crispEdges"/>
+    <rect x="0" y="334" width="32" height="1.5" fill="#7457e0" shape-rendering="crispEdges"/>
+  </g>
+  <g id="jobs" font-family="'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif">
+    <text x="2" y="367" font-size="24" fill="#c9c9c9">Unit tests for 15 Python modules, written</text>
+    <text x="2" y="418" font-size="24" fill="#c9c9c9">300 support tickets, triaged</text>
+    <text x="2" y="469" font-size="24" fill="#c9c9c9">A ten-minute film, watched with its sound</text>
+    <text x="2" y="520" font-size="24" fill="#c9c9c9">A 1024-pixel image, made</text>
+  </g>
+  <!-- A closing parenthesis sits left in its column, so each receipt ends three units past the edge. -->
+  <g id="receipts" font-family="'Obel Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, 'Cascadia Mono', Consolas, 'Noto Sans Mono', 'DejaVu Sans Mono', 'Liberation Mono', monospace">
+    <text x="2" y="318" font-size="18" fill="#8f8f8f" textLength="259.2" lengthAdjust="spacing">four hand-offs, measured</text>
+    <text x="1198" y="318" font-size="18" fill="#8f8f8f" text-anchor="end" textLength="313.2" lengthAdjust="spacing">the receipt under each answer</text>
+    <text x="1201" y="367" font-size="24" fill="#c9c9c9" text-anchor="end" textLength="475.2" lengthAdjust="spacing">(deepseek-v4.1-flash-1017, <tspan fill="#ffffff" font-weight="700">$0.03</tspan>)</text>
+    <text x="1201" y="418" font-size="24" fill="#c9c9c9" text-anchor="end" textLength="475.2" lengthAdjust="spacing">(deepseek-v4.1-flash-1017, <tspan fill="#ffffff" font-weight="700">$0.08</tspan>)</text>
+    <text x="1201" y="469" font-size="24" fill="#c9c9c9" text-anchor="end" textLength="388.8" lengthAdjust="spacing">(qwen3.8-omni-flash, <tspan fill="#ffffff" font-weight="700">$0.02</tspan>)</text>
+    <text x="1201" y="520" font-size="24" fill="#c9c9c9" text-anchor="end" textLength="417.6" lengthAdjust="spacing">(recraft-v4.1-flash, <tspan fill="#ffffff" font-weight="700">$0.0070</tspan>)</text>
+  </g>
+</svg>

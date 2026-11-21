@@ -217,6 +217,10 @@ class Site:
             html_hook=lambda raw: self.html_block(raw, link),
         )
         m = re.search(r"<h1[^>]*>(.*?)</h1>", body, re.S)
+        if not m and not page["slug"]:
+            # The README's title is its hero image, which the site drops; the overview page names itself.
+            body = '<h1 id="p0ssess">p0ssess</h1>\n' + body
+            m = re.search(r"<h1[^>]*>(.*?)</h1>", body, re.S)
         if not m:
             self.errors.append("%s: no h1" % page["source"])
             return ""

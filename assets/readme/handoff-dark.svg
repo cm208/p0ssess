@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="142" viewBox="0 0 1200 142" role="img" aria-labelledby="t d">
+  <title id="t">How a hand-off travels</title>
+  <desc id="d">Three stops on one line. Claude plans, reviews and answers, and reads only what comes back. A possessed Haiku subagent in the background makes the call and hands the answer back. A cheaper model does the one job your rule names, sandboxed when it edits files. What returns to Claude is the result and its receipt: (model, $cost, saved ~$X).</desc>
+  <!-- The line, and the two lit wires on it. -->
+  <g id="line">
+    <rect x="162.4" y="33.25" width="763.6" height="1.5" fill="#383838" shape-rendering="crispEdges"/>
+    <rect x="162.4" y="32.5" width="357.6" height="3" fill="#7457e0" shape-rendering="crispEdges"/>
+    <rect x="680" y="32.5" width="246" height="3" fill="#7457e0" shape-rendering="crispEdges"/>
+  </g>
+  <g id="stops" font-family="'Obel Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, 'Cascadia Mono', Consolas, 'Noto Sans Mono', 'DejaVu Sans Mono', 'Liberation Mono', monospace">
+    <rect x="2" y="6" width="160.4" height="56" rx="28" fill="#161616" stroke="#383838" stroke-width="1.5"/>
+    <circle cx="33" cy="34" r="5" fill="#ffffff"/>
+    <text x="50" y="42" font-size="24" fill="#ffffff" textLength="86.4" lengthAdjust="spacing">Claude</text>
+    <!-- What Claude gets back: the answer's receipt, as p0ssess prints it. -->
+    <rect x="178.4" y="16" width="302" height="36" rx="18" fill="#161616" stroke="#383838" stroke-width="1.5"/>
+    <text x="194.4" y="40" font-size="18" fill="#c9c9c9" textLength="270" lengthAdjust="spacing">(model, $cost, saved ~$X)</text>
+    <!-- The possessed subagent. -->
+    <rect x="520" y="6" width="160" height="56" rx="28" fill="#2a1b4e" stroke="#7457e0" stroke-width="1.5"/>
+    <g transform="translate(530 14) scale(2.5)" shape-rendering="crispEdges">
+      <path fill="#2a1b4e" d="M6 1h4v1h-4zM4 2h8v1h-8zM3 3h3v1h-3zM10 3h3v1h-3zM3 4h2v1h-2zM11 4h2v1h-2zM3 5h2v1h-2zM11 5h2v1h-2zM3 6h2v1h-2zM11 6h2v1h-2zM3 7h2v1h-2zM11 7h2v1h-2zM3 8h2v1h-2zM11 8h2v1h-2zM3 9h2v1h-2zM11 9h2v1h-2zM3 10h3v1h-3zM10 10h3v1h-3zM3 11h10v1h-10zM3 12h10v1h-10zM3 13h2v1h-2zM6 13h4v1h-4zM11 13h2v1h-2zM3 14h1v1h-1zM7 14h2v1h-2zM12 14h1v1h-1z"/>
+      <path fill="#7457e0" d="M6 0h4v1h-4zM4 1h2v1h-2zM10 1h2v1h-2zM3 2h1v1h-1zM12 2h1v1h-1zM2 3h1v1h-1zM13 3h1v1h-1zM2 4h1v1h-1zM13 4h1v1h-1zM2 5h1v1h-1zM13 5h1v1h-1zM2 6h1v1h-1zM13 6h1v1h-1zM2 7h1v1h-1zM13 7h1v1h-1zM2 8h1v1h-1zM13 8h1v1h-1zM2 9h1v1h-1zM13 9h1v1h-1zM2 10h1v1h-1zM13 10h1v1h-1zM2 11h1v1h-1zM13 11h1v1h-1zM2 12h1v1h-1zM13 12h1v1h-1zM2 13h1v1h-1zM5 13h1v1h-1zM10 13h1v1h-1zM13 13h1v1h-1zM2 14h1v1h-1zM4 14h1v1h-1zM6 14h1v1h-1zM9 14h1v1h-1zM11 14h1v1h-1zM13 14h1v1h-1zM3 15h2v1h-2zM7 15h2v1h-2zM11 15h2v1h-2z"/>
+      <path fill="#eef1ff" d="M6 3h4v1h-4zM5 4h6v1h-6zM5 5h1v1h-1zM7 5h2v1h-2zM10 5h1v1h-1zM5 6h1v1h-1zM7 6h2v1h-2zM10 6h1v1h-1zM5 7h1v1h-1zM7 7h2v1h-2zM10 7h1v1h-1zM5 8h6v1h-6zM5 9h6v1h-6zM6 10h4v1h-4z"/>
+      <path fill="#0b0b0b" d="M6 5h1v1h-1zM9 5h1v1h-1zM6 6h1v1h-1zM9 6h1v1h-1zM6 7h1v1h-1zM9 7h1v1h-1z"/>
+    </g>
+    <text x="582" y="42" font-size="24" fill="#ffffff" textLength="72" lengthAdjust="spacing">Haiku</text>
+    <rect x="926" y="6" width="272" height="56" rx="28" fill="#161616" stroke="#7457e0" stroke-width="1.5"/>
+    <text x="954" y="42" font-size="24" fill="#ffffff" textLength="216" lengthAdjust="spacing">a cheaper model</text>
+  </g>
+  <g id="captions" font-family="'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif" font-size="20">
+    <text x="2" y="100" fill="#c9c9c9">Plans, reviews and answers.</text>
+    <text x="2" y="128" fill="#8f8f8f">Reads only what comes back.</text>
+    <text x="600" y="100" fill="#c9c9c9" text-anchor="middle">A background subagent, possessed.</text>
+    <text x="600" y="128" fill="#8f8f8f" text-anchor="middle">Makes the call, hands the answer back.</text>
+    <text x="1198" y="100" fill="#c9c9c9" text-anchor="end">Does the one job your rule names.</text>
+    <text x="1198" y="128" fill="#8f8f8f" text-anchor="end">Sandboxed when it edits files.</text>
+  </g>
+</svg>

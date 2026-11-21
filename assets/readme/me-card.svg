@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="350" viewBox="0 0 1200 350" role="img" aria-labelledby="t d">
+  <title id="t">The /p0ssess:p0ssess-me card on a new install</title>
+  <desc id="d">A terminal card. p0ssess 1.1.0, nothing running. Today $0.00 of $1.00, with an empty meter: the daily limit warns. Month $0.00 of $10.00, with an empty meter: paid runs stop at the cap. Limits: asks above $0.25 a task, no-training. Under the card, the address of the local page on 127.0.0.1 and how to change a limit: tell Claude "cap OpenRouter at $5" or "always ask before grok".</desc>
+  <rect x="0.75" y="0.75" width="1198.5" height="348.5" rx="8" fill="#0b0b0b" stroke="#2a2a2a" stroke-width="1.5"/>
+  <g id="output" font-family="'Obel Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, 'Cascadia Mono', Consolas, 'Noto Sans Mono', 'DejaVu Sans Mono', 'Liberation Mono', monospace">
+    <path d="M34.6 51V42.1A6.6 6.6 0 0 1 41.2 35.5M41.2 35.5H859.6M859.6 35.5A6.6 6.6 0 0 1 866.2 42.1V51M34.6 237V245.9A6.6 6.6 0 0 0 41.2 252.5M41.2 252.5H859.6M859.6 252.5A6.6 6.6 0 0 0 866.2 245.9V237M34.6 51V237M866.2 51V237" fill="none" stroke="#7d7d7d" stroke-width="1.5" stroke-linecap="square"/>
+    <path d="M55.72 73.1V64.74A5.28 5.28 0 0 1 66.28 64.74V73.1L61 68.94Z" fill="none" stroke="#c9c9c9" stroke-width="1.76" stroke-linejoin="round"/>
+    <polygon points="283.68,124.1 291.08,124.1 287.12,132.9 279.72,132.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="296.88,124.1 304.28,124.1 300.32,132.9 292.92,132.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="310.08,124.1 317.48,124.1 313.52,132.9 306.12,132.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="323.28,124.1 330.68,124.1 326.72,132.9 319.32,132.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="336.48,124.1 343.88,124.1 339.92,132.9 332.52,132.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="349.68,124.1 357.08,124.1 353.12,132.9 345.72,132.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="362.88,124.1 370.28,124.1 366.32,132.9 358.92,132.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="376.08,124.1 383.48,124.1 379.52,132.9 372.12,132.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="389.28,124.1 396.68,124.1 392.72,132.9 385.32,132.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="402.48,124.1 409.88,124.1 405.92,132.9 398.52,132.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="415.68,124.1 423.08,124.1 419.12,132.9 411.72,132.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="428.88,124.1 436.28,124.1 432.32,132.9 424.92,132.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="442.08,124.1 449.48,124.1 445.52,132.9 438.12,132.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="455.28,124.1 462.68,124.1 458.72,132.9 451.32,132.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="468.48,124.1 475.88,124.1 471.92,132.9 464.52,132.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="481.68,124.1 489.08,124.1 485.12,132.9 477.72,132.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="283.68,155.1 291.08,155.1 287.12,163.9 279.72,163.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="296.88,155.1 304.28,155.1 300.32,163.9 292.92,163.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="310.08,155.1 317.48,155.1 313.52,163.9 306.12,163.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="323.28,155.1 330.68,155.1 326.72,163.9 319.32,163.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="336.48,155.1 343.88,155.1 339.92,163.9 332.52,163.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="349.68,155.1 357.08,155.1 353.12,163.9 345.72,163.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="362.88,155.1 370.28,155.1 366.32,163.9 358.92,163.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="376.08,155.1 383.48,155.1 379.52,163.9 372.12,163.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="389.28,155.1 396.68,155.1 392.72,163.9 385.32,163.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="402.48,155.1 409.88,155.1 405.92,163.9 398.52,163.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="415.68,155.1 423.08,155.1 419.12,163.9 411.72,163.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="428.88,155.1 436.28,155.1 432.32,163.9 424.92,163.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="442.08,155.1 449.48,155.1 445.52,163.9 438.12,163.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="455.28,155.1 462.68,155.1 458.72,163.9 451.32,163.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="468.48,155.1 475.88,155.1 471.92,163.9 464.52,163.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="481.68,155.1 489.08,155.1 485.12,163.9 477.72,163.9" fill="none" stroke="#c9c9c9" stroke-width="1.3" stroke-linejoin="round"/>
+    <text x="94" y="73.98" font-size="22" fill="#c9c9c9" textLength="171.6" lengthAdjust="spacing">p0ssess 1.1.0</text>
+    <text x="648.4" y="73.98" font-size="22" fill="#c9c9c9" textLength="198" lengthAdjust="spacing">nothing running</text>
+    <text x="54.4" y="135.98" font-size="22" fill="#c9c9c9" textLength="66" lengthAdjust="spacing">today</text>
+    <text x="160" y="135.98" font-size="22" fill="#c9c9c9" textLength="66" lengthAdjust="spacing">$0.00</text>
+    <text x="516.4" y="135.98" font-size="22" fill="#c9c9c9" textLength="105.6" lengthAdjust="spacing">of $1.00</text>
+    <text x="54.4" y="166.98" font-size="22" fill="#c9c9c9" textLength="66" lengthAdjust="spacing">month</text>
+    <text x="160" y="166.98" font-size="22" fill="#c9c9c9" textLength="66" lengthAdjust="spacing">$0.00</text>
+    <text x="516.4" y="166.98" font-size="22" fill="#c9c9c9" textLength="118.8" lengthAdjust="spacing">of $10.00</text>
+    <text x="54.4" y="228.98" font-size="22" fill="#c9c9c9" textLength="79.2" lengthAdjust="spacing">limits</text>
+    <text x="160" y="228.98" font-size="22" fill="#c9c9c9" textLength="488.4" lengthAdjust="spacing">asks above $0.25 a task · no-training</text>
+    <text x="54.4" y="290.98" font-size="22" fill="#c9c9c9" textLength="52.8" lengthAdjust="spacing">page</text>
+    <text x="160" y="290.98" font-size="22" fill="#c9c9c9" textLength="356.4" lengthAdjust="spacing">http://127.0.0.1:41733/t/…/</text>
+    <text x="54.4" y="321.98" font-size="22" fill="#c9c9c9" textLength="79.2" lengthAdjust="spacing">change</text>
+    <text x="160" y="321.98" font-size="22" fill="#c9c9c9" textLength="805.2" lengthAdjust="spacing">tell Claude: "cap OpenRouter at $5", "always ask before grok"</text>
+  </g>
+  <g id="notes" font-family="'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif">
+    <text x="912.8" y="135.98" font-size="18" fill="#8a8a8a">warns at the daily limit</text>
+    <text x="912.8" y="166.98" font-size="18" fill="#8a8a8a">paid runs stop at the cap</text>
+    <text x="912.8" y="228.98" font-size="18" fill="#8a8a8a">above it, Claude asks once</text>
+    <text x="912.8" y="290.98" font-size="18" fill="#8a8a8a">local only, two hours</text>
+  </g>
+</svg>
