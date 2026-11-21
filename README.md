@@ -1,31 +1,40 @@
-<p align="center"><img src="assets/ghost.svg" width="120" alt=""></p>
+<p align="center"><img src="site/ghost.svg" width="96" height="96" alt="The p0ssess ghost"></p>
+
 <h1 align="center">p0ssess</h1>
 
-<p align="center">Claude Code hands work to other models through OpenRouter, and stays in charge.</p>
+<p align="center"><strong>Stop paying full Claude price for repetitive work.</strong><br>
+Claude Code hands the work to cheaper models through OpenRouter, and stays in charge.</p>
 
-p0ssess is a Claude Code plugin. When a task needs something Claude cannot do (watch a video, hear a recording, make an image), or when a cheaper model would do just as well (summarizing a pile of logs, drafting tests that the test suite will judge), Claude hands that piece to another model, checks what comes back, and carries on. There is no extra step to approve: "watch this video" gets you the answer, with the model that watched it named in a few words:
+<p align="center">
+  <a href="https://github.com/cm208/p0ssess/releases"><img src="https://img.shields.io/github/v/release/cm208/p0ssess?color=7457e0&label=release" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/cm208/p0ssess?color=7457e0" alt="MIT license"></a>
+</p>
 
+<p align="center">
+  <a href="#install">Install</a> ·
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#how-it-works">How it works</a> ·
+  <a href="#plans">Plans</a> ·
+  <a href="https://docs.p0ssess.me">Docs</a> ·
+  <a href="https://p0ssess.me">p0ssess.me</a>
+</p>
+
+---
+
+p0ssess is a Claude Code plugin. Tell it once which chores don't need Claude's rates, and Claude hands them to a cheaper model, checks what comes back and answers you as usual. It also does what Claude can't: watch a video, hear a recording, make an image.
+
+The hand-off runs in a small background subagent on Haiku, the possession. It makes the call and brings back only the result, so the work never fills your conversation. Every answer ends with one receipt line: the model, the cost, and the saving against Claude.
+
+```text
+The crash happens at 0:42, right after the second tap on Save. …
+(qwen3.8-omni-flash, $0.0162)
 ```
-The crash happens at 0:42, right after the second tap on Save: … (gemini-3.8-flash, $0.004)
-```
 
-The hand-off runs in a small background agent on Haiku, which makes the calls and returns only the result, so the work never fills your main conversation. Everything else stays with Claude.
-
-## What it does
-
-- **Routes by expected cost per accepted result.** The p0ssess engine, a hosted service, scores every route that could do a task, Claude included: one OpenRouter call, a sandboxed agent session on another model, a smaller Claude subagent, or a local tool. It weighs the cash, the Claude usage it saves, how likely each model is to get it right (from public benchmarks and your own history), and how much a wrong answer would hurt. Your budget, rules and approvals are enforced on your machine, whatever the engine says.
-- **Rates stakes.** Claude rates each task from trivial to critical. Critical work (auth, infrastructure, production, money) stays with Claude unless you say otherwise.
-- **Reviews everything that matters.** Code edits come back as a diff from a separate git worktree and are never applied unreviewed. For important diffs Claude can offer an optional second opinion from two other model families, in addition to its own review.
-- **Asks only when it matters.** A job runs without a question when its estimate is under your per-task auto-approve limit. Claude asks, in one line with the cost, only when the estimate is above that limit, the monthly cap would be passed, a rule of yours says to ask, or the work is critical. Asking before a model's first run or before agent edits is a setting you can turn on.
-- **Respects a budget.** A monthly cap, a per-task auto-approve limit and a daily pace, enforced by the tools that spend, not left to Claude's judgment. Each call's maximum is reserved before it is sent and settled to the measured cost after, so parallel calls cannot overshoot; a cost OpenRouter never reports counts at the reserved maximum.
-- **Takes rules in plain language.** "Never use grok." "Only use gemini-3.8-flash for video." "Auto-approve video summaries up to 20 cents each today." Claude shows the rule it wrote in one line and saves it when you confirm. A repository's own `.p0ssess/rules.toml` can only tighten your limits, never loosen them.
-- **Learns quietly.** It notices what you accept, redo and decline, adjusts its offers, and suggests rules and shortcut agents. It never creates either on its own.
-- **Hands you the files.** Images (and documents an agent run makes) come back as files: Claude prints each absolute path and, when you follow the session from the Claude app or work in a cloud session, sends them to you with Claude Code's own file tool.
-- **Stays out of the way.** A hint Claude sees (you do not) only when a prompt has media or bulk work in it or is work one of your rules sends to a model, a small status line segment, and a local page.
+Everything else stays with Claude. Small edits and plain questions never leave.
 
 ## Install
 
-You need Claude Code and an [OpenRouter](https://openrouter.ai) API key. The plugin runs one Go binary: a release archive ships it for Linux (amd64, arm64), macOS (Apple silicon) and Windows (x64), checked against SHA-256 sums before it runs. A plain clone downloads the same binary from the [releases page](https://github.com/cm208/p0ssess/releases) and checks it the same way, or, when that fails, builds it on first use with Go 1.27 or later in a few seconds. Releases are built reproducibly from the tagged commit, so anyone can rebuild one and compare ([docs/RELEASE.md](docs/RELEASE.md)). For the sandboxed agent path you also need Linux with rootless podman; without it (on macOS and Windows, say), media and one-shot jobs still work.
+You need [Claude Code](https://claude.com/claude-code) 2.1.319 or later and an [OpenRouter](https://openrouter.ai) API key.
 
 ```sh
 claude plugin marketplace add cm208/p0ssess
@@ -40,79 +49,143 @@ install -m 600 /dev/null ~/.config/p0ssess/secrets/openrouter_key
 "${EDITOR:-vi}" ~/.config/p0ssess/secrets/openrouter_key
 ```
 
-Then start Claude Code and run `/p0ssess:p0ssess-me`. It prints three lines (spend against the cap, your limits, what is running) and the address of a local page. When something is missing for quiet runs (the key, allow rules for the plugin's tools, the status line segment) it adds a `setup` line and offers that one step, only with your yes. [docs/INSTALL.md](docs/INSTALL.md) has the details, other ways to install, and how to remove everything.
+Start Claude Code. The tour runs in your first session; `/p0ssess:p0ssess-me` shows where you stand any time after.
+
+The plugin runs one Go binary, for Linux (amd64, arm64), macOS (Apple silicon) and Windows (x64). The launcher runs it only when its SHA-256 matches `dist/SHA256SUMS` for this version, or builds it from the plugin's own vendored source with Go 1.27 or later. The sandboxed agent path needs Linux with rootless podman; on macOS and Windows, media and one-shot jobs work without it. [docs/INSTALL.md](docs/INSTALL.md) has the details, Windows notes, updating, and [how to remove everything](docs/INSTALL-NOTES.md).
 
 ## Quick start
 
-Ask for things the way you normally would:
+Ask the way you normally would:
 
-- "Watch `bug-repro.mp4` and tell me where it breaks." Claude sends the video to a model that can watch it (p0ssess picks the model) and answers from what comes back. It asks first only if the estimate is above your auto-approve limit.
-- "Make an image of a ghost holding a lantern." The image comes back as a file; Claude shows you its path.
-- "Transcribe `standup.m4a` and list the action items."
-- "Use deepseek flash to draft tests for `stats.py`." The relay agent runs DeepSeek in a sandbox; the tests come back as a diff for Claude to review.
-- "Auto-approve short media jobs up to 5 cents each today." Saved as a standing approval after you confirm; matching jobs then run without asking.
-- "How much have I spent on OpenRouter this month?"
-
-`/p0ssess:p0ssess-me` shows the summary and opens a local page: spend today and this month, what is running, Claude's usage windows, recent runs, your limits and rules, and the settings.
-
-## Privacy
-
-p0ssess talks to two services: OpenRouter, which runs the models you hand work to, and the p0ssess engine service, which ranks the routes for a task.
-
-What goes to OpenRouter:
-
-- The prompt and files for the job you hand off, and nothing else. Every call tells OpenRouter not to route to providers that train on prompts. A zero-retention mode is one setting away.
-- Files that look like secrets (`.env`, keys, credentials) are never sent. A `.p0ssess-private` file in a repository blocks all delegation from it.
-- When a noisy recording is transcribed, p0ssess first cleans it up on your machine with ffmpeg (a speech band-pass and loudness normalization) and sends the cleaned copy, which it deletes after the call.
-
-What goes to the engine service, with each request for a ranking:
-
-- The use case (for example `video-understand`) or a short task description that Claude writes, such as "transcribe a 3-minute radio recording". Never your prompt, your files, their names or their contents.
-- The input and output types and rough sizes (minutes of audio, number of pages), the stakes rating, and which Claude model leads the session.
-- One number that weighs Claude's cost, worked out on your machine from your plan. Your Claude usage readings stay on your machine.
-- The rules you set that limit which models may run ("never use grok", "only use gemini-3.8-flash for video"), your model and provider allow and deny lists, and the privacy mode. Rule notes, budgets, spending, standing approvals and ask-first rules are not sent.
-- Any scoring settings you changed in `engine.toml`.
-- How often you accepted, redid, declined or overrode each model, per use case, as plain counts. No dates, projects, sessions or task text.
-- A random install token, made on your machine the first time, used only to rate-limit requests. It is not tied to you or to the machine.
-
-Nothing is sent from a repository with a `.p0ssess-private` file. The prompt hook, which reads your prompts, never contacts the service.
-
-The service keeps none of it: it does not log requests, tokens or IP addresses. Once a day p0ssess also downloads a signed table of default routes, so it keeps working, quietly, when the service cannot be reached.
-
-Anonymous outcome records. When a Claude Code session ends, p0ssess sends the records about the delegated runs that have finished since the last send. If a session ends abruptly (a crash, a killed terminal), those records go out at the next session end or the next time the plugin starts. Nothing is sent when there are none, or from a repository with a `.p0ssess-private` file. Each record is exactly this:
-
-```
-{"v":1, "kind":"image.generate", "model":"google/gemini-3.4-flash-image",
- "route":"direct", "stakes":2, "outcome":"accepted", "cost":"<1c", "week":"2026-W46"}
-```
-
-That is the kind of task, the model, the route, the stakes, whether the result was used, the cost in a coarse bucket and the week. The service stores the records without the token, without your IP address and without the time they arrived, and uses them for success rates per model. Because an upload follows the end of a session, the service could in principle see roughly when your sessions end; it does not log requests, so it keeps no such record. Calibration results are not sent as outcome records. The local page (`/p0ssess:p0ssess-me`) shows the pending records line by line before they go. The upload runs in a background process, so closing Claude Code is never delayed by it. A run you rate yourself (the `direct` tool's `await_outcome`) is held back until you record its outcome. If the service refuses a batch, it stays on your machine and goes out with a later send; a single record the service names as invalid is set aside in `~/.local/state/p0ssess/outcomes-refused.jsonl` instead of being sent. To turn records off, tell Claude "turn off outcome records", or set `outcomes.send = false` in `~/.config/p0ssess/budget.toml`. Then no records are built or sent.
-
-Team. An install linked to an account in a p0ssess Team org fetches the org's signed policy (its shared rules and your monthly budget share) every few minutes while the plugin runs, and keeps the last one to enforce offline. It also reports each paid run to the org, so the owner can see spend: the day (UTC), the use case, the model, the route and the cost, nothing else. No prompts, files, file names, project paths, sessions or times of day, and nothing from a repository with a `.p0ssess-private` file. The reports wait in `~/.local/state/p0ssess/team-spend.jsonl` and go out with the policy fetch and at session end. Leaving the team (`p0ssess team leave`) deletes the policy and the queue.
-
-On your machine:
-
-- The sandbox for the agent path has no access to your home directory, SSH keys or credentials and cannot reach your local network. Each delegated session gets its own sandbox, removed when the session ends. Your OpenRouter key stays in a separate proxy container the model cannot reach. The model's shell commands have no network unless you turn on internet for a project yourself, and even then only public addresses.
-- The full history the engine learns from stays in local files and never stores prompt content. Agent-path transcripts and diffs are written to `~/.local/state/p0ssess/relay/runs/` (mode 0600) and kept until you delete them.
-- p0ssess never reads, stores or relays your Claude credentials.
+| You say | What happens |
+|---|---|
+| "Watch `bug-repro.mp4` and tell me where it breaks." | The video goes to a model that can watch it. Claude answers from what comes back. |
+| "Make an image of a ghost holding a lantern." | The image lands as a file and Claude prints its path. |
+| "Transcribe `standup.m4a` and list the action items." | The recording goes to a speech model; Claude writes the list. |
+| "Use deepseek flash to draft tests for `stats.py`." | DeepSeek works in a sandbox on its own git worktree. The edit comes back as a diff with the tests run. |
+| "Always send unit test writing to deepseek flash." | Claude writes the rule, shows it in one line and saves it when you say yes. |
+| "Auto-approve short media jobs up to 5 cents each today." | A standing approval, saved after you confirm. |
+| "How much have I spent on OpenRouter this month?" | Claude reads your ledger. |
 
 ## How it works
 
-- [docs/DESIGN.md](docs/DESIGN.md): the design
-- [docs/ENGINE.md](docs/ENGINE.md): how routes are scored, the defaults and why, the config files and the tools
-- [docs/RELAY.md](docs/RELAY.md): the sandboxed agent path
-- [docs/MEDIA.md](docs/MEDIA.md): video, audio, images and PDFs on the direct path, with measured costs
-- [docs/RELEASE.md](docs/RELEASE.md): how releases are built, checked and published
-- [docs/RESEARCH.md](docs/RESEARCH.md): the research behind the engine's use cases and model data
+### Routing
+
+When no rule of yours covers a job, the p0ssess engine prices every route that could do it, Claude included: one OpenRouter call, a sandboxed agent session on another model, a smaller Claude subagent, or a local tool. It weighs the cash, the Claude usage it saves, how likely each model is to get it right (public benchmarks plus your own history), and how much a wrong answer would hurt. The work stays on Claude whenever handing it off wouldn't save anything.
+
+Claude rates each task from trivial to critical. Critical work (auth, infrastructure, production, money) stays with Claude unless you say otherwise. New OpenRouter models work the day they are listed: prices and ids come from OpenRouter's live list. [docs/ENGINE.md](docs/ENGINE.md)
+
+### The spending envelope
+
+One envelope, enforced by the tools that spend, not left to Claude's judgment:
+
+- **a daily limit** that warns,
+- **a monthly cap** that stops paid runs,
+- **an auto-approve amount per task**: under it a job just runs; over it Claude asks once, in one line with the cost. That one yes covers retries.
+
+New installs start at $1 a day, $10 a month and $0.25 a task. Each call's maximum is reserved before it is sent and settled to the measured cost after, so parallel calls cannot overshoot. A run that fails before it reaches a model costs nothing. Change any limit in plain words: "cap OpenRouter at $5".
+
+### Rules
+
+"Never use grok." "Only use gemini-3.8-flash for video." Claude shows the rule it wrote in one line and saves it when you confirm. p0ssess may suggest a rule or a shortcut from your history; it never creates one on its own. A repository's own `.p0ssess/rules.toml` can only tighten your limits, never loosen them.
+
+### Receipts
+
+Every result carries one line: `(model, $cost)`, plus `saved ~$X` when the same tokens on Claude Sonnet would have cost more. A cost OpenRouter has not reported yet reads `about $…` and counts at the reserved maximum until it does. The local page keeps every receipt.
+
+### Edits
+
+Agent work on files runs in a sandbox on a separate git worktree and carries your uncommitted changes in. Afterwards p0ssess runs the project's tests on the result. When they pass and your checkout is clean, the change is applied with a line that reverts it; otherwise it stays a diff for Claude to review. [docs/RELAY.md](docs/RELAY.md)
+
+### The tour
+
+`/p0ssess:tour` is four steps, about a minute: what p0ssess does, your spending envelope (keep it or pick another), a live demo you choose, and where to see spend. Run it again any time.
+
+### `/p0ssess:p0ssess-me`
+
+A card with spend meters, this month's runs and savings, the last run and your limits, then the address of a local page:
+
+```text
+╭──────────────────────────────────────────────────────────────╮
+│ ᗣ  p0ssess 1.1.0                             nothing running │
+│                                                              │
+│ today   $0.14    ▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱  of $1.00                  │
+│ month   $1.86    ▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱  of $10.00                 │
+│ runs    12 this month · ~$3.10 saved (63%)                   │
+│ last    gemini-3.8-flash · <$0.01 · 4 min ago                │
+│                                                              │
+│ limits  asks above $0.25 a task · no-training                │
+│ Claude  5-hour 31% · weekly 12%                              │
+╰──────────────────────────────────────────────────────────────╯
+  page    http://127.0.0.1:41733/t/…/
+  change  tell Claude: "cap OpenRouter at $5", "always ask before grok"
+```
+
+*(Example figures.)* The page runs on 127.0.0.1 only, behind a random token, loads nothing from the network and stops after two hours. It shows receipts, notices, recent runs, rules, Claude's usage windows and editable limits. When something is missing for quiet runs (the key, allow rules, the status line segment), the card ends with a `setup` line and Claude offers that one step, only with your yes. `p0ssess setup undo` reverts every settings change p0ssess made.
+
+### The status line
+
+A segment after your own status line: today's spend against the daily limit, then what runs.
+
+```text
+ᗣ p0ssess $0.42/$1
+ᗣ p0ssess $0.42/$1 · 1 running (deepseek-v4.1-flash-1017)
+ᗣ p0ssess $0.91/$1                                      amber: near the daily limit
+ᗣ p0ssess month cap $10.00/$10 · paid runs stopped      red: only when paid runs stop
+```
+
+Muted when calm, a little brighter while something runs. Never animated. It reads local files only.
+
+## Plans
+
+| | Free | Pro | Team |
+|---|---|---|---|
+| Price | $0, MIT | $4 a month or $36 a year | $8 a seat a month |
+| Routing, rules, budgets, receipts | yes | yes | yes |
+| Local sandbox for coding work (Linux) | yes | yes | yes |
+| Cloud sandbox: coding hand-offs on macOS and Windows | | yes | yes |
+| Savings report and calibration on your own work | | yes | yes |
+| Shared rules that only tighten, a budget share per member, spend dashboard | | | yes |
+
+On every plan, model calls bill to your own OpenRouter key. `/p0ssess:pro` shows the plans and upgrades in your browser. `/p0ssess:team` invites people by email and shows seats, spend by member and model, and the shared rules; owners can pre-approve spending for every seat and set a hard team budget.
+
+## Security and privacy
+
+- **The sandbox.** Agent work runs in a podman sandbox with no access to your home directory, SSH keys or credentials, and no route to your local network. Each session gets its own sandbox, removed when it ends. Shell commands inside have no network unless you turn on internet for a project yourself, and then only public addresses.
+- **Your keys stay local.** The OpenRouter key is read from one file (mode 0600), never printed or logged. On the agent path it lives only in a separate proxy container the model cannot reach. p0ssess never reads, stores or relays your Claude credentials.
+- **No training, zero retention one setting away.** Every call tells OpenRouter not to route to providers that train on prompts. Privacy mode `zdr` sends only to zero-retention endpoints and refuses models without one.
+- **Secrets are never sent.** Files that look like secrets (`.env`, keys, credentials) never leave. A `.p0ssess-private` file in a repository blocks all delegation from it and every directory below.
+- **The engine sees no prompts.** Ranking requests carry a short task description, input and output types and sizes, the stakes and your model limits. Never your prompt, your files or their names. The service keeps no request logs.
+- **Anonymous outcome records**, one line per finished run (kind, model, route, stakes, outcome, coarse cost, week), are shown on the local page before they go. "Turn off outcome records" stops them.
+- **Reproducible releases.** The same commit and Go version build byte-identical binaries, so anyone can rebuild a release and compare. [docs/RELEASE.md](docs/RELEASE.md)
+
+The full list of what goes where is in [docs/DESIGN.md](docs/DESIGN.md) and on [p0ssess.me/privacy](https://p0ssess.me/privacy/).
+
+## Docs
+
+Also at [docs.p0ssess.me](https://docs.p0ssess.me).
+
+| | |
+|---|---|
+| [INSTALL.md](docs/INSTALL.md) | requirements, Windows, the binary, updating |
+| [INSTALL-NOTES.md](docs/INSTALL-NOTES.md) | everything p0ssess puts on your machine, and how to remove it |
+| [DESIGN.md](docs/DESIGN.md) | the design: routing, limits, rules, privacy |
+| [ENGINE.md](docs/ENGINE.md) | how routes are scored, the defaults and why, config files and tools |
+| [RELAY.md](docs/RELAY.md) | the sandboxed agent path |
+| [MEDIA.md](docs/MEDIA.md) | video, audio, images and PDFs, with measured costs |
+| [RELEASE.md](docs/RELEASE.md) | how releases are built, checked and published |
+| [RESEARCH.md](docs/RESEARCH.md) | the research behind the use cases and model data |
+
+The measured comparisons against Claude alone, including the jobs where p0ssess did not win, are on [p0ssess.me](https://p0ssess.me).
 
 ## The ghost
 
-The mark is a 16-by-16 pixel ghost, the thing that possesses another model for a moment and hands the work back. In the status line it is `ᗣ`: muted when idle, a little brighter while something runs, amber when you are close to your budget. Never red, never animated.
+The mark is a 16-by-16 pixel ghost, `ᗣ` in the terminal: the thing that possesses another model for a moment and hands the work back.
 
-## Questions or bugs
+## Support
 
-Open an issue at [github.com/cm208/p0ssess](https://github.com/cm208/p0ssess/issues), or write to [me@christianmoo.re](mailto:me@christianmoo.re).
+Write to [support@p0ssess.me](mailto:support@p0ssess.me), or open an [issue](https://github.com/cm208/p0ssess/issues).
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE) and, for third-party material, [NOTICE](NOTICE).
