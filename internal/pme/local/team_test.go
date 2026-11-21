@@ -162,3 +162,58 @@ func TestPaidRunsAreReportedToTheTeam(t *testing.T) {
 		}
 	}
 }
+
+// A member's run goes through Authorize, the gate every entry point (MCP direct and run, the CLI,
+// agents) passes: the team's rules and share must hold there, not only in recommend.
+func TestTeamPolicyGatesAMembersRun(t *testing.T) {
+	e, proj := setup(t, "plan = \"api\"\nmonthly_usd = 10\nper_task_usd = 1\ndaily_usd = -1\n")
+	if _, err := e.Authorize(charge(proj, 0.01)); err != nil {
+		t.Fatalf("no team yet: %v", err)
+	}
+
+	// forbid model
+	joinTeam(t, e, nil, map[string]any{"id": "t-00000001", "kind": "forbid", "target": "model", "models": []string{cheap}, "note": "not approved"})
+	_, err := e.Authorize(charge(proj, 0.01))
+	refused(t, err, false, "never use deepseek-v4.1-flash")
+
+	// keep work on Claude
+	joinTeam(t, e, nil, map[string]any{"id": "t-00000002", "kind": "forbid", "target": "delegation"})
+	_, err = e.Authorize(charge(proj, 0.01))
+	refused(t, err, false, "rule:")
+
+	// only: another model is refused, the named one runs
+	joinTeam(t, e, nil, map[string]any{"id": "t-00000003", "kind": "only", "models": []string{"google/gemini-3.8-flash"}})
+	_, err = e.Authorize(charge(proj, 0.01))
+	refused(t, err, false, "only use gemini-3.8-flash")
+	c := charge(proj, 0.01)
+	c.Model = "google/gemini-3.8-flash"
+	if _, err := e.Authorize(c); err != nil {
+		t.Errorf("the team's only model was refused: %v", err)
+	}
+
+	// ask: a team approval needs the member's yes for this run; their own standing approval does not cover it
+	joinTeam(t, e, nil, map[string]any{"id": "t-00000004", "kind": "ask", "models": []string{cheap}})
+	addRule(t, e, proj, rules.Rule{Kind: rules.KindApprove, Models: []string{cheap}, MaxPerRunUSD: 1, Scope: rules.ScopeGlobal})
+	_, err = e.Authorize(charge(proj, 0.01))
+	refused(t, err, true, "your rule says to ask")
+	os.Remove(e.Dirs.RulesFile())
+
+	// budget per task: lowers the member's auto-approve limit, so a run above it needs a yes
+	joinTeam(t, e, nil, map[string]any{"id": "t-00000005", "kind": "budget", "field": "per_task_usd", "value": 0.05})
+	if _, err := e.Authorize(charge(proj, 0.04)); err != nil {
+		t.Errorf("under the team's per-task limit: %v", err)
+	}
+	_, err = e.Authorize(charge(proj, 0.2))
+	refused(t, err, true, "above your $0.05 auto-approve limit")
+
+	// the member's share caps the month below their own monthly limit
+	joinTeam(t, e, 0.5)
+	_, err = e.Authorize(charge(proj, 0.9))
+	refused(t, err, false, "$0.50 monthly cap")
+
+	// leaving the team lifts it all
+	os.Remove(filepath.Join(e.Dirs.State, "team-policy.json"))
+	if _, err := e.Authorize(charge(proj, 0.9)); err != nil {
+		t.Errorf("after leaving: %v", err)
+	}
+}

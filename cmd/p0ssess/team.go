@@ -13,11 +13,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"text/tabwriter"
 	"time"
 
 	"p0ssess/internal/account"
-	"p0ssess/internal/history"
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/pme/table"
 	"p0ssess/internal/rules"
@@ -27,6 +25,7 @@ import (
 const teamUsage = `usage: p0ssess team COMMAND
   create NAME                      make a team with you as its owner
   status                           the team, your role and share, and the rules
+  invite EMAIL                     email someone a one-use join link (owner)
   invite [--uses N] [--days D]     a new invite link (owner)
   invite revoke ID                 revoke an invite link (owner)
   join INVITE_OR_URL               join with an invite
@@ -38,7 +37,7 @@ const teamUsage = `usage: p0ssess team COMMAND
   rule remove ID                   (owner)
   share default USD|none           the monthly share of members without their own (owner)
   share ACCOUNT_ID USD|none        one member's monthly share (owner)
-  spend [--month YYYY-MM]          spend per member, use case and day (owner)
+  spend [--month YYYY-MM]          spend per member, model, use case and day, with today (owner)
   sync                             fetch the team's policy now and send the spend queue
   delete --yes                     delete the team, its members, invites, rules and spend (owner)`
 
@@ -95,33 +94,7 @@ func runTeam(ctx context.Context, args []string, out io.Writer) error {
 }
 
 // teamErr words the server's Team error codes.
-func teamErr(err error) error {
-	var ae *account.APIError
-	if !errors.As(err, &ae) {
-		return err
-	}
-	switch ae.Code {
-	case "not_in_team":
-		return errors.New("you are not in a team")
-	case "not_owner":
-		return errors.New("only the team's owner can do that")
-	case "already_in_team":
-		return errors.New("this account is already in a team")
-	case "seats_full":
-		return errors.New("the team has no free seat; its owner can add seats")
-	case "invite_invalid":
-		return errors.New("that invite is unknown, used up, expired or revoked")
-	case "not_entitled":
-		return errors.New("this needs an active Team subscription")
-	case "invalid_token":
-		return errors.New("this install's link was revoked; run p0ssess account link")
-	case "bad_request":
-		if ae.Message != "" {
-			return fmt.Errorf("the server refused it: %s", ae.Message)
-		}
-	}
-	return err
-}
+func teamErr(err error) error { return team.Explain(err) }
 
 type teamCLI struct {
 	d   paths.Dirs
@@ -131,12 +104,7 @@ type teamCLI struct {
 
 func (t *teamCLI) printf(format string, a ...any) { fmt.Fprintf(t.out, format, a...) }
 
-func usd(v *float64) string {
-	if v == nil {
-		return "none"
-	}
-	return fmt.Sprintf("$%.2f", *v)
-}
+func usd(v *float64) string { return team.USD(v) }
 
 // refresh re-reads the account (its org changes with create, join and leave) and syncs the policy.
 func (t *teamCLI) refresh(ctx context.Context) (team.Result, error) {
@@ -171,65 +139,13 @@ func (t *teamCLI) status(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	t.printf("Team %s (%s); you are its %s\n", v.Org.Name, v.Org.ID, v.Role)
-	if !v.Org.Active {
-		t.printf("The team has no active subscription: its rules and shares are not in force.\n")
-	}
-	if v.Owner() {
-		t.printf("Seats: %d of %d used\n", v.SeatsUsed, v.Org.Seats)
-		t.printf("Default monthly share: %s\n", usd(v.DefaultMonthlyUSD))
-	}
-	t.printf("Your monthly share: %s\n", usd(v.MonthlyShareUSD))
-	if len(v.Members) > 0 {
-		t.printf("Members:\n")
-		tw := tabwriter.NewWriter(t.out, 0, 2, 2, ' ', 0)
-		for _, m := range v.Members {
-			share := "default"
-			if m.MonthlyShareUSD != nil {
-				share = usd(m.MonthlyShareUSD)
-			}
-			seat := ""
-			if !m.HasSeat {
-				seat = "no seat"
-			}
-			fmt.Fprintf(tw, "  %s\t%s\t%s\tshare %s\t%s\n", m.Name(), m.AccountID, m.Role, share, seat)
-		}
-		tw.Flush()
-	}
-	if len(v.Invites) > 0 {
-		t.printf("Invites:\n")
-		for _, inv := range v.Invites {
-			t.printf("  %s  %d of %d used, expires %s\n", inv.ID, inv.Uses, inv.MaxUses, day(inv.ExpiresAt))
-		}
-	}
-	t.printRules(v.Rules)
-	if v.DashboardURL != "" {
-		t.printf("Dashboard: %s\n", v.DashboardURL)
-	}
+	team.WriteStatus(t.out, v)
 	return nil
 }
 
-func day(rfc string) string {
-	if tm, err := time.Parse(time.RFC3339, rfc); err == nil {
-		return tm.UTC().Format("Jan 2, 2006")
-	}
-	return rfc
-}
+func day(rfc string) string { return team.Day(rfc) }
 
-func (t *teamCLI) printRules(rs []team.Rule) {
-	if len(rs) == 0 {
-		t.printf("No team rules.\n")
-		return
-	}
-	t.printf("Rules:\n")
-	for _, r := range rs {
-		line := fmt.Sprintf("  %s  %s", r.ID, r.String())
-		if r.Note != "" {
-			line += "  (" + r.Note + ")"
-		}
-		t.printf("%s\n", line)
-	}
-}
+func (t *teamCLI) printRules(rs []team.Rule) { team.WriteRules(t.out, rs) }
 
 func (t *teamCLI) invite(ctx context.Context, args []string) error {
 	if len(args) > 0 && args[0] == "revoke" {
@@ -240,6 +156,19 @@ func (t *teamCLI) invite(ctx context.Context, args []string) error {
 			return err
 		}
 		t.printf("Revoked %s.\n", args[1])
+		return nil
+	}
+	if len(args) == 1 && strings.Contains(args[0], "@") {
+		inv, err := t.c.InviteEmail(ctx, args[0])
+		if err != nil {
+			return err
+		}
+		if inv.Emailed != nil && !*inv.Emailed {
+			t.printf("The invite email to %s could not be sent. Send them this link (works once, until %s):\n%s\n", inv.Email, day(inv.ExpiresAt), inv.URL)
+			return nil
+		}
+		t.printf("Invited %s. The email's join link works once, until %s.\n", inv.Email, day(inv.ExpiresAt))
+		t.seatHint(ctx)
 		return nil
 	}
 	fs := flag.NewFlagSet("team invite", flag.ContinueOnError)
@@ -264,6 +193,15 @@ func (t *teamCLI) invite(ctx context.Context, args []string) error {
 	}
 	t.printf("Good for %d join%s until %s. It is shown once; share it with the people you invite.\n", n, plural, day(inv.ExpiresAt))
 	return nil
+}
+
+// seatHint warns when pending invites outnumber the free seats, so the owner knows someone cannot join yet.
+func (t *teamCLI) seatHint(ctx context.Context) {
+	if v, err := t.c.Get(ctx); err == nil {
+		if line := team.SeatHint(v); line != "" {
+			t.printf("%s\n", line)
+		}
+	}
 }
 
 func (t *teamCLI) join(ctx context.Context, args []string) error {
@@ -558,31 +496,7 @@ func (t *teamCLI) spend(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	t.printf("Team spend %s: %s\n", db.Month, spent(db.TotalUSD))
-	tw := tabwriter.NewWriter(t.out, 0, 2, 2, ' ', 0)
-	if len(db.Members) > 0 {
-		fmt.Fprintln(tw, "\nMember\tRole\tSpent\tShare\tRuns")
-		for _, m := range db.Members {
-			fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%d\n", m.Name(), m.Role, spent(m.SpentUSD), usd(m.MonthlyShareUSD), m.Runs)
-		}
-	}
-	if len(db.ByUseCase) > 0 {
-		fmt.Fprintln(tw, "\nUse case\tModel\tRoute\tRuns\tSpent")
-		for _, u := range db.ByUseCase {
-			uc := u.UseCase
-			if uc == "" {
-				uc = "(none)"
-			}
-			fmt.Fprintf(tw, "%s\t%s\t%s\t%d\t%s\n", uc, history.Short(u.Model), u.Route, u.Runs, spent(u.SpentUSD))
-		}
-	}
-	if len(db.ByDay) > 0 {
-		fmt.Fprintln(tw, "\nDay\tRuns\tSpent")
-		for _, dd := range db.ByDay {
-			fmt.Fprintf(tw, "%s\t%d\t%s\n", dd.Day, dd.Runs, spent(dd.SpentUSD))
-		}
-	}
-	return tw.Flush()
+	return team.WriteSpend(t.out, db, true)
 }
 
 func (t *teamCLI) printPolicy(p *team.Policy) {
@@ -633,10 +547,4 @@ func (t *teamCLI) delete(ctx context.Context, args []string) error {
 	return nil
 }
 
-// spent shows dollars to the cent, and a sub-cent amount as "<$0.01" so a real run never reads as $0.00.
-func spent(v float64) string {
-	if v > 0 && v < 0.005 {
-		return "<$0.01"
-	}
-	return fmt.Sprintf("$%.2f", v)
-}
+func spent(v float64) string { return team.Spent(v) }

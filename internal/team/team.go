@@ -134,10 +134,13 @@ func (m Member) Name() string {
 	return m.AccountID
 }
 
-// Invite is an invite link; URL is only present when it was just made.
+// Invite is an invite link; URL is only present when it was just made. Email is the address an
+// emailed invite went to, and Emailed whether that mail was sent (only when it was just made).
 type Invite struct {
 	ID        string `json:"id"`
 	URL       string `json:"url,omitempty"`
+	Email     string `json:"email,omitempty"`
+	Emailed   *bool  `json:"emailed,omitempty"`
 	MaxUses   int    `json:"max_uses"`
 	Uses      int    `json:"uses"`
 	ExpiresAt string `json:"expires_at"`
@@ -165,14 +168,19 @@ type View struct {
 // Owner reports whether the caller owns the org.
 func (v View) Owner() bool { return v.Role == "owner" }
 
-// Dashboard is the answer of GET /v1/team/spend.
+// Dashboard is the answer of GET /v1/team/spend. Today, TodayUSD and ByModel come from servers of
+// 1.1 on; an older server leaves them empty.
 type Dashboard struct {
 	Month   string `json:"month"`
 	Members []struct {
 		Member
 		SpentUSD float64 `json:"spent_usd"`
 		Runs     int     `json:"runs"`
+		TodayUSD float64 `json:"today_usd"`
 	} `json:"members"`
+	ByModel   []ModelSpend `json:"by_model"`
+	Today     string       `json:"today"`
+	TodayUSD  float64      `json:"today_usd"`
 	ByUseCase []struct {
 		UseCase  string  `json:"use_case"`
 		Model    string  `json:"model"`
@@ -248,6 +256,12 @@ func (c *Client) Invite(ctx context.Context, maxUses, expiresDays int) (Invite, 
 	}
 	var inv Invite
 	return inv, c.call(ctx, "POST", "/v1/team/invites", body, &inv)
+}
+
+// InviteEmail makes a one-use invite for email; the server mails it the join link.
+func (c *Client) InviteEmail(ctx context.Context, email string) (Invite, error) {
+	var inv Invite
+	return inv, c.call(ctx, "POST", "/v1/team/invites", map[string]string{"email": email}, &inv)
 }
 
 func (c *Client) RevokeInvite(ctx context.Context, id string) error {

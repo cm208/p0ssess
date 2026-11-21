@@ -84,7 +84,7 @@ func New(opt Options) (s *mcp.Server, closeFn func(), err error) {
 	re.SetPricer(Pricer(eng))
 	s = relay.NewServer(re, opt.Version)
 	s.Name = Name
-	s.Instructions = instructions + "\nEngine:\n" + mcpserver.Instructions
+	s.Instructions = instructions + teamInstructions + "\nEngine:\n" + mcpserver.Instructions
 
 	agentCheck := opt.Agent
 	if agentCheck == nil {
@@ -123,6 +123,7 @@ func New(opt Options) (s *mcp.Server, closeFn func(), err error) {
 		})
 	}
 	addShortcutTools(s, eng)
+	addTeamTools(s, eng, opt.Version)
 
 	refreshCtx, cancel := context.WithCancel(context.Background())
 	go func() {

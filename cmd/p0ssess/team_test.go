@@ -102,9 +102,15 @@ func teamStub(t *testing.T) (*teamFake, paths.Dirs) {
 			}
 			w.WriteHeader(204)
 		case "POST /v1/team/invites":
+			var in map[string]any
+			json.Unmarshal(raw, &in)
+			inv := map[string]any{"id": "inv_1", "url": "https://example.com/team/join?invite=p0v_x",
+				"expires_at": "2026-11-20T00:00:00Z", "max_uses": 3}
+			if in["email"] != nil {
+				inv["email"], inv["emailed"], inv["max_uses"] = in["email"], in["email"] != "down@example.com", 1
+			}
 			w.WriteHeader(201)
-			enc.Encode(map[string]any{"id": "inv_1", "url": "https://example.com/team/join?invite=p0v_x",
-				"expires_at": "2026-11-20T00:00:00Z", "max_uses": 3})
+			enc.Encode(inv)
 		case "PUT /v1/team/rules":
 			var in struct {
 				Rules []team.Rule `json:"rules"`
@@ -197,6 +203,14 @@ func TestTeamCreateInviteStatus(t *testing.T) {
 	if f.bodies["POST /v1/team/invites"][1] != `{}` {
 		t.Errorf("defaults are left to the server: %s", f.bodies["POST /v1/team/invites"][1])
 	}
+
+	out = runT(t, "invite", "sam@example.com")
+	contains2(t, out, "Invited sam@example.com. The email's join link works once, until Nov 20, 2026.")
+	if strings.Contains(out, "p0v_") || f.bodies["POST /v1/team/invites"][2] != `{"email":"sam@example.com"}` {
+		t.Errorf("email invite: %q %s", out, f.bodies["POST /v1/team/invites"][2])
+	}
+	out = runT(t, "invite", "down@example.com")
+	contains2(t, out, "could not be sent", "https://example.com/team/join?invite=p0v_x")
 
 	out = runT(t, "status")
 	contains2(t, out, "Team Acme (org_1); you are its owner", "Seats: 2 of 5 used", "Default monthly share: $40.00",

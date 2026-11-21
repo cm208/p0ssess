@@ -36,7 +36,8 @@ var AllowTools = []string{"run", "wait", "answer_permission", "abort", "models",
 	"recommend", "budget_status", "rules_list", "approvals_list", "tendencies", "history_record_outcome", "shortcuts_suggest"}
 
 // gateTools change the user's limits; their permission prompt is the user's approval, so they are never allowed.
-var gateTools = []string{"rules_add", "rules_remove", "approvals_add", "settings_set", "shortcuts_create", "shortcuts_remove"}
+var gateTools = []string{"rules_add", "rules_remove", "approvals_add", "settings_set", "shortcuts_create", "shortcuts_remove",
+	"team_invite", "team_rules_add", "team_rules_remove"}
 
 const summariesEnv = "CLAUDE_CODE_DISABLE_AGENT_PROGRESS_SUMMARIES"
 
