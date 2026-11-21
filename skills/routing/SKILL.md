@@ -1,6 +1,6 @@
 ---
 name: routing
-description: How to hand work to other models with p0ssess (OpenRouter) through its Haiku agent while Claude stays in charge. Use when the user wants a video watched, audio heard or transcribed, or an image made or edited; names a non-Claude model ("use deepseek flash for ..."); asks for bulk one-shot work (summarize, translate, caption or extract over many items); mentions the OpenRouter budget, spend, rules or approvals; when a p0ssess rule sends the work at hand to a model; or when a p0ssess hint appears in context.
+description: How to hand work to other models with p0ssess (OpenRouter) through its Haiku agent while Claude stays in charge. Use when the user wants a video watched, audio heard or transcribed, or an image made or edited; names a non-Claude model ("use deepseek flash for ..."); asks for research, news or market insight, a summary, or bulk one-shot work (summarize, translate, caption or extract over many items); mentions the OpenRouter budget, spend, rules or approvals; when a p0ssess rule sends the work at hand to a model; or when a p0ssess hint appears in context.
 ---
 
 # Routing with p0ssess
@@ -15,10 +15,14 @@ Do not call `direct`, `run`, `wait`, `recommend` or the other routing tools your
 
 Write nothing before or while it runs: no preamble, no plan, no "I've sent this to …", no "I'll tell you when it's back", no confirmation question. After the Agent call, end your turn without any text. When it returns:
 
-- An answer: give the agent's answer as it came, tidied at most, never expanded, re-explained or hedged, followed by the credit in parentheses, for example "(gemini-3.8-flash, $0.0004)". No heading, no intro line, no closing offer.
+- An answer: give the agent's answer as it came, tidied at most, never expanded, re-explained or hedged, followed by its receipt line, for example "(kimi-k3.1-pro, $0.10, saved ~$0.80)". No heading, no intro line, no closing offer, no notes about retries or limits (those are on the p0ssess page).
 - `files:`: see below.
 - `error: needs approval …`: ask the user in one line with the cost. On a yes, call `approvals_add` yourself with exactly the arguments the error gives (its permission prompt is the user's confirmation), then send the agent "approved, run it again" with SendMessage. Never add an approval the user did not agree to.
-- Any other `error:`: say it in one line.
+- Any other `error:`: p0ssess has already retried what it can fix itself, so the error names the one thing left. If you can supply it (a path, a model the user named), send the agent the request again with it; otherwise say the error in one line. Never do the routed work yourself instead, unless the user says so.
+
+## Route by default
+
+Research, news, market and trend questions, summaries, bulk data work, documents and media go to the p0ssess agent without asking, inside the user's limits (a hint names the use case). Work that needs current information gets web search on p0ssess's side. "Keep this on Claude" (or "do it yourself") overrides for that request. When the user asks for a Claude subagent while Claude's limit runs low, hand the work to the p0ssess agent instead, unless p0ssess finds no model that fits or the user insists after one line.
 
 ## Generated files: present them
 
@@ -36,11 +40,11 @@ An `only` or `mix` rule limited to a use case or kind ("always send unit-test wr
 
 ## Edits from an agent run
 
-The agent returns the model's short report (each file it changed, the test command it ran and the counts), `diff: <path> (summary)` and `apply: <command>`, never the diff itself. The diff and your check of it are the safety net, so edit runs within the user's limits do not ask first. Check in proportion to the stakes:
+p0ssess works out which repository the task means (from the paths it names, the files those name, or the session's directory), copies in uncommitted changes, runs the project's tests on the result and, when the checkout is clean, applies the change itself. The agent returns the model's short report, then `applied:` with `revert:` (the change is in the checkout), or `apply:` (it is not: run that command), and `tests:` when p0ssess ran them. Check in proportion to the stakes:
 
-- Stakes 1-2 (test drafts, bulk data files, translations, docs, mechanical edits): run the `apply` command, then the project's tests or the check the user asked for, once. If it passes and the summary matches the request, you are done. Do not re-read every file, redo the work, or run the same check twice. Open a file only when a check fails, the summary looks wrong (missing files, files nobody asked for, deletions) or the report says something was skipped.
-- A data file the user asked for (JSON, CSV) at stakes 1-2: after applying, check it parses and has every item, and spot-check two or three entries against the source. Do not redo the batch.
-- Stakes 3-4, or code that ships (features, migrations, auth, payments, infrastructure, anything security-relevant): read the whole diff before applying it and review it as you would your own change.
+- Stakes 1-2 (test drafts, bulk data files, translations, docs, mechanical edits): if `tests:` passed and the summary matches the request, you are done; otherwise run the project's tests or the check the user asked for, once. Do not re-read every file, redo the work, or run the same check twice. Open a file only when a check fails, the summary looks wrong (missing files, files nobody asked for, deletions) or the report says something was skipped.
+- A data file the user asked for (JSON, CSV) at stakes 1-2: check it parses and has every item, and spot-check two or three entries against the source. Do not redo the batch.
+- Stakes 3-4, or code that ships (features, migrations, auth, payments, infrastructure, anything security-relevant): read the whole change (`git diff` in the checkout, or the patch in the `apply:` line before running it) and review it as you would your own. Undo it with the `revert:` command if it is wrong.
 
 Continue a run with SendMessage to the same agent. A `permission:` line for ordinary work inside the run's copy (reading, writing there, running the project's tests) can be approved: SendMessage "approve once". Reject network access or writes outside the copy unless the user asked for them.
 
@@ -67,7 +71,7 @@ Ordinary coding, questions and small edits stay with you and need no tool. Ask t
 
 ## Outcomes
 
-A finished run you used counts as accepted on its own. Call `history_record_outcome` only when it was not used: `redo` (you had to redo it), `declined` (the user said no) or `overridden` (another route ran), with the run id from the `via:` line. Never put prompt content in `reason`.
+A finished run you used counts as accepted on its own. Call `history_record_outcome` only when it was not used: `redo` (you had to redo it), `declined` (the user said no) or `overridden` (another route ran), with the run id from the `run:` line. Never put prompt content in `reason`.
 
 ## Rules, budgets and standing approvals
 

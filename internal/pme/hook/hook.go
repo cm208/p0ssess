@@ -48,7 +48,7 @@ const BulkChars = 40_000
 
 // act is how a hint tells Claude to act: one hand-off to the p0ssess agent, no talk around it.
 const act = ` p0ssess is set up: hand it to the p0ssess agent now (Agent tool, subagent_type "p0ssess:p0ssess"), one sentence with the request%s. ` +
-	`Write nothing before or while it runs (end your turn after the Agent call with no text); when it returns, give its answer as it came plus "(model, cost)", nothing else.`
+	`Write nothing before or while it runs (end your turn after the Agent call with no text); when it returns, give its answer as it came plus its receipt line, nothing else.`
 
 // Hint returns the one-line hint, or "". ready says whether p0ssess has an OpenRouter key to spend with.
 func Hint(in Input, d paths.Dirs, now time.Time) string {

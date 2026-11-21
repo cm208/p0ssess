@@ -97,7 +97,7 @@ func directRunner(cfg config.Config, eng *local.Engine) relay.DirectRunner {
 			cands = append(cands, "summarize-long-doc", "qa-factual")
 		}
 		if t.Model != "" {
-			cands = cands[:1]
+			cands = []string{t.UseCase}
 		}
 		start := time.Now()
 		var res *direct.Result
@@ -105,7 +105,7 @@ func directRunner(cfg config.Config, eng *local.Engine) relay.DirectRunner {
 		var err error
 		for _, uc := range cands {
 			res, runID, err = RunDirect(ctx, cfg, eng, req, DirectJob{UseCase: uc, Stakes: t.Stakes})
-			if err == nil || res != nil && res.Billed() || !strings.Contains(err.Error(), "no model fits") {
+			if err == nil || res != nil && res.Billed() || !strings.Contains(err.Error(), "no model fits") && !strings.Contains(err.Error(), "unknown use case") {
 				break
 			}
 		}

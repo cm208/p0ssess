@@ -25,7 +25,7 @@ func TestDirectAwaitOutcome(t *testing.T) {
 	if out.IsError {
 		t.Fatal(out.Content[0].Text)
 	}
-	m := regexp.MustCompile(`run (d-[0-9a-f]+)`).FindStringSubmatch(out.Content[0].Text)
+	m := regexp.MustCompile(`run:? (d-[0-9a-f]+)`).FindStringSubmatch(out.Content[0].Text)
 	if m == nil {
 		t.Fatalf("no run id in %q", out.Content[0].Text)
 	}

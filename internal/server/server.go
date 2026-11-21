@@ -864,17 +864,37 @@ func (d *directTool) call(ctx context.Context, raw json.RawMessage, _ mcp.Progre
 		err = nil
 	}
 	if err != nil {
-		msg := err.Error()
+		msg := relay.Plain(err).Error()
 		if res != nil && res.Usage.CostUSD > 0 {
 			msg += fmt.Sprintf("\n(spent $%.6f before the error; run: %s)", res.Usage.CostUSD, runID)
 		}
 		return mcp.Error(msg)
 	}
+	return mcp.Text(directText(d.eng, res, runID))
+}
+
+// directText is the direct tool's result: the answer, the generated files, and one receipt line. Notes
+// go to the notices file, not the conversation.
+func directText(eng *local.Engine, res *direct.Result, runID string) string {
 	var b bytes.Buffer
-	tail := ""
-	if runID != "" {
-		tail = " · run " + runID
+	b.WriteString("<answer>\n" + strings.TrimSpace(res.Text) + "\n</answer>\n")
+	if len(res.Files) > 0 {
+		hints := make([]direct.FileHint, len(res.Files))
+		for i, f := range res.Files {
+			hints[i] = direct.FileHint{Path: f.Path, Kind: direct.FileKind(f.Path, f.MIME)}
+		}
+		js, _ := json.Marshal(hints)
+		fmt.Fprintf(&b, "files: %s\n", js)
 	}
-	b.WriteString(direct.Compact(res, tail))
-	return mcp.Text(strings.TrimRight(b.String(), "\n"))
+	t := &opencode.Tokens{Input: float64(res.Usage.PromptTokens), Output: float64(res.Usage.CompletionTokens), Reasoning: float64(res.Usage.ReasoningTokens)}
+	cost := res.Usage.CostUSD
+	if res.Usage.CostSource == "" {
+		cost = res.Estimate.CostUSD
+	}
+	b.WriteString("receipt: " + receipt(eng, res.Model, cost, !res.Measured(), t) + "\n")
+	if runID != "" {
+		b.WriteString("run: " + runID + "\n")
+	}
+	notice(eng, runID, res.Warnings)
+	return strings.TrimRight(b.String(), "\n")
 }

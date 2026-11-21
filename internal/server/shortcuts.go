@@ -179,8 +179,8 @@ func shortcutBody(s Shortcut, description string) string {
 	} else {
 		fmt.Fprintf(&b, "Call `%srun` once with `model` %q, `task` set to the message text copied exactly (drop only routing words and instructions about reporting back), `mode` \"edit\" when the message says edit mode or asks for file changes (else \"read\"), and `session` when an earlier result in this conversation has a `session_id`.\n", pluginTool, s.Model)
 		fmt.Fprintf(&b, "If `status` is `still_running`, call `%swait` with the session until it is not. If `status` is `needs_permission`, stop and report it. If a later message says to approve or reject, call `%sanswer_permission` with `once` or `reject`; to stop, call `%sabort`.\n\n", pluginTool, pluginTool, pluginTool)
-		b.WriteString("Reply with exactly:\n<answer>\n…the result's `answer`, copied character for character…\n</answer>\nvia: <model> · $<cost_usd> · <session_id>\n")
-		b.WriteString("Then, only when present: `files: <files JSON>`; `diff: <diff_path> (<diff_stat on one line>)`, never the diff itself; `permission: <request_id> <action> <resources>`; `error: <error>`.\n")
+		b.WriteString("Reply with exactly:\n<answer>\n…the result's `answer`, copied character for character…\n</answer>\n<the result's `receipt`>\nrun: <session_id>\n")
+		b.WriteString("Then, only when present: `files: <files JSON>`; `applied: <applied>` with `revert: <revert>`; `apply: <apply>`; `tests: <tests>`; `permission: <request_id> <action> <resources>`; `error: <error>`. Never copy `retries` or `note`.\n")
 	}
 	return b.String()
 }

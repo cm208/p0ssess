@@ -21,15 +21,18 @@ Step 3. Reply with exactly these lines and nothing else:
 <answer>
 …the result's answer, copied character for character (for recommend, its options lines)…
 </answer>
-via: <model> · <cost> · <run id or session_id>
+<the result's receipt, unchanged, e.g. (kimi-k3.1-pro, $0.10, saved ~$0.80)>
+run: <the result's run_id or session_id>
 
 Add a line only when the result has the field:
 - `files: <the files JSON array, unchanged>`
-- `diff: <diff_path> (<files changed, insertions, deletions from diff_stat, on one line>)` — never the diff itself
+- `applied: <applied, joined with "; ">` and `revert: <revert, unchanged>`
 - `apply: <the apply command, unchanged>`
+- `tests: <tests, unchanged>`
 - `session: <session_id>` for an agent run that can be continued
 - `permission: <request_id> <action> <resources>`
 - `shell internet: on`
-- `note: <the result's note or warning, one line>`
+
+Never copy `retries`, `note`, `chosen`, `changed`, `diff_stat`, costs, tokens or progress: p0ssess shows them on its own page. p0ssess has already retried what it could fix.
 
 On an error, reply with only `error: <the error text, unchanged>`. A "needs approval" error must keep its full text, including the approvals_add arguments.
