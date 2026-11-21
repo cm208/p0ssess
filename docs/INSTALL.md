@@ -57,7 +57,7 @@ A key with a credit limit set on OpenRouter is a good second fence next to p0sse
 
 ## First run
 
-Start Claude Code and run `/p0ssess:p0ssess-me`. It prints a short summary (spend today and this month against the cap, your limits, what is running) and the address of the local page, where every setting is one click away. The defaults are a $10 monthly cap, a $0.02 per-task auto-approve limit and a paced daily limit; change any of them on the page or by telling Claude ("cap OpenRouter at $5", "auto-approve up to 10 cents a task").
+Start Claude Code and run `/p0ssess:p0ssess-me`. It prints a short summary (spend today and this month against the cap, your limits, what is running) and the address of the local page, where every setting is one click away. A new install's defaults are $1 a day (warns), a $10 monthly cap (stops paid runs) and up to $0.25 a task without asking (an install from before 1.1 keeps its own); the tour in your first session shows them, and you can change any of them on the page or by telling Claude ("cap OpenRouter at $5", "auto-approve up to 10 cents a task").
 
 When something is missing for quiet runs, the summary ends with a `setup` line and Claude offers that one step, making it only after you say yes:
 

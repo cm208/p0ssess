@@ -98,7 +98,7 @@ When Claude has to redo a model's work, that counts against the model's score fo
 
 These are enforced where money is spent, not only advised. Before the direct tool or a relay run sends anything, it applies the rules, the allow and deny lists, the stakes gate, privacy mode, `.p0ssess-private`, and the per-task, daily and monthly limits on its own, whatever `recommend` said, and fails closed when the budget, rules or ledger cannot be read. It then reserves the call's maximum cost in the ledger under a file lock, so concurrent calls cannot each pass the same headroom; the measured cost settles the reservation afterwards. Whether to ask is decided from the call's estimate; the reserved maximum stays the hard ceiling, enforced at spend time (the direct call is priced against it before sending, and the relay interrupts a run that reaches it). A default ceiling, such as the relay's `max_run_cost_usd`, is lowered to the room left under the daily and monthly limits and to a covering standing approval's per-run limit, when the estimate still fits. A call whose estimate is above the per-task limit, with no standing approval, is refused as "needs approval" and Claude asks the user. A cost that is never reported is recorded at the reserved maximum, marked estimated, until OpenRouter reports it.
 
-`/p0ssess-me` prints a few lines in the terminal (spend today and this month against the cap, the limits, running jobs, how to change them) and opens a local page in the plugin's design language (served on `localhost`, works offline): the same figures on one screen, recent runs, limits and rules, with the settings one click away.
+`/p0ssess-me` prints a few lines in the terminal (spend today and this month against the cap, the limits, running jobs, how to change them) and opens a local page in the plugin's design language (served on `localhost`, works offline): today and the month against the envelope, the envelope's three limits editable in place, running jobs, recent runs with their receipts (model, cost, saving, result), the notices feed (retries, limit warnings, why a model was picked, provisional scores), limits and rules, the team budget and a link to the team page for Team seats, with the other settings one click away.
 
 ## Rules and standing approvals
 
@@ -131,17 +131,32 @@ p0ssess never reads, stores, or relays the user's Claude credentials.
 
 ## Status line
 
-A quiet segment after the user's own status line, using the ghost mark and the `p0ssess` wordmark:
+A segment after the user's own status line: today's spend against the daily limit, then what runs.
 
 ```
-idle, nothing spent today   (nothing shown)
-idle, spent today           ghost  p0ssess  $0.14 today
-working                     ghost  p0ssess  2 running  $0.14
-working, wide terminal      ghost  p0ssess  2 running  $0.14 today  mimo-v2.6-flash, gemini-3.1-pro
-near the budget (80%+)      ghost  p0ssess  $8.10 of $10 this month      (amber ghost)
+calm                        ghost p0ssess $0.42/$1
+working                     ghost p0ssess $0.42/$1 · 1 running (kimi-k3.1-pro)   (the model drops first when narrow)
+no daily limit              ghost p0ssess $0.14 today
+Team seat with a budget     ghost p0ssess $0.42/$1 · team $41.20/$50
+near or over the daily      ghost p0ssess $0.91/$1                               (amber)
+monthly cap reached         ghost p0ssess month cap $10.00/$10 · paid runs stopped   (red)
+team budget used up         ghost p0ssess team budget $50.00/$50 · paid runs stopped (red)
+older server this session   ghost p0ssess $0.42/$1 · restart to update           (marker in amber)
 ```
 
-Muted when idle, slightly brighter while running, amber near the budget. Never red, never animated.
+Muted when calm, slightly brighter while running, amber near the daily limit or a cap, red only when paid runs
+are stopped. Never animated. It reads local files only: the ledger part is cached in `statusline.json` in the cache
+directory until the ledger, budget, team policy or account changes (30 s at most), so a refresh takes a few
+milliseconds whatever the history's length.
+
+## First run
+
+The first plain message of the first interactive Claude Code session after install starts a short tour
+(`/p0ssess:tour`, `p0ssess tour`): what p0ssess does; the envelope with the new-install defaults ($1 a day, $10 a
+month, up to $0.25 a task without asking), changed with one answer; one live route on a tiny sample task capped at
+one cent; where spend shows (status line, the p0ssess page, `/p0ssess:team`). It starts once (`tour.json` in the
+state directory), never in print mode, the SDK, CI or child sessions, and `/p0ssess:tour` runs it again. An install
+that already used p0ssess gets one line offering it instead. `P0SSESS_TOUR=off` turns it off.
 
 ## Background agent status summaries
 
