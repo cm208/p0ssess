@@ -154,14 +154,15 @@ func SavingsCardSVG(p savings.Period) string {
 		}
 		y := 216 + i*52
 		fmt.Fprintf(&b, `<text x="740" y="%d" class="b">%s</text><text x="1136" y="%d" class="i" text-anchor="end" font-weight="700">%s</text>`,
-			y, e(clip(r.Key, 20)), y, e(cardSaved(r.Totals)))
+			y, e(clip(r.Key, 17)), y, e(cardSaved(r.Totals)))
 	}
 
 	basis := savings.Basis(t)
 	if basis == "" {
 		basis = "no runs measured yet"
 	}
-	b.WriteString(`<text x="64" y="548" class="q" font-size="20">` + e(basis+" · Claude's list price for the same tokens") + `</text>`)
+	b.WriteString(`<text x="64" y="548" class="q" font-size="20">` + e(basis) + `</text>`)
+	b.WriteString(`<text x="64" y="578" class="q" font-size="18">Priced at Claude's list price for the same tokens.</text>`)
 	b.WriteString(`<text x="1136" y="548" class="q" font-size="20" text-anchor="end">p0ssess.me</text>`)
 	b.WriteString(`</svg>`)
 	return b.String()

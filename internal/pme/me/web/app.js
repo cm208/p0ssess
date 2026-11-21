@@ -564,7 +564,7 @@
   // against what OpenRouter reported; a run Claude would have done cheaper counts against the total.
   let proof = null;
   let period = "this";
-  const usd = (v) => {
+  const dollars = (v) => {
     v = Number(v) || 0;
     const a = Math.abs(v), sign = v < 0 ? "-" : "";
     if (a >= 100) return sign + "$" + Math.round(a).toLocaleString("en-US");
@@ -588,7 +588,7 @@
   };
   const savedText = (t) => {
     const h = headline(t);
-    return h.kind === "saved" ? "~" + usd(h.amount) + " saved" : h.kind === "worse" ? usd(h.amount) + " more than Claude" : t.priced ? "no saving" : "not priced";
+    return h.kind === "saved" ? "~" + dollars(h.amount) + " saved" : h.kind === "worse" ? dollars(h.amount) + " more than Claude" : t.priced ? "no saving" : "not priced";
   };
 
   function splitList(box, rows, name) {
@@ -600,7 +600,7 @@
       return el("li", {},
         el("p", { class: "line" }, el("span", { class: "k", text: name(r.key), title: r.key }),
           el("span", { class: "v" + (h.kind === "saved" ? "" : " none"), text: savedText(r) })),
-        el("p", { class: "meta" }, el("span", { text: r.runs + (r.runs === 1 ? " run" : " runs") + " · cost " + usd(r.cost_usd) })),
+        el("p", { class: "meta" }, el("span", { text: r.runs + (r.runs === 1 ? " run" : " runs") + " · cost " + dollars(r.cost_usd) })),
         el("span", { class: "rail" + (r.saved_usd < 0 ? " neg" : ""), style: null }));
     }));
     const rails = box.querySelectorAll(".rail");
@@ -616,13 +616,13 @@
     const h = headline(p);
     const big = $("#proof-big"), sub = $("#proof-sub");
     big.className = "proof-big" + (h.kind === "saved" ? "" : " plain");
-    big.textContent = h.kind === "saved" ? "~" + usd(h.amount) : "No saving";
+    big.textContent = h.kind === "saved" ? "~" + dollars(h.amount) : "No saving";
     if (!p.runs) sub.textContent = "No runs yet in this period.";
     else if (h.kind === "saved") sub.textContent = "saved against Claude" + (p.claude_usd > 0 ? " (" + Math.round(p.saved_usd / p.claude_usd * 100) + "%)" : "") + ".";
-    else if (h.kind === "worse") sub.textContent = "Claude would have cost " + usd(h.amount) + " less for these runs.";
+    else if (h.kind === "worse") sub.textContent = "Claude would have cost " + dollars(h.amount) + " less for these runs.";
     else sub.textContent = p.priced ? "Nothing to claim for these runs." : "No run had token counts, so none could be priced.";
-    const stats = [["Runs", String(p.runs)], ["Cost", usd(p.cost_usd)]];
-    if (p.priced) stats.push(["Claude would have cost", usd(p.claude_usd)]);
+    const stats = [["Runs", String(p.runs)], ["Cost", dollars(p.cost_usd)]];
+    if (p.priced) stats.push(["Claude would have cost", dollars(p.claude_usd)]);
     if (p.claude_cheaper) stats.push(["Claude was cheaper on", p.claude_cheaper + " of " + p.priced + " runs"]);
     if (p.tokens_kept) stats.push(["Claude usage kept", tokens(p.tokens_kept) + " tokens"]);
     $("#proof-stats").replaceChildren(...stats.flatMap(([k, v]) => [el("dt", { text: k }), el("dd", { text: v })]));

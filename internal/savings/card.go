@@ -151,7 +151,7 @@ func saved(t Totals) string {
 	case "saved":
 		return "~" + Money(h.Amount) + " saved"
 	case "worse":
-		return Money(h.Amount) + " more than Claude"
+		return Money(h.Amount) + " over Claude"
 	}
 	if t.Priced == 0 {
 		return "not priced"
