@@ -52,6 +52,9 @@ type Grant struct {
 	ReserveID   string  `json:"reserve_id"`
 	MaxUSD      float64 `json:"max_usd"`
 	EstimateUSD float64 `json:"estimate_usd"`
+	// ReservedUSD is what the ledger holds while the call runs: about ReserveFactor times the estimate,
+	// at most MaxUSD.
+	ReservedUSD float64 `json:"reserved_usd"`
 	ApprovalID  string  `json:"approval_id,omitempty"`
 	ZDR         bool    `json:"zdr,omitempty"`
 	Stakes      int     `json:"stakes"`
@@ -170,6 +173,12 @@ func (e *Engine) Authorize(c Charge) (*Grant, error) {
 		est = c.MaxUSD
 	}
 	g.EstimateUSD = est
+	// The ledger holds about 1.5 times the estimate, not the ceiling: a run rarely needs its whole cap,
+	// and holding it would crowd out other work. The ceiling is still what the run may spend.
+	g.ReservedUSD = math.Min(g.MaxUSD, ReserveFactor*est)
+	if !(g.ReservedUSD > 0) {
+		g.ReservedUSD = g.MaxUSD
+	}
 	var ask []string
 	strict := false // a yes for this run is needed, not a standing approval
 	if stakes >= 4 && !claude {
@@ -193,14 +202,15 @@ func (e *Engine) Authorize(c Charge) (*Grant, error) {
 		today := sp.Today + sp.Reserved
 		daily := bud.DailyLimit(sp.MonthBeforeToday, now)
 		if c.Fit {
-			if room := math.Floor(math.Min(bud.MonthlyUSD-committed, daily-today)*1e4) / 1e4; room < g.MaxUSD && room >= est-1e-9 && room > 0 {
+			if room := math.Floor((bud.MonthlyUSD-committed)*1e4) / 1e4; room < g.MaxUSD && room >= est-1e-9 && room > 0 {
 				g.MaxUSD = room
-				g.Notes = append(g.Notes, fmt.Sprintf("ceiling lowered to $%.4f to stay within your limits", room))
+				g.ReservedUSD = math.Min(g.ReservedUSD, room)
+				g.Notes = append(g.Notes, fmt.Sprintf("ceiling lowered to $%.4f to stay within your monthly limit", room))
 			}
 		}
-		if committed+g.MaxUSD > bud.MonthlyUSD+1e-9 {
-			return nil, refuse("$%.2f spent or reserved this month plus up to $%.2f for this call would pass the $%.2f monthly cap; "+
-				"raise monthly_usd first", committed, g.MaxUSD, bud.MonthlyUSD)
+		if committed+g.ReservedUSD > bud.MonthlyUSD+1e-9 {
+			return nil, refuse("$%.2f spent or reserved this month plus about $%.2f for this call would pass the $%.2f monthly cap; "+
+				"raise monthly_usd first", committed, g.ReservedUSD, bud.MonthlyUSD)
 		}
 		if pol != nil && pol.TeamMonthlyUSD != nil {
 			// The team budget is one cap over every seat: the team's month so far, this seat's runs
@@ -209,21 +219,21 @@ func (e *Engine) Authorize(c Charge) (*Grant, error) {
 			teamSpent := pol.TeamSpent(now, l.SpendSince) + sp.Reserved
 			if room := math.Floor((teamCap-teamSpent)*1e4) / 1e4; c.Fit && room < g.MaxUSD && room >= est-1e-9 && room > 0 {
 				g.MaxUSD = room
+				g.ReservedUSD = math.Min(g.ReservedUSD, room)
 				g.Notes = append(g.Notes, fmt.Sprintf("ceiling lowered to $%.4f to stay within the team budget", room))
 			}
-			if teamSpent+g.MaxUSD > teamCap+1e-9 {
+			if teamSpent+g.ReservedUSD > teamCap+1e-9 {
 				if teamSpent >= teamCap-1e-9 {
 					return nil, refuse("the team's $%.2f monthly budget is used up ($%.2f spent this month); paid runs are stopped for every seat until its owner raises it on the team page",
 						teamCap, teamSpent)
 				}
-				return nil, refuse("up to $%.2f for this call would pass the team's $%.2f monthly budget ($%.2f spent this month); its owner can raise it on the team page",
-					g.MaxUSD, teamCap, teamSpent)
+				return nil, refuse("about $%.2f for this call would pass the team's $%.2f monthly budget ($%.2f spent this month); its owner can raise it on the team page",
+					g.ReservedUSD, teamCap, teamSpent)
 			}
 		}
-		if g.MaxUSD > 0 && today+g.MaxUSD > daily+1e-9 {
-			return nil, refuse("$%.2f spent or reserved today plus up to $%.2f would pass the $%.2f daily soft limit. "+
-				"Only a session override lifts it: ask the user, and if they agree, rules_add kind \"budget\", field \"daily_usd\", "+
-				"scope \"session\" with the new limit", today, g.MaxUSD, daily)
+		if g.ReservedUSD > 0 && today+g.ReservedUSD > daily+1e-9 {
+			// The daily limit warns; only the monthly limit stops work.
+			g.Notes = append(g.Notes, fmt.Sprintf("today's spend passes your $%.2f daily limit ($%.2f so far); the monthly limit still holds", daily, today))
 		}
 		reasons := ask
 		if est > bud.PerTaskUSD+1e-12 {
@@ -251,12 +261,13 @@ func (e *Engine) Authorize(c Charge) (*Grant, error) {
 			// A standing approval's per-run limit is a ceiling too, wherever the call's own is a default.
 			if c.Fit && r.MaxPerRunUSD < g.MaxUSD && r.MaxPerRunUSD >= est-1e-9 {
 				g.MaxUSD = r.MaxPerRunUSD
+				g.ReservedUSD = math.Min(g.ReservedUSD, g.MaxUSD)
 			}
 		}
 		g.ReserveID = "rsv-" + history.NewOfferID()[2:]
 		exp := now.Add(hold).UTC()
 		return []history.Entry{{TS: now.UTC(), Type: history.TypeReserve, RunID: g.ReserveID, Route: c.Route, Model: c.Model,
-			CashUSD: g.MaxUSD, ApprovalID: g.ApprovalID, UseCase: cmp.Or(ucID, c.UseCase), Stakes: stakes, Session: c.Session,
+			CashUSD: g.ReservedUSD, ApprovalID: g.ApprovalID, UseCase: cmp.Or(ucID, c.UseCase), Stakes: stakes, Session: c.Session,
 			Project: paths.ProjectRoot(c.Cwd), Expires: &exp}}, nil
 	})
 	if err != nil {
@@ -268,6 +279,9 @@ func (e *Engine) Authorize(c Charge) (*Grant, error) {
 	}
 	return g, nil
 }
+
+// ReserveFactor is how much more than its estimate a call holds against the limits while it runs.
+const ReserveFactor = 1.5
 
 // DefaultAgentTurns sizes the estimate of an agent run whose use case gives no turns.
 const DefaultAgentTurns = 10
@@ -341,7 +355,13 @@ func approvalAsk(model, session string, strict bool, est, maxUSD float64, reason
 		cost += fmt.Sprintf(" (at most $%.4f)", per)
 	}
 	head := fmt.Sprintf("%s on %s; %s.", cost, history.Short(model), strings.Join(reasons, "; "))
-	a := map[string]any{"scope": rules.ScopeSession, "session_id": session, "max_per_run_usd": per, "max_count": 1, "models": []string{model}}
+	// One yes covers the task: its retries (on another model too, up to the same cost) from any entry
+	// point of the session. A yes that must be for this run only stays on this model, once.
+	a := map[string]any{"scope": rules.ScopeSession, "session_id": session, "max_per_run_usd": per, "max_count": TaskRetries,
+		"max_total_usd": math.Ceil(per*TaskRetries*1e4-1e-9) / 1e4, "expires_in_minutes": TaskApprovalMinutes}
+	if strict {
+		a = map[string]any{"scope": rules.ScopeSession, "session_id": session, "max_per_run_usd": per, "max_count": 1, "models": []string{model}}
+	}
 	if session == "" {
 		if strict {
 			return head + " No Claude Code session is known here, so a yes for this run cannot be recorded; run it from Claude Code."
@@ -352,6 +372,12 @@ func approvalAsk(model, session string, strict bool, est, maxUSD float64, reason
 	args, _ := json.Marshal(a)
 	return fmt.Sprintf("%s Ask the user in one line with the cost. If they say yes, call approvals_add with %s, then call again.", head, args)
 }
+
+// TaskRetries is how many runs at the asked cost one yes covers: the run and its retries.
+const TaskRetries = 3
+
+// TaskApprovalMinutes is how long the yes for one task lasts.
+const TaskApprovalMinutes = 120
 
 // zdrBlock says why a model cannot run in zero-retention mode, or "" when it can. A model with no
 // endpoint data is let through: the call is sent with zdr = true, and OpenRouter refuses it when no

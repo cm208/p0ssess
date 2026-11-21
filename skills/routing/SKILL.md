@@ -46,7 +46,7 @@ Continue a run with SendMessage to the same agent. A `permission:` line for ordi
 
 ## Approval
 
-The tools enforce every limit (rules, allow and deny lists, stakes, privacy, `.p0ssess-private`, per-task, daily and monthly limits). They ask only when the estimate is above the per-task auto-approve limit, the monthly cap would be passed, a rule says to ask, or the stakes are 4. A daily soft limit is lifted only by a session `daily_usd` override, and only when the user asks.
+The tools enforce every limit (rules, allow and deny lists, stakes, privacy, `.p0ssess-private`, per-task, daily and monthly limits). They pick inside the user's limits and ask only when nothing inside fits (the estimate is above the per-task auto-approve limit for every option), a rule says to ask, or the stakes are 4; the monthly cap refuses. Ask once per task: the recorded yes covers its retries from every entry point. The daily limit only warns.
 
 ## Stakes
 

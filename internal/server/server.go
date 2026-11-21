@@ -256,6 +256,11 @@ func (o *observer) RunFinished(r relay.RunInfo, res *relay.Result) error {
 	o.mu.Unlock()
 	run := local.Run{ID: fmt.Sprintf("%s/%d", r.SessionID, r.Turn), Route: "agent", Model: r.Model,
 		CashUSD: res.CostUSD, Status: res.Status, UseCase: r.UseCase, Cwd: r.Repo}
+	if res.NoModelCall {
+		// It failed before reaching a model: no spend, and the approval it was granted under stays unused.
+		run.CashUSD = 0
+		return o.eng.Settle(&local.Grant{ReserveID: r.Grant.ReserveID, Session: r.Grant.Session}, run)
+	}
 	switch {
 	case res.CostEstimated || res.CostBasis == relay.CostCap:
 		// The run's cost could not be measured or priced: count it at its cap until a measured figure exists.
@@ -677,28 +682,29 @@ func pickModels(eng *local.Engine, c *direct.Client, req direct.Request, job *Di
 	return out, nil
 }
 
-// bestOption is the engine's best option on one of the routes. It prefers one that runs without asking
-// when that costs at most half again as much as the best, and takes the engine's own pick when it is
-// marked as the next of a mix.
+// bestOption is the engine's best option on one of the routes inside the user's envelope: the
+// best-ranked one that runs without asking (the next of a mix rule when it is marked), else, when every
+// option needs a yes, the best of them.
 func bestOption(rec *local.Recommendation, routes ...string) *local.Option {
-	var best *local.Option
+	var best, inside *local.Option
 	for i := range rec.Options {
 		o := &rec.Options[i]
 		if !slices.Contains(routes, o.Route) {
 			continue
 		}
-		switch {
-		case best == nil:
-			best = o
-		case best.NeedsApproval && !o.NeedsApproval && o.Total <= best.Total*1.5:
+		if best == nil {
 			best = o
 		}
-		if !best.NeedsApproval {
+		if !o.NeedsApproval {
+			inside = o
 			break
 		}
 	}
-	if rec.Pick != nil && slices.Contains(routes, rec.Pick.Route) && rec.Pick.MixNext {
-		best = rec.Pick
+	if rec.Pick != nil && slices.Contains(routes, rec.Pick.Route) && rec.Pick.MixNext && !rec.Pick.NeedsApproval {
+		return rec.Pick
+	}
+	if inside != nil {
+		return inside
 	}
 	return best
 }

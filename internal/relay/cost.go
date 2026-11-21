@@ -152,6 +152,13 @@ func (e *Engine) runCost(rec *SessionRecord, oc float64, ocOK bool, tokens openc
 	return capUSD, CostCap
 }
 
+// noModelCall reports a run that never reached a model: the jail's meter, which sees every model call,
+// has none for it, and OpenCode used no tokens.
+func (e *Engine) noModelCall(rec *SessionRecord, t opencode.Tokens) bool {
+	rc, ok := e.metered(rec)
+	return ok && rc.Calls == 0 && t.Input+t.Output+t.Reasoning+t.Cache.Read+t.Cache.Write <= 0
+}
+
 // liveCost is the run's spend so far, for the cap check while it runs: the larger of OpenCode's figure
 // and the meter's charges.
 func (e *Engine) liveCost(rec *SessionRecord, oc float64) float64 {

@@ -382,13 +382,7 @@ func (e *Engine) finish(req Request, resp *remote.Response, fromTable, private b
 		approve(&opts[i], d, bud, cfg, ledger, spend, daily, resp.Stakes, uc.EditsCode, now)
 	}
 	if len(opts) > 0 {
-		p := opts[0]
-		for _, o := range opts {
-			if o.MixNext && o.Total <= opts[0].Total*1.5 {
-				p = o
-				break
-			}
-		}
+		p := pickInside(opts)
 		rec.Pick = &p
 		rec.Announce = announce(p, uc.Task)
 	} else {
@@ -517,9 +511,8 @@ func approve(o *Option, d rules.Decision, bud budget.Budget, cfg Config, ledger 
 	}
 	o.EstimateUSD = est
 	if est > 0 && spend.Today+spend.Reserved+est > daily+1e-9 {
-		o.NeedsApproval = true
-		o.ApprovalReasons = []string{fmt.Sprintf("would pass the $%.2f daily soft limit; only a session override of daily_usd lifts it", daily)}
-		return
+		// The daily limit warns; only the monthly limit stops work.
+		o.Notes = append(o.Notes, fmt.Sprintf("passes your $%.2f daily limit", daily))
 	}
 	var reasons []string
 	strict := false
@@ -679,4 +672,34 @@ func Provisional(d paths.Dirs, model, useCase string) (float64, string) {
 		}
 	}
 	return table.ProvisionalPFail, "new model: provisional quality score until calibrated"
+}
+
+// pickInside is the pick inside the user's envelope: the next of a mix rule when it costs at most half
+// again as much as the best, else the best option. When that is a paid route that needs the user's yes,
+// the best-ranked paid route that needs none takes its place, with a note on what the better one would
+// cost; only when every paid route needs a yes is the best of them kept (and the user asked once).
+// Claude never stands in for a delegated pick.
+func pickInside(opts []Option) Option {
+	p := opts[0]
+	for _, o := range opts {
+		if o.MixNext && o.Total <= opts[0].Total*1.5 {
+			p = o
+			break
+		}
+	}
+	if !p.NeedsApproval || !paid(p.Route) {
+		return p
+	}
+	for _, o := range opts {
+		if paid(o.Route) && !o.NeedsApproval {
+			o.Notes = append(append([]string(nil), o.Notes...), fmt.Sprintf("picked inside your limits; %s would cost about $%.3f and needs your yes",
+				history.Short(p.Model), p.EstimateUSD))
+			return o
+		}
+	}
+	return p
+}
+
+func paid(route string) bool {
+	return route == RouteDirect || route == RouteAgent || route == RouteEngine
 }

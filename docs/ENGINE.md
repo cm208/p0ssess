@@ -192,16 +192,17 @@ The ceilings were set against the clean agent evidence, which is where RESEARCH.
 Whether to ask is decided from the **estimate**: the run's cash at list price, including retries, without the 1.5× headroom (`estimate_usd` on each option). The headroom and the relay's `max_run_cost_usd` are ceilings, enforced at spend time (see Enforcement), not reasons to ask. An option **needs approval** when any of these hold, unless a standing approval covers it:
 
 - its estimate is above the per-task auto-approve limit (default $0.02);
-- its estimate would pass the daily soft limit (only a session `daily_usd` override lifts that);
 - the stakes are 4 (possible for another model only with an `allow` rule naming it with `max_stakes = 4`);
 - an `ask` rule covers it ("always ask before using grok");
 - `ask.first_use` is on and the model has never run (no run or accepted or redone outcome in the ledger), or `ask.code_edits` is on and the work edits code. Both are off by default: an edit always comes back as a diff Claude reviews before anything is applied.
 
-A standing approval covers an option when it matches the use case or kind (and model, if it lists models), its per-run limit covers the estimate, and its count or total for the period is not used up. Stakes 4 and `ask` rules need a yes for this run: only a session-scope approval (the one-run approval Claude saves after the user says yes) covers them. Approval use is counted from the runs and reservations the tools tagged with the approval.
+A standing approval covers an option when it matches the use case or kind (and model, if it lists models), its per-run limit covers the estimate, and its count or total for the period is not used up. Stakes 4 and `ask` rules need a yes for this run: only a session-scope approval (the one-run approval Claude saves after the user says yes) covers them. Approval use is counted from the runs and reservations the tools tagged with the approval; a run that failed without spending (it never reached a model, or the provider refused it unbilled) does not count.
+
+The pick stays inside the envelope: when the best paid option needs a yes, the best-ranked paid option that needs none is picked instead, with a note on what the better one would cost. Only when every paid option needs a yes is the user asked, once per task: the yes Claude records (scope session, up to three runs at the asked cost, for two hours) covers the task's retries from every entry point of the Claude Code session (the MCP tools, the command line, the agent). A command run outside Claude Code belongs to the newest recent session working in a directory above it, else to the only session seen in the last half hour.
 
 A monthly cap the run would pass is not an approval question: the option is excluded, and the tools refuse until the cap is raised.
 
-The daily soft limit defaults to pacing: `(monthly cap - spent before today) / days left in the month`.
+The daily limit warns; only the monthly cap stops work. A new install starts at $1 a day and $10 a month; an install from before 1.1 keeps its limits, and a daily limit it never set stays paced: `(monthly cap - spent before today) / days left in the month`.
 
 ## Config files
 
@@ -230,7 +231,7 @@ XDG variables are honored. With `P0SSESS_HOME` set, config lives there and cache
 ```toml
 monthly_usd = 10.0        # OpenRouter cash cap
 per_task_usd = 0.02       # auto-approve limit per run
-daily_usd = 0             # 0 paces the cap; a number fixes it; -1 turns it off
+daily_usd = 1             # warns past it; 0 paces the cap; -1 turns it off
 save_claude = false       # switch the λ curve to "eager"
 plan = "auto"             # auto, api or subscription
 usage_credits = false     # subscription usage credits on
@@ -394,13 +395,13 @@ An outcome takes its cash from the run it names (`run_id`), or from the newest u
 2. The budget, rules and ledger must be readable and valid: otherwise refused (fail closed).
 3. Forbid rules (delegation, the model, OpenCode for the agent path), `only`/`mix`/project restrictions, and the model and provider allow and deny lists.
 4. Stakes: the caller's rating, else the use case's catalog stakes, else 3. Stakes 4 is refused for a non-Claude model unless an `allow` rule names it with `max_stakes = 4`, and even then it needs a yes for the run (step 8).
-5. Price: a model with no known price runs only with an explicit `max_cost_usd` above 0, which is reserved and counted in full. A zero price counts as free only for a `:free` variant or a text model the route table lists at zero; a zero from an endpoint or a media model billed by the image, second or character means unknown. `recommend` leaves such models out ("price unknown") rather than ranking them as cheap.
+5. Price: prices come from the route table and OpenRouter's public model list (`/api/v1/models`, cached for a day in `openrouter-models.json`, the last copy used offline), so any model OpenRouter lists can be named, priced, approved and run; a model the route table has not scored carries a provisional quality figure (p_fail 0.30, or the user's own calibration runs of it) until it is calibrated. A model with no known price runs only with an explicit `max_cost_usd` above 0, which is reserved and counted in full. A zero price counts as free only for a `:free` variant or a text model the route table lists at zero; a zero from an endpoint or a media model billed by the image, second or character means unknown. `recommend` leaves such models out ("price unknown") rather than ranking them as cheap.
 6. Privacy: in `zdr` mode a model whose endpoints are known and include no zero-retention one is refused, and the call goes out with `provider.zdr = true` (the direct client sets it; the relay's key proxy adds it to every request).
-7. The ceiling: `max_cost_usd` when the caller set one; otherwise the direct call's own estimate (full output allowance at the highest endpoint price, also sent to OpenRouter as `max_price`), or for a relay run `max_run_cost_usd` from `config.json` ($0.50). A default ceiling is lowered to the room left under the monthly cap and the daily limit, when the estimate still fits; a caller's own is never lowered.
-8. The monthly cap and the daily soft limit, checked against the ceiling and counting open reservations. The daily limit is lifted only by a session-scope `daily_usd` override.
-9. Whether to ask, from the **estimate** (the direct call's estimate; for a relay run, a session of the use case's catalog turns, or 10, at list price): above the per-task limit, stakes 4, an `ask` rule, or the opt-in `ask.first_use` and `ask.code_edits`. A standing approval whose per-run, count and total limits cover the estimate answers it, and then its per-run limit also caps a default ceiling. Stakes 4 and `ask` rules take only a session approval. Otherwise the result is "needs approval", with the exact `approvals_add` arguments (scope session, one run, up to the ceiling) that record the user's yes; Claude Code's permission prompt for that tool is the confirmation. Keep `rules_add`, `approvals_add` and `settings_set` out of your allow list; `p0ssess setup show` warns when they are in it.
+7. The ceiling: `max_cost_usd` when the caller set one; otherwise the direct call's own estimate (full output allowance at the highest endpoint price, also sent to OpenRouter as `max_price`), or for a relay run `max_run_cost_usd` from `config.json` ($0.50). A default ceiling is lowered to the room left under the monthly cap, when the estimate still fits; a caller's own is never lowered.
+8. The monthly cap (and a team's shared budget), checked against what the call holds (about 1.5 times its estimate, at most the ceiling) and counting open reservations. Past the daily limit the call goes ahead with a note.
+9. Whether to ask, from the **estimate** (the direct call's estimate; for a relay run, a session of the use case's catalog turns, or 10, at list price): above the per-task limit, stakes 4, an `ask` rule, or the opt-in `ask.first_use` and `ask.code_edits`. A standing approval whose per-run, count and total limits cover the estimate answers it, and then its per-run limit also caps a default ceiling. Stakes 4 and `ask` rules take only a session approval. Otherwise the result is "needs approval", with the exact `approvals_add` arguments (scope session, up to three runs at the ceiling for two hours; one run on this model for stakes 4 and `ask` rules) that record the user's yes; Claude Code's permission prompt for that tool is the confirmation. Keep `rules_add`, `approvals_add` and `settings_set` out of your allow list; `p0ssess setup show` warns when they are in it.
 
-Then it reserves the ceiling. The direct client refuses a call whose estimate is above it; the relay interrupts a run whose cost reaches it.
+Then it reserves about 1.5 times the estimate (at most the ceiling). The direct client refuses a call whose estimate is above the ceiling, after first lowering a default answer limit to fit; the relay interrupts a run whose cost reaches it, and the jail's key proxy sends each model call an output limit sized from what is left of the ceiling, so OpenRouter never reserves the model's whole maximum output against the key.
 
 The relay also keeps its own run log at `~/.local/state/p0ssess/relay/relay-runs.jsonl` (status, tokens and cost of each OpenCode run).
 

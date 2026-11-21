@@ -17,13 +17,16 @@ import (
 // Result is what run, wait, abort and answer_permission return. The answer comes first: Claude Code
 // spills tool results over 50k characters to a file, and the relay agent must still see the session id.
 type Result struct {
-	Answer         string           `json:"answer"`
-	Status         string           `json:"status"`
-	SessionID      string           `json:"session_id"`
-	Model          string           `json:"model"`
-	Mode           string           `json:"mode"`
-	CostUSD        float64          `json:"cost_usd"`
-	CostEstimated  bool             `json:"cost_estimated,omitempty"`
+	Answer        string  `json:"answer"`
+	Status        string  `json:"status"`
+	SessionID     string  `json:"session_id"`
+	Model         string  `json:"model"`
+	Mode          string  `json:"mode"`
+	CostUSD       float64 `json:"cost_usd"`
+	CostEstimated bool    `json:"cost_estimated,omitempty"`
+	// NoModelCall says the run never reached a model (the meter saw no call and no tokens were used): it
+	// costs nothing and uses up no approval.
+	NoModelCall    bool             `json:"no_model_call,omitempty"`
 	CostBasis      string           `json:"cost_basis,omitempty"`
 	Tokens         *opencode.Tokens `json:"tokens,omitempty"`
 	DurationS      float64          `json:"duration_s"`
@@ -150,6 +153,9 @@ func (e *Engine) result(w *watch, status string) (*Result, error) {
 		w.mu.Unlock()
 	}
 	cost, basis := e.runCost(rec, oc, err == nil, toks)
+	if e.noModelCall(rec, toks) {
+		cost, basis, r.NoModelCall = 0, CostMeasured, true
+	}
 	r.CostUSD, r.CostBasis = math.Round(cost*1e6)/1e6, basis
 	r.CostEstimated = basis == CostCap
 	msgs, msgErr := w.c.AllMessages(ctx, rec.SessionID)

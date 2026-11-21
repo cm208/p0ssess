@@ -146,7 +146,37 @@ func (e *Engine) Resolve(s Scope) Scope {
 			s.Session = se.ID
 		}
 	}
+	if s.Session == "" {
+		s.Session = e.soleSession(s.Cwd)
+	}
 	return s
+}
+
+// soleSession is the Claude Code session a command run outside it belongs to, so the session's
+// overrides and its yes for a task apply to every entry point (1.0.4 item 6): the newest recent session
+// working in a directory that contains dir, else the only session seen in the last half hour.
+func (e *Engine) soleSession(dir string) string {
+	now := e.Now()
+	var newest usage.Session
+	var recent []usage.Session
+	for _, se := range e.Usage().Sessions {
+		if se.ID == "" || now.Sub(se.Seen) > 12*time.Hour {
+			continue
+		}
+		if now.Sub(se.Seen) <= 30*time.Minute {
+			recent = append(recent, se)
+		}
+		if dir != "" && se.Cwd != "" && se.Cwd != "/" && strings.HasPrefix(dir, strings.TrimSuffix(se.Cwd, "/")+"/") && se.Seen.After(newest.Seen) {
+			newest = se
+		}
+	}
+	if newest.ID != "" {
+		return newest.ID
+	}
+	if len(recent) == 1 {
+		return recent[0].ID
+	}
+	return ""
 }
 
 // TeamPolicy is the team policy in force, or nil.

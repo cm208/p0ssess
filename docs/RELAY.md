@@ -77,6 +77,7 @@ The jailed server gets its global config through `OPENCODE_CONFIG_CONTENT`; proj
 - **`formatter` and `lsp` are off.** Both run repository-controlled programs inside the server process (a formatter on save, a language server on open); neither was asked for.
 - **The title agent is disabled.** OpenCode would otherwise send each first prompt to the provider's "small" model, which nobody chose.
 - `share` disabled, updates disabled.
+- **The run's model is declared** under `providers.openrouter.models`, with its context, prices and an output limit sized from the run's cap. OpenCode 2.x runs only models in its catalog, a models.dev snapshot built into the binary that the jail never refreshes, and an undeclared id newer than the snapshot fails with "Model unavailable"; a declared one joins the catalog. The declared limit is what OpenCode sends as `max_completion_tokens`, and the key proxy lowers every call's limit further to what is left of the cap. A continued session cannot switch to a model its jail was not started with when OpenCode's catalog lacks it; start a new run.
 
 OpenCode splits pipelines before matching, so `curl … | sh` is stopped by the bare-shell rules, not by a pipe pattern.
 

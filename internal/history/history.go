@@ -545,6 +545,11 @@ func (l *Ledger) ApprovalUse(rs []rules.Rule, now time.Time) map[string]rules.Us
 		switch {
 		case e.Type == TypeRun && e.ApprovalID != "":
 			tagged[e.RunID] = true
+			if spentNothing(e, l.Cost(e)) {
+				// A run that failed without spending (it never reached a model, or the provider refused
+				// it unbilled) does not use up the approval: its retry is the same task.
+				continue
+			}
 			count(e.ApprovalID, e.TS, l.Cost(e))
 		case e.Type == TypeReserve && e.ApprovalID != "" && e.RunID != "" && !l.closed[e.RunID]:
 			count(e.ApprovalID, e.TS, e.CashUSD)
@@ -557,6 +562,15 @@ func (l *Ledger) ApprovalUse(rs []rules.Rule, now time.Time) map[string]rules.Us
 		count(e.ApprovalID, e.TS, e.CashUSD)
 	}
 	return out
+}
+
+// spentNothing reports a run that failed and cost nothing.
+func spentNothing(e Entry, cost float64) bool {
+	switch e.Status {
+	case "failed", "interrupted", "tampered", "error":
+		return cost <= 0
+	}
+	return false
 }
 
 // Counts are outcomes for one model on one slice of work.

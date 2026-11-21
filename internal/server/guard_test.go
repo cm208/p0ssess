@@ -27,6 +27,7 @@ import (
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/pme/table/tabletest"
 	"p0ssess/internal/relay"
+	"p0ssess/internal/rules"
 	"p0ssess/internal/usage"
 )
 
@@ -170,15 +171,17 @@ func TestRunDirectEnforcesAtTheTool(t *testing.T) {
 	req := direct.Request{Model: testModel, Prompt: "hi", MaxTokens: 10}
 	_, _, err := RunDirect(context.Background(), cfg, eng, req, DirectJob{})
 	var r *local.Refusal
-	if !errors.As(err, &r) || !r.NeedsApproval || !strings.Contains(err.Error(), `"max_count":1`) {
+	if !errors.As(err, &r) || !r.NeedsApproval || !strings.Contains(err.Error(), `"max_total_usd"`) {
 		t.Errorf("an estimate above the per-task limit: %v", err)
 	}
 	if _, err := eng.SetSetting("per_task_usd", "0.02"); err != nil {
 		t.Fatal(err)
 	}
-	// The estimate decides whether to ask; a ceiling the caller set above the limit is reserved in full.
+	// The estimate decides whether to ask; the ledger holds about 1.5 times it, not the caller's whole
+	// ceiling, which still bounds the call.
 	req.MaxCostUSD, req.MaxGiven = 0.05, true
-	if _, _, err := RunDirect(context.Background(), cfg, eng, req, DirectJob{}); err != nil {
+	res, _, err := RunDirect(context.Background(), cfg, eng, req, DirectJob{})
+	if err != nil {
 		t.Fatal(err)
 	}
 	l, _ := ledger(t, eng)
@@ -188,8 +191,8 @@ func TestRunDirectEnforcesAtTheTool(t *testing.T) {
 			reserved = e.CashUSD
 		}
 	}
-	if reserved != 0.05 {
-		t.Errorf("reserved %v, want the caller's 0.05", reserved)
+	if est := res.Estimate.CostUSD; reserved >= 0.05 || reserved < est || reserved > 1.5*est+1e-12 {
+		t.Errorf("reserved %v for an estimate of %v, want about 1.5 times it", reserved, est)
 	}
 	if !strings.Contains(f.bodies[len(f.bodies)-1], `"zdr":true`) {
 		t.Errorf("zdr mode did not force zero-retention routing: %s", f.bodies[len(f.bodies)-1])
@@ -360,16 +363,30 @@ func TestAgentCeilingFitsTheRoomLeft(t *testing.T) {
 		t.Fatalf("under the limit, the default ceiling holds: %+v %v", g, err)
 	}
 	obs.Release(g)
+	// The daily limit only warns.
 	if _, err := eng.SetSetting("daily_usd", "0.3"); err != nil {
 		t.Fatal(err)
 	}
-	if g, err = obs.Authorize(auth); err != nil || g.CapUSD != 0.3 {
-		t.Fatalf("the default ceiling fits the daily room: %+v %v", g, err)
+	if g, err = obs.Authorize(auth); err != nil || g.CapUSD != 0.5 {
+		t.Fatalf("the daily limit does not stop or shrink a run: %+v %v", g, err)
 	}
 	obs.Release(g)
+	if _, err := eng.SetSetting("monthly_usd", "0.3"); err != nil {
+		t.Fatal(err)
+	}
+	if g, err = obs.Authorize(auth); err != nil || g.CapUSD != 0.3 {
+		t.Fatalf("the default ceiling fits the monthly room: %+v %v", g, err)
+	}
+	obs.Release(g)
+	if _, err := eng.SetSetting("monthly_usd", "0.0001"); err != nil {
+		t.Fatal(err)
+	}
 	auth.ExplicitMax = true
-	if _, err = obs.Authorize(auth); err == nil || !strings.Contains(err.Error(), "daily soft limit") {
-		t.Errorf("a caller's own $0.50 is not shrunk: %v", err)
+	if _, err = obs.Authorize(auth); err == nil || !strings.Contains(err.Error(), "monthly cap") {
+		t.Errorf("the monthly limit stops a run: %v", err)
+	}
+	if _, err := eng.SetSetting("monthly_usd", "10"); err != nil {
+		t.Fatal(err)
 	}
 	if _, err := eng.SetSetting("ask.code_edits", "true"); err != nil {
 		t.Fatal(err)
@@ -457,7 +474,7 @@ func TestApprovalFromTheMessageCoversTheCall(t *testing.T) {
 				t.Fatalf("approvals_add %s: %v", m[1], err)
 			}
 			saved := out.(map[string]any)["rule"].(local.RuleView)
-			if !strings.HasSuffix(saved.Text, ", 1 run (session, until "+saved.Expires.Local().Format("Jan 2 15:04")+")") {
+			if !strings.Contains(saved.Text, "up to $0.47 each, 3 runs, $1.41 total (session, until "+saved.Expires.Local().Format("Jan 2 15:04")+")") {
 				t.Errorf("rule text: %q", saved.Text)
 			}
 			if _, _, err := RunDirect(context.Background(), cfg, eng, req, DirectJob{}); err != nil {
@@ -473,8 +490,14 @@ func TestApprovalFromTheMessageCoversTheCall(t *testing.T) {
 			if tagged != saved.ID {
 				t.Errorf("reservation approval %q, want %q", tagged, saved.ID)
 			}
+			// The one yes covers the task's retries, up to three runs at the asked cost.
+			for i := 0; i < 2; i++ {
+				if _, _, err := RunDirect(context.Background(), cfg, eng, req, DirectJob{}); err != nil {
+					t.Fatalf("retry %d under the same yes: %v", i+2, err)
+				}
+			}
 			if _, _, err := RunDirect(context.Background(), cfg, eng, req, DirectJob{}); err == nil || !strings.Contains(err.Error(), "needs approval") {
-				t.Errorf("a one-run approval is used up: %v", err)
+				t.Errorf("the yes is used up after the task's retries: %v", err)
 			}
 		})
 	}
@@ -703,5 +726,39 @@ func TestRunDirectBYOKPricedThenReconciled(t *testing.T) {
 	}
 	if _, sp := ledger(t, eng); sp.Estimated != 0 || sp.Month != 0.0042 {
 		t.Errorf("spend after reconcile: %+v", sp)
+	}
+}
+
+// TestRunThatNeverReachedAModel: an agent run that failed before any model call (an unknown model, a
+// podman error) costs nothing and leaves its standing approval unused, even when no price is known for
+// the model (1.0.4 item 11).
+func TestRunThatNeverReachedAModel(t *testing.T) {
+	_, eng, proj := directEnv(t, "monthly_usd = 10\nper_task_usd = 0.0001\ndaily_usd = 1\n")
+	if _, err := eng.RuleAdd(local.Scope{Cwd: proj, Session: "s1"}, rules.Rule{Kind: rules.KindApprove, Scope: rules.ScopeSession,
+		MaxPerRunUSD: 1, MaxCount: 1}, false, 0); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("CLAUDE_CODE_SESSION_ID", "s1")
+	obs := NewObserver(eng)
+	auth := relay.RunAuth{Model: "deepseek/deepseek-v4.1-flash", MaxCostUSD: 0.5, MaxRuntime: time.Minute, Cwd: proj}
+	for i := 0; i < 3; i++ {
+		g, err := obs.Authorize(auth)
+		if err != nil || g.ApprovalID == "" {
+			t.Fatalf("try %d: %+v %v", i+1, g, err)
+		}
+		g.PriceUnknown = true
+		res := &relay.Result{Status: "failed", NoModelCall: true}
+		if err := obs.RunFinished(relay.RunInfo{SessionID: "ses", Turn: i + 1, Model: auth.Model, Grant: g}, res); err != nil {
+			t.Fatal(err)
+		}
+	}
+	l, sp := ledger(t, eng)
+	if sp.Month != 0 || sp.Reserved != 0 || sp.Estimated != 0 {
+		t.Errorf("spend %+v", sp)
+	}
+	for _, e := range l.Entries {
+		if e.Type == history.TypeRun && (e.ApprovalID != "" || e.CashUSD != 0) {
+			t.Errorf("run %+v", e)
+		}
 	}
 }

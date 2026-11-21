@@ -214,8 +214,9 @@ value = 0.01
 	refused(t, err, false, "stakes 4")
 	_, err = e.Authorize(charge(proj, 0.4))
 	refused(t, err, true, "auto-approve")
+	// The daily limit warns; past it the call still asks only because of the per-task limit.
 	_, err = e.Authorize(charge(proj, 0.9))
-	refused(t, err, false, "daily soft limit")
+	refused(t, err, true, "auto-approve")
 
 	rec, err := e.Recommend(Request{UseCase: "quick-code-question", Scope: Scope{Cwd: proj, Session: "s2"}})
 	if err != nil {
@@ -432,14 +433,14 @@ func TestApprovalAskArgsWork(t *testing.T) {
 	c := charge(proj, 0.0400001)
 	c.Session = ""
 	_, err := e.Authorize(c)
-	refused(t, err, true, `{"max_count":1,"max_per_run_usd":0.0401,"models":["`+cheap+`"],"scope":"session","session_id":"env-1"}`)
+	refused(t, err, true, `{"expires_in_minutes":120,"max_count":3,"max_per_run_usd":0.0401,"max_total_usd":0.1203,"scope":"session","session_id":"env-1"}`)
 
 	for _, tc := range []struct {
 		max    float64
 		strict bool
 		want   string
 	}{
-		{0.4696, false, `"expires_in_minutes":60,"max_count":1,"max_per_run_usd":0.4696,"models":["m"],"scope":"global"}`},
+		{0.4696, false, `"expires_in_minutes":60,"max_count":3,"max_per_run_usd":0.4696,"max_total_usd":1.4088,"scope":"global"}`},
 		{0.46960001, false, `"max_per_run_usd":0.4697`},
 		{0.4696, true, "cannot be recorded"},
 	} {
