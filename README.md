@@ -92,6 +92,10 @@ When no rule of yours covers a job, the p0ssess engine prices every route that c
 
 Claude rates each task from trivial to critical. Critical work (auth, infrastructure, production, money) stays with Claude unless you say otherwise. A model works the day OpenRouter lists it, because prices and ids come from OpenRouter's live list. [docs/ENGINE.md](docs/ENGINE.md) has the scoring.
 
+### Usage-limit rescue (Pro)
+
+When Claude's 5-hour or weekly window passes 85% used, or is on course to run out before it resets, p0ssess takes routable work (research, summaries, bulk and media work, code edits that fit) by default, inside your spending envelope, and says so in one line: "Claude's 5-hour window is at 91%: p0ssess is taking routable work until it resets at 3:40 PM." When the window resets it hands back and says that once. Critical work is never moved silently: Claude names the model and the cost and asks once for that task. "Keep this on Claude" always wins, and rescue never spends past your limits. On Free you get one line per window saying rescue is a Pro feature and what it would have taken over (an estimate). The status line shows a violet `rescue` while it is on, and the p0ssess page lists each period and what it handled. Turn it off or move the threshold in plain words: "turn rescue off", "start rescue at 90%".
+
 ### The spending envelope
 
 One envelope, enforced by the tools that spend and not left to Claude's judgment:
@@ -136,7 +140,7 @@ A segment after your own status line, such as `ᗣ p0ssess $0.42/$1`: today's sp
   <img src="assets/readme/statusline.svg" width="100%" alt="The status line segment in its four states, in the terminal's colors. Calm, in gray: p0ssess $0.42/$1. While something runs, a little brighter: p0ssess $0.42/$1 · 1 running (deepseek-v4.1-flash-1017). Near the daily limit, in amber: p0ssess $0.91/$1. When the monthly cap is reached, in red: p0ssess month cap $10.00/$10 · paid runs stopped.">
 </p>
 
-Muted when calm, a little brighter while something runs, amber near a limit, and red only when paid runs stop. Never animated. It reads local files only.
+Muted when calm, a little brighter while something runs, amber near a limit, violet `rescue` while usage-limit rescue is on, and red only when paid runs stop. Never animated. It reads local files only.
 
 ## Plans
 

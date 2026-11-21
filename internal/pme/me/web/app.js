@@ -162,6 +162,28 @@
     }));
   }
 
+  function renderRescue(r) {
+    r = r || {};
+    const note = $("#rescue-note"), box = $("#rescue");
+    const at = Math.round((r.threshold || 0.85) * 100) + "%";
+    note.textContent = !r.enabled ? "Rescue is off. Say \"turn rescue on\" to bring it back."
+      : r.pro ? "When a Claude window passes " + at + " used, p0ssess takes routable work inside your limits until it resets."
+        : "A Pro feature: when a Claude window passes " + at + " used, p0ssess takes routable work until it resets.";
+    const ps = list(r.periods).slice(0, 8);
+    if (!ps.length) {
+      box.replaceChildren(el("li", { class: "empty", text: "No rescue periods yet." }));
+      return;
+    }
+    box.replaceChildren(...ps.map((p) => {
+      const when = new Date(p.start).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" });
+      const did = p.runs ? p.runs + (p.runs === 1 ? " task" : " tasks") + " handled, " + cost(p.cost_usd) + (p.saved_usd > 0 ? ", saved " + cost(p.saved_usd) : "") : "nothing routed yet";
+      return el("li", {},
+        el("p", { class: "meta" }, el("span", { text: when }), el("span", { text: p.window + " window" }),
+          p.active ? el("span", { class: "tag prov", text: "on now" }) : null),
+        el("p", { class: "line", text: cap(did) }));
+    }));
+  }
+
   const TAGS = [[/provisional/i, "provisional", "prov"], [/retr|another model|fell back|rebuilt|tried first/i, "retry", ""],
     [/passes|used up|reached|near the|ceiling lowered|stopped/i, "warning", "warn"], [/\bpicked\b|chosen/i, "pick", "prov"]];
   function renderNotices(ns) {
@@ -549,6 +571,7 @@
       renderTeam(s.team);
       renderRuns(s.runs);
       renderNotices(s.notices);
+      renderRescue(s.rescue);
       renderLimits(s);
       renderRules(s.rules, s.learned);
       renderRecords(s.outcomes);

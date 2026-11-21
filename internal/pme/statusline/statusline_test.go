@@ -202,3 +202,21 @@ func TestStaleMarker(t *testing.T) {
 		t.Error("another session is not stale")
 	}
 }
+
+func TestRescueMarker(t *testing.T) {
+	s := State{SpentToday: 0.42, DailyLimit: 1, MonthlyCap: 10, Rescue: true}
+	if got := Segment(s, Settings{}, 0); got != "p0ssess $0.42/$1 · rescue" {
+		t.Errorf("plain: %q", got)
+	}
+	got := Segment(s, Settings{Color: true}, 0)
+	if !strings.Contains(got, colorViolet+"rescue"+reset) {
+		t.Errorf("rescue is not violet: %q", got)
+	}
+	if got := Segment(s, Settings{}, 24); !strings.Contains(got, "rescue") {
+		t.Errorf("rescue dropped at narrow room: %q", got)
+	}
+	s.Rescue = false
+	if got := Segment(s, Settings{}, 0); strings.Contains(got, "rescue") {
+		t.Errorf("marker without rescue: %q", got)
+	}
+}

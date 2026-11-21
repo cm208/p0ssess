@@ -76,6 +76,25 @@ type Funnel struct {
 	Send bool `toml:"send" json:"send"`
 }
 
+// Rescue holds usage-limit rescue (Pro): when Claude's 5-hour or weekly window is near its limit,
+// p0ssess takes routable work inside the envelope. On by default.
+type Rescue struct {
+	Enabled bool `toml:"enabled" json:"enabled"`
+	// Threshold is the share of a window used (0.5 to 0.99) from which rescue starts; 0 means the default.
+	Threshold float64 `toml:"threshold" json:"threshold"`
+}
+
+// DefaultRescueThreshold is 85% of a window used.
+const DefaultRescueThreshold = 0.85
+
+// Level is the threshold in effect.
+func (r Rescue) Level() float64 {
+	if r.Threshold <= 0 {
+		return DefaultRescueThreshold
+	}
+	return r.Threshold
+}
+
 type Budget struct {
 	MonthlyUSD float64 `toml:"monthly_usd" json:"monthly_usd"`
 	PerTaskUSD float64 `toml:"per_task_usd" json:"per_task_usd"`
@@ -93,6 +112,7 @@ type Budget struct {
 	Ask          Ask      `toml:"ask" json:"ask"`
 	Outcomes     Outcomes `toml:"outcomes" json:"outcomes"`
 	Funnel       Funnel   `toml:"funnel" json:"funnel"`
+	Rescue       Rescue   `toml:"rescue" json:"rescue"`
 	// DailyCapUSD is a lower daily limit set by project rules; 0 means none. It is never saved.
 	DailyCapUSD float64 `toml:"-" json:"daily_cap_usd,omitempty"`
 }
@@ -107,7 +127,8 @@ func Default() Budget {
 
 // legacy is what an install from before 1.1 ran under: a daily limit paced from the monthly cap.
 func legacy() Budget {
-	return Budget{MonthlyUSD: 10, PerTaskUSD: 0.02, DailyUSD: 0, Plan: "auto", Privacy: Privacy{Mode: "no-training"}, Outcomes: Outcomes{Send: true}}
+	return Budget{MonthlyUSD: 10, PerTaskUSD: 0.02, DailyUSD: 0, Plan: "auto", Privacy: Privacy{Mode: "no-training"}, Outcomes: Outcomes{Send: true},
+		Rescue: Rescue{Enabled: true, Threshold: DefaultRescueThreshold}}
 }
 
 // newInstallMarker is created in the state directory the first time a new install's limits are read,
@@ -180,6 +201,9 @@ func (b Budget) Validate() error {
 	case "no-training", "zdr":
 	default:
 		return fmt.Errorf("privacy.mode must be no-training or zdr, not %q", b.Privacy.Mode)
+	}
+	if t := b.Rescue.Threshold; t != 0 && (math.IsNaN(t) || t < 0.5 || t > 0.99) {
+		return errors.New("rescue.threshold must be between 50% and 99%")
 	}
 	for _, p := range b.Sandbox.ShellInternet {
 		if !filepath.IsAbs(p) || filepath.Clean(p) == "/" {

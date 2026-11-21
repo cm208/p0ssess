@@ -371,7 +371,7 @@ func (e *Engine) Learned(s Scope) Learned {
 var settingKeys = []string{"monthly_usd", "per_task_usd", "daily_usd", "save_claude", "plan", "usage_credits",
 	"privacy.mode", "privacy.allow_safety_retention", "models.allow", "models.deny", "providers.allow", "providers.deny",
 	"sandbox.shell_internet", "sandbox.shell_internet.add", "sandbox.shell_internet.remove",
-	"ask.first_use", "ask.code_edits", "outcomes.send", "funnel.send", "lambda.preset", "statusline.command", "statusline.mark", "statusline.width", "lead"}
+	"ask.first_use", "ask.code_edits", "outcomes.send", "funnel.send", "rescue.enabled", "rescue.threshold", "lambda.preset", "statusline.command", "statusline.mark", "statusline.width", "lead"}
 
 func SettingKeys() []string { return append([]string(nil), settingKeys...) }
 
@@ -461,6 +461,18 @@ func (e *Engine) setBudget(key, value string) (string, error) {
 		b.Outcomes.Send, err = flag()
 	case "funnel.send":
 		b.Funnel.Send, err = flag()
+	case "rescue.enabled":
+		b.Rescue.Enabled, err = flag()
+	case "rescue.threshold":
+		var n float64
+		n, err = num()
+		if err == nil && n > 1 {
+			n /= 100
+		}
+		if err == nil && (n < 0.5 || n > 0.99) {
+			err = errors.New("must be between 50% and 99%")
+		}
+		b.Rescue.Threshold = n
 	case "models.allow":
 		b.Models.Allow = list()
 	case "models.deny":
@@ -515,6 +527,16 @@ func (e *Engine) setBudget(key, value string) (string, error) {
 				"\"Turn off usage counts\" stops them and deletes what is not sent.", nil
 		}
 		return "Anonymous usage counts are off (saved to " + e.Dirs.BudgetFile() + "). Nothing is counted or sent, and the counts not sent were deleted.", nil
+	}
+	switch key {
+	case "rescue.enabled":
+		if b.Rescue.Enabled {
+			return fmt.Sprintf("Usage-limit rescue is on (saved to %s). With Pro, when Claude's 5-hour or weekly window passes %d%% used, p0ssess takes routable work inside your limits until the window resets.",
+				e.Dirs.BudgetFile(), int(b.Rescue.Level()*100+0.5)), nil
+		}
+		return "Usage-limit rescue is off (saved to " + e.Dirs.BudgetFile() + "). Work stays on Claude when a window runs low.", nil
+	case "rescue.threshold":
+		return fmt.Sprintf("Usage-limit rescue now starts when a Claude window is %d%% used (saved to %s).", int(b.Rescue.Level()*100+0.5), e.Dirs.BudgetFile()), nil
 	}
 	if strings.HasPrefix(key, "sandbox.shell_internet") {
 		on := "none"

@@ -254,6 +254,10 @@ shell_internet = []       # project directories whose sandboxed shell commands m
 [ask]
 first_use = false         # ask before the first run on a model you have not used
 code_edits = false        # ask before an agent run in edit mode (its diff is reviewed either way)
+
+[rescue]
+enabled = true            # Pro: take routable work when a Claude window runs low
+threshold = 0.85          # share of a window used from which rescue starts (0.5 to 0.99)
 ```
 
 `[ask]` is new in 0.5.0. A file without it keeps both off; nothing is rewritten until you change a setting.
@@ -422,6 +426,17 @@ It picks the longest form that fits the width (Claude Code's `COLUMNS`, else the
 `p0ssess setup statusline` installs the wrapper: it copies the binary to `~/.config/p0ssess/bin/p0ssess` (the plugin's own path changes with each update; the MCP server refreshes this copy after an update), saves your current status line command in `statusline.command`, and points Claude Code's `statusLine` at the copy.
 
 A reading older than two hours, or none (before the first response in a session, or on an API plan), counts as unknown.
+
+## Usage-limit rescue
+
+The prompt hook runs rescue's state machine (`internal/rescue`) on every prompt, from the same `rate_limits` reading the status line saves. A window is near its limit when it is used at or past `rescue.threshold` (85% by default), or at least half used and projected to run out before it resets (used divided by the elapsed share of the window, at least 15%). A window that has reset since the reading never counts. State is `rescue.json` in the state directory: the running period (window, start, reset time) and the finished ones.
+
+- **Pro** (`account.Pro()`), rescue enabled, an OpenRouter key present and room left in the envelope (the monthly cap and the daily limit are not used up): rescue starts. The hook tells the user once, "Claude's 5-hour window is at 91%: p0ssess is taking routable work until it resets at 3:40 PM." While it runs, a prompt that looks like work the catalog does not keep on Claude (research, summaries, bulk, media, code edits that fit, any use case but the keep-on-Claude ones) gets a hint to hand it to the p0ssess agent, with the use case and, for code and agent work, edit mode. The paid-call guard, per-task limit and stakes gate are unchanged, so rescue only ever spends what the envelope allows. If the envelope runs out while rescue is on, it pauses with one line.
+- **Critical work** (auth and crypto code, production database migrations, infrastructure and firewall changes) is stakes 4. The hint tells Claude to ask once for the task, naming the model and cost from `recommend`, and to route it only on a yes. A prompt that says to keep it on Claude is never routed.
+- **Hand-back.** When the window's reset time passes, the next prompt says "Claude's 5-hour window has reset: p0ssess handed routable work back to Claude." once. Turning rescue off, a lapsed Pro plan or a raised threshold ends the period without a line.
+- **Free.** The same condition yields one line per window, once a routable prompt has been seen in it: rescue is a Pro feature, what it would have taken (the count of routable prompts seen in the window) and, when past receipts exist, an estimate of the saving (their average saving times the count), labeled as an estimate. Routing for Free is unchanged. No prompt text is stored, only the count.
+- **Surfaces.** The status line adds a violet `· rescue` while a period is running. The p0ssess page lists the periods with the runs, cost and saving from the receipts inside each. With usage counts on, `rescue_offered` is counted when rescue starts (Pro) or the Free line is said, and `rescue_used` once per period when the first run lands in it.
+- **Settings** (plain words through `settings_set`): `rescue.enabled` ("turn rescue off") and `rescue.threshold` ("start rescue at 90%"; 50 to 99).
 
 ## The prompt hint
 

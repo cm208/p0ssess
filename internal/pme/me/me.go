@@ -210,6 +210,7 @@ type state struct {
 	Statusline statusline.Settings `json:"statusline"`
 	Outcomes   outcomesView        `json:"outcomes"`
 	Funnel     funnel.View         `json:"funnel"`
+	Rescue     rescueView          `json:"rescue"`
 	Token      string              `json:"token"`
 	Now        time.Time           `json:"now"`
 }
@@ -230,6 +231,7 @@ func (s *Server) state(w http.ResponseWriter, r *http.Request) {
 		out.Outcomes.Pending = []string{}
 	}
 	out.Funnel = s.E.FunnelView()
+	out.Rescue = rescueOf(s.E.Dirs, st.Budget.Rescue, s.E.Now())
 	l := s.E.Ledger()
 	recent := notices.Recent(s.E.Dirs.NoticesFile(), 200)
 	out.Runs = []runView{}

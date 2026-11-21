@@ -17,6 +17,7 @@ import (
 	"p0ssess/internal/config"
 	"p0ssess/internal/history"
 	"p0ssess/internal/pme/paths"
+	"p0ssess/internal/rescue"
 	"p0ssess/internal/rules"
 	"p0ssess/internal/tour"
 	"p0ssess/internal/usage"
@@ -94,6 +95,14 @@ func hint(in Input, d paths.Dirs, now time.Time, ready bool) string {
 	if w := autoWork(p); w != nil && ready {
 		return routeHint(w, NeedsCurrentInfo(p)) + favored(d, w.kind)
 	}
+	if _, on := rescue.Active(d, now); on && ready {
+		if h := rescueHint(p); h != "" {
+			return h
+		}
+		if delegateRe.MatchString(p) {
+			return "p0ssess rescue is on (Claude's limit is near)." + routeDefault
+		}
+	}
 	if line := limitLine(d, now); line != "" {
 		if delegateRe.MatchString(p) && ready {
 			line += routeDefault
@@ -169,7 +178,14 @@ func Run(raw []byte, d paths.Dirs, now time.Time) string {
 		// A Claude-alone baseline run: p0ssess stays out of it.
 		return ""
 	}
+	var resc string
+	if !paths.Private(in.Cwd) {
+		resc = rescueTick(d, in.Prompt, now)
+	}
 	out := strings.TrimSpace(Hint(in, d, now))
+	if resc != "" {
+		out = strings.TrimSpace(out + " p0ssess: tell the user this once, in one line, as written: " + resc)
+	}
 	if n := updateNotice(d, in.SessionID); n != "" {
 		out = strings.TrimSpace(out + " p0ssess: tell the user this once, in one line, as written: " + n)
 	}

@@ -29,6 +29,7 @@ import (
 	"p0ssess/internal/pme/paths"
 	"p0ssess/internal/pme/table"
 	"p0ssess/internal/proc"
+	"p0ssess/internal/rescue"
 	"p0ssess/internal/team"
 	"p0ssess/internal/usage"
 )
@@ -77,6 +78,7 @@ const (
 	colorRunning = "\x1b[38;5;250m"
 	colorAmber   = "\x1b[38;5;214m"
 	colorRed     = "\x1b[38;5;203m"
+	colorViolet  = "\x1b[38;5;99m"
 	reset        = "\x1b[0m"
 )
 
@@ -97,6 +99,8 @@ type State struct {
 	Offline bool
 	// Stale is the older p0ssess version this session's server still runs, or "".
 	Stale string
+	// Rescue is set while usage-limit rescue is on.
+	Rescue bool
 }
 
 // Level is how the segment is colored.
@@ -144,6 +148,9 @@ func Segment(s State, st Settings, room int) string {
 	}
 	if s.Team && s.TeamCap > 0 && !s.teamStopped() {
 		extras = append(extras, []string{"team " + money(s.TeamSpent) + "/" + limit(s.TeamCap), ""})
+	}
+	if s.Rescue {
+		extras = append(extras, []string{"rescue"})
 	}
 	if s.Stale != "" {
 		extras = append(extras, []string{"restart to update", "restart"})
@@ -212,6 +219,12 @@ func Segment(s State, st Settings, room int) string {
 		mark = markColor + st.Mark + reset + " "
 	}
 	body := "p0ssess " + text
+	if s.Rescue && s.Level() != Stopped {
+		if i := strings.LastIndex(body, " · rescue"); i >= 0 {
+			j := i + len(" · rescue")
+			body = body[:i+len(" · ")] + reset + colorViolet + "rescue" + reset + textColor + body[j:]
+		}
+	}
 	if s.Stale != "" && textColor != colorAmber {
 		// The restart marker is amber whatever the rest says.
 		for _, v := range []string{" · restart to update", " · restart"} {
@@ -341,7 +354,7 @@ func Gather(d paths.Dirs, session string, now time.Time) State {
 	_, err := os.Stat(d.OfflineMarker())
 	return State{SpentToday: c.SpentToday, DailyLimit: c.DailyLimit, SpentMonth: c.SpentMonth, MonthlyCap: c.MonthlyCap,
 		Team: c.Team, TeamSpent: c.TeamSpent, TeamCap: c.TeamCap, Running: usage.Running(d.RunningDir(), now),
-		Offline: err == nil, Stale: staleMark(d, session)}
+		Offline: err == nil, Stale: staleMark(d, session), Rescue: rescueOn(d, now)}
 }
 
 func read(d paths.Dirs, now time.Time) cached {
@@ -363,6 +376,11 @@ func read(d paths.Dirs, now time.Time) cached {
 		}
 	}
 	return c
+}
+
+func rescueOn(d paths.Dirs, now time.Time) bool {
+	_, on := rescue.Active(d, now)
+	return on
 }
 
 // staleMark is the version named by the marker the prompt hook leaves when this session's server is
