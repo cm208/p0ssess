@@ -88,13 +88,17 @@ func Interactive(getenv func(string) string) bool {
 	return true
 }
 
-// Existing reports whether this install used p0ssess before: it has run work or has a budget file.
+// Existing reports whether this install used p0ssess before: it has a budget file, or it ran work
+// before 1.1 (a new install's own first runs, the demo among them, do not count).
 func Existing(d paths.Dirs) bool {
-	if st, err := os.Stat(d.HistoryFile()); err == nil && st.Size() > 0 {
+	if _, err := os.Stat(d.BudgetFile()); err == nil {
 		return true
 	}
-	_, err := os.Stat(d.BudgetFile())
-	return err == nil
+	if budget.NewInstall(d) {
+		return false
+	}
+	st, err := os.Stat(d.HistoryFile())
+	return err == nil && st.Size() > 0
 }
 
 // Command is the slash command that runs the tour.
@@ -218,6 +222,9 @@ const (
 	DemoTask    = "In one sentence: what is the capital of Australia, and why was it chosen?"
 	DemoUseCase = "qa-factual"
 	DemoMaxUSD  = 0.01
+	// demoFallbackUseCase is tried when the route table keeps short factual questions on Claude (as the
+	// live one did on 2026-11-21: "no model fits qa-factual").
+	demoFallbackUseCase = "summarize-long-doc"
 )
 
 // Show is the text of the four steps, one keyed line each, for the tour command to present.
@@ -280,6 +287,9 @@ func Demo(ctx context.Context, run Runner, keyReady bool, keyFile string) (strin
 		return fmt.Sprintf("skip     no OpenRouter key yet: put it in %s (mode 0600), then run p0ssess tour demo\n", keyFile), nil
 	}
 	res, err := run(ctx, DemoTask, DemoUseCase, DemoMaxUSD)
+	if err != nil && (strings.Contains(err.Error(), "no model fits") || strings.Contains(err.Error(), "unknown use case")) {
+		res, err = run(ctx, DemoTask, demoFallbackUseCase, DemoMaxUSD)
+	}
 	if err != nil {
 		return "", err
 	}

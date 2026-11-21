@@ -345,8 +345,7 @@ func Gather(d paths.Dirs, session string, now time.Time) State {
 }
 
 func read(d paths.Dirs, now time.Time) cached {
-	_, herr := os.Stat(d.HistoryFile())
-	b, _ := budget.LoadFor(d.BudgetFile(), herr == nil)
+	b, _ := budget.ForInstall(d)
 	es, _ := history.Read(d.HistoryFile())
 	l := history.NewLedger(es)
 	sp := l.Spend(now)

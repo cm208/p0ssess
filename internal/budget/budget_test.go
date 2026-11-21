@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"p0ssess/internal/pme/paths"
 )
 
 func TestLoadDefaultsAndRoundTrip(t *testing.T) {
@@ -89,5 +91,24 @@ func TestValidateRejectsNonFinite(t *testing.T) {
 		if err := b.Validate(); err == nil {
 			t.Errorf("non-finite budget accepted: %+v", b)
 		}
+	}
+}
+
+// A new install's first run writes the ledger; its limits must not fall back to the pre-1.1 ones then.
+func TestNewInstallKeepsDefaultsAfterFirstRun(t *testing.T) {
+	root := t.TempDir()
+	d := paths.Dirs{Config: filepath.Join(root, "c"), Cache: filepath.Join(root, "k"), State: filepath.Join(root, "s")}
+	if b, _ := ForInstall(d); b.PerTaskUSD != 0.25 || b.DailyUSD != 1 {
+		t.Fatalf("new install: %+v", b)
+	}
+	os.WriteFile(d.HistoryFile(), []byte("{}\n"), 0o600)
+	if b, _ := ForInstall(d); b.PerTaskUSD != 0.25 || b.DailyUSD != 1 {
+		t.Fatalf("after the first run: %+v", b)
+	}
+	old := paths.Dirs{Config: filepath.Join(root, "c2"), Cache: filepath.Join(root, "k2"), State: filepath.Join(root, "s2")}
+	os.MkdirAll(old.State, 0o700)
+	os.WriteFile(old.HistoryFile(), []byte("{}\n"), 0o600)
+	if b, _ := ForInstall(old); b.PerTaskUSD != 0.02 || b.DailyUSD != 0 {
+		t.Fatalf("an install from before 1.1 keeps its defaults: %+v", b)
 	}
 }

@@ -59,8 +59,7 @@ func (e *Engine) Budget() (budget.Budget, error) { return LoadBudget(e.Dirs) }
 // LoadBudget reads budget.toml. With no file, a new install gets the Free defaults ($1 a day, $10 a
 // month); an install that has already run work keeps the defaults it ran under.
 func LoadBudget(d paths.Dirs) (budget.Budget, error) {
-	_, err := os.Stat(d.HistoryFile())
-	return budget.LoadFor(d.BudgetFile(), err == nil)
+	return budget.ForInstall(d)
 }
 
 // OutcomesEnabled reports whether anonymous outcome records may be queued and sent (outcomes.send in

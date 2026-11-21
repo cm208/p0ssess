@@ -104,6 +104,31 @@ func legacy() Budget {
 	return Budget{MonthlyUSD: 10, PerTaskUSD: 0.02, DailyUSD: 0, Plan: "auto", Privacy: Privacy{Mode: "no-training"}, Outcomes: Outcomes{Send: true}}
 }
 
+// newInstallMarker is created in the state directory the first time a new install's limits are read,
+// so the Free defaults stay after its first run writes the ledger; an install from before 1.1 has a
+// ledger and no marker.
+func newInstallMarker(d paths.Dirs) string { return filepath.Join(d.State, "envelope-defaults") }
+
+// NewInstall reports whether this install started under 1.1's defaults.
+func NewInstall(d paths.Dirs) bool {
+	_, err := os.Stat(newInstallMarker(d))
+	return err == nil
+}
+
+// ForInstall reads the install's budget.toml: a new install gets Default, and keeps it after its first
+// run; an install that ran work before 1.1 keeps the defaults it ran under.
+func ForInstall(d paths.Dirs) (Budget, error) {
+	_, herr := os.Stat(d.HistoryFile())
+	_, merr := os.Stat(newInstallMarker(d))
+	if herr != nil && merr != nil {
+		if _, err := os.Stat(d.BudgetFile()); errors.Is(err, os.ErrNotExist) {
+			paths.WriteFileAtomic(newInstallMarker(d), []byte("1.1\n"), 0o600)
+			merr = nil
+		}
+	}
+	return LoadFor(d.BudgetFile(), herr == nil && merr != nil)
+}
+
 // Load reads path, filling defaults for anything missing.
 func Load(path string) (Budget, error) { return LoadFor(path, false) }
 

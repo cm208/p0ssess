@@ -223,6 +223,16 @@ func TestDemo(t *testing.T) {
 	}, true, ""); err == nil {
 		t.Error("error lost")
 	}
+	var ucs []string
+	if _, err := Demo(context.Background(), func(_ context.Context, _, uc string, _ float64) (DemoResult, error) {
+		ucs = append(ucs, uc)
+		if uc == DemoUseCase {
+			return DemoResult{}, errors.New("no model fits qa-factual within your rules and limits")
+		}
+		return DemoResult{Answer: "Canberra.", Receipt: "(deepseek-v4.1-flash, $0.0001)"}, nil
+	}, true, ""); err != nil || len(ucs) != 2 {
+		t.Errorf("a table that keeps the question on Claude: %v %v", err, ucs)
+	}
 	if DemoCost(0) != "nothing (a free route)" || DemoCost(0.00001) != "under a hundredth of a cent" {
 		t.Error(DemoCost(0), DemoCost(0.00001))
 	}
