@@ -43,10 +43,6 @@ var (
 // delegateRe is a prompt that hands work to a Claude subagent or asks for an agent.
 var delegateRe = regexp.MustCompile(`(?i)\b(sub-?agents?|(sonnet|opus|haiku|claude) agents?|agents? (on|using|with) (sonnet|opus|haiku)|(spawn|launch|delegate|dispatch|hand)\b[^.?!\n]{0,40}\bagents?)\b|\bagents?\b[^.?!\n]{0,30}\b(sonnet|opus|haiku)\b|\b(sonnet|opus|haiku)\b[^.?!\n]{0,30}\b(sub-?agents?|agents?)\b`)
 
-// agentOffer is added to the limit line when the prompt sends work to a Claude agent: before choosing one,
-// Claude offers the cheaper route once. It never blocks the Claude agent.
-const agentOffer = " Before you start a Claude agent for this, offer the p0ssess agent in one line (it runs the work on a cheaper model and spares the limit) and let the user pick; if they do not answer or prefer Claude, go ahead with the Claude agent."
-
 // BulkChars is the pasted-text size at which a prompt counts as bulk.
 const BulkChars = 40_000
 
@@ -64,6 +60,9 @@ func hint(in Input, d paths.Dirs, now time.Time, ready bool) string {
 		return ""
 	}
 	p := in.Prompt
+	if keepRe.MatchString(p) {
+		return ""
+	}
 	// A rule that sends this kind of work to a model is the user's (or the team's) standing decision: it
 	// comes first, so Claude routes the work without deciding again.
 	if set, _ := rules.Load(ruleFiles(d, in.Cwd, in.SessionID)); len(set.Rules) > 0 {
@@ -91,14 +90,17 @@ func hint(in Input, d paths.Dirs, now time.Time, ready bool) string {
 		return media("if the user wants an image made, Claude cannot draw one.",
 			` (use case image-generate; image-edit with a reference image's path). Present the file it returns and print its absolute path`, "generate")
 	}
+	if w := autoWork(p); w != nil && ready {
+		return routeHint(w, NeedsCurrentInfo(p)) + favored(d, w.kind)
+	}
 	if line := limitLine(d, now); line != "" {
-		if delegateRe.MatchString(p) {
-			line += agentOffer
+		if delegateRe.MatchString(p) && ready {
+			line += routeDefault
 		}
 		return line
 	}
-	if len(p) >= BulkChars || bulkRe.MatchString(p) {
-		return "p0ssess: this looks like bulk one-shot work a cheap model may do for cents; if it is, hand it to the p0ssess agent (Agent tool, subagent_type \"p0ssess:p0ssess\") rather than doing it here."
+	if (len(p) >= BulkChars || bulkRe.MatchString(p)) && ready {
+		return "p0ssess: this looks like bulk one-shot work a cheap model does for cents, which p0ssess runs by default: hand it to the p0ssess agent now (Agent tool, subagent_type \"p0ssess:p0ssess\") rather than doing it here, unless the user said to keep it on Claude." + onFailure
 	}
 	if reviewRe.MatchString(p) {
 		if f := favored(d, "review"); f != "" {

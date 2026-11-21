@@ -37,7 +37,7 @@ func TestHints(t *testing.T) {
 		{"transcribe the scanner traffic in radio.mp3", "audio-transcribe-noisy for noisy or hard audio such as radio, phone or field recordings"},
 		{"generate an image of a lighthouse for the README", "image-generate"},
 		{"make a picture of a ghost holding a lantern", "Present the file"},
-		{"translate every string in locales/en.json", "bulk one-shot"},
+		{"translate every string in locales/en.json", "runs by default"},
 		{strings.Repeat("log line\n", 5000), "bulk one-shot"},
 	}
 	for _, tc := range cases {
@@ -212,13 +212,13 @@ func TestLimitOffersTheAgentRoute(t *testing.T) {
 	usage.Save(d.UsageFile(), usage.State{ReadingAt: now, Subscriber: true,
 		RateLimits: &usage.RateLimits{FiveHour: &usage.Window{UsedPercentage: &used, ResetsAt: &reset}}})
 	for _, p := range []string{"spawn a Sonnet subagent to refactor the parser", "use an opus agent for the big review", "delegate the migration to a Claude agent", "run this with a subagent"} {
-		got := Hint(Input{Prompt: p, Cwd: proj}, d, now)
-		if !strings.Contains(got, "offer the p0ssess agent") || !strings.Contains(got, "one line") || strings.Contains(got, "\n") {
+		got := hint(Input{Prompt: p, Cwd: proj}, d, now, true)
+		if !strings.Contains(got, "Route by default") || !strings.Contains(got, "one line") || strings.Contains(got, "\n") {
 			t.Errorf("%q: %q", p, got)
 		}
 	}
 	got := Hint(Input{Prompt: "refactor the parser", Cwd: proj}, d, now)
-	if strings.Contains(got, "offer") || !strings.Contains(got, "limit is 85% used") {
+	if strings.Contains(got, "Route by default") || !strings.Contains(got, "limit is 85% used") {
 		t.Errorf("no delegation in the prompt: %q", got)
 	}
 	low := 10.0
@@ -240,5 +240,68 @@ func TestUseCaseFor(t *testing.T) {
 		if got := UseCaseFor(p); got != want {
 			t.Errorf("%q: %q, want %q", p, got, want)
 		}
+	}
+}
+
+// The owner's research prompt and its kin are recognized and routed by default (1.0.4 finding 1).
+func TestResearchRoutesByDefault(t *testing.T) {
+	d, proj := dirs(t)
+	now := time.Now()
+	owner := "give me a summary and news insight and brief market trend insight using consumer data and news headlines from the past 6 months about consumer trends among AI users who don't code"
+	if uc := UseCaseFor(owner); uc != "deep-web-research" {
+		t.Errorf("use case %q", uc)
+	}
+	if !NeedsCurrentInfo(owner) {
+		t.Error("the owner's prompt needs current information")
+	}
+	for _, p := range []string{owner, "what are the latest news headlines about EV battery prices", "market research on note-taking apps",
+		"summarize this report.pdf for me", "classify these 300 support tickets by urgency"} {
+		got := hint(Input{Prompt: p, Cwd: proj}, d, now, true)
+		if !strings.Contains(got, "runs by default") || !strings.Contains(got, "p0ssess:p0ssess") || !strings.Contains(got, "do not do the work yourself") {
+			t.Errorf("%.50q: %q", p, got)
+		}
+		if strings.Contains(got, "\n") {
+			t.Errorf("one line: %q", got)
+		}
+	}
+	if got := hint(Input{Prompt: owner, Cwd: proj}, d, now, true); !strings.Contains(got, "current web data") {
+		t.Errorf("web: %q", got)
+	}
+	for _, p := range []string{"fix the off-by-one in parse.go", "what does this function do?", "explain the price calculation in cost.go"} {
+		if NeedsCurrentInfo(p) && !strings.Contains(p, "news") {
+			t.Errorf("%q does not need the web", p)
+		}
+	}
+	// "keep this on Claude" overrides.
+	if got := hint(Input{Prompt: owner + ", keep this on Claude", Cwd: proj}, d, now, true); got != "" {
+		t.Errorf("keep on Claude: %q", got)
+	}
+	// Without a key there is nothing to route to.
+	if got := hint(Input{Prompt: owner, Cwd: proj}, d, now, false); got != "" {
+		t.Errorf("no key: %q", got)
+	}
+}
+
+// Asking for a Claude agent while Claude's limit runs low gets route-by-default wording (finding 2).
+func TestClaudeAgentAtHighUsageRoutesByDefault(t *testing.T) {
+	d, proj := dirs(t)
+	now := time.Now()
+	used, reset := 94.0, now.Add(time.Hour).Unix()
+	usage.Save(d.UsageFile(), usage.State{ReadingAt: now, Subscriber: true,
+		RateLimits: &usage.RateLimits{FiveHour: &usage.Window{UsedPercentage: &used, ResetsAt: &reset}}})
+	for _, p := range []string{"send a sonnet agent to refactor the parser", "spawn a claude agent to port the CLI flags"} {
+		got := hint(Input{Prompt: p, Cwd: proj}, d, now, true)
+		if !strings.Contains(got, "Route by default") || !strings.Contains(got, "instead of a Claude agent") || strings.Contains(got, "let the user pick") {
+			t.Errorf("%q: %q", p, got)
+		}
+	}
+}
+
+// A run that fails tells Claude to retry through p0ssess, never to do the work itself (finding 3d).
+func TestHandedOffSaysRetryThroughP0ssess(t *testing.T) {
+	d, _ := dirs(t)
+	out := Tool([]byte(`{"hook_event_name":"PostToolUse","session_id":"s1","tool_name":"Agent","tool_input":{"subagent_type":"p0ssess:p0ssess"}}`), d)
+	if !strings.Contains(out, "send the agent the request again") || !strings.Contains(out, "never do the work yourself") || !strings.Contains(out, "receipt") {
+		t.Errorf("%s", out)
 	}
 }
