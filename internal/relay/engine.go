@@ -51,6 +51,9 @@ type Engine struct {
 	TestRunner func(ctx context.Context, dir string, tc jail.Toolchain, all []jail.Toolchain) jail.TestRun
 	// RunHook replaces one attempt of Do in tests.
 	RunHook func(ctx context.Context, req RunRequest) (*Result, error)
+	// SandboxCheck says why the jail cannot run here, if it cannot; read-only work then goes to the
+	// direct path.
+	SandboxCheck func() error
 }
 
 func NewEngine(cfg config.Config, version string, log io.Writer) *Engine {
@@ -253,12 +256,17 @@ func (e *Engine) Run(ctx context.Context, req RunRequest, progress func(float64,
 	rec.Grant = grant
 	w, err := e.prompt(ctx, c, rec, req.Task, orient(rec, j, req.Task), files, &sent)
 	if err != nil {
-		e.idleAfter(rec.SessionID)
 		var ae *opencode.APIError
 		if errors.As(err, &ae) && ae.Status >= 500 {
 			if tail := j.LogTail(ctx); tail != "" {
 				err = fmt.Errorf("%w; server log: %s", err, tail)
 			}
+		}
+		if req.Session == "" && !sent {
+			// A new session whose first prompt never went out: nothing to continue, so its jail goes now.
+			e.closeSession(rec.SessionID)
+		} else {
+			e.idleAfter(rec.SessionID)
 		}
 		return nil, err
 	}

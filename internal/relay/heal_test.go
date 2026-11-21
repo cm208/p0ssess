@@ -334,3 +334,42 @@ func TestScratchRepo(t *testing.T) {
 		t.Errorf("scratch not mountable: %v", jail.CheckMountable(dir, ""))
 	}
 }
+
+// Without the sandbox (no podman), read-only work still runs, on the direct path with the files it
+// names; edit work says why it cannot run.
+func TestNoSandboxReadGoesDirect(t *testing.T) {
+	_, _, client := testHome(t)
+	e := NewEngine(config.Config{MaxRunCostUSD: 0.5}, "test", io.Discard)
+	e.Unguarded = true
+	e.SandboxCheck = func() error { return errors.New("podman is not installed") }
+	var got []DirectTask
+	e.SetDirect(fakeDirect(&got))
+	res, err := e.Do(context.Background(), RunRequest{Task: "explain " + client + "/main.go"}, nil)
+	if err != nil || res.Route != "direct" || len(got) != 1 || len(got[0].Files) != 1 {
+		t.Fatalf("%+v %v %+v", res, err, got)
+	}
+	_, err = e.Do(context.Background(), RunRequest{Task: "fix " + client + "/main.go", Mode: "edit"}, nil)
+	if err == nil || !strings.Contains(err.Error(), "rootless podman") {
+		t.Errorf("edit: %v", err)
+	}
+}
+
+// A model p0ssess picked that needs approval gives way to the next option inside the limits.
+func TestApprovalFallsBackInsideLimits(t *testing.T) {
+	_, _, client := testHome(t)
+	e := NewEngine(config.Config{MaxRunCostUSD: 0.5}, "test", io.Discard)
+	e.Unguarded = true
+	e.SetObserver(&fakeChooser{out: Choice{Model: "anthropic/claude-opus-5.5", Why: "best", Alternatives: []string{"moonshotai/kimi-k3.1-pro"}}})
+	var models []string
+	e.RunHook = func(_ context.Context, r RunRequest) (*Result, error) {
+		models = append(models, r.Model)
+		if len(models) == 1 {
+			return nil, errors.New("needs approval: about $0.21 on anthropic/claude-opus-5.5, above your $0.10 auto-approve limit")
+		}
+		return &Result{Status: "done", Answer: "ok", Model: r.Model}, nil
+	}
+	res, err := e.Do(context.Background(), RunRequest{Task: "where is main defined", Cwd: client}, nil)
+	if err != nil || len(models) != 2 || models[1] != "moonshotai/kimi-k3.1-pro" || !strings.Contains(strings.Join(res.Retries, " "), "inside it") {
+		t.Errorf("%+v %v %v", res, err, models)
+	}
+}

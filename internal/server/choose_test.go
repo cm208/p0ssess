@@ -23,6 +23,12 @@ func TestRunChoosesAModel(t *testing.T) {
 	if c.UseCase != "code-implement-feature" || c.Stakes != 3 || c.Model != "openai/gpt-6.1-sol" || !strings.Contains(c.Why, "code-implement-feature") {
 		t.Fatalf("%+v", c)
 	}
+	// The next options inside the limits come along, for a retry on another model.
+	for _, a := range c.Alternatives {
+		if a == c.Model {
+			t.Errorf("the pick is its own alternative: %v", c.Alternatives)
+		}
+	}
 	// Read mode defaults to stakes 2, and a use case from the caller wins over the text.
 	c, err = o.Choose(relay.ChooseRequest{Task: "implement a new flag", Mode: "read", UseCase: "code-implement-feature", Cwd: proj})
 	if err != nil || c.Stakes != 2 || c.Model != "deepseek/deepseek-v4.1-flash" {

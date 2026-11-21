@@ -218,10 +218,27 @@ func (e *Engine) do(ctx context.Context, req RunRequest, progress func(float64, 
 	}
 	tg := Resolve(req.Task, cwd, req.Cwd != "", e.cfg.OpenRouterKeyFile, req.Attachments)
 	req.target = &tg
+	if tg.Repo != "" {
+		req.Cwd = tg.Cwd
+	}
 	var log []string
 	current := hook.NeedsCurrentInfo(req.Task)
 	spent := 0.0
-	if req.Mode == "read" && (current && !tg.Named || tg.Repo == "") {
+	var noSandbox error
+	if e.SandboxCheck != nil {
+		noSandbox = e.SandboxCheck()
+	}
+	if noSandbox != nil && req.Mode != "read" {
+		return nil, fmt.Errorf("edit work runs in the sandboxed agent path, which is unavailable here: %v", noSandbox)
+	}
+	if noSandbox != nil {
+		for _, p := range taskPaths(req.Task) {
+			if st, err := os.Stat(p); err == nil && st.Mode().IsRegular() {
+				tg.Files = addUnique(tg.Files, p)
+			}
+		}
+	}
+	if req.Mode == "read" && (current && !tg.Named || tg.Repo == "" || noSandbox != nil) {
 		if e.direct == nil {
 			if current {
 				return nil, errors.New("this task needs current information from the web, and the web search route is not available here, so nothing was run")

@@ -93,7 +93,9 @@ func New(opt Options) (s *mcp.Server, closeFn func(), err error) {
 	if agentCheck == nil {
 		agentCheck = AgentAvailable
 	}
-	for _, name := range []string{"run", "wait", "abort", "answer_permission"} {
+	re.SandboxCheck = agentCheck
+	// run goes through: read-only work without the sandbox is answered on the direct path.
+	for _, name := range []string{"wait", "abort", "answer_permission"} {
 		s.Wrap(name, func(next mcp.Handler) mcp.Handler {
 			return func(ctx context.Context, args json.RawMessage, p mcp.Progress) mcp.CallResult {
 				if err := agentCheck(); err != nil {
