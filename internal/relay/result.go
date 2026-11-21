@@ -7,6 +7,8 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -51,6 +53,29 @@ type Result struct {
 	ShellInternet bool `json:"shell_internet,omitempty"`
 	// JailStartS is how long the session's jail took to start, on its first run.
 	JailStartS float64 `json:"jail_start_s,omitempty"`
+
+	// Changed is p0ssess's own one-line count of what an edit run changed ("no changes" when nothing).
+	Changed string `json:"changed,omitempty"`
+	// Applied lists the checkouts the changes were applied to; Revert undoes that.
+	Applied []string `json:"applied,omitempty"`
+	Revert  string   `json:"revert,omitempty"`
+	// Tests is p0ssess's own run of the project's tests on the changed copy, after the edit.
+	Tests string `json:"tests,omitempty"`
+	// Receipt is the one line the caller shows with the answer: (model, $cost, saved ~$X).
+	Receipt string `json:"receipt,omitempty"`
+	// Retries is the short log of what p0ssess fixed or retried by itself; for the p0ssess page, not the chat.
+	Retries []string `json:"retries,omitempty"`
+	// Route is "direct" when the task went to one direct call instead of a session; RunID is that call.
+	Route string `json:"route,omitempty"`
+	RunID string `json:"run_id,omitempty"`
+
+	copies []copyDiff
+}
+
+// copyDiff is one repository's changes from an edit run.
+type copyDiff struct {
+	repo, wt, base, head, patch, stat string
+	carried                           int
 }
 
 // ShellInternetNote is added to every result of a session with shell internet, so it is never on quietly.
@@ -193,21 +218,7 @@ func (e *Engine) result(w *watch, status string) (*Result, error) {
 		if err := e.syncCloud(rec); err != nil {
 			r.Note = strings.TrimSpace(r.Note + " fetching the cloud sandbox's changes failed: " + err.Error())
 		}
-		if stat, patch, err := worktreeDiff(rec.Repo, rec.Worktree, rec.BaseRev); err == nil {
-			r.DiffStat = stat
-			r.Files = worktreeFiles(rec.Repo, rec.Worktree, rec.BaseRev)
-			if patch != "" {
-				p := filepath.Join(RunDir(rec.SessionID), "diff.patch")
-				os.MkdirAll(filepath.Dir(p), 0o700)
-				if os.WriteFile(p, []byte(patch), 0o600) == nil {
-					r.DiffPath = p
-					r.Apply = "git -C " + shellQuote(rec.Repo) + " apply " + shellQuote(p)
-				}
-				r.Diff, _ = clip(patch, diffCap, "\n[diff truncated; the full patch is in diff_path]\n")
-			}
-		} else {
-			r.Note = strings.TrimSpace(r.Note + " diff failed: " + err.Error())
-		}
+		e.collectDiffs(r, rec)
 	}
 	e.recMu.Lock()
 	defer e.recMu.Unlock()
@@ -334,4 +345,117 @@ func shellQuote(s string) string {
 		return s
 	}
 	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
+}
+
+// collectDiffs records what an edit run changed in each of its worktrees: the stat, the patch file and
+// the command that applies it (copies back to their places for a scratch run).
+func (e *Engine) collectDiffs(r *Result, rec *SessionRecord) {
+	all := []copyDiff{{repo: rec.Repo, wt: rec.Worktree, base: rec.BaseRev, head: rec.HeadAtStart, carried: rec.Carried}}
+	for _, x := range rec.Extra {
+		if x.Worktree != "" {
+			all = append(all, copyDiff{repo: x.Repo, wt: x.Worktree, base: x.BaseRev, head: x.HeadAtStart, carried: x.Carried})
+		}
+	}
+	var stats, applies []string
+	var files, ins, del int
+	for i, cd := range all {
+		stat, patch, err := worktreeDiff(cd.repo, cd.wt, cd.base)
+		if err != nil {
+			r.Note = strings.TrimSpace(r.Note + " diff failed: " + err.Error())
+			continue
+		}
+		if patch == "" {
+			continue
+		}
+		name := "diff.patch"
+		if i > 0 {
+			name = fmt.Sprintf("diff-%d.patch", i+1)
+		}
+		p := filepath.Join(RunDir(rec.SessionID), name)
+		os.MkdirAll(filepath.Dir(p), 0o700)
+		if os.WriteFile(p, []byte(patch), 0o600) != nil {
+			continue
+		}
+		cd.patch, cd.stat = p, stat
+		r.copies = append(r.copies, cd)
+		if r.DiffPath == "" {
+			r.DiffPath = p
+			r.Diff, _ = clip(patch, diffCap, "\n[diff truncated; the full patch is in diff_path]\n")
+		}
+		if i > 0 {
+			stat = cd.repo + ":\n" + stat
+		}
+		stats = append(stats, stat)
+		f, a, d := statCounts(cd.stat)
+		files, ins, del = files+f, ins+a, del+d
+		if rec.Scratch {
+			r.Files = append(r.Files, scratchFiles(cd.repo, cd.wt, cd.base)...)
+			applies = append(applies, copyBack(rec, cd.wt, cd.base)...)
+			continue
+		}
+		r.Files = append(r.Files, worktreeFiles(cd.repo, cd.wt, cd.base)...)
+		applies = append(applies, "git -C "+shellQuote(cd.repo)+" apply "+shellQuote(p))
+	}
+	r.DiffStat = strings.Join(stats, "\n")
+	r.Apply = strings.Join(applies, " && ")
+	if files > 0 {
+		r.Changed = fmt.Sprintf("%d file(s) changed, +%d -%d", files, ins, del)
+	} else {
+		r.Changed = "no changes"
+	}
+}
+
+var statLine = regexp.MustCompile(`(\d+) files? changed(?:, (\d+) insertions?\(\+\))?(?:, (\d+) deletions?\(-\))?`)
+
+// statCounts reads the files, insertions and deletions from git diff --stat's summary line.
+func statCounts(stat string) (int, int, int) {
+	m := statLine.FindStringSubmatch(stat)
+	if m == nil {
+		return 0, 0, 0
+	}
+	n := func(s string) int { v, _ := strconv.Atoi(s); return v }
+	return n(m[1]), n(m[2]), n(m[3])
+}
+
+// scratchFiles lists every file a scratch run added or changed: there is no checkout to apply them to,
+// so the files themselves are the result.
+func scratchFiles(repo, wt, base string) []direct.FileHint {
+	gd := filepath.Join(repo, ".git", "worktrees", filepath.Base(wt))
+	env := []string{"GIT_DIR=" + gd, "GIT_COMMON_DIR=" + filepath.Join(repo, ".git"), "GIT_WORK_TREE=" + wt}
+	out, err := gitEnv(wt, env, "diff", "--cached", "--name-only", "--diff-filter=AM", "-z", base)
+	if err != nil {
+		return nil
+	}
+	var hints []direct.FileHint
+	for _, name := range strings.Split(out, "\x00") {
+		p := filepath.Join(wt, name)
+		if name == "" || !strings.HasPrefix(p, filepath.Clean(wt)+string(filepath.Separator)) {
+			continue
+		}
+		if st, err := os.Lstat(p); err != nil || !st.Mode().IsRegular() {
+			continue
+		}
+		hints = append(hints, direct.FileHint{Path: p, Kind: direct.FileKind(name, "")})
+		if len(hints) == 20 {
+			break
+		}
+	}
+	return hints
+}
+
+// copyBack is the commands that put a scratch run's changed copies back where they came from.
+func copyBack(rec *SessionRecord, wt, base string) []string {
+	gd := filepath.Join(rec.Repo, ".git", "worktrees", filepath.Base(wt))
+	env := []string{"GIT_DIR=" + gd, "GIT_COMMON_DIR=" + filepath.Join(rec.Repo, ".git"), "GIT_WORK_TREE=" + wt}
+	var out []string
+	for orig, cp := range rec.Copies {
+		changed := filepath.Join(wt, filepath.Base(cp))
+		if _, err := gitEnv(wt, env, "diff", "--cached", "--quiet", base, "--", filepath.Base(cp)); err == nil {
+			continue
+		}
+		if st, err := os.Lstat(changed); err == nil && st.Mode().IsRegular() {
+			out = append(out, "cp "+shellQuote(changed)+" "+shellQuote(orig))
+		}
+	}
+	return out
 }

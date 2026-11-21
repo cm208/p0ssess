@@ -42,6 +42,12 @@ type Config struct {
 	// Sandbox picks where agent sessions run: "auto" (default: the local jail where rootless podman works,
 	// the cloud sandbox elsewhere for a linked account), "local" or "cloud". P0SSESS_SANDBOX overrides it.
 	Sandbox string `json:"sandbox,omitempty"`
+	// ApplyEdits: "auto" (default) applies an edit run's changes to a clean checkout; "never" only returns
+	// the apply command.
+	ApplyEdits string `json:"apply_edits,omitempty"`
+	// VerifyTests: "on" (default) runs the project's tests on an edit run's changes in a network-less
+	// container; "off" skips them.
+	VerifyTests string `json:"verify_tests,omitempty"`
 	// ZDR makes the jail's key proxy require zero-retention endpoints. Set per run from the budget's
 	// privacy mode, never read from config.json.
 	ZDR bool `json:"-"`

@@ -15,7 +15,6 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -706,8 +705,8 @@ func jsonUnmarshal(b []byte, v any) error {
 	return json.Unmarshal(b, v)
 }
 
-// TestIntegrationRefusesHome: a run from the real home directory, or from a directory that is not a
-// repository, is refused and no pod is created (0.5.3 mounted the whole home directory read-only).
+// TestIntegrationRefusesHome: the real home directory, or a directory that is not a repository, is never
+// mounted, and no pod is created for it (0.5.3 mounted the whole home directory read-only).
 func TestIntegrationRefusesHome(t *testing.T) {
 	_, e := itSetup(t)
 	home, err := os.UserHomeDir()
@@ -716,10 +715,8 @@ func TestIntegrationRefusesHome(t *testing.T) {
 	}
 	before, _ := exec.Command("podman", "pod", "ps", "-q", "--filter", "label="+jail.StateLabel()).Output()
 	for _, cwd := range []string{home, t.TempDir()} {
-		_, err := e.Run(context.Background(), RunRequest{Task: "list the files", Model: itModel, Cwd: cwd}, nil)
-		var nm *jail.NotMountable
-		if !errors.As(err, &nm) {
-			t.Errorf("cwd %s: %v", cwd, err)
+		if tg := Resolve("list the files", cwd, true, e.cfg.OpenRouterKeyFile, nil); tg.Repo != "" {
+			t.Errorf("cwd %s: would mount %s", cwd, tg.Repo)
 		}
 	}
 	if _, err := jail.Start(context.Background(), jail.Spec{Repo: home}, e.cfg, os.Stderr); err == nil {

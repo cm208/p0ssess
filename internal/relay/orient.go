@@ -25,6 +25,31 @@ func orient(rec *SessionRecord, j *jail.Jail, task string) string {
 	if from != "" && to != from {
 		task, rewritten = rewritePaths(task, from, to)
 	}
+	for _, x := range rec.Extra {
+		xto := x.Repo
+		if x.Worktree != "" {
+			xto = x.Worktree
+		}
+		if j != nil {
+			xto = j.RemotePath(xto)
+		}
+		if xto != x.Repo {
+			var ok bool
+			if task, ok = rewritePaths(task, x.Repo, xto); ok {
+				rewritten = true
+			}
+		}
+	}
+	for orig, cp := range rec.Copies {
+		if rec.Worktree != "" {
+			cp = filepath.Join(rec.Worktree, filepath.Base(cp))
+		}
+		if j != nil {
+			cp = j.RemotePath(cp)
+		}
+		task = strings.ReplaceAll(task, orig, cp)
+		rewritten = true
+	}
 	seen := rec.Location
 	if j != nil {
 		seen = j.RemotePath(seen)
@@ -44,6 +69,37 @@ func orient(rec *SessionRecord, j *jail.Jail, task string) string {
 	} else {
 		b.WriteString("This run is read-only: give the result in your reply. Do not try to write files, and do not " +
 			"probe mounts or permissions.")
+	}
+	if len(rec.Extra) > 0 {
+		var where []string
+		for _, x := range rec.Extra {
+			d := x.Repo
+			if x.Worktree != "" {
+				d = x.Worktree
+			}
+			if j != nil {
+				d = j.RemotePath(d)
+			}
+			where = append(where, d)
+		}
+		b.WriteString(" The task also needs " + strings.Join(where, ", ") + "; work there too where the task says so.")
+	}
+	if rec.Scratch {
+		b.WriteString(" No repository holds this work: the files the task names are copied into your directory.")
+	}
+	if rec.Mode == "edit" && !rec.Scratch {
+		var have []string
+		for _, tc := range rec.Toolchains {
+			have = append(have, tc.Kind)
+		}
+		if len(have) > 0 {
+			b.WriteString(" The " + strings.Join(have, " and ") + " toolchain is installed read-only with no network: run the tests offline.")
+		}
+		for _, l := range rec.Log {
+			if strings.Contains(l, "cannot run in the sandbox") {
+				b.WriteString(" " + l + ": do not try to install it; say in the report that tests were not run.")
+			}
+		}
 	}
 	return b.String()
 }

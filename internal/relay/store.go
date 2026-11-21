@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"p0ssess/internal/config"
+	"p0ssess/internal/jail"
 	"p0ssess/internal/opencode"
 	"p0ssess/internal/pme/paths"
 )
@@ -48,6 +49,33 @@ type SessionRecord struct {
 	Grant Grant `json:"grant"`
 	// MeterRun names the current prompt in the jail's cost meter.
 	MeterRun string `json:"meter_run,omitempty"`
+
+	// Extra are more repositories the session mounts, each with its own worktree in edit mode.
+	Extra []ExtraRepo `json:"extra,omitempty"`
+	// Scratch is set when no repository fitted the task: Repo is a throwaway repository holding copies of
+	// the files the task names (Copies maps each original to its copy).
+	Scratch bool              `json:"scratch,omitempty"`
+	Copies  map[string]string `json:"copies,omitempty"`
+	// HeadAtStart is the caller's HEAD when the worktree was made; Carried counts the caller's
+	// uncommitted changes copied into it (then BaseRev is the commit holding them).
+	HeadAtStart string           `json:"head_at_start,omitempty"`
+	Carried     int              `json:"carried,omitempty"`
+	Toolchains  []jail.Toolchain `json:"toolchains,omitempty"`
+	// Log is what p0ssess did for the caller before and during the session: the repository it picked, the
+	// changes it carried, retries. It goes into the result's retry log.
+	Log []string `json:"log,omitempty"`
+	// Checked is set once an edit run's changes were checked, tested and applied (or not), so that
+	// happens once.
+	Checked bool `json:"checked,omitempty"`
+}
+
+// ExtraRepo is one more repository of a session, and its edit worktree.
+type ExtraRepo struct {
+	Repo        string `json:"repo"`
+	Worktree    string `json:"worktree,omitempty"`
+	BaseRev     string `json:"base_rev,omitempty"`
+	HeadAtStart string `json:"head_at_start,omitempty"`
+	Carried     int    `json:"carried,omitempty"`
 }
 
 // newMeterRun makes a random id for one prompt's calls in the cost meter.

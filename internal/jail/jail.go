@@ -60,6 +60,16 @@ type Spec struct {
 	ZDR           bool
 	// Models are declared to the jailed OpenCode, so ids newer than its catalog run.
 	Models []Model
+	// Extra are more repositories the task needs, mounted like Repo (with their own worktrees in edit mode).
+	Extra []Mount
+	// Toolchains are host toolchains mounted read-only, so the project's tests run in the jail.
+	Toolchains []Toolchain
+}
+
+// Mount is one more repository in a jail, and its edit worktree if any.
+type Mount struct {
+	Repo     string `json:"repo"`
+	Worktree string `json:"worktree,omitempty"`
 }
 
 // Jail is the record of one session's pod, kept in <state>/relay/jails/<name>/jail.json.
@@ -67,6 +77,7 @@ type Jail struct {
 	Name          string    `json:"name"`
 	Repo          string    `json:"repo"`
 	Worktree      string    `json:"worktree,omitempty"`
+	Extra         []Mount   `json:"extra,omitempty"`
 	Port          int       `json:"port"`
 	Image         string    `json:"image"`
 	Created       time.Time `json:"created"`
@@ -441,6 +452,16 @@ func Start(ctx context.Context, spec Spec, cfg config.Config, log io.Writer) (*J
 	if err := CheckMountable(repo, cfg.OpenRouterKeyFile); err != nil {
 		return nil, err
 	}
+	for i, m := range spec.Extra {
+		c, err := Canonical(m.Repo)
+		if err != nil {
+			return nil, err
+		}
+		if err := CheckMountable(c, cfg.OpenRouterKeyFile); err != nil {
+			return nil, err
+		}
+		spec.Extra[i].Repo = c
+	}
 	key, err := cfg.OpenRouterKey()
 	if err != nil {
 		return nil, err
@@ -450,7 +471,7 @@ func Start(ctx context.Context, spec Spec, cfg config.Config, log io.Writer) (*J
 		image = DefaultImage
 	}
 	if _, err := podman(ctx, nil, nil, "image", "exists", image); err != nil {
-		return nil, fmt.Errorf("jail image %s is missing; run `p0ssess jail build`", image)
+		return nil, &MissingImage{Image: image}
 	}
 	exe, err := binary()
 	if err != nil {
@@ -460,7 +481,7 @@ func Start(ctx context.Context, spec Spec, cfg config.Config, log io.Writer) (*J
 	if err != nil {
 		return nil, err
 	}
-	j := &Jail{Name: newName(), Repo: repo, Worktree: spec.Worktree, Image: image, Created: t0.UTC(),
+	j := &Jail{Name: newName(), Repo: repo, Worktree: spec.Worktree, Extra: spec.Extra, Image: image, Created: t0.UTC(),
 		ZDR: spec.ZDR, ShellInternet: spec.ShellInternet, Owner: Self(), KeepUntil: t0.Add(startGrace).UTC()}
 	pw := newPassword()
 	for _, d := range []string{ctlDir(j.Name), egressDir(j.Name), meterDir(j.Name)} {
@@ -532,19 +553,11 @@ func Start(ctx context.Context, spec Spec, cfg config.Config, log io.Writer) (*J
 	args = append(args, "--tmpfs", "/tmp:rw,size=1g,mode=1777",
 		"--tmpfs", "/state:rw,size=1g,mode=0700,U",
 		"-v", exe+":"+ServerExePath+":"+mountOpt(cfg, "ro"),
-		"-v", repo+":"+repo+":"+mountOpt(cfg, "ro"))
-	// Other sessions' worktrees and their git admin directories live under these two; hide both, then
-	// mount this session's own worktree back in.
-	for _, d := range []string{filepath.Join(repo, ".p0ssess"), filepath.Join(repo, ".git", "worktrees")} {
-		if st, err := os.Stat(d); err == nil && st.IsDir() {
-			args = append(args, "--mount", "type=tmpfs,destination="+d+",tmpfs-size=64k,tmpfs-mode=0555,notmpcopyup")
-		}
+	)
+	for _, m := range append([]Mount{{Repo: repo, Worktree: spec.Worktree}}, spec.Extra...) {
+		args = append(args, repoMountArgs(cfg, m)...)
 	}
-	if spec.Worktree != "" {
-		admin := filepath.Join(repo, ".git", "worktrees", filepath.Base(spec.Worktree))
-		args = append(args, "-v", spec.Worktree+":"+spec.Worktree+":"+mountOpt(cfg, "rw"),
-			"-v", admin+":"+admin+":"+mountOpt(cfg, "rw"))
-	}
+	args = append(args, toolArgs(cfg, spec.Toolchains)...)
 	env := []string{
 		"OPENCODE_PASSWORD=" + pw,
 		"OPENCODE_CONFIG_CONTENT=" + string(ocCfg),
@@ -573,6 +586,40 @@ func Start(ctx context.Context, spec Spec, cfg config.Config, log io.Writer) (*J
 	}
 	fmt.Fprintf(log, "jail %s ready in %.2fs for %s\n", j.Name, j.StartupS, repo)
 	return j, nil
+}
+
+// repoMountArgs mount one repository read-only. Other sessions' worktrees and their git admin
+// directories live under .p0ssess and .git/worktrees; both are hidden, then this session's own worktree
+// is mounted back in, read-write.
+func repoMountArgs(cfg config.Config, m Mount) []string {
+	args := []string{"-v", m.Repo + ":" + m.Repo + ":" + mountOpt(cfg, "ro")}
+	for _, d := range []string{filepath.Join(m.Repo, ".p0ssess"), filepath.Join(m.Repo, ".git", "worktrees")} {
+		if st, err := os.Stat(d); err == nil && st.IsDir() {
+			args = append(args, "--mount", "type=tmpfs,destination="+d+",tmpfs-size=64k,tmpfs-mode=0555,notmpcopyup")
+		}
+	}
+	if m.Worktree != "" {
+		admin := filepath.Join(m.Repo, ".git", "worktrees", filepath.Base(m.Worktree))
+		args = append(args, "-v", m.Worktree+":"+m.Worktree+":"+mountOpt(cfg, "rw"),
+			"-v", admin+":"+admin+":"+mountOpt(cfg, "rw"))
+	}
+	return args
+}
+
+// MissingImage is a jail start without the jail image; the relay builds it and starts again.
+type MissingImage struct{ Image string }
+
+func (e *MissingImage) Error() string {
+	return fmt.Sprintf("jail image %s is missing; run `p0ssess jail build`", e.Image)
+}
+
+// BuildDefault builds the configured jail image, downloading the pinned OpenCode release.
+func BuildDefault(ctx context.Context, cfg config.Config, out io.Writer) error {
+	image := cfg.Image
+	if image == "" {
+		image = DefaultImage
+	}
+	return Build(ctx, image, "", out)
 }
 
 func (j *Jail) hostPort(ctx context.Context) (int, error) {

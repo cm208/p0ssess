@@ -42,10 +42,24 @@ type Engine struct {
 	// shell internet such a run gets.
 	Unguarded         bool
 	TestShellInternet bool
+
+	direct  DirectRunner
+	receipt func(*Result) string
+	// BuildImage builds a missing jail image; TestRunner runs a project's tests after an edit run. Tests
+	// replace both.
+	BuildImage func(ctx context.Context) error
+	TestRunner func(ctx context.Context, dir string, tc jail.Toolchain, all []jail.Toolchain) jail.TestRun
+	// RunHook replaces one attempt of Do in tests.
+	RunHook func(ctx context.Context, req RunRequest) (*Result, error)
 }
 
 func NewEngine(cfg config.Config, version string, log io.Writer) *Engine {
-	return &Engine{cfg: cfg, version: version, log: log, watches: map[string]*watch{}, jails: map[string]*sessionJail{}}
+	e := &Engine{cfg: cfg, version: version, log: log, watches: map[string]*watch{}, jails: map[string]*sessionJail{}}
+	e.BuildImage = func(ctx context.Context) error { return jail.BuildDefault(ctx, e.cfg, e.log) }
+	e.TestRunner = func(ctx context.Context, dir string, tc jail.Toolchain, all []jail.Toolchain) jail.TestRun {
+		return jail.RunTests(ctx, e.cfg, dir, tc, all, 10*time.Minute)
+	}
+	return e
 }
 
 // sessionJail is a session's pod while this process owns it. idle removes it once the session has had no
@@ -70,6 +84,12 @@ type RunRequest struct {
 	// MaxCostUSD caps this prompt's cost; the relay interrupts the run past it. 0 takes max_run_cost_usd
 	// from config.json, which is also the ceiling.
 	MaxCostUSD float64 `json:"max_cost_usd"`
+
+	// Set by Do, not by callers: the other models p0ssess may switch to (declared at jail start), the
+	// output limit after OpenRouter said the key can afford only so much, and where the run works.
+	Alternatives []string `json:"-"`
+	MaxOutput    int      `json:"-"`
+	target       *Target
 }
 
 // ParseModel accepts "openrouter/vendor/model", "vendor/model" or "vendor/model#variant".
@@ -153,6 +173,13 @@ func (e *Engine) Run(ctx context.Context, req RunRequest, progress func(float64,
 		}
 		if rec, err = e.newRecord(cwd, req); err != nil {
 			return nil, err
+		}
+		if rec.Scratch {
+			defer func() {
+				if rec.Jail == "" {
+					os.RemoveAll(rec.Repo)
+				}
+			}()
 		}
 	}
 	files, err := attachments(req.Attachments)
@@ -270,31 +297,71 @@ func (e *Engine) idle() time.Duration { return time.Duration(e.cfg.SessionIdleSe
 // startSession creates the session's worktree (edit mode), its jail and the OpenCode session. Anything
 // it made is removed again if a later step fails.
 func (e *Engine) startSession(ctx context.Context, rec *SessionRecord, req RunRequest, grant Grant) (*jail.Jail, *opencode.Client, error) {
+	var made []func()
+	cleanup := func() {
+		for _, f := range made {
+			f()
+		}
+	}
+	if jail.UseCloud(e.cfg) && len(rec.Extra) > 0 {
+		var names []string
+		for _, x := range rec.Extra {
+			names = append(names, x.Repo)
+		}
+		rec.Log = append(rec.Log, "the cloud sandbox takes one repository, so "+strings.Join(names, ", ")+" was left out")
+		rec.Extra = nil
+	}
 	if rec.Mode != "read" {
-		if err := jail.PrepareGit(rec.Repo); err != nil {
-			return nil, nil, err
-		}
-		wt, base, err := addWorktree(rec.Repo)
+		wt, base, head, carried, err := e.editCopy(rec.Repo)
 		if err != nil {
+			cleanup()
 			return nil, nil, err
 		}
+		repo := rec.Repo
+		made = append(made, func() { removeWorktree(repo, wt) })
 		rel, _ := filepath.Rel(rec.Repo, rec.Cwd)
-		rec.Worktree, rec.BaseRev = wt, base
+		rec.Worktree, rec.BaseRev, rec.HeadAtStart, rec.Carried = wt, base, head, carried
 		rec.Location = filepath.Join(wt, rel)
 		if _, err := os.Stat(rec.Location); err != nil {
 			rec.Location = wt
 		}
-	}
-	cleanup := func() {
-		if rec.Worktree != "" {
-			removeWorktree(rec.Repo, rec.Worktree)
+		for i := range rec.Extra {
+			x := &rec.Extra[i]
+			wt, base, head, carried, err := e.editCopy(x.Repo)
+			if err != nil {
+				cleanup()
+				return nil, nil, err
+			}
+			xr := x.Repo
+			made = append(made, func() { removeWorktree(xr, wt) })
+			x.Worktree, x.BaseRev, x.HeadAtStart, x.Carried = wt, base, head, carried
 		}
+		if n := rec.Carried + sumCarried(rec.Extra); n > 0 {
+			rec.Log = append(rec.Log, fmt.Sprintf("included your %d uncommitted change(s) in the agent's copy", n))
+		}
+	}
+	repos := []string{rec.Repo}
+	var extra []jail.Mount
+	for _, x := range rec.Extra {
+		repos = append(repos, x.Repo)
+		extra = append(extra, jail.Mount{Repo: x.Repo, Worktree: x.Worktree})
+	}
+	if !rec.Scratch {
+		tcs, missing := jail.Toolchains(repos...)
+		rec.Toolchains = tcs
+		rec.Log = append(rec.Log, missing...)
 	}
 	rec.ShellInternet = grant.ShellInternet
 	cfg := e.cfg
 	cfg.ZDR = grant.ZDR
-	j, err := jail.Start(ctx, jail.Spec{Repo: rec.Repo, Worktree: rec.Worktree, ShellInternet: grant.ShellInternet, ZDR: grant.ZDR,
-		Models: []jail.Model{e.declared(rec.Model, grant.CapUSD)}}, cfg, e.log)
+	models := []jail.Model{e.declaredOut(rec.Model, grant.CapUSD, req.MaxOutput)}
+	for _, a := range req.Alternatives {
+		if BaseID(a) != BaseID(rec.Model) {
+			models = append(models, e.declaredOut(a, grant.CapUSD, req.MaxOutput))
+		}
+	}
+	j, err := jail.Start(ctx, jail.Spec{Repo: rec.Repo, Worktree: rec.Worktree, Extra: extra, ShellInternet: grant.ShellInternet, ZDR: grant.ZDR,
+		Models: models, Toolchains: rec.Toolchains}, cfg, e.log)
 	if err != nil {
 		cleanup()
 		return nil, nil, fmt.Errorf("jail: %w", err)
@@ -319,6 +386,35 @@ func (e *Engine) startSession(ctx context.Context, rec *SessionRecord, req RunRe
 	e.jails[rec.SessionID] = &sessionJail{j: j, rec: rec}
 	e.mu.Unlock()
 	return j, c, nil
+}
+
+// editCopy makes an edit run's worktree of repo, with the caller's uncommitted changes carried into it.
+// base is the commit the run's diff is taken against, head the caller's HEAD at the start.
+func (e *Engine) editCopy(repo string) (wt, base, head string, carried int, err error) {
+	if err = jail.PrepareGit(repo); err != nil {
+		return
+	}
+	if wt, head, err = addWorktree(repo); err != nil {
+		return
+	}
+	base = head
+	nb, n, cerr := carryDirty(repo, wt)
+	if cerr != nil {
+		removeWorktree(repo, wt)
+		return "", "", "", 0, cerr
+	}
+	if n > 0 {
+		base, carried = nb, n
+	}
+	return
+}
+
+func sumCarried(xs []ExtraRepo) int {
+	n := 0
+	for _, x := range xs {
+		n += x.Carried
+	}
+	return n
 }
 
 // jailFor returns a running session's jail and a client for it. A jail whose owner is gone, or that was
@@ -424,6 +520,9 @@ func (e *Engine) closeSession(sid string) {
 	rec.Closed = true
 	rec.save()
 	e.recMu.Unlock()
+	if rec.Scratch && rec.Mode == "read" {
+		os.RemoveAll(rec.Repo)
+	}
 }
 
 // Release is for one-shot processes (the command line) when they are done with a session: a finished
@@ -515,28 +614,43 @@ func waitDuration(s int) time.Duration {
 }
 
 func (e *Engine) newRecord(cwd string, req RunRequest) (*SessionRecord, error) {
-	cwd, err := jail.Canonical(cwd)
-	if err != nil {
-		return nil, fmt.Errorf("cwd: %w", err)
+	tg := req.target
+	if tg == nil {
+		t := Resolve(req.Task, cwd, req.Cwd != "", e.cfg.OpenRouterKeyFile, req.Attachments)
+		tg = &t
 	}
-	repo, err := jail.RepoRoot(cwd)
-	if err != nil {
-		return nil, err
-	}
-	if err := jail.CheckMountable(repo, e.cfg.OpenRouterKeyFile); err != nil {
-		return nil, err
-	}
-	if paths.Private(cwd) || paths.Private(repo) {
+	if paths.Private(cwd) || tg.Repo != "" && (paths.Private(tg.Repo) || paths.Private(tg.Cwd)) {
 		return nil, errors.New("this repository has a .p0ssess-private file; delegation is blocked here")
+	}
+	for _, f := range tg.Files {
+		if paths.Private(filepath.Dir(f)) {
+			return nil, errors.New("this repository has a .p0ssess-private file; delegation is blocked here")
+		}
 	}
 	m, err := ParseModel(req.Model)
 	if err != nil {
 		return nil, err
 	}
-	rec := &SessionRecord{Repo: repo, Cwd: cwd, Location: cwd, Mode: req.Mode, Kind: req.Kind,
-		Model: strings.TrimPrefix(m.String(), "openrouter/"), Created: time.Now().UTC()}
+	rec := &SessionRecord{Mode: req.Mode, Kind: req.Kind, Model: strings.TrimPrefix(m.String(), "openrouter/"), Created: time.Now().UTC()}
+	rec.Log = append(rec.Log, tg.Notes...)
+	if tg.Repo == "" {
+		dir, copies, err := scratchRepo(tg.Files)
+		if err != nil {
+			return nil, fmt.Errorf("making a scratch repository: %w", err)
+		}
+		rec.Repo, rec.Cwd, rec.Location, rec.Scratch, rec.Copies = dir, dir, dir, true, copies
+		rec.Log = append(rec.Log, "no git repository fits this task, so it ran in a scratch copy")
+		return rec, nil
+	}
+	if err := jail.CheckMountable(tg.Repo, e.cfg.OpenRouterKeyFile); err != nil {
+		return nil, err
+	}
+	rec.Repo, rec.Cwd, rec.Location = tg.Repo, tg.Cwd, tg.Cwd
+	for _, x := range tg.Extra {
+		rec.Extra = append(rec.Extra, ExtraRepo{Repo: x})
+	}
 	if req.Mode != "read" {
-		if _, err := os.Stat(filepath.Join(repo, ".git")); err != nil {
+		if _, err := os.Stat(filepath.Join(tg.Repo, ".git")); err != nil {
 			return nil, errors.New("edit mode needs a git repository (it works in a separate worktree)")
 		}
 	}

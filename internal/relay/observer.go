@@ -88,6 +88,8 @@ type Choice struct {
 	UseCase string
 	Stakes  int
 	Why     string
+	// Alternatives are the next options inside the user's limits, in rank order, for a retry.
+	Alternatives []string
 }
 
 // chooseModel fills in req.Model (and the use case and stakes) for a new run that names no model, by
@@ -110,6 +112,7 @@ func (e *Engine) chooseModel(req *RunRequest) (string, error) {
 		return "", err
 	}
 	req.Model = c.Model
+	req.Alternatives = c.Alternatives
 	if req.UseCase == "" {
 		req.UseCase = c.UseCase
 	}

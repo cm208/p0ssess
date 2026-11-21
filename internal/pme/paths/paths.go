@@ -48,7 +48,11 @@ func (d Dirs) UsageFile() string  { return filepath.Join(d.Cache, "usage.json") 
 func (d Dirs) OfflineMarker() string { return filepath.Join(d.Cache, "engine-offline") }
 func (d Dirs) RunningDir() string    { return filepath.Join(d.Cache, "running") }
 func (d Dirs) HistoryFile() string   { return filepath.Join(d.State, "history.jsonl") }
-func (d Dirs) SessionsDir() string   { return filepath.Join(d.State, "sessions") }
+
+// NoticesFile holds the notes p0ssess keeps out of the conversation (retries, limit warnings, why a
+// model was picked), for the status line and the p0ssess page.
+func (d Dirs) NoticesFile() string { return filepath.Join(d.State, "notices.jsonl") }
+func (d Dirs) SessionsDir() string { return filepath.Join(d.State, "sessions") }
 
 // SessionRulesFile is where session-scoped rules live.
 func (d Dirs) SessionRulesFile(session string) string {

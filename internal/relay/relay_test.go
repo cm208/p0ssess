@@ -2,7 +2,6 @@ package relay
 
 import (
 	"context"
-	"errors"
 	"io"
 	"os"
 	"os/exec"
@@ -308,12 +307,16 @@ func TestRunRefusesHomeAndNonRepositories(t *testing.T) {
 	e.Unguarded = true
 	plain := filepath.Join(tmp, "plain")
 	os.MkdirAll(plain, 0o755)
+	// Outside a repository nothing is refused any more (1.0.4 finding 3a), but the home directory and
+	// the root are never mounted: such a run gets a scratch repository or the direct path.
 	for _, cwd := range []string{home, plain, "/"} {
-		_, err := e.Run(context.Background(), RunRequest{Task: "list the files", Cwd: cwd}, nil)
-		var nm *jail.NotMountable
-		if !errors.As(err, &nm) || !strings.Contains(err.Error(), "use the direct tool") {
-			t.Errorf("cwd %s: %v", cwd, err)
+		if tg := Resolve("list the files", cwd, true, cfg.OpenRouterKeyFile, nil); tg.Repo != "" {
+			t.Errorf("cwd %s: mounted %s", cwd, tg.Repo)
 		}
+	}
+	os.MkdirAll(filepath.Join(home, ".git"), 0o755)
+	if tg := Resolve("look at ~/notes", home, true, cfg.OpenRouterKeyFile, nil); tg.Repo != "" {
+		t.Errorf("a home directory that is a git repository was mounted")
 	}
 	if ents, _ := os.ReadDir(jail.Dir()); len(ents) != 0 {
 		t.Errorf("a jail was started: %v", ents)

@@ -363,11 +363,12 @@ func runCmd(ctx context.Context, name string, args []string) error {
 	e.SetObserver(server.NewObserver(eng))
 	e.SetPricer(server.Pricer(eng))
 	e.SetFacts(server.Facts(eng))
+	server.Wire(e, cfg, eng)
 	progress := func(v float64, msg string) { fmt.Fprintf(os.Stderr, "progress: %s\n", msg) }
 	var res *relay.Result
 	switch name {
 	case "run":
-		res, err = e.Run(ctx, req, progress)
+		res, err = e.Do(ctx, req, progress)
 	case "wait":
 		res, err = e.Wait(ctx, req.Session, req.WaitS, progress)
 	case "abort":
@@ -380,6 +381,7 @@ func runCmd(ctx context.Context, name string, args []string) error {
 			return e.Wait(ctx, sid, req.WaitS, progress)
 		})
 	}
+	res, err = e.Settle(ctx, res, err, progress)
 	e.Release(res, keep)
 	if err != nil {
 		return err

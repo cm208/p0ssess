@@ -84,10 +84,18 @@ func BaseID(model string) string {
 // declared is the jail declaration of model for a run capped at capUSD: its answers per call are
 // limited to what the cap buys at the model's output price.
 func (e *Engine) declared(model string, capUSD float64) jail.Model {
+	return e.declaredOut(model, capUSD, 0)
+}
+
+// declaredOut is declared with the output limit lowered to maxOut when that is above 0 and smaller.
+func (e *Engine) declaredOut(model string, capUSD float64, maxOut int) jail.Model {
 	f := e.modelFacts(model)
 	out := f.MaxOutput
 	if n := proxy.OutputLimit(capUSD, 0, f.Rates); n > 0 && (out == 0 || n < out) {
 		out = n
+	}
+	if maxOut > 0 && (out == 0 || maxOut < out) {
+		out = maxOut
 	}
 	return jail.Model{ID: BaseID(model), Name: f.Name, Context: f.Context, Output: out,
 		InPerM: f.Rates.InPerM, OutPerM: f.Rates.OutPerM, CacheReadPerM: f.CacheRead}

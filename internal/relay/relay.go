@@ -8,7 +8,8 @@ import (
 
 const instructions = `For the p0ssess agent. p0ssess runs a task on another model (any OpenRouter model) inside a sandboxed OpenCode session.
 Call run once per task; results put the answer first. Continue a session by passing its session id.
-Edit tasks work in a separate git worktree and return a diff to review; nothing is merged.`
+Edit tasks work in a separate git worktree; p0ssess checks the change, runs the project's tests and applies it to a clean checkout (else returns the apply command).
+Show the caller only the answer and the receipt line; retries and notes are for the p0ssess page.`
 
 var runSchema = json.RawMessage(`{
   "type": "object",
@@ -16,7 +17,7 @@ var runSchema = json.RawMessage(`{
     "task": {"type": "string", "description": "The task, exactly as the caller wrote it."},
     "model": {"type": "string", "description": "OpenRouter model id, e.g. deepseek/deepseek-v4.1-flash. Leave it out and p0ssess picks the model from the routing engine (budget, fit, rules), as direct does; the result says which and why. Optional when continuing a session."},
     "mode": {"type": "string", "enum": ["read", "edit"], "description": "read (default): no file changes. edit: works in a new git worktree and returns a diff."},
-    "cwd": {"type": "string", "description": "Working directory, inside the project's git repository. Defaults to the Claude Code session's working directory. Runs outside a git repository, or in the home directory, are refused."},
+    "cwd": {"type": "string", "description": "Working directory. Usually leave it out: p0ssess works in the repository holding the files the task names (and mounts every repository it names), else the session's directory; read-only work outside any repository runs on the direct path, edit work in a scratch copy."},
     "attachments": {"type": "array", "items": {"type": "string"}, "description": "Absolute paths of text, PDF or image files to attach."},
     "session": {"type": "string", "description": "A session id from an earlier result, to continue that session."},
     "kind": {"type": "string", "description": "Optional short task kind for the local history, e.g. tests, summary, refactor."},
@@ -87,7 +88,7 @@ func NewServer(e *Engine, version string) *mcp.Server {
 			if err := json.Unmarshal(args, &req); err != nil {
 				return mcp.Error("invalid arguments: " + err.Error())
 			}
-			return textResult(e.Run(ctx, req, p))
+			return textResult(e.Do(ctx, req, p))
 		})
 	s.AddTool(mcp.Tool{Name: "wait", Description: "Keep waiting on a session whose run returned still_running.", InputSchema: waitSchema},
 		func(ctx context.Context, args json.RawMessage, p mcp.Progress) mcp.CallResult {
@@ -98,7 +99,8 @@ func NewServer(e *Engine, version string) *mcp.Server {
 			if err := json.Unmarshal(args, &a); err != nil {
 				return mcp.Error("invalid arguments: " + err.Error())
 			}
-			return textResult(e.Wait(ctx, a.Session, a.WaitS, p))
+			res, err := e.Wait(ctx, a.Session, a.WaitS, p)
+			return textResult(e.Settle(ctx, res, err, p))
 		})
 	s.AddTool(mcp.Tool{Name: "abort", Description: "Interrupt a running session.", InputSchema: abortSchema},
 		func(ctx context.Context, args json.RawMessage, p mcp.Progress) mcp.CallResult {
@@ -123,7 +125,8 @@ func NewServer(e *Engine, version string) *mcp.Server {
 			if err := json.Unmarshal(args, &a); err != nil {
 				return mcp.Error("invalid arguments: " + err.Error())
 			}
-			return textResult(e.Answer(ctx, a.Session, a.RequestID, a.Decision, a.Message, a.WaitS, p))
+			res, err := e.Answer(ctx, a.Session, a.RequestID, a.Decision, a.Message, a.WaitS, p)
+			return textResult(e.Settle(ctx, res, err, p))
 		})
 	s.AddTool(mcp.Tool{Name: "models", Description: "List OpenRouter models with context size, price per million tokens " +
 		"and modalities, from the local registry snapshot or live.", InputSchema: modelsSchema,

@@ -84,6 +84,7 @@ func New(opt Options) (s *mcp.Server, closeFn func(), err error) {
 	re.SetObserver(obs)
 	re.SetPricer(Pricer(eng))
 	re.SetFacts(Facts(eng))
+	Wire(re, cfg, eng)
 	s = relay.NewServer(re, opt.Version)
 	s.Name = Name
 	s.Instructions = instructions + teamInstructions + "\nEngine:\n" + mcpserver.Instructions
@@ -750,7 +751,13 @@ func (o *observer) Choose(c relay.ChooseRequest) (relay.Choice, error) {
 			if best.Reason != "" {
 				why += "; " + best.Reason
 			}
-			return relay.Choice{Model: best.Model, UseCase: uc, Stakes: stakes, Why: why}, nil
+			var alts []string
+			for _, o := range rec.Options {
+				if (o.Route == local.RouteDirect || o.Route == local.RouteAgent) && !o.NeedsApproval && o.Model != best.Model && !slices.Contains(alts, o.Model) {
+					alts = append(alts, o.Model)
+				}
+			}
+			return relay.Choice{Model: best.Model, UseCase: uc, Stakes: stakes, Why: why, Alternatives: alts}, nil
 		}
 		why := uc
 		if len(rec.Notes) > 0 {
