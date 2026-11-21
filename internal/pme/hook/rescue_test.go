@@ -78,7 +78,7 @@ func TestRescueAsksOnceForCriticalWork(t *testing.T) {
 	now := time.Now()
 	d, proj := rescueSetup(t, now, 91, true)
 	out := run(d, proj, "implement the new login and session token auth", now)
-	for _, w := range []string{"critical work (stakes 4)", "Ask the user once", "model would do it and what it would cost", `"stakes 4"`} {
+	for _, w := range []string{"critical work (stakes 4)", "Ask the user once", "needs approval", "p0ssess can take this critical work on <model> for about $<cost>", "never run it before the yes", `"stakes 4"`} {
 		if !strings.Contains(out, w) {
 			t.Errorf("missing %q in %q", w, out)
 		}

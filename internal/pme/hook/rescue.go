@@ -108,8 +108,10 @@ func rescueHint(p string) string {
 	for _, w := range matchWork(p) {
 		if isCritical(w.id) {
 			return fmt.Sprintf(`p0ssess rescue is on (Claude's limit is near), and this is %s: critical work (stakes 4). `+
-				`Ask the user once, for this task only: call recommend with use case %s and stakes 4, then say in one line which model would do it and what it would cost, and ask whether p0ssess should take it. `+
-				`On a yes, hand it to the p0ssess agent (Agent tool, subagent_type "p0ssess:p0ssess") with "stakes 4"; on a no, or if no route comes back, do it yourself.`, w.label, w.id)
+				`Ask the user once, for this task only. Call recommend with use case %s and stakes 4: during rescue it returns the best option inside the user's limits, marked needs approval, with its model and cost. `+
+				`Ask in one line, as "p0ssess can take this critical work on <model> for about $<cost> while Claude's limit is near. Do it?" and never run it before the yes. `+
+				`On a yes, call approvals_add exactly as the needs-approval message says (it covers this one run on that model only), then hand it to the p0ssess agent (Agent tool, subagent_type "p0ssess:p0ssess") with "stakes 4" and "model <that model>". `+
+				`On a no, or if recommend offers no route, do it yourself. Do not ask again for this task.`, w.label, w.id)
 		}
 	}
 	for _, w := range matchWork(p) {

@@ -52,6 +52,7 @@ func (e *Engine) Recommend(req Request) (*Recommendation, error) {
 	if stakes < 0 || stakes > 4 {
 		return nil, fmt.Errorf("stakes must be 1-4, got %d", stakes)
 	}
+	cfg.RescueLift = e.rescueLift(now)
 	var notes []string
 	rs, err := e.Rules(req.Scope)
 	if err != nil {
@@ -87,6 +88,15 @@ func (e *Engine) Recommend(req Request) (*Recommendation, error) {
 		w := e.wire(req, stakes, lead, lam.Value, bud, rs, ledger, now)
 		w.NoLead = noLead
 		resp = e.ask(w)
+		if resp != nil && cfg.RescueLift && resp.Stakes >= 4 {
+			// Rescue: candidates are scored as stakes-3 work, then every delegated one asks for a yes at stakes 4.
+			w3 := w
+			w3.Stakes = 3
+			if r3 := e.ask(w3); r3 != nil {
+				r3.Stakes, r3.StakesCeiling = resp.Stakes, resp.StakesCeiling
+				resp = r3
+			}
+		}
 	}
 	fromTable := resp == nil
 	if fromTable {
@@ -201,24 +211,28 @@ func fromRoutes(t *table.Table, req Request, stakes int, lead string, lam float6
 	}
 	lo, hi := u.StakesBounds()
 	r.Stakes, r.StakesCeiling = stakes, cfg.Ceilings.At(stakes)
+	routeStakes := stakes
+	if cfg.RescueLift && stakes >= 4 {
+		routeStakes = 3
+	}
 	r.UseCase = remote.UseCase{ID: u.ID, N: u.N, Task: u.Task, Kind: u.Kind, Family: u.Family, Path: u.Path, Verify: u.Verify,
 		StakesRange: []int{lo, hi}, EditsCode: u.EditsCode, Preprocess: u.Preprocess}
 	if u.EditsCode {
 		r.UseCase.Verify = "full"
 	}
-	rt := t.Route(u.ID, stakes, lam)
+	rt := t.Route(u.ID, routeStakes, lam)
 	claudeOnlyRoutes := private
 	if rt == nil {
 		best := -1
 		for _, l := range t.Levels(u.ID) {
-			if best < 0 || abs(l-stakes) < abs(best-stakes) || abs(l-stakes) == abs(best-stakes) && l > best {
+			if best < 0 || abs(l-routeStakes) < abs(best-routeStakes) || abs(l-routeStakes) == abs(best-routeStakes) && l > best {
 				best = l
 			}
 		}
 		if best > 0 {
 			rt = t.Route(u.ID, best, lam)
 		}
-		claudeOnlyRoutes = claudeOnlyRoutes || stakes >= 4
+		claudeOnlyRoutes = claudeOnlyRoutes || routeStakes >= 4
 	}
 	if rt == nil {
 		r.ClaudeFeasible = claudeCan(u)
@@ -364,7 +378,7 @@ func (e *Engine) finish(req Request, resp *remote.Response, fromTable, private b
 			offHit = true
 			continue
 		}
-		if why := dropWhy(o, d, bud, t, resp.Stakes, spend); why != "" {
+		if why := dropWhy(o, d, bud, t, resp.Stakes, spend, cfg.RescueLift); why != "" {
 			rec.Excluded = append(rec.Excluded, Exclusion{Model: o.Model, Route: o.Route, Why: why})
 			continue
 		}
@@ -383,6 +397,16 @@ func (e *Engine) finish(req Request, resp *remote.Response, fromTable, private b
 	}
 	if len(opts) > 0 {
 		p := pickInside(opts)
+		if cfg.RescueLift && resp.Stakes >= 4 && !paid(p.Route) {
+			// Rescue offers the best delegated route for the one yes; Claude's own option stays listed.
+			for _, o := range opts {
+				if paid(o.Route) && o.Route != RouteEngine {
+					o.Notes = append(append([]string(nil), o.Notes...), "rescue: needs a yes for this task")
+					p = o
+					break
+				}
+			}
+		}
 		rec.Pick = &p
 		rec.Announce = announce(p, uc.Task)
 	} else {
@@ -450,7 +474,7 @@ func ruleWhy(rs rules.Set, id string) string {
 
 // dropWhy applies the user's rules, lists, privacy mode, the stakes gate and the monthly cap to one
 // option, and says why it goes, or "".
-func dropWhy(o Option, d rules.Decision, bud budget.Budget, t *table.Table, stakes int, spend history.Spend) string {
+func dropWhy(o Option, d rules.Decision, bud budget.Budget, t *table.Table, stakes int, spend history.Spend, lift bool) string {
 	zdr := bud.Privacy.Mode == "zdr"
 	switch o.Route {
 	case RouteClaude, RouteLocal:
@@ -486,7 +510,7 @@ func dropWhy(o Option, d rules.Decision, bud budget.Budget, t *table.Table, stak
 				return "zero-retention mode: " + why
 			}
 		}
-		if stakes >= 4 && d.MaxStakesFor(o.Model) < 4 {
+		if stakes >= 4 && d.MaxStakesFor(o.Model) < 4 && !lift {
 			return "stakes 4 stays on Claude unless a rule allows this model"
 		}
 	}

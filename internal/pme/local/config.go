@@ -55,7 +55,10 @@ type LambdaConfig struct {
 // Config is engine.toml: the λ curve, which stays on this machine, and the scoring keys, which are
 // sent to the engine only when the user set them.
 type Config struct {
-	Lambda LambdaConfig `toml:"lambda" json:"lambda"`
+	// RescueLift is set per call while a Pro rescue period is on: stakes-4 work may be offered to other
+	// models, each only with a yes for that task. It is never read from the file.
+	RescueLift bool         `toml:"-" json:"-"`
+	Lambda     LambdaConfig `toml:"lambda" json:"lambda"`
 	// Harm is the cost of a bad result beyond redoing it, in dollars.
 	Harm Levels `toml:"harm" json:"harm"`
 	// Ceilings are the highest p_fail (upper bound) a route may have.

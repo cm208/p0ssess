@@ -147,7 +147,7 @@ func (e *Engine) Authorize(c Charge) (*Grant, error) {
 		return nil, refuse("%s is %s", c.Model, why)
 	}
 	claude := strings.HasPrefix(c.Model, "anthropic/") || m.IsClaude()
-	if stakes >= 4 && !claude && d.MaxStakesFor(c.Model) < 4 {
+	if stakes >= 4 && !claude && d.MaxStakesFor(c.Model) < 4 && !e.rescueLift(now) {
 		return nil, refuse("stakes 4 stays on Claude unless an allow rule with max_stakes = 4 names %s", c.Model)
 	}
 	if !m.PriceKnown() && !strings.HasSuffix(c.Model, ":free") {
