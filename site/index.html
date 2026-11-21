@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
-<title>p0ssess: keep working when Claude’s limit runs out</title>
-<meta name="description" content="p0ssess is a Claude Code plugin. When Claude’s usage limit nears, Pro hands routable work to cheaper models inside a spending envelope you set. Measured on unit-test writing against three ways of running Claude: between 2.2 and 7.2 times cheaper, with every test file passing.">
-<meta property="og:title" content="p0ssess: keep working when Claude’s limit runs out">
-<meta property="og:description" content="A Claude Code plugin that takes routable work when Claude’s usage limit nears, on cheaper models inside limits you set. Measured on unit tests against three ways of running Claude: between 2.2 and 7.2 times cheaper, with every test file passing.">
+<title>p0ssess: stop paying full Claude price for repetitive work</title>
+<meta name="description" content="p0ssess is a Claude Code plugin that sends repetitive work to cheaper models while Claude stays in charge. Measured on unit-test writing against three ways of running Claude: between 2.2 and 7.2 times cheaper, with every test file passing.">
+<meta property="og:title" content="p0ssess: stop paying full Claude price for repetitive work">
+<meta property="og:description" content="A Claude Code plugin that sends repetitive work to cheaper models under a rule you set. Measured on unit tests against three ways of running Claude: between 2.2 and 7.2 times cheaper, with every test file passing.">
 <meta property="og:type" content="website">
 <link rel="canonical" href="https://p0ssess.me/">
 <meta property="og:url" content="https://p0ssess.me/">
@@ -60,18 +60,13 @@
 
 <section class="hero" aria-labelledby="hero-h">
 <div class="wrap">
-  <h1 id="hero-h">Keep working when Claude’s limit runs out. For cents.</h1>
+  <h1 id="hero-h">Stop paying full Claude price for repetitive work.</h1>
 
   <div class="hero-cols">
     <div class="pitch">
-      <p class="lede">p0ssess is a Claude Code plugin. When your 5-hour or weekly window nears its limit, Pro takes over the work a cheaper model can do, inside your spending envelope, and hands it back at the reset. The routing is free on any day. Against three ways of running Claude on a unit-test job, it came out between 2.2 and 7.2 times cheaper, and every test file passed. With Sonnet in charge, Claude’s own Haiku subagent came close.</p>
+      <p class="lede">p0ssess is a Claude Code plugin. Tell it once which chores don’t need Claude’s rates, and Claude hands them to a cheaper model, checks what comes back and answers you as usual. Against three ways of running Claude on a unit-test job, it came out between 2.2 and 7.2 times cheaper, and every test file passed. With Sonnet in charge, Claude’s own Haiku subagent came close.</p>
       <p class="cta"><a class="btn" href="pricing/#pro">Get Pro, $4 a month</a><a class="btn quiet" href="pricing/#team">Get Team, $8 a seat</a></p>
-      <ul class="reasons" aria-label="What Pro adds">
-        <li><b>Usage-limit rescue.</b> Routable work moves over by itself and says so in one line. Free shows you what it would have taken.</li>
-        <li><b>Savings proof.</b> What p0ssess saved you against Claude, by run, model and kind of work, and a monthly report.</li>
-        <li><b>Cloud sandbox.</b> Coding hand-offs on macOS and Windows with nothing to install, 20 sandbox hours a month.</li>
-      </ul>
-      <p class="terms">Team sets the rules once for every seat. Checkout opens soon, and the plugin is free now: <a href="#try">install it</a>.</p>
+      <p class="terms">Pro adds usage-limit rescue, a monthly savings report and a cloud sandbox. Team sets the rules once for every seat. Checkout opens soon, and the plugin is free now: <a href="#try">install it</a>.</p>
     </div>
 
     <div class="meter" id="savings">
