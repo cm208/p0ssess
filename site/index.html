@@ -117,7 +117,7 @@
     <li class="step">
       <div class="step-say hl">
         <h3><span class="n" aria-hidden="true">1</span>The window fills</h3>
-        <p>Rescue starts when Claude’s 5-hour or weekly window passes 85% used, or is on course to run out before it resets. Move the line in plain words: <q>start rescue at 90%</q>.</p>
+        <p>Rescue starts when Claude’s 5-hour or weekly window passes 85% used, or is on course to run out before it resets. Move the threshold in plain words: <q>start rescue at 90%</q>.</p>
       </div>
       <div class="step-out">
         <div class="win">
@@ -130,7 +130,7 @@
     </li>
     <li class="step">
       <div class="step-say hl">
-        <h3><span class="n" aria-hidden="true">2</span>p0ssess says so in one line</h3>
+        <h3><span class="n" aria-hidden="true">2</span><span class="v-pro">p0ssess says so in one line</span><span class="v-free">p0ssess tells you once</span></h3>
         <p class="v-pro">One line, once. The status line shows a violet <code>rescue</code> for as long as it is on.</p>
         <p class="v-free">On Free you get one line for each window: what rescue is, and what it would have taken so far. The count is an estimate.</p>
       </div>
@@ -143,7 +143,7 @@
     </li>
     <li class="step">
       <div class="step-say hl">
-        <h3><span class="n" aria-hidden="true">3</span>Routable work goes to cheaper models</h3>
+        <h3><span class="n" aria-hidden="true">3</span><span class="v-pro">Routable work goes to cheaper models</span><span class="v-free">Nothing more moves</span></h3>
         <p class="v-pro">Research, summaries, bulk and media work, and code edits that fit. Every answer still ends with its receipt, and rescue never spends past your limits. Critical work asks you once, with the model and the cost. <q>Keep this on Claude</q> always wins.</p>
         <p class="v-free">Your rules keep routing work the way they always do, and nothing more is taken. Work that rescue would have moved stays on Claude.</p>
       </div>
@@ -157,7 +157,7 @@
     </li>
     <li class="step">
       <div class="step-say hl">
-        <h3><span class="n" aria-hidden="true">4</span>The window resets and it hands back</h3>
+        <h3><span class="n" aria-hidden="true">4</span><span class="v-pro">The window resets and it hands back</span><span class="v-free">The window resets</span></h3>
         <p class="v-pro">It says that once, and the status line goes quiet. To stop sooner, say <q>turn rescue off</q>.</p>
         <p class="v-free">When the next window fills, you get the one line again.</p>
       </div>
@@ -273,7 +273,7 @@
   <ul class="grid three where">
     <li class="cell hl"><h3>On your p0ssess page</h3><p>This month, last month and all time, by model and by kind of work, with a card you can share. On every plan.</p></li>
     <li class="cell hl"><h3>In the terminal</h3><p><code>p0ssess savings</code> prints the same figures as a card, for any month.</p></li>
-    <li class="cell hl"><h3>By email, on Pro</h3><p>Last month’s totals, once a month. Figures only: the page shows you the exact numbers before they go.</p></li>
+    <li class="cell hl"><h3>By email, on Pro</h3><p>Last month’s totals, once a month, in figures only. Your p0ssess page shows the exact numbers before they go.</p></li>
   </ul>
 
   <div class="whole hl">
@@ -387,7 +387,7 @@
 <div class="wrap faq-cols">
   <div class="sec-head">
     <h2 id="faq-h">Questions before you install</h2>
-    <p>Short answers, with the page that holds the long one. Write to <a href="mailto:support@p0ssess.me">support@p0ssess.me</a> for anything else.</p>
+    <p>Short answers. Write to <a href="mailto:support@p0ssess.me">support@p0ssess.me</a> for anything they leave out.</p>
   </div>
   <div class="faq">
     <details class="q hl"><summary><h3>What leaves my machine?</h3></summary><div class="a"><p>Your prompts and files go only to the model you hand a job to, through your own OpenRouter key, and every call tells OpenRouter not to route to providers that train on prompts. The p0ssess service never sees a prompt, a file or a file name. To rank routes it gets a short task description, sizes, the stakes and your model limits, and it keeps no request logs.</p><p>Files that look like secrets (<code>.env</code>, keys, credentials) never leave, and a <code>.p0ssess-private</code> file blocks all delegation from a repository. Anonymous outcome records, one line for each finished run with no prompt or file in it, are on by default and one sentence turns them off. With Pro, the cloud sandbox receives the files git tracks so it can run them. <a href="privacy/">Privacy policy</a></p></div></details>
