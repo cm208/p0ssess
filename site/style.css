@@ -695,6 +695,10 @@ html.anim .land:not(.in) .band { opacity: 0; }
 .rcpts tbody th { font: 400 0.98rem/1.4 var(--sans); color: var(--ink-body); }
 .rcpts code { font-size: 0.84rem; color: var(--ink-2); white-space: nowrap; }
 .rcpts code b { color: var(--ink); }
+.rcpts td.vs { font: 400 0.84rem/1.4 var(--mono); color: var(--ink-2); white-space: nowrap; }
+.rcpts td.vs b { color: var(--violet-ink); font-weight: 600; }
+.rcpts td.vs.none { color: var(--ink-2); white-space: normal; }
+.rcpts-note { margin: 0; padding: 0.7rem 1.25rem 0.95rem; border-top: 1px solid var(--line); font: 400 0.78rem/1.5 var(--sans); color: var(--ink-2); }
 
 /* What a rescue looks like: four moments down one terminal, each with its note beside it. */
 .seq-ctl { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 0.8rem 1.5rem; margin-bottom: 1.3rem; }
@@ -927,7 +931,7 @@ html.anim .land:not(.in) .band { opacity: 0; }
 .last .cta { margin-top: 0; }
 
 @media (max-width: 599.98px) {
-  .rcpts thead th:last-child { display: none; }
+  .rcpts thead th:nth-child(n+2) { display: none; }
   .rcpts tbody tr { display: grid; padding: 0.7rem 0 0.75rem; }
   .rcpts tbody th, .rcpts td { padding-block: 0; text-align: left; }
   .rcpts code { white-space: normal; overflow-wrap: anywhere; }

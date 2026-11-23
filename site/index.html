@@ -81,14 +81,15 @@
       </div>
       <p class="line">Claude's 5-hour window is at 91%: p0ssess is taking routable work until it resets at 3:40 PM.</p>
       <table class="rcpts">
-        <thead><tr><th scope="col">four hand-offs, measured</th><th scope="col">the receipt under each answer</th></tr></thead>
+        <thead><tr><th scope="col">four hand-offs, measured</th><th scope="col">the receipt under each answer</th><th scope="col">against Claude alone</th></tr></thead>
         <tbody>
-          <tr><th scope="row">Unit tests for 15 Python modules, written</th><td><code>(deepseek-v4.1-flash-1017, <b>$0.03</b>)</code></td></tr>
-          <tr><th scope="row">300 support tickets, triaged</th><td><code>(deepseek-v4.1-flash-1017, <b>$0.08</b>)</code></td></tr>
-          <tr><th scope="row">A ten-minute film, watched with its sound</th><td><code>(qwen3.8-omni-flash, <b>$0.02</b>)</code></td></tr>
-          <tr><th scope="row">A 1024-pixel image, made</th><td><code>(recraft-v4.1-flash, <b>$0.0070</b>)</code></td></tr>
+          <tr><th scope="row">Unit tests for 15 Python modules, written</th><td><code>(deepseek-v4.1-flash-1017, <b>$0.03</b>)</code></td><td class="vs"><b>77%</b> cheaper</td></tr>
+          <tr><th scope="row">300 support tickets, triaged</th><td><code>(deepseek-v4.1-flash-1017, <b>$0.08</b>)</code></td><td class="vs"><b>55%</b> cheaper</td></tr>
+          <tr><th scope="row">A ten-minute film, watched with its sound</th><td><code>(qwen3.8-omni-flash, <b>$0.02</b>)</code></td><td class="vs none">Claude can’t do this alone</td></tr>
+          <tr><th scope="row">A 1024-pixel image, made</th><td><code>(recraft-v4.1-flash, <b>$0.0070</b>)</code></td><td class="vs none">Claude can’t do this alone</td></tr>
         </tbody>
       </table>
+      <p class="rcpts-note">Cheaper than Claude Opus 5.5 working alone, whole job, same accuracy: unit tests $0.28 against $1.26, tickets $0.33 against $0.73, three runs each way.</p>
     </figure>
   </div>
 </div>
