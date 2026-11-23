@@ -22,6 +22,7 @@
 <link rel="stylesheet" href="../pages.css">
 <script src="../release.js" defer></script>
 <script src="../pages.js" defer></script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"p0ssess","applicationCategory":"DeveloperApplication","operatingSystem":"Linux, macOS, Windows","url":"https://p0ssess.me/","description":"p0ssess is a Claude Code plugin that hands routine work to cheaper models through OpenRouter while Claude stays in charge, inside spending limits you set.","license":"https://opensource.org/license/mit","offers":[{"@type":"Offer","name":"Free","price":"0","priceCurrency":"USD"},{"@type":"Offer","name":"Pro, monthly","price":"4","priceCurrency":"USD","url":"https://p0ssess.me/pricing/#pro"},{"@type":"Offer","name":"Pro, yearly","price":"36","priceCurrency":"USD","url":"https://p0ssess.me/pricing/#pro"},{"@type":"Offer","name":"Team, a seat a month","price":"8","priceCurrency":"USD","url":"https://p0ssess.me/pricing/#team"}]}</script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to the page</a>
@@ -47,7 +48,7 @@
 <section class="page-head" aria-labelledby="page-h">
 <div class="wrap">
   <h1 id="page-h">Routing is free. Pro is $4 a month.</h1>
-  <p class="lede">The plugin that sends work to cheaper models is free and open source. Pro adds three things that need a server, for one person: it keeps you working when Claude’s usage limit runs out, it shows what p0ssess saved you, and it runs the sandbox for you on a Mac or a Windows laptop. Team is $8 a seat, and puts one set of rules and one budget across everyone. The models themselves bill to your own OpenRouter key.</p>
+  <p class="lede">The plugin that hands work to cheaper models is free and open source. Pro adds three things that need a server, for the person who hits Claude’s usage limit. Team is $8 a seat and puts one set of rules and one budget across everyone. The models themselves bill to your own OpenRouter key.</p>
 </div>
 </section>
 
@@ -59,13 +60,14 @@
     <p class="price"><b><small>$</small>0</b></p>
     <div class="tier-body">
       <p class="tier-terms">The plugin is MIT licensed and needs no account. It routes work to other models through your own OpenRouter key: the cheaper delegation measured on this site, and video, audio and images. Budgets, rules and history stay on your machine.</p>
+      <p class="tier-terms">The savings figures are on your p0ssess page, and when a Claude window fills, one line tells you when rescue would have started and what it would have taken.</p>
       <p class="tier-terms">The sandbox for coding work runs locally, on Linux with rootless podman. Support is through GitHub issues.</p>
       <p class="tier-terms">Anonymous outcome records are on by default, and one setting turns them off. Usage counts are off unless you turn them on. <a href="../privacy/">Privacy policy</a></p>
     </div>
     <div class="buy"><a class="btn quiet" href="../#try">Install p0ssess</a></div>
   </article>
 
-  <article class="tier hl lit" id="pro" aria-labelledby="pro-h">
+  <article class="tier hl lit best" id="pro" aria-labelledby="pro-h">
     <div class="tier-head">
       <h2 id="pro-h">Pro</h2>
       <fieldset class="mode">
@@ -82,9 +84,21 @@
     </div>
     <div class="tier-body">
       <p class="tier-terms">For one person: everything in Free, and three reasons to pay. <span data-rec>Yearly is recommended.</span></p>
-      <p class="tier-terms"><b>Usage-limit rescue.</b> When Claude’s 5-hour or weekly window nears its limit, p0ssess takes over the work a cheaper model can do, inside your spending envelope. It says so in one line and hands back when the window resets. Critical work asks you first, once per task, with the model and the cost. Free shows you when rescue would have started and what it would have taken.</p>
-      <p class="tier-terms"><b>Savings proof.</b> p0ssess measures what each run cost against Claude’s list price for the same tokens, then adds it up by run, model and kind of work, with the tokens other models handled instead of Claude. The figures are on your p0ssess page on every plan, with a card you can share. Pro adds a monthly report by email, figures only, never prompts, files or paths. Runs that cost more than Claude would have are shown, not claimed.</p>
-      <p class="tier-terms"><b>Cloud sandbox on macOS and Windows.</b> Coding hand-offs run in the hosted sandbox with no podman to install, and on Linux without podman too. The allowance is 20 sandbox hours a month. <span data-hours></span> When the sandbox is busy your job waits in a queue with an honest estimate.</p>
+      <div class="reason">
+        <p class="chip sl"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess $0.42/$1 · <b class="resc">rescue</b></p>
+        <h3>Usage-limit rescue</h3>
+        <p class="tier-terms">When Claude’s 5-hour or weekly window nears its limit, p0ssess takes the work a cheaper model can do, inside your spending envelope, and hands back when the window resets. Critical work asks you first, with the model and the cost.</p>
+      </div>
+      <div class="reason">
+        <p class="chip"><code>p0ssess savings</code></p>
+        <h3>Savings proof</h3>
+        <p class="tier-terms">Each run is priced against Claude’s list price for the same tokens. Pro mails you the month in figures only, never prompts, files or paths. Runs that cost more than Claude would have are shown and never claimed.</p>
+      </div>
+      <div class="reason">
+        <p class="chip sl run"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess $0.42/$1 · queued 2nd, ~4 min</p>
+        <h3>Cloud sandbox on macOS and Windows</h3>
+        <p class="tier-terms">Coding hand-offs run in the hosted sandbox with no podman to install, and on Linux without podman too. The allowance is 20 sandbox hours a month. <span data-hours></span> When the sandbox is busy your job waits in a queue with an honest estimate.</p>
+      </div>
       <p class="tier-terms">Routing also gets better data: the live engine, community success rates from outcome records, and tuning from your own calibration runs.</p>
       <p class="tier-terms">Support is priority email, best effort, with no guaranteed response time. Buy before the first price change and you keep this price for as long as you stay subscribed.</p>
     </div>
@@ -135,6 +149,39 @@
     </div>
   </article>
 
+</div>
+</section>
+
+<section class="sec" id="compare" aria-labelledby="compare-h">
+<div class="wrap">
+  <div class="sec-head">
+    <h2 id="compare-h">What each plan includes</h2>
+    <p>Everything that saves money is in Free. Pro is the plan for the person who hits Claude’s usage limit, and every Team seat includes it.</p>
+  </div>
+  <div class="plans-box">
+  <table class="plans">
+    <caption class="sr-only">What each plan includes</caption>
+    <thead>
+      <tr>
+        <td></td>
+        <th scope="col"><span class="p-name">Free</span> <span class="p-price"><b><small>$</small>0</b></span> <span class="p-per">MIT licensed</span></th>
+        <th scope="col" class="is-pro"><span class="p-name">Pro</span> <span class="p-price"><b><small>$</small>4</b></span> <span class="p-per">a month, or $36 a year</span> <span class="p-for">If you hit Claude’s limit</span></th>
+        <th scope="col"><span class="p-name">Team</span> <span class="p-price"><b><small>$</small>8</b></span> <span class="p-per">a seat, a month</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><th scope="row">Routing, rules, budgets and receipts</th><td><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td><td class="is-pro"><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td><td><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td></tr>
+      <tr><th scope="row">Savings figures on your p0ssess page <small>with a card you can share</small></th><td><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td><td class="is-pro"><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td><td><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td></tr>
+      <tr><th scope="row">Usage-limit rescue <small>p0ssess takes routable work when Claude’s window nears its limit</small></th><td><span class="part">a one-line preview</span></td><td class="is-pro"><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td><td><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td></tr>
+      <tr><th scope="row">Monthly savings report by email</th><td><span class="no" aria-hidden="true"></span><span class="sr-only">Not included</span></td><td class="is-pro"><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td><td><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td></tr>
+      <tr><th scope="row">Local sandbox for coding work <small>Linux with podman</small></th><td><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td><td class="is-pro"><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td><td><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td></tr>
+      <tr><th scope="row">Cloud sandbox on macOS and Windows <small>20 sandbox hours a month</small></th><td><span class="no" aria-hidden="true"></span><span class="sr-only">Not included</span></td><td class="is-pro"><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td><td><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td></tr>
+      <tr><th scope="row">Calibration on your own work</th><td><span class="no" aria-hidden="true"></span><span class="sr-only">Not included</span></td><td class="is-pro"><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td><td><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td></tr>
+      <tr><th scope="row">Shared rules that only tighten <small>a budget share for each member and a spend dashboard</small></th><td><span class="no" aria-hidden="true"></span><span class="sr-only">Not included</span></td><td class="is-pro"><span class="no" aria-hidden="true"></span><span class="sr-only">Not included</span></td><td><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td></tr>
+    </tbody>
+  </table>
+  <p class="plans-cta"><a class="btn quiet" href="../#try">Install p0ssess</a><a class="btn" href="#pro">Get Pro</a><a class="btn quiet" href="#team">Get Team</a></p>
+  </div>
 </div>
 </section>
 
