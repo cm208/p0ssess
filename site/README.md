@@ -234,7 +234,7 @@ Each side-by-side on the business page is a table (`table.duel-t`) whose first m
 
 For each release:
 
-1. Publish it (see `../docs/RELEASE.md`), then set `version` to it. Set it only once the files are up, since the buttons link straight to them. The files are `p0ssess-linux-amd64`, `p0ssess-linux-arm64`, `p0ssess-darwin-arm64`, `p0ssess-windows-amd64.exe`, `p0ssess-<version>.tar.gz` and `SHA256SUMS`.
+1. Publish it (see the release runbook kept outside this repository), then set `version` to it. Set it only once the files are up, since the buttons link straight to them. The files are `p0ssess-linux-amd64`, `p0ssess-linux-arm64`, `p0ssess-darwin-arm64`, `p0ssess-windows-amd64.exe`, `p0ssess-<version>.tar.gz` and `SHA256SUMS`.
 2. Optionally paste that release's sums into `sha256` (from its `SHA256SUMS`, which is `../dist/SHA256SUMS` at the tag) to print each under its file. Never type one from memory.
 
 The site's own address, https://p0ssess.me, is in each page's canonical link and `og:url`, and in the home page's `og:image`. `og.png` is the share image for link previews: the hero alone at 1200×630, taken with reduced motion at a device scale of 1 and drawn at three quarters, with the top bar's links and the line under the buttons left out. Retake it when the hero changes (`shoot.js --og`), and keep `og:description` and `og:image:alt` in step.

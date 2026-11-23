@@ -51,7 +51,7 @@ Claude passes a catalog id (`use_case`) when it knows one, and a **profile** for
 
 **Size** comes from the profile (`size` T/S/M/R/L, `in_tokens`/`out_tokens`, `bytes` at 4 per token, `turns`, `items`, `audio_seconds`, `video_seconds`, `images`, `pages`, `chars`, `gen_seconds`). Anything missing comes from the engine's map of the catalog, which gives every use case a default size, its evidence family and its modalities. The size profiles are the catalog's: T 1k in / 50 out, S 5k / 1k, M 30k / 3k, R 30k / 6k, L 200k / 4k.
 
-Media read by a chat model is converted to tokens at 32 per second of audio, 1,500 per image and 2,000 per PDF page (RESEARCH.md's ranges). Video uses the model's own rate where p0ssess's video check measured one (91 for both Gemini models, about 228 for the Qwen models, 287 for GLM-5.3-Flash) and 290 per second (Google's frame and audio rates) for every other model, including those whose count did not grow with length.
+Media read by a chat model is converted to tokens at 32 per second of audio, 1,500 per image and 2,000 per PDF page (the ranges the design research found). Video uses the model's own rate where p0ssess's video check measured one (91 for both Gemini models, about 228 for the Qwen models, 287 for GLM-5.3-Flash) and 290 per second (Google's frame and audio rates) for every other model, including those whose count did not grow with length.
 
 ### 2. The routes
 
@@ -74,7 +74,7 @@ In order, a candidate is dropped when:
 2. **Privacy says no.** A `.p0ssess-private` file in the repository, or in any directory above the working directory, blocks every route but Claude and local tools. In `zdr` mode only models with a zero-retention endpoint qualify (optionally also safety-retention ones), priced at that endpoint, and batch variants never do. In the default `no-training` mode every call sends `provider.data_collection: "deny"`, so no model is dropped for policy.
 3. **A rule or list forbids it.** Forbid rules, `only` and `mix` rules, the OpenCode and Claude-subagent switches, and the budget's model and provider allow and deny lists.
 4. **The stakes gate.** Stakes 4 stays on Claude (the lead model) unless an `allow` rule with `max_stakes = 4` names the model; then Claude reviews all of it. `allow delegation` lifts the gate at most to stakes 3, and project rules cannot lift it. Otherwise the candidate's p_fail upper bound must be under the ceiling for the level. The PDF-engine route is delegation too: stakes 4 and zero-retention mode exclude it.
-5. **It cannot save anything.** If Claude could do the work and `(1 - p_fail) × L_direct ≤ L_overhead + L_review`, delegating costs more Claude usage than it saves at any pressure, so it is never offered. This is RESEARCH.md's break-even rule; it is why one-turn questions and small edits stay on Claude. It does not apply when Claude cannot do the job at all.
+5. **It cannot save anything.** If Claude could do the work and `(1 - p_fail) × L_direct ≤ L_overhead + L_review`, delegating costs more Claude usage than it saves at any pressure, so it is never offered. This is the design research's break-even rule; it is why one-turn questions and small edits stay on Claude. It does not apply when Claude cannot do the job at all.
 6. **The monthly cap.** If this month's spend and open reservations plus the run's conservative cash would pass the cap.
 
 Every dropped model the catalog names is reported with its reason (`excluded`).
@@ -89,14 +89,14 @@ cost = cash + λ·claude + λ·(overhead + review) + p_eff·(redo + harm_eff)
 |---|---|
 | `cash` | OpenRouter dollars for the run, at the cheapest endpoint that qualifies, times 1.055 for OpenRouter's credit fee. Models whose reasoning cannot be turned off bill another 1× the output as reasoning. Long-context price tiers apply above their threshold. Agent sessions are `turns × (context × cache-read + new input × input + output × output)` with 40k context, 3k new input and 1k output per turn; a test checks this lands within 2.5× of OpenRouter's 10–49-turn session-cost medians for Sonnet, Opus, Haiku, GPT-6.1 Sol, DeepSeek and GLM. |
 | `claude` | Claude list-price dollars for the work done on Claude (lead or subagent). |
-| `overhead` | the lead model's hand-off turns: $0.05 at Sonnet's price (RESEARCH.md measured $0.04–0.06), scaled by the lead model's output price, so $0.10 on Opus. |
+| `overhead` | the lead model's hand-off turns: $0.05 at Sonnet's price (measured at $0.04–0.06), scaled by the lead model's output price, so $0.10 on Opus. |
 | `review` | Claude checking the result: a fixed part by verification level plus the share of the result it reads at the lead model's input price (table below). Code edits are always reviewed in full. |
 | `λ` | the weight on Claude's list price, from the plan and limit pressure (below). Overhead and review are Claude usage too, so λ applies to them. |
 | `p_eff` | the chance the result is not accepted, after retries for mechanically checked jobs. |
 | `redo` | what a failure costs to recover: `λ × L_direct` when Claude can redo it, or another run (cash plus hand-off) when only another model can. |
 | `harm_eff` | `escape(verification) × harm(stakes)`: the cost of a bad result beyond redoing it, times the share of failures that get past the check. |
 
-**Mechanical checks** (tests, schemas, placeholder parity, recomputation) let a failed run be retried automatically. With r retries (default 2), the miss rate is `p^(r+1)` and expected runs are `1 + p + … + p^r`, so cash and Claude work scale by that. This is how a cheap model takes a stakes-3 job when tests define acceptance, as RESEARCH.md found for test-gated migrations.
+**Mechanical checks** (tests, schemas, placeholder parity, recomputation) let a failed run be retried automatically. With r retries (default 2), the miss rate is `p^(r+1)` and expected runs are `1 + p + … + p^r`, so cash and Claude work scale by that. This is how a cheap model takes a stakes-3 job when tests define acceptance, as the design research found for test-gated migrations.
 
 The lowest total wins. A `mix` rule marks the member furthest below its share as next, and the pick goes to it unless it costs more than 1.5× the cheapest option.
 
@@ -137,7 +137,7 @@ Then `p_fail = f_best + (f_worst - f_best) × (1 - q)`, averaged over the family
 
 **Uncertainty.** Each estimate carries a sigma: the board's own interval mapped through the same formula, plus 0.05 for the mapping itself, 0.08 more when the family only approximates the job (`proxy` in the engine map), and 0.03 more for borrowed snapshot evidence. The stakes gate checks `p_fail + sigma`.
 
-**No clean evidence.** A model with no record on an evidenced family sits three quarters of the way to f_worst with sigma 0.20: wide and pessimistic, so it passes at stakes 1, fails at stakes 2 on agent work, and never passes at stakes 3. Families with no clean benchmark at all (speech-to-text 0.10, speech synthesis 0.12, audio understanding 0.15, music 0.25, embeddings 0.05, reranking 0.05, safety classification 0.15) use that prior for the catalog's recommended model, 0.03 more for its alternatives and 0.10 more (sigma 0.20) for models the catalog does not name. RESEARCH.md is explicit that these families have no clean evidence; logged outcomes are the only way to improve them.
+**No clean evidence.** A model with no record on an evidenced family sits three quarters of the way to f_worst with sigma 0.20: wide and pessimistic, so it passes at stakes 1, fails at stakes 2 on agent work, and never passes at stakes 3. Families with no clean benchmark at all (speech-to-text 0.10, speech synthesis 0.12, audio understanding 0.15, music 0.25, embeddings 0.05, reranking 0.05, safety classification 0.15) use that prior for the catalog's recommended model, 0.03 more for its alternatives and 0.10 more (sigma 0.20) for models the catalog does not name. The design research is explicit that these families have no clean evidence; logged outcomes are the only way to improve them.
 
 **Measured by p0ssess.** Video understanding had no public benchmark either, and the catalog prior ranked models by price alone: GLM-5.3-Flash came first and MiMo-v2.6-flash third. A small check with known ground truth (three synthetic clips, two runs per model, [MEDIA.md](MEDIA.md#video-accuracy-check)) now stands in for a board, cited as "p0ssess measurement, 2026-11-09". f_best stays at the old prior (0.15), so the best measured model is unchanged, and f_worst is 0.60, the highest any family uses, so a model with no record still passes at stakes 1 and not at stakes 2, as elsewhere. The same check showed that a video's soundtrack is part of the job: models without audio input scored 0 of 8 on sound and two of them said every clip was silent, so `video-understand` now requires audio input, as its catalog entry already said. Since 0.5.2 it also drops a model that described a sound the clip does not have in more than 1 of 6 answers (counted in the same check). The accuracy score does not count an invented sound on its own, and once video was priced at measured token rates, Gemini 3.1 Flash Lite (5 of 6) ranked first on price at stakes 1 and 2. Gemini 3.8 Flash (1 of 6) and Qwen3.8 Omni Flash (0 of 6) stay.
 
@@ -147,7 +147,7 @@ Then `p_fail = f_best + (f_worst - f_best) × (1 - q)`, averaged over the family
 
 ### 6. λ, the weight on Claude
 
-RESEARCH.md compared four ways to price Claude for a subscriber and recommended one family; the engine implements it.
+The design research compared four ways to price Claude for a subscriber and recommended one family; the engine implements it.
 
 - **API-key plan:** λ = 1. Claude costs its list price, which matches Claude Code's own cost figure.
 - **Subscription:** `λ = floor + (1 - floor) × û^k`, where û is projected end-of-window use, `u / max(elapsed, e_min)`, taken from the worse of the 5-hour and weekly windows. λ reaches 1 (list price, the one documented dollar anchor: usage credits bill at API rates) exactly at projected exhaustion. Past exhaustion it stays 1 with usage credits on; with them off it rises by `beta × (û - 1)`, capped at 3, because a blocked window costs more than list price. With no fresh reading (none yet, or older than 2 hours) λ is the floor.
@@ -163,7 +163,7 @@ The shape is a preset (`lambda.preset`):
 | `list` | 1 | – | Claude always at list price (option A), on any plan |
 | `custom` | your `floor` | your `exponent` | |
 
-Why these numbers: none is a sourced fact, and RESEARCH.md says so. The floor exists because a large Claude job early in a window is not free (the limit is shared with claude.ai and other devices) and so routing does not flip abruptly when pressure crosses a threshold. 0.15 is low enough that a subscriber's Claude still beats a paid route on ordinary work early in a window, and high enough that big jobs still register. k = 2 keeps λ under 0.4 until a window is projected half spent, then climbs steeply. `e_min = 0.15` stops a reading in the first minutes of a window from being extrapolated more than about 6.7×. Every recommendation records the preset and λ in the ledger, so these can be calibrated against acceptance later.
+Why these numbers: none is a sourced fact, and the design research says so. The floor exists because a large Claude job early in a window is not free (the limit is shared with claude.ai and other devices) and so routing does not flip abruptly when pressure crosses a threshold. 0.15 is low enough that a subscriber's Claude still beats a paid route on ordinary work early in a window, and high enough that big jobs still register. k = 2 keeps λ under 0.4 until a window is projected half spent, then climbs steeply. `e_min = 0.15` stops a reading in the first minutes of a window from being extrapolated more than about 6.7×. Every recommendation records the preset and λ in the ledger, so these can be calibrated against acceptance later.
 
 Example, from the test suite: a 5-hour window 62% used with 90 minutes left projects to 89%, so balanced λ is 0.82 and save-Claude λ is 0.93.
 
@@ -183,9 +183,9 @@ Example, from the test suite: a 5-hour window 62% used with 90 minutes left proj
 | spot | 0.5 | $0.03 | 0.5 |
 | full (diff from a worktree) | 0.2 | $0.06 | 1.0 |
 
-Why: harm grows tenfold per level because DESIGN.md asks for "small at stakes 1, steep at each level above", and because the cost of a shipped bug or a wrong security write-up dwarfs the price of a run. It is expressed in dollars so it adds to the rest of the formula. The escape shares say how much review catches: a mechanical check catches almost everything it tests, a full diff review most things, a spot check about half, and a pass-through nothing. The review costs are RESEARCH.md's measured $0.04–0.12 hand-off-plus-check range split between overhead and review.
+Why: harm grows tenfold per level because DESIGN.md asks for "small at stakes 1, steep at each level above", and because the cost of a shipped bug or a wrong security write-up dwarfs the price of a run. It is expressed in dollars so it adds to the rest of the formula. The escape shares say how much review catches: a mechanical check catches almost everything it tests, a full diff review most things, a spot check about half, and a pass-through nothing. The review costs are the design research's measured $0.04–0.12 hand-off-plus-check range split between overhead and review.
 
-The ceilings were set against the clean agent evidence, which is where RESEARCH.md said the stakes gate matters: at stakes 3 the ceiling sits between GPT-6.1 Sol (p_fail 0.30 on agent work) and DeepSeek V4.1 Flash (0.54), so feature work can go to Sol but not to the flash models unless tests decide acceptance; at stakes 2 flash agents qualify with a full review; stakes 1 admits nearly anything with evidence or a catalog prior.
+The ceilings were set against the clean agent evidence, which is where the design research said the stakes gate matters: at stakes 3 the ceiling sits between GPT-6.1 Sol (p_fail 0.30 on agent work) and DeepSeek V4.1 Flash (0.54), so feature work can go to Sol but not to the flash models unless tests decide acceptance; at stakes 2 flash agents qualify with a full review; stakes 1 admits nearly anything with evidence or a catalog prior.
 
 ### 8. Approval
 

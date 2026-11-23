@@ -174,7 +174,7 @@ On every plan, model calls bill to your own OpenRouter key. `/p0ssess:pro` shows
 - Anonymous outcome records, one line per finished run (kind, model, route, stakes, outcome, coarse cost, week), are shown on the local page before they go. "Turn off outcome records" stops them.
 - Usage counts are off unless you say yes (the tour asks once, or say "share usage counts"). Then, once a week, p0ssess sends how many times each of nine milestones happened that week (install, tour done, first route, first saving, limit rescue offered and used, upgrade viewed and clicked, device linked) under a random id that is not your account or install token, and nothing else. The local page shows each batch before it goes. "Turn off usage counts" stops them and deletes what was not sent.
 - The Savings section of the page and `p0ssess savings` are computed on your machine from your own receipts. With Pro or Team, a linked install also sends last month's totals once (figures only, never prompts, files, paths or task text; the page shows them first) so the server can email you a summary. "Turn off the monthly report" stops it; Free installs never send it.
-- Releases are reproducible. The same commit and Go version build byte-identical binaries, so anyone can rebuild a release and compare. [docs/RELEASE.md](docs/RELEASE.md) says how.
+- Releases are reproducible. The same commit and Go version build byte-identical binaries, so anyone can rebuild a release and compare. `scripts/build-release.sh --check` builds twice and compares.
 
 The full list of what goes where is in [docs/DESIGN.md](docs/DESIGN.md) and on [p0ssess.me/privacy](https://p0ssess.me/privacy/).
 
@@ -190,8 +190,6 @@ Also at [docs.p0ssess.me](https://docs.p0ssess.me).
 | [ENGINE.md](docs/ENGINE.md) | how routes are scored, the defaults and why, config files and tools |
 | [RELAY.md](docs/RELAY.md) | the sandboxed agent path |
 | [MEDIA.md](docs/MEDIA.md) | video, audio, images and PDFs, with measured costs |
-| [RELEASE.md](docs/RELEASE.md) | how releases are built, checked and published |
-| [RESEARCH.md](docs/RESEARCH.md) | the research behind the use cases and model data |
 
 ## Support
 

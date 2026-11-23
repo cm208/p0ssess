@@ -230,7 +230,7 @@ Haiku relay turns in run B (input, cache read, cache write): 2, 0, 5,482; 2, 5,4
 - The film is famous. Run A named the three rodents from memory, and either model may lean on what it knows of the film. A private recording would be a fairer test.
 - **In this run p0ssess did not save Claude usage.** The hand-off turns, the failed first attempt and the model's 4,800-token answer in the main context cost more than run A's single contact sheet. What it bought was coverage and the soundtrack: 25 of 25 against 15, for $0.044 more in total and about 4.5 minutes more wall time.
 - Run B paid for one wasted round because the 48 MiB error does not offer `video_prep`. With that hint p0ssess would downscale on its own and Claude would skip the re-encode. (0.5.2 added the hint; since 0.5.4 the tool prepares the video itself, see [Run B on 0.5.4](#run-b-on-054).)
-- On a short clip the other model's cost is a tenth of a cent (Qwen3.8 Omni Flash averaged $0.0012 per 8–15-second clip above), so nearly all of the cost is Claude's hand-off, $0.04–0.06 on Sonnet in RESEARCH.md's measurement. Short clips save little or nothing; the reason to delegate them is the sound, which Claude cannot hear.
+- On a short clip the other model's cost is a tenth of a cent (Qwen3.8 Omni Flash averaged $0.0012 per 8–15-second clip above), so nearly all of the cost is Claude's hand-off, $0.04–0.06 on Sonnet in p0ssess's own measurement. Short clips save little or nothing; the reason to delegate them is the sound, which Claude cannot hear.
 - Scored by hand by the agent that ran both sessions.
 
 ### Run B again, on 0.5.2
@@ -315,4 +315,4 @@ Some jobs need no model at all, or a much smaller one. These run ffmpeg locally 
 
 ## Not covered yet
 
-Text-to-speech (`/audio/speech`), audio output from chat models, video generation (`/videos`, asynchronous), embeddings and rerank. They use other routes and billing units and are not built yet. Reranking stays off until OpenRouter exposes a price (see RESEARCH.md).
+Text-to-speech (`/audio/speech`), audio output from chat models, video generation (`/videos`, asynchronous), embeddings and rerank. They use other routes and billing units and are not built yet. Reranking stays off until OpenRouter exposes a price.

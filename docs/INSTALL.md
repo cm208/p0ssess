@@ -91,7 +91,7 @@ Fix one of these, then start a new Claude Code session:
   ...
 ```
 
-The checksums come with the plugin's source (they are committed in `dist/`), and the build is reproducible: the same commit and Go version produce byte-identical binaries, so anyone can rebuild a release and compare. [RELEASE.md](RELEASE.md) describes how releases are built and published.
+The checksums come with the plugin's source (they are committed in `dist/`), and the build is reproducible: the same commit and Go version produce byte-identical binaries, so anyone can rebuild a release and compare. `scripts/build-release.sh` builds a release from the tagged commit.
 
 On Windows the launcher is `bin/p0ssess.exe`, built from `cmd/launcher`. It follows the same five steps with `p0ssess-windows-amd64.exe`, reads the version from `.claude-plugin/plugin.json`, downloads with `curl.exe`, and keeps the real binary as its child process in a Windows job, so stopping the launcher stops p0ssess too. It is the one binary committed to the repository, because without it a Windows clone could not start at all. It changes only when `cmd/launcher` does, and it is reproducible like the release binaries: `scripts/build-release.sh --check` rebuilds it and refuses unless the committed file matches byte for byte.
 

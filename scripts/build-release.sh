@@ -1,7 +1,7 @@
 #!/bin/sh
 # Builds a p0ssess release from the committed source (git archive HEAD), never from the work tree.
 # The build is reproducible: the same commit and Go version give byte-identical files, so anyone can
-# check a published binary against the source. docs/RELEASE.md has the whole procedure.
+# check a published binary against the source. The full release procedure is kept outside this repository.
 #
 #   scripts/build-release.sh sums     build the binaries and write dist/SHA256SUMS and dist/VERSION,
 #                                     to be committed before the release is tagged
