@@ -1,7 +1,7 @@
-// The home page's script: release links, copy buttons, the hairlines and chart marks that draw
-// when they scroll into view, the island, the hand-off figure and the rule switch in the hero.
-// Everything it animates has a complete still state in the markup; with scripts off or with
-// reduced motion the page shows that.
+// The home page's script: release links, copy buttons, the hairlines that draw when they scroll
+// into view, the island, the rescue that plays once, the statement that lights a word at a time
+// and the savings example. Everything it moves has a complete still state in the markup; with
+// scripts off or with reduced motion the page shows that.
 (() => {
   const doc = document, root = doc.documentElement;
   const reduce = matchMedia("(prefers-reduced-motion: reduce)");
@@ -20,14 +20,14 @@
   const repo = String(rel.repo || "").replace(/\/+$/, ""), version = String(rel.version || "");
   const docs = String(rel.docs || "").replace(/\/+$/, "");
   const link = (a, href) => { a.href = href; a.removeAttribute("aria-disabled"); a.hidden = false; };
-  if (docs) {
-    $$('[data-link="docs"]').forEach((a) => link(a, docs));
-    // A page of the documentation site, such as "media/#run-b-on-054".
-    $$("[data-doc]").forEach((a) => link(a, docs + "/" + a.dataset.doc));
-  }
+  if (docs) $$('[data-link="docs"]').forEach((a) => link(a, docs));
   if (repo) {
     $$('[data-link="repo"]').forEach((a) => link(a, repo));
     $$("[data-repo-url]").forEach((el) => { el.textContent = repo + ".git"; });
+  }
+  if (version) {
+    $$("[data-version]").forEach((el) => { el.textContent = version; });
+    $$("[data-version-say]").forEach((el) => { el.hidden = false; });
   }
   if (repo && version) {
     const files = `${repo}/releases/download/v${version}/`;
@@ -68,52 +68,20 @@
     });
   });
 
-  // Hairlines draw out of their violet start, a chart's marks land and the bars of a
-  // side-by-side grow from the baseline, once each, when they scroll into view. Bars move at
-  // one speed, so the shorter one lands first.
-  const grow = (table) => {
-    for (const bar of $$("rect.b", table)) bar.style.transitionDuration = 240 + parseFloat(bar.getAttribute("width")) * 9 + "ms";
-    table.classList.add("in");
-  };
-  const lines = $$(".hl, .sec > .wrap, .land, .duel-t");
+  // Hairlines draw out of their violet start, once, when they scroll into view.
+  const lines = $$(".hl, .sec > .wrap");
   if (hasIO) {
     const seen = new IntersectionObserver((entries) => {
       for (const e of entries) {
         if (!e.isIntersecting) continue;
         seen.unobserve(e.target);
-        if (e.target.classList.contains("duel-t")) grow(e.target); else e.target.classList.add("in");
+        e.target.classList.add("in");
       }
     }, { rootMargin: "0px 0px -8% 0px", threshold: 0.05 });
     lines.forEach((el) => seen.observe(el));
   } else {
     lines.forEach((el) => el.classList.add("in"));
   }
-
-  // What a mark stands for, shown beside it while the pointer is on it. The same figures are in
-  // the table under each chart, so nothing is readable only here.
-  let tip = null, tipBox = null;
-  const hideTip = () => { if (tip) tip.classList.remove("on"); };
-  doc.addEventListener("pointerover", (e) => {
-    const hit = e.target.closest && e.target.closest(".hit[data-tip]");
-    if (!hit) return hideTip();
-    const box = hit.closest(".plot-box") || hit.closest("li") || hit.parentElement.parentElement;
-    if (box !== tipBox) {
-      if (tip) tip.remove();
-      tip = doc.createElement("span");
-      tip.className = "tip";
-      tip.setAttribute("aria-hidden", "true");
-      if (getComputedStyle(box).position === "static") box.style.position = "relative";
-      box.append(tip);
-      tipBox = box;
-    }
-    tip.textContent = hit.dataset.tip;
-    const b = box.getBoundingClientRect(), h = hit.getBoundingClientRect();
-    const x = h.left + h.width / 2 - b.left, w = tip.offsetWidth;
-    tip.style.left = Math.max(0, Math.min(b.width - w, x - w / 2)) + "px";
-    tip.style.top = h.top - b.top - tip.offsetHeight - 4 + "px";
-    tip.classList.add("on");
-  });
-  doc.addEventListener("pointerdown", (e) => { if (!(e.target.closest && e.target.closest(".hit[data-tip]"))) hideTip(); });
 
   // The island: shown once the top bar has scrolled away. Its violet dot slides to the section
   // in view (a slower twin makes the stretch) and the pill resizes to that section's name.
@@ -125,7 +93,8 @@
       dots.forEach((d) => d.setAttribute("aria-current", d === a ? "true" : "false"));
       focus.style.setProperty("--x", a.offsetLeft + a.offsetWidth / 2 + "px");
       island.classList.add("ready");
-      island.classList.toggle("end", ["#pricing", "#try"].includes(a.getAttribute("href")));
+      // Where the page itself offers Pro or the install, the dock's own button steps aside.
+      island.classList.toggle("end", ["#pro", "#pricing", "#try"].includes(a.getAttribute("href")));
       if (text.textContent !== a.getAttribute("aria-label")) {
         text.textContent = a.getAttribute("aria-label");
         label.style.setProperty("--lw", text.offsetWidth + "px");
@@ -140,131 +109,131 @@
     dots.forEach((d) => {
       const t = doc.getElementById(d.getAttribute("href").slice(1));
       if (!t) return;
-      const box = t.closest(".sec, .hero") || t;
-      owner.set(box, d);
-      spy.observe(box);
+      owner.set(t, d);
+      spy.observe(t);
     });
     mark(dots[0]);
     doc.fonts?.ready.then(() => { const a = dots.find((d) => d.getAttribute("aria-current") === "true"); if (a) { text.textContent = ""; mark(a); } });
   }
 
-  // The hand-off. The timeline is CSS; this finds where the riding ghost lands (the seat in the
-  // Haiku pill), plays it once when it scrolls into view, and names the next measured job on each replay.
-  const relay = $(".relay");
-  if (relay) {
-    const rider = $(".rider", relay), seat = $(".seat", relay);
-    const name = $(".name", relay), job = $(".job", relay), back = $(".back", relay), replay = $(".replay", relay);
-    let jobs = [], n = 0;
-    try { jobs = JSON.parse(relay.dataset.jobs); } catch { /* keeps the job in the markup */ }
-    const center = (el) => {
-      let x = el.offsetWidth / 2, y = el.offsetHeight / 2;
-      for (let e = el; e && e !== relay; e = e.offsetParent) { x += e.offsetLeft; y += e.offsetTop; }
-      return [x, y];
+  // The rescue. Each moment plays when it scrolls into view; moments that arrive together follow
+  // one another, 1.15 seconds apart. Replay runs all four again.
+  const seq = $("#seq"), replay = $("[data-replay]");
+  if (seq && hasIO) {
+    const steps = $$(".step", seq);
+    let next = 0, watch = null;
+    const go = (li) => {
+      const now = performance.now(), start = Math.max(now, next);
+      next = start + 1150;
+      li.style.setProperty("--d", Math.round(start - now) + "ms");
+      li.classList.add("go");
+      clearTimeout(li.rest);
+      // Once it has played it is plain markup again, so the Pro and Free views switch at once.
+      li.rest = setTimeout(() => li.classList.add("done"), start - now + 1600);
     };
-    const place = () => {
-      if (!rider.offsetParent) return;
-      const [rx, ry] = center(rider), [sx, sy] = center(seat);
-      relay.style.setProperty("--rx", sx - rx + "px");
-      relay.style.setProperty("--ry", sy - ry + "px");
-      relay.style.setProperty("--rs", (seat.offsetWidth / rider.offsetWidth).toFixed(4));
+    const reset = () => { next = 0; steps.forEach((li) => { clearTimeout(li.rest); li.classList.remove("go", "done"); }); };
+    const arm = () => {
+      watch?.disconnect();
+      reset();
+      seq.classList.toggle("pre", !reduce.matches);
+      if (replay) replay.hidden = reduce.matches;
+      if (reduce.matches) return;
+      watch = new IntersectionObserver((entries) => {
+        for (const e of entries.sort((a, b) => steps.indexOf(a.target) - steps.indexOf(b.target))) {
+          if (!e.isIntersecting) continue;
+          watch.unobserve(e.target);
+          go(e.target);
+        }
+      }, { rootMargin: "0px 0px -12% 0px", threshold: 0.35 });
+      steps.forEach((li) => watch.observe(li));
     };
-    const play = () => {
-      relay.classList.remove("play", "done");
-      void relay.offsetWidth;
-      place();
-      relay.classList.add("play");
-    };
-    rider.addEventListener("animationend", (e) => {
-      if (e.animationName !== "ride") return;
-      relay.classList.add("done");
-      relay.classList.remove("play");
-    });
-    replay.addEventListener("click", () => {
-      if (jobs.length) {
-        n = (n + 1) % jobs.length;
-        [name.textContent, job.textContent] = jobs[n];
-        back.textContent = `(${jobs[n][2]})`;
-      }
-      play();
-    });
-    const syncRelay = () => { replay.hidden = reduce.matches; if (reduce.matches) relay.classList.remove("play"); };
-    syncRelay();
-    reduce.addEventListener("change", syncRelay);
-    doc.fonts?.ready.then(place);
-    if ("ResizeObserver" in window) new ResizeObserver(place).observe(relay);
-    if (hasIO) {
-      const once = new IntersectionObserver(([e]) => {
-        if (!e.isIntersecting) return;
-        once.disconnect();
-        if (!reduce.matches) play();
-      }, { threshold: 0.6 });
-      once.observe(relay);
-    }
+    arm();
+    reduce.addEventListener("change", arm);
+    replay?.addEventListener("click", () => { watch?.disconnect(); reset(); void seq.offsetWidth; steps.forEach(go); });
   }
 
-  // The hero's three views. The markup holds every measured result and CSS moves the ghost and
-  // lights the lanes; this counts the two figures to the view in hand, says the result to a
-  // screen reader, and, with motion allowed, opens with the ghost where Claude stands and lets it
-  // ride to p0ssess once the line of dollars is on screen, so the first thing the page does is
-  // the saving.
-  const hero = $(".hero");
-  const views = hero ? $$('input[name="vs"]', hero) : [];
-  if (views.length) {
-    const num = $(".now .num", hero), old = $(".now .old", hero);
-    const say = $("#rule-status"), rider = $(".head .rider", hero);
-    const cell = (box, key) => $("b.v-" + key, box);
-    // What each view's two figures read, taken from the markup before anything counts.
-    const text = {};
-    for (const v of views) text[v.value] = { num: cell(num, v.value).textContent, old: cell(old, v.value).textContent, say: $(".mode-say .v-" + v.value, hero).textContent };
-    const view = () => (views.find((v) => v.checked) || views[0]).value;
-    const figures = (key) => ({ num: parseFloat(text[key].num), old: parseFloat(text[key].old) });
-    // A figure counts with as many decimals as it ends on.
-    const places = (s) => (s.split(".")[1] || "").length;
-    let raf = 0, auto = 0, shown = figures(view());
-    const blink = () => { if (!rider) return; rider.classList.remove("blink"); void rider.offsetWidth; rider.classList.add("blink"); };
-    const settle = (key) => { cell(num, key).textContent = text[key].num; cell(old, key).textContent = text[key].old; shown = figures(key); };
-    // Count both figures from what they show to the view's own, over the same 1.5 seconds and
-    // the same ease as the ghost's ride.
-    const ride = (from) => {
-      const key = view(), to = figures(key);
-      cancelAnimationFrame(raf);
-      for (const v of views) if (v.value !== key) { cell(num, v.value).textContent = text[v.value].num; cell(old, v.value).textContent = text[v.value].old; }
-      if (say) say.textContent = text[key].say;
-      if (reduce.matches) return settle(key);
-      const t0 = performance.now(), ms = 1500;
-      const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
-      blink();
-      const step = (now) => {
-        const t = Math.min(1, (now - t0) / ms), e = ease(t);
-        shown = { num: from.num + (to.num - from.num) * e, old: from.old + (to.old - from.old) * e };
-        cell(num, key).textContent = shown.num.toFixed(places(text[key].num));
-        cell(old, key).textContent = shown.old.toFixed(places(text[key].old));
-        if (t < 1) { raf = requestAnimationFrame(step); return; }
-        settle(key);
-        num.classList.remove("tick");
-        void num.offsetWidth;
-        num.classList.add("tick");
-        blink();
-      };
-      raf = requestAnimationFrame(step);
+  // The statement lights a word at a time as it climbs the screen. Words stay lit.
+  const say = $("[data-say]");
+  if (say && !reduce.matches) {
+    const words = say.textContent.trim().split(/\s+/);
+    say.textContent = "";
+    words.forEach((w, i) => {
+      const s = doc.createElement("span");
+      s.className = "w";
+      s.textContent = w;
+      say.append(s, i < words.length - 1 ? " " : "");
+    });
+    const spans = $$(".w", say);
+    let lit = 0, queued = false;
+    const light = () => {
+      queued = false;
+      const r = say.getBoundingClientRect(), vh = innerHeight;
+      const p = reduce.matches ? 1 : Math.min(1, Math.max(0, (vh * 0.9 - r.top) / (vh * 0.42 + r.height)));
+      for (const n = Math.round(p * spans.length); lit < n; lit++) spans[lit].classList.add("on");
+      if (lit >= spans.length) removeEventListener("scroll", onScroll);
     };
-    // The first ride starts from Claude's figure: both figures read what Claude spent.
-    const fromClaude = () => { const f = figures(view()); return { num: f.old, old: f.old }; };
-    const start = () => { clearTimeout(auto); if (!hero.classList.contains("pre")) return false; hero.classList.remove("pre"); return true; };
-    for (const v of views) v.addEventListener("change", () => ride(start() ? fromClaude() : shown));
-    const line = $(".lanes-box", hero);
-    if (!reduce.matches && hasIO && line) {
-      hero.classList.add("pre");
-      cell(num, view()).textContent = text[view()].old;
-      const seen = new IntersectionObserver(([e]) => {
-        if (!e.isIntersecting) return;
-        seen.disconnect();
-        auto = setTimeout(() => { if (start()) ride(fromClaude()); }, 900);
-      }, { threshold: 0.6 });
-      seen.observe(line);
-    }
-    root.classList.add("hero-ready");
-    // The ride is allowed from the second frame on, once the first state has been painted.
-    requestAnimationFrame(() => requestAnimationFrame(() => root.classList.add("hero-go")));
+    const onScroll = () => { if (!queued) { queued = true; requestAnimationFrame(light); } };
+    say.classList.add("live");
+    addEventListener("scroll", onScroll, { passive: true });
+    reduce.addEventListener("change", light);
+    light();
+  }
+
+  // The savings example. One measured call from the docs (a PDF table turned into JSON on
+  // deepseek-v4.1-flash: 195 tokens in, 1,456 out, $0.000729) is priced the way p0ssess prices a
+  // run: its tokens at Claude's list price, less what OpenRouter charged. The card is that call
+  // repeated. The figures print the way the plugin prints them.
+  const ledger = $(".ledger"), card = $(".scard");
+  const pickClaude = $("[data-claude]"), pickRuns = $("[data-runs]");
+  if (ledger && card && pickClaude && pickRuns) {
+    const call = { model: "deepseek-v4.1-flash", tin: 195, tout: 1456, cost: 0.000729 };
+    // Dollars for a million tokens, in and out.
+    const list = { opus: ["Claude Opus 5.5", 4, 20], sonnet: ["Claude Sonnet 5.5", 2, 10], haiku: ["Claude Haiku 5.5", 0.1, 0.5] };
+    const money = (v) => {
+      const neg = v < 0 ? "-" : "";
+      v = Math.abs(v);
+      if (v >= 100) return `${neg}$${v.toFixed(0)}`;
+      if (v >= 0.1 || v === 0) return `${neg}$${v.toFixed(2)}`;
+      if (v >= 0.001) return `${neg}$${v.toFixed(3)}`;
+      return `${neg}<$0.001`;
+    };
+    const tokens = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1e4 ? (n / 1e3).toFixed(0) + "k" : n >= 1e3 ? (n / 1e3).toFixed(1) + "k" : String(n));
+    const rate = (v) => "$" + (v % 1 ? v.toFixed(2) : v);
+    const clip = (s, n) => (s.length <= n ? s : s.slice(0, n - 1) + "…");
+    const side = card.parentElement;
+    const L = (k) => $(`[data-l="${k}"]`, ledger), C = (k) => $(`[data-c="${k}"]`, side);
+    const paint = () => {
+      const [name, pin, pout] = list[$("input:checked", pickClaude).value];
+      const n = Number($("input:checked", pickRuns).value);
+      const claude = (call.tin * pin + call.tout * pout) / 1e6, saved = claude - call.cost;
+      // A receipt names a saving from half a cent up.
+      const named = saved >= 0.005;
+      L("name").textContent = name;
+      L("rate").textContent = `${rate(pin)} in and ${rate(pout)} out for a million tokens`;
+      L("claude").textContent = "$" + claude.toFixed(5);
+      L("saved").textContent = named ? "~" + money(saved) : "$" + saved.toFixed(5);
+      L("receipt").textContent = `(${call.model}, $${call.cost.toFixed(4)}${named ? `, saved ~$${saved.toFixed(2)}` : ""})`;
+      L("note").textContent = named ? "A receipt names a saving once it reaches half a cent." : "Under half a cent, so the receipt names no saving.";
+      ledger.classList.toggle("none", !named);
+
+      const t = { claude: claude * n, cost: call.cost * n };
+      t.saved = t.claude - t.cost;
+      const kind = t.saved >= 0.005 ? "saved" : t.saved <= -0.005 ? "worse" : "none";
+      const pct = t.saved > 0 ? Math.floor((t.saved / t.claude) * 100 + 0.5) : 0;
+      C("big").textContent = kind === "saved" ? "~" + money(t.saved) : "no saving";
+      C("sub").textContent = kind === "saved" ? `saved against Claude${pct > 0 ? ` (${pct}%)` : ""}`
+        : kind === "worse" ? `Claude would have cost ${money(-t.saved)} less` : "no saving this period";
+      C("runs").textContent = n;
+      C("claude").textContent = money(t.claude);
+      C("cost").textContent = money(t.cost);
+      C("kept").textContent = tokens((call.tin + call.tout) * n) + " tokens";
+      C("row").textContent = kind === "saved" ? "~" + money(t.saved) : kind === "worse" ? "-" + money(-t.saved) : "none";
+      C("basis").textContent = `${n} measured (runs)`;
+      C("count").textContent = n === 1 ? "1 run" : n.toLocaleString("en-US") + " runs";
+      card.classList.toggle("none", kind !== "saved");
+    };
+    $(".sc-row span", card).textContent = clip(call.model, 17);
+    for (const box of [pickClaude, pickRuns]) { box.hidden = false; box.addEventListener("change", paint); }
+    paint();
   }
 })();

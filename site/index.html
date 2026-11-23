@@ -6,9 +6,9 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>p0ssess: stop paying full Claude price for repetitive work</title>
-<meta name="description" content="p0ssess is a Claude Code plugin that sends repetitive work to cheaper models while Claude stays in charge. Measured on unit-test writing against three ways of running Claude: between 2.2 and 7.2 times cheaper, with every test file passing.">
+<meta name="description" content="p0ssess is a Claude Code plugin that hands routine work to cheaper models while Claude stays in charge, and keeps you working when Claude’s usage limit runs out.">
 <meta property="og:title" content="p0ssess: stop paying full Claude price for repetitive work">
-<meta property="og:description" content="A Claude Code plugin that sends repetitive work to cheaper models under a rule you set. Measured on unit tests against three ways of running Claude: between 2.2 and 7.2 times cheaper, with every test file passing.">
+<meta property="og:description" content="A Claude Code plugin that hands routine work to cheaper models while Claude stays in charge. Keep working when Claude’s limit runs out, for cents. Free and MIT licensed; Pro is $4 a month.">
 <meta property="og:type" content="website">
 <link rel="canonical" href="https://p0ssess.me/">
 <meta property="og:url" content="https://p0ssess.me/">
@@ -16,7 +16,7 @@
 <meta property="og:image" content="https://p0ssess.me/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="The p0ssess hero: stop paying full Claude price for repetitive work, above a line of dollars with every measured run of one job on it. The runs with p0ssess sit left of every way of running Claude alone.">
+<meta property="og:image:alt" content="The p0ssess home page: stop paying full Claude price for repetitive work. Beside it, what p0ssess prints: Claude’s 5-hour window at 91%, the line that says p0ssess is taking routable work, and four measured hand-offs with their receipts in cents.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#0b0b0b">
@@ -26,6 +26,8 @@
 <link rel="stylesheet" href="style.css">
 <script src="release.js" defer></script>
 <script src="page.js" defer></script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"p0ssess","applicationCategory":"DeveloperApplication","operatingSystem":"Linux, macOS, Windows","url":"https://p0ssess.me/","description":"p0ssess is a Claude Code plugin that hands routine work to cheaper models through OpenRouter while Claude stays in charge, inside spending limits you set.","license":"https://opensource.org/license/mit","offers":[{"@type":"Offer","name":"Free","price":"0","priceCurrency":"USD"},{"@type":"Offer","name":"Pro, monthly","price":"4","priceCurrency":"USD","url":"https://p0ssess.me/pricing/#pro"},{"@type":"Offer","name":"Pro, yearly","price":"36","priceCurrency":"USD","url":"https://p0ssess.me/pricing/#pro"},{"@type":"Offer","name":"Team, a seat a month","price":"8","priceCurrency":"USD","url":"https://p0ssess.me/pricing/#team"}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What leaves my machine?","acceptedAnswer":{"@type":"Answer","text":"Your prompts and files go only to the model you hand a job to, through your own OpenRouter key, and every call tells OpenRouter not to route to providers that train on prompts. The p0ssess service never sees a prompt, a file or a file name. To rank routes it gets a short task description, sizes, the stakes and your model limits, and it keeps no request logs. Files that look like secrets (.env, keys, credentials) never leave, and a .p0ssess-private file blocks all delegation from a repository. Anonymous outcome records, one line for each finished run with no prompt or file in it, are on by default and one sentence turns them off. With Pro, the cloud sandbox receives the files git tracks so it can run them."}},{"@type":"Question","name":"Can it spend more than I allow?","acceptedAnswer":{"@type":"Answer","text":"The limits are enforced by the tools that spend. A new install starts at $1 a day, $10 a month and $0.25 a task. The daily limit warns, the monthly cap stops paid runs, and a job over the task amount waits for one yes from you. Each call’s maximum is reserved before it is sent, so parallel calls cannot overshoot, and rescue never spends past your limits. A repository’s own rules file can only tighten them."}},{"@type":"Question","name":"What happens when my OpenRouter credit runs out?","acceptedAnswer":{"@type":"Answer","text":"The hand-off stops and says so in one line: “Your OpenRouter balance is too low for this run. Add credits at https://openrouter.ai/settings/credits, then ask again.” A run that fails before it reaches a model costs nothing. Claude itself is untouched, so the work can stay with Claude until you top up."}},{"@type":"Question","name":"Does p0ssess touch my Claude account?","acceptedAnswer":{"@type":"Answer","text":"It never reads, stores or relays your Claude credentials. To know when a window is nearly used up, it reads the usage figures Claude Code reports to its own status line, on your machine."}},{"@type":"Question","name":"What does rescue move, and what stays with Claude?","acceptedAnswer":{"@type":"Answer","text":"Rescue takes routable work: research, summaries, bulk and media work, and code edits that fit. Critical work, such as auth, infrastructure, production and money, is never moved silently. Claude names the model and the cost and asks once for that task. “Keep this on Claude” always wins, and “turn rescue off” ends it."}},{"@type":"Question","name":"Is the saving a real number?","acceptedAnswer":{"@type":"Answer","text":"It is a price-list comparison, and your p0ssess page says so. Each run’s tokens are priced at Claude’s list price and set against what OpenRouter charged for the same call. A Claude run could have taken more or fewer tokens, and Claude’s own planning and checking is billed as usual, so what a job saves depends on the job. Runs where Claude would have been cheaper are counted and shown."}},{"@type":"Question","name":"Do I need Pro to save money?","acceptedAnswer":{"@type":"Answer","text":"No. Routing, rules, budgets, receipts and the savings figures are all in the free plugin, and the unit-test runs on this page used it. Pro adds rescue, the monthly report by email and the cloud sandbox."}},{"@type":"Question","name":"How do I cancel, and what happens then?","acceptedAnswer":{"@type":"Answer","text":"Polar runs the checkout and gives you a portal to cancel or change plans. When Pro ends you drop back to Free and the routing keeps working. Refunds are set out in the ."}},{"@type":"Question","name":"Where does it run?","acceptedAnswer":{"@type":"Answer","text":"On Linux (amd64 and arm64), macOS on Apple silicon and Windows x64, with Claude Code 2.1.319 or later. Media, read-only and one-shot jobs work everywhere. Coding hand-offs need a sandbox: rootless podman on Linux, or Pro’s cloud sandbox on macOS and Windows."}}]}</script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to the page</a>
@@ -37,13 +39,13 @@
       <svg class="wordmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 9" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path class="wm-ink" d="M0 2h3v1h-3zM0 3h1v1h-1zM3 3h1v1h-1zM0 4h1v1h-1zM3 4h1v1h-1zM0 5h3v1h-3zM0 6h1v1h-1zM0 7h1v1h-1zM0 8h1v1h-1zM11 2h3v1h-3zM10 3h1v1h-1zM11 4h2v1h-2zM13 5h1v1h-1zM10 6h3v1h-3zM16 2h3v1h-3zM15 3h1v1h-1zM16 4h2v1h-2zM18 5h1v1h-1zM15 6h3v1h-3zM21 2h2v1h-2zM20 3h1v1h-1zM23 3h1v1h-1zM20 4h4v1h-4zM20 5h1v1h-1zM21 6h3v1h-3zM26 2h3v1h-3zM25 3h1v1h-1zM26 4h2v1h-2zM28 5h1v1h-1zM25 6h3v1h-3zM31 2h3v1h-3zM30 3h1v1h-1zM31 4h2v1h-2zM33 5h1v1h-1zM30 6h3v1h-3z"/><path class="wm-zero" d="M6 0h2v1h-2zM5 1h1v1h-1zM8 1h1v1h-1zM5 2h1v1h-1zM8 2h1v1h-1zM5 3h1v1h-1zM8 3h1v1h-1zM5 4h1v1h-1zM8 4h1v1h-1zM5 5h1v1h-1zM8 5h1v1h-1zM6 6h2v1h-2z"/></svg>
     </a>
     <nav class="topnav" aria-label="Page">
-      <a href="#proof">The proof</a>
-      <a href="#how">How it works</a>
+      <a href="#rescue">Rescue</a>
+      <a href="#savings">Savings</a>
       <a href="pricing/">Pricing</a>
       <a href="business/">For business</a>
       <a data-link="docs" hidden>Docs</a>
       <a data-link="repo" hidden>Source</a>
-      <a class="nav-cta" href="pricing/#pro">Get Pro</a>
+      <a class="nav-cta quiet" href="pricing/#pro">Get Pro</a>
     </nav>
   </div>
 </header>
@@ -51,7 +53,7 @@
 <nav class="island" aria-label="Sections" hidden>
   <a class="isl-home" href="#top" aria-label="Top of the page"><img src="ghost.svg" alt="" width="20" height="20"></a>
   <div class="dots"><svg class="focus" aria-hidden="true" focusable="false"><defs><filter id="goo" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceGraphic" stdDeviation="2.4"/><feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -9"/></filter></defs><g filter="url(#goo)"><circle class="trail" r="3.4"/><circle class="lead" r="4.2"/></g></svg>
-  <ol><li><a href="#savings" aria-label="The savings"></a></li><li><a href="#proof" aria-label="The proof"></a></li><li><a href="#how" aria-label="How it works"></a></li><li><a href="#team" aria-label="For a team"></a></li><li><a href="#senses" aria-label="New senses"></a></li><li><a href="#limits" aria-label="Your limits"></a></li><li><a href="#pricing" aria-label="Pricing"></a></li><li><a href="#try" aria-label="Install"></a></li></ol></div>
+  <ol><li><a href="#rescue" aria-label="Rescue"></a></li><li><a href="#pro" aria-label="Pro"></a></li><li><a href="#savings" aria-label="Savings"></a></li><li><a href="#how" aria-label="How it works"></a></li><li><a href="#limits" aria-label="Your limits"></a></li><li><a href="#pricing" aria-label="Plans"></a></li><li><a href="#faq" aria-label="Questions"></a></li><li><a href="#try" aria-label="Install"></a></li></ol></div>
   <span class="isl-label" aria-hidden="true"><span></span></span>
   <a class="isl-cta" href="pricing/#pro">Get Pro</a>
 </nav>
@@ -64,309 +66,284 @@
 
   <div class="hero-cols">
     <div class="pitch">
-      <p class="lede">p0ssess is a Claude Code plugin. Tell it once which chores don’t need Claude’s rates, and Claude hands them to a cheaper model, checks what comes back and answers you as usual. Against three ways of running Claude on a unit-test job, it came out between 2.2 and 7.2 times cheaper, and every test file passed. With Sonnet in charge, Claude’s own Haiku subagent came close.</p>
-      <p class="cta"><a class="btn" href="pricing/#pro">Get Pro, $4 a month</a><a class="btn quiet" href="pricing/#team">Get Team, $8 a seat</a></p>
-      <p class="terms">Pro adds usage-limit rescue, a monthly savings report and a cloud sandbox. Team sets the rules once for every seat. Checkout opens soon, and the plugin is free now: <a href="#try">install it</a>.</p>
+      <p class="second">Keep working when Claude’s limit runs out. <b>For cents.</b></p>
+      <p class="lede">p0ssess is a Claude Code plugin. It hands routine work to cheaper models through OpenRouter while Claude stays in charge, inside spending limits you set.</p>
+      <p class="cta"><a class="btn" href="#try">Install p0ssess</a><a class="btn quiet" href="#pro">See Pro, $4 a month</a></p>
+      <p class="terms">Free and MIT licensed<span data-version-say hidden>, now at version <span data-version></span></span>. Model calls bill to your own OpenRouter key.</p>
     </div>
 
-    <div class="meter" id="savings">
-      <h2 class="sr-only" id="savings-h">What one rule did to the bill</h2>
-      <p class="ask rule">Rule: always send unit test writing to deepseek/deepseek-v4.1-flash-1017.</p>
-      <fieldset class="mode tri">
-        <legend>The same job with the rule, against</legend>
-        <span class="mode-thumb" aria-hidden="true"></span>
-        <label><input type="radio" name="vs" id="vs-haiku" value="haiku" checked><span>Opus + Haiku</span></label>
-        <label><input type="radio" name="vs" id="vs-opus" value="opus"><span>Opus alone</span></label>
-        <label><input type="radio" name="vs" id="vs-sonnet" value="sonnet"><span>Sonnet alone</span></label>
-      </fieldset>
-      <div class="meter-row">
-        <p class="mode-say">
-            <!--gen:hero-say-->
-      <span class="v-haiku">Told to hand the bulk of the work to its own Haiku subagent, Claude Opus 5.5 spent $0.64 a run. With p0ssess it spent $0.28. All 15 test files pass both ways.</span>
-            <span class="v-opus">Writing every test itself, Claude Opus 5.5 spent $1.26 a run. With p0ssess it spent $0.28. All 15 test files pass both ways.</span>
-            <span class="v-sonnet">Writing every test itself, Claude Sonnet 5.5 spent $0.70 a run. With p0ssess it spent $0.10. All 15 test files pass both ways. Sonnet’s own Haiku subagent came close: $0.09 to $0.22 a run, with one run a test file short.</span>
-      <!--/gen:hero-say-->
-        </p>
-        <p class="now">
-          <!--gen:hero-now-->
-      <span class="sr-only">Down from </span><s class="old"><small>$</small><b class="v-haiku">0.64</b><b class="v-opus">1.26</b><b class="v-sonnet">0.70</b></s><span class="sr-only"> to </span><span class="num"><small>$</small><b class="v-haiku">0.28</b><b class="v-opus">0.28</b><b class="v-sonnet">0.10</b></span><span class="per">a run</span>
-      <!--/gen:hero-now-->
-        </p>
+    <figure class="term prints" id="prints" aria-labelledby="prints-cap">
+      <figcaption class="sr-only" id="prints-cap">What p0ssess prints: the line that starts a rescue, and the receipts of four hand-offs we measured.</figcaption>
+      <div class="win">
+        <p class="win-k">Claude’s 5-hour window</p>
+        <p class="win-v"><b>91%</b> used</p>
+        <div class="bar" aria-hidden="true"><i class="used"></i><i class="over"></i><i class="tick"></i></div>
       </div>
-    </div>
-  </div>
-
-  <figure class="dline" aria-labelledby="dline-cap">
-    <div class="lanes-box">
-      <ol class="lanes">
-      <!--gen:hero-lanes-->
-      <li class="lane l-a-opus"><p class="lane-name k-alone"><span><i aria-hidden="true"></i><b>Claude Opus 5.5 alone</b></span> <span>$1.10 to $1.45</span></p><div class="plot-box"><svg class="plot" width="100%" height="26" aria-hidden="true" focusable="false"><rect class="band a" x="73.11%" width="23.69%" y="1" height="24" rx="4"/><circle class="pt a" cx="73.11%" cy="8.0" r="6"/><circle class="hit" cx="73.11%" cy="8.0" r="13" data-tip="Run 1: $1.0966 · 15 of 15 test files pass · 276 s"/><circle class="pt a" cx="96.8%" cy="13.0" r="6"/><circle class="hit" cx="96.8%" cy="13.0" r="13" data-tip="Run 2: $1.4520 · 15 of 15 test files pass · 374 s"/><circle class="pt a" cx="82.98%" cy="18.0" r="6"/><circle class="hit" cx="82.98%" cy="18.0" r="13" data-tip="Run 3: $1.2446 · 15 of 15 test files pass · 317 s"/></svg></div></li>
-      <li class="lane l-c-opus"><p class="lane-name k-ctl"><span><i aria-hidden="true"></i><b>Claude Opus 5.5 with its Haiku</b></span> <span>$0.60 to $0.71</span></p><div class="plot-box"><svg class="plot" width="100%" height="26" aria-hidden="true" focusable="false"><rect class="band a" x="39.71%" width="7.94%" y="1" height="24" rx="4"/><circle class="pt c" cx="39.9%" cy="8.0" r="5"/><circle class="hit" cx="39.9%" cy="8.0" r="13" data-tip="Run 1: $0.5985 · 15 of 15 test files pass · 346 s"/><circle class="pt c" cx="39.71%" cy="13.0" r="5"/><circle class="hit" cx="39.71%" cy="13.0" r="13" data-tip="Run 2: $0.5956 · 15 of 15 test files pass · 390 s"/><circle class="pt c" cx="47.65%" cy="18.0" r="5"/><circle class="hit" cx="47.65%" cy="18.0" r="13" data-tip="Run 3: $0.7147 · 15 of 15 test files pass · 408 s"/></svg></div></li>
-      <li class="lane l-p-opus"><p class="lane-name k-poss"><span><i aria-hidden="true"></i><b>With p0ssess, Opus in charge</b></span> <span>$0.27 to $0.30</span></p><div class="plot-box"><svg class="plot" width="100%" height="26" aria-hidden="true" focusable="false"><rect class="band p" x="18.26%" width="1.9%" y="1" height="24" rx="4"/><rect class="pt p" x="18.42%" y="2.0" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="18.42%" cy="8.0" r="13" data-tip="Run 1: $0.2763 · Claude $0.2472 + deepseek-v4.1-flash $0.0291 · 15 of 15 test files pass · 401 s"/><rect class="pt p" x="18.26%" y="7.0" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="18.26%" cy="13.0" r="13" data-tip="Run 2: $0.2739 · Claude $0.2132 + deepseek-v4.1-flash $0.0608 · 15 of 15 test files pass · 470 s"/><rect class="pt p" x="20.16%" y="12.0" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="20.16%" cy="18.0" r="13" data-tip="Run 3: $0.3024 · Claude $0.2801 + deepseek-v4.1-flash $0.0223 · 15 of 15 test files pass · 226 s"/></svg></div></li>
-      <li class="lane l-a-sonnet gap"><p class="lane-name k-alone"><span><i aria-hidden="true"></i><b>Claude Sonnet 5.5 alone</b></span> <span>$0.60 to $0.86</span></p><div class="plot-box"><svg class="plot" width="100%" height="26" aria-hidden="true" focusable="false"><rect class="band a" x="39.82%" width="17.84%" y="1" height="24" rx="4"/><circle class="pt a" cx="57.66%" cy="8.0" r="6"/><circle class="hit" cx="57.66%" cy="8.0" r="13" data-tip="Run 1: $0.8650 · 15 of 15 test files pass · 329 s"/><circle class="pt a" cx="39.82%" cy="13.0" r="6"/><circle class="hit" cx="39.82%" cy="13.0" r="13" data-tip="Run 2: $0.5973 · 15 of 15 test files pass · 215 s"/><circle class="pt a" cx="41.87%" cy="18.0" r="6"/><circle class="hit" cx="41.87%" cy="18.0" r="13" data-tip="Run 3: $0.6280 · 15 of 15 test files pass · 224 s"/></svg></div></li>
-      <li class="lane l-c-sonnet"><p class="lane-name k-ctl"><span><i aria-hidden="true"></i><b>Claude Sonnet 5.5 with its Haiku</b></span> <span>$0.09 to $0.22</span></p><div class="plot-box"><svg class="plot" width="100%" height="26" aria-hidden="true" focusable="false"><rect class="band a" x="6.32%" width="8.64%" y="1" height="24" rx="4"/><circle class="pt c" cx="6.32%" cy="8.0" r="5"/><circle class="hit" cx="6.32%" cy="8.0" r="13" data-tip="Run 1: $0.0947 · 15 of 15 test files pass · 263 s"/><circle class="pt c" cx="14.95%" cy="13.0" r="5"/><circle class="hit" cx="14.95%" cy="13.0" r="13" data-tip="Run 2: $0.2243 · 14 of 15 test files pass · 342 s"/><circle class="pt c" cx="10.03%" cy="18.0" r="5"/><circle class="hit" cx="10.03%" cy="18.0" r="13" data-tip="Run 3: $0.1504 · 15 of 15 test files pass · 136 s"/></svg></div></li>
-      <li class="lane l-p-sonnet"><p class="lane-name k-poss"><span><i aria-hidden="true"></i><b>With p0ssess, Sonnet in charge</b></span> <span>$0.09 to $0.10</span></p><div class="plot-box"><svg class="plot" width="100%" height="26" aria-hidden="true" focusable="false"><rect class="band p" x="6.07%" width="0.63%" y="1" height="24" rx="4"/><rect class="pt p" x="6.46%" y="2.0" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="6.46%" cy="8.0" r="13" data-tip="Run 1: $0.0969 · Claude $0.0613 + deepseek-v4.1-flash $0.0356 · 15 of 15 test files pass · 242 s"/><rect class="pt p" x="6.07%" y="7.0" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="6.07%" cy="13.0" r="13" data-tip="Run 2: $0.0911 · Claude $0.0695 + deepseek-v4.1-flash $0.0216 · 15 of 15 test files pass · 153 s"/><rect class="pt p" x="6.7%" y="12.0" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="6.7%" cy="18.0" r="13" data-tip="Run 3: $0.1004 · Claude $0.0716 + deepseek-v4.1-flash $0.0288 · 15 of 15 test files pass · 193 s"/></svg></div></li>
-      <!--/gen:hero-lanes-->
-      </ol>
-      <div class="rail">
-        <span class="span" aria-hidden="true"></span>
-        <span class="span-say" aria-hidden="true">
-      <!--gen:hero-span-->
-      <b class="v-haiku">2.2<span class="x">×</span> cheaper</b><b class="v-opus">4.4<span class="x">×</span> cheaper</b><b class="v-sonnet">7.2<span class="x">×</span> cheaper</b>
-      <!--/gen:hero-span-->
-        </span>
-        <span class="head" aria-hidden="true"><span class="g rider"><img src="ghost.svg" alt="" width="32" height="32"><i class="lid"></i></span></span>
-        <svg class="plot" width="100%" height="24" aria-hidden="true" focusable="false"><!--gen:hero-axis-->
-      <rect class="ax" x="0" y="0" width="100%" height="1"/><rect class="tk" x="0%" y="0" width="1" height="5"/><text x="0" y="20" text-anchor="start">$0</text><rect class="tk" x="16.67%" y="0" width="1" height="5"/><text class="odd" x="16.67%" y="20" text-anchor="middle">$0.25</text><rect class="tk" x="33.33%" y="0" width="1" height="5"/><text x="33.33%" y="20" text-anchor="middle">$0.50</text><rect class="tk" x="50%" y="0" width="1" height="5"/><text class="odd" x="50%" y="20" text-anchor="middle">$0.75</text><rect class="tk" x="66.67%" y="0" width="1" height="5"/><text x="66.67%" y="20" text-anchor="middle">$1.00</text><rect class="tk" x="83.33%" y="0" width="1" height="5"/><text class="odd" x="83.33%" y="20" text-anchor="middle">$1.25</text><rect class="tk" x="100%" y="0" width="1" height="5" transform="translate(-1 0)"/><text x="100%" y="20" text-anchor="end">$1.50</text>
-      <!--/gen:hero-axis--></svg>
-      </div>
-      <div class="guides" aria-hidden="true"><i class="drop at"></i><i class="drop to"></i></div>
-    </div>
-    <figcaption class="note" id="dline-cap">Each mark is one run of the same job, on a line of dollars that starts at zero. The job was to write unit tests for 15 small Python modules, and each setup ran it three times. A test file passes when it runs clean and catches at least four of five bugs planted in its module. All 15 passed in every run with p0ssess and in every run of Claude alone, and with Opus in charge a run took about as long either way. The rule was a personal rule in p0ssess 0.6.0, with one line saying the same in Claude’s standing instructions.
-      <!--gen:hero-rule-alone-->
-      In the 1.0 build the rule works alone, with no such line: $0.28 to $0.48 a run, 3.2 times cheaper than Claude Opus 5.5 alone, with every test file passing.
-      <!--/gen:hero-rule-alone-->
-      Claude is priced at API list price from exact token counts, and the p0ssess runs include the other model’s bill. The modules were written for this benchmark and a script does the grading. <a href="business/#method">How it was measured, and what failed</a></figcaption>
-    <details class="runs">
-      <summary>See every run</summary>
-      <div class="tbl"><table role="table">
-        <caption>Writing unit tests for 15 modules. Measured November 13, 2026.</caption>
-        <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Run</th><th scope="col" role="columnheader">Total</th><th scope="col" role="columnheader">Claude’s part</th><th scope="col" role="columnheader">Other model</th><th scope="col" role="columnheader">Test files passing</th><th scope="col" role="columnheader">Time</th></tr></thead>
-        <tbody role="rowgroup">
-          <!--gen:hero-runs-->
-      <tr role="row"><th scope="row" role="rowheader">Claude Opus 5.5 alone, run 1</th><td role="cell" data-l="Total"><small>$</small>1.0966</td><td role="cell" data-l="Claude’s part"><small>$</small>1.0966</td><td role="cell" data-l="Other model">none</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">276 s</td></tr>
-          <tr role="row"><th scope="row" role="rowheader">Claude Opus 5.5 alone, run 2</th><td role="cell" data-l="Total"><small>$</small>1.4520</td><td role="cell" data-l="Claude’s part"><small>$</small>1.4520</td><td role="cell" data-l="Other model">none</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">374 s</td></tr>
-          <tr role="row"><th scope="row" role="rowheader">Claude Opus 5.5 alone, run 3</th><td role="cell" data-l="Total"><small>$</small>1.2446</td><td role="cell" data-l="Claude’s part"><small>$</small>1.2446</td><td role="cell" data-l="Other model">none</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">317 s</td></tr>
-          <tr role="row"><th scope="row" role="rowheader">Claude Opus 5.5 with its own Haiku subagent, run 1</th><td role="cell" data-l="Total"><small>$</small>0.5985</td><td role="cell" data-l="Claude’s part"><small>$</small>0.5985</td><td role="cell" data-l="Other model">none</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">346 s</td></tr>
-          <tr role="row"><th scope="row" role="rowheader">Claude Opus 5.5 with its own Haiku subagent, run 2</th><td role="cell" data-l="Total"><small>$</small>0.5956</td><td role="cell" data-l="Claude’s part"><small>$</small>0.5956</td><td role="cell" data-l="Other model">none</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">390 s</td></tr>
-          <tr role="row"><th scope="row" role="rowheader">Claude Opus 5.5 with its own Haiku subagent, run 3</th><td role="cell" data-l="Total"><small>$</small>0.7147</td><td role="cell" data-l="Claude’s part"><small>$</small>0.7147</td><td role="cell" data-l="Other model">none</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">408 s</td></tr>
-          <tr role="row"><th scope="row" role="rowheader">With p0ssess, Opus in charge, run 1</th><td role="cell" data-l="Total"><small>$</small>0.2763</td><td role="cell" data-l="Claude’s part"><small>$</small>0.2472</td><td role="cell" data-l="Other model"><small>$</small>0.0291</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">401 s</td></tr>
-          <tr role="row"><th scope="row" role="rowheader">With p0ssess, Opus in charge, run 2</th><td role="cell" data-l="Total"><small>$</small>0.2739</td><td role="cell" data-l="Claude’s part"><small>$</small>0.2132</td><td role="cell" data-l="Other model"><small>$</small>0.0608</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">470 s</td></tr>
-          <tr role="row"><th scope="row" role="rowheader">With p0ssess, Opus in charge, run 3</th><td role="cell" data-l="Total"><small>$</small>0.3024</td><td role="cell" data-l="Claude’s part"><small>$</small>0.2801</td><td role="cell" data-l="Other model"><small>$</small>0.0223</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">226 s</td></tr>
-          <tr role="row"><th scope="row" role="rowheader">Claude Sonnet 5.5 alone, run 1</th><td role="cell" data-l="Total"><small>$</small>0.8650</td><td role="cell" data-l="Claude’s part"><small>$</small>0.8650</td><td role="cell" data-l="Other model">none</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">329 s</td></tr>
-          <tr role="row"><th scope="row" role="rowheader">Claude Sonnet 5.5 alone, run 2</th><td role="cell" data-l="Total"><small>$</small>0.5973</td><td role="cell" data-l="Claude’s part"><small>$</small>0.5973</td><td role="cell" data-l="Other model">none</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">215 s</td></tr>
-          <tr role="row"><th scope="row" role="rowheader">Claude Sonnet 5.5 alone, run 3</th><td role="cell" data-l="Total"><small>$</small>0.6280</td><td role="cell" data-l="Claude’s part"><small>$</small>0.6280</td><td role="cell" data-l="Other model">none</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">224 s</td></tr>
-          <tr role="row"><th scope="row" role="rowheader">Claude Sonnet 5.5 with its own Haiku subagent, run 1</th><td role="cell" data-l="Total"><small>$</small>0.0947</td><td role="cell" data-l="Claude’s part"><small>$</small>0.0947</td><td role="cell" data-l="Other model">none</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">263 s</td></tr>
-          <tr role="row"><th scope="row" role="rowheader">Claude Sonnet 5.5 with its own Haiku subagent, run 2</th><td role="cell" data-l="Total"><small>$</small>0.2243</td><td role="cell" data-l="Claude’s part"><small>$</small>0.2243</td><td role="cell" data-l="Other model">none</td><td role="cell" data-l="Correct">14 of 15</td><td role="cell" data-l="Time">342 s</td></tr>
-          <tr role="row"><th scope="row" role="rowheader">Claude Sonnet 5.5 with its own Haiku subagent, run 3</th><td role="cell" data-l="Total"><small>$</small>0.1504</td><td role="cell" data-l="Claude’s part"><small>$</small>0.1504</td><td role="cell" data-l="Other model">none</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">136 s</td></tr>
-          <tr role="row"><th scope="row" role="rowheader">With p0ssess, Sonnet in charge, run 1</th><td role="cell" data-l="Total"><small>$</small>0.0969</td><td role="cell" data-l="Claude’s part"><small>$</small>0.0613</td><td role="cell" data-l="Other model"><small>$</small>0.0356</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">242 s</td></tr>
-          <tr role="row"><th scope="row" role="rowheader">With p0ssess, Sonnet in charge, run 2</th><td role="cell" data-l="Total"><small>$</small>0.0911</td><td role="cell" data-l="Claude’s part"><small>$</small>0.0695</td><td role="cell" data-l="Other model"><small>$</small>0.0216</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">153 s</td></tr>
-          <tr role="row"><th scope="row" role="rowheader">With p0ssess, Sonnet in charge, run 3</th><td role="cell" data-l="Total"><small>$</small>0.1004</td><td role="cell" data-l="Claude’s part"><small>$</small>0.0716</td><td role="cell" data-l="Other model"><small>$</small>0.0288</td><td role="cell" data-l="Correct">15 of 15</td><td role="cell" data-l="Time">193 s</td></tr>
-      <!--/gen:hero-runs-->
+      <p class="line">Claude's 5-hour window is at 91%: p0ssess is taking routable work until it resets at 3:40 PM.</p>
+      <table class="rcpts">
+        <thead><tr><th scope="col">four hand-offs, measured</th><th scope="col">the receipt under each answer</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Unit tests for 15 Python modules, written</th><td><code>(deepseek-v4.1-flash-1017, <b>$0.03</b>)</code></td></tr>
+          <tr><th scope="row">300 support tickets, triaged</th><td><code>(deepseek-v4.1-flash-1017, <b>$0.08</b>)</code></td></tr>
+          <tr><th scope="row">A ten-minute film, watched with its sound</th><td><code>(qwen3.8-omni-flash, <b>$0.02</b>)</code></td></tr>
+          <tr><th scope="row">A 1024-pixel image, made</th><td><code>(recraft-v4.1-flash, <b>$0.0070</b>)</code></td></tr>
         </tbody>
-      </table></div>
-    </details>
-  </figure>
-  <p class="sr-only" role="status" id="rule-status"></p>
+      </table>
+    </figure>
+  </div>
 </div>
 </section>
 
-<section class="sec" id="proof" aria-labelledby="proof-h">
+<section class="sec" id="rescue" aria-labelledby="rescue-h">
 <div class="wrap">
   <div class="sec-head">
-    <h2 id="proof-h">A second job cleared the bar</h2>
-    <p>We wrote down what would count as a win before the first run. Over at least three runs each way, p0ssess’s most expensive run has to cost less for each correct answer than Claude’s cheapest, with accuracy within three points on average and five in the worst run. A win we advertise also has to be at least twice as cheap. Unit tests cleared that bar, and so did ticket triage with nothing but a team rule in place.</p>
+    <h2 id="rescue-h">What a rescue looks like</h2>
+    <p>When a Claude window is nearly used up, p0ssess takes the work a cheaper model can do, inside your spending envelope. It says so in one line and hands back when the window resets.</p>
   </div>
 
-  <ol class="proof">
-    <!--gen:proof-rows-->
-      <li class="prow hl">
-      <div>
-        <h3>Triaging support tickets</h3>
-        <p>Each run sorted 300 support tickets by category, priority, order and product against a written policy, with Claude Opus 5.5 in charge. Every ticket came out right in every run shown.</p>
-        <p>With nothing but a team rule, a run cost $0.36 instead of $0.73. The 0.6.0 plugin, with a personal rule that Claude’s instructions repeated, cost $0.33: 2.2 times cheaper than Claude alone and 2.3 times cheaper than Claude with its own Haiku subagent, which saved nothing here.</p>
-      </div>
-      <figure class="land" aria-label="Ticket triage, cost of each run. Claude Opus 5.5 alone: $0.64 to $0.90. Claude Opus 5.5 with its Haiku subagent: $0.60 to $0.90. With p0ssess, the rule in words: $0.24 to $0.39. With a team rule alone: $0.20 to $0.56.">
-        <ol class="lanes">
-        <li class="lane "><p class="lane-name k-alone"><span><i aria-hidden="true"></i><b>Claude Opus 5.5 alone</b></span> <span>$0.64 to $0.90</span></p><div class="plot-box"><svg class="plot" width="100%" height="26" aria-hidden="true" focusable="false"><rect class="band a" x="42.55%" width="17.41%" y="1" height="24" rx="4"/><circle class="pt a" cx="42.55%" cy="8.0" r="6"/><circle class="hit" cx="42.55%" cy="8.0" r="13" data-tip="Run 1: $0.6382 · 300 of 300 tickets right · 88 s"/><circle class="pt a" cx="59.95%" cy="13.0" r="6"/><circle class="hit" cx="59.95%" cy="13.0" r="13" data-tip="Run 2: $0.8993 · 300 of 300 tickets right · 169 s"/><circle class="pt a" cx="44.14%" cy="18.0" r="6"/><circle class="hit" cx="44.14%" cy="18.0" r="13" data-tip="Run 3: $0.6621 · 300 of 300 tickets right · 108 s"/></svg></div></li>
-        <li class="lane "><p class="lane-name k-ctl"><span><i aria-hidden="true"></i><b>Claude Opus 5.5 with its Haiku</b></span> <span>$0.60 to $0.90</span></p><div class="plot-box"><svg class="plot" width="100%" height="26" aria-hidden="true" focusable="false"><rect class="band a" x="40.32%" width="19.51%" y="1" height="24" rx="4"/><circle class="pt c" cx="49.4%" cy="8.0" r="5"/><circle class="hit" cx="49.4%" cy="8.0" r="13" data-tip="Run 1: $0.7409 · 300 of 300 tickets right · 132 s"/><circle class="pt c" cx="59.83%" cy="13.0" r="5"/><circle class="hit" cx="59.83%" cy="13.0" r="13" data-tip="Run 2: $0.8975 · 300 of 300 tickets right · 1284 s"/><circle class="pt c" cx="40.32%" cy="18.0" r="5"/><circle class="hit" cx="40.32%" cy="18.0" r="13" data-tip="Run 3: $0.6048 · 300 of 300 tickets right · 146 s"/></svg></div></li>
-        <li class="lane "><p class="lane-name k-poss"><span><i aria-hidden="true"></i><b>With p0ssess, the rule in words</b></span> <span>$0.24 to $0.39</span></p><div class="plot-box"><svg class="plot" width="100%" height="26" aria-hidden="true" focusable="false"><rect class="band p" x="15.79%" width="10.23%" y="1" height="24" rx="4"/><rect class="pt p" x="26.03%" y="2.0" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="26.03%" cy="8.0" r="13" data-tip="Run 1: $0.3904 · Claude $0.3123 + deepseek-v4.1-flash $0.0781 · 300 of 300 tickets right · 427 s"/><rect class="pt p" x="23.49%" y="7.0" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="23.49%" cy="13.0" r="13" data-tip="Run 2: $0.3524 · Claude $0.2871 + deepseek-v4.1-flash $0.0653 · 300 of 300 tickets right · 531 s"/><rect class="pt p" x="15.79%" y="12.0" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="15.79%" cy="18.0" r="13" data-tip="Run 3: $0.2369 · Claude $0.1780 + deepseek-v4.1-flash $0.0589 · 300 of 300 tickets right · 353 s"/></svg></div></li>
-        <li class="lane "><p class="lane-name k-poss"><span><i aria-hidden="true"></i><b>With a team rule alone</b></span> <span>$0.20 to $0.56</span></p><div class="plot-box"><svg class="plot" width="100%" height="26" aria-hidden="true" focusable="false"><rect class="band p" x="13.43%" width="24.12%" y="1" height="24" rx="4"/><rect class="pt p" x="21.35%" y="2.0" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="21.35%" cy="8.0" r="13" data-tip="Run 1: $0.3202 · Claude $0.2374 + deepseek-v4.1-flash $0.0829 · 300 of 300 tickets right · 409 s"/><rect class="pt p" x="13.43%" y="7.0" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="13.43%" cy="13.0" r="13" data-tip="Run 2: $0.2014 · Claude $0.1536 + deepseek-v4.1-flash $0.0478 · 300 of 300 tickets right · 418 s"/><rect class="pt p" x="37.54%" y="12.0" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="37.54%" cy="18.0" r="13" data-tip="Run 3: $0.5632 · Claude $0.4899 + deepseek-v4.1-flash $0.0733 · 300 of 300 tickets right · 426 s"/></svg></div></li>
-        </ol>
-        <svg class="plot" width="100%" height="24" aria-hidden="true" focusable="false"><rect class="ax" x="0" y="0" width="100%" height="1"/><rect class="tk" x="0%" y="0" width="1" height="5"/><text x="0" y="20" text-anchor="start">$0</text><rect class="tk" x="16.67%" y="0" width="1" height="5"/><text class="odd" x="16.67%" y="20" text-anchor="middle">$0.25</text><rect class="tk" x="33.33%" y="0" width="1" height="5"/><text x="33.33%" y="20" text-anchor="middle">$0.50</text><rect class="tk" x="50%" y="0" width="1" height="5"/><text class="odd" x="50%" y="20" text-anchor="middle">$0.75</text><rect class="tk" x="66.67%" y="0" width="1" height="5"/><text x="66.67%" y="20" text-anchor="middle">$1.00</text><rect class="tk" x="83.33%" y="0" width="1" height="5"/><text class="odd" x="83.33%" y="20" text-anchor="middle">$1.25</text><rect class="tk" x="100%" y="0" width="1" height="5" transform="translate(-1 0)"/><text x="100%" y="20" text-anchor="end">$1.50</text></svg>
-      </figure>
-      <p class="ratio"><b>2.0<span class="x">×</span></b><span>cheaper for each correct ticket, by a team rule alone</span></p>
-    </li>
-      <!--/gen:proof-rows-->
-  </ol>
+  <div class="seq-ctl">
+  <fieldset class="pick two see">
+    <legend>What you see on</legend>
+    <div class="pick-in">
+    <span class="pick-thumb" aria-hidden="true"></span>
+    <label><input type="radio" name="see" id="see-pro" value="pro" checked><span>Pro</span></label>
+    <label><input type="radio" name="see" id="see-free" value="free"><span>Free</span></label>
+    </div>
+  </fieldset>
+    <button class="replay" type="button" data-replay hidden>Replay</button>
+  </div>
 
-  <p class="proof-end">
-      <!--gen:proof-caveat-->
-      The 300 tickets and their triage policy were built for the benchmark, each setup ran three times, and deepseek-v4.1-flash did the delegated work. With p0ssess the job took three to four times as long: 1.4 to 1.5 seconds a ticket against 0.4. At 60 tickets the hand-off cost as much as the work and there was no saving.
-      <!--/gen:proof-caveat-->
-      Most jobs we tested did no better. Of nineteen pairings of a job with a model in charge, fifteen failed our bar and one passed at less than twice as cheap. The business page lists every one with its numbers.</p>
-  <p class="next"><a class="btn quiet" href="business/#method">Read the method</a><a class="more" href="business/#results">See every job we tested</a></p>
+  <ol class="seq" id="seq">
+    <li class="step">
+      <div class="step-say hl">
+        <h3><span class="n" aria-hidden="true">1</span>The window fills</h3>
+        <p>Rescue starts when Claude’s 5-hour or weekly window passes 85% used, or is on course to run out before it resets. Move the line in plain words: <q>start rescue at 90%</q>.</p>
+      </div>
+      <div class="step-out">
+        <div class="win">
+          <p class="win-k">Claude’s 5-hour window</p>
+          <p class="win-v"><b>91%</b> used</p>
+          <div class="bar" aria-hidden="true"><i class="used"></i><i class="over"></i><i class="tick"></i></div>
+          <p class="win-at" aria-hidden="true">85%</p>
+        </div>
+      </div>
+    </li>
+    <li class="step">
+      <div class="step-say hl">
+        <h3><span class="n" aria-hidden="true">2</span>p0ssess says so in one line</h3>
+        <p class="v-pro">One line, once. The status line shows a violet <code>rescue</code> for as long as it is on.</p>
+        <p class="v-free">On Free you get one line for each window: what rescue is, and what it would have taken so far. The count is an estimate.</p>
+      </div>
+      <div class="step-out">
+        <p class="line v-pro">Claude's 5-hour window is at 91%: p0ssess is taking routable work until it resets at 3:40 PM.</p>
+        <p class="sl v-pro"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess $0.42/$1 · <b class="resc">rescue</b></p>
+        <p class="line v-free">Claude's 5-hour window is at 91%. Rescue is a Pro feature: p0ssess would take routable work until it resets at 3:40 PM. This window it would have taken 1 routable task so far (an estimate). /p0ssess:pro has the plans.</p>
+        <p class="sl v-free"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess $0.42/$1</p>
+      </div>
+    </li>
+    <li class="step">
+      <div class="step-say hl">
+        <h3><span class="n" aria-hidden="true">3</span>Routable work goes to cheaper models</h3>
+        <p class="v-pro">Research, summaries, bulk and media work, and code edits that fit. Every answer still ends with its receipt, and rescue never spends past your limits. Critical work asks you once, with the model and the cost. <q>Keep this on Claude</q> always wins.</p>
+        <p class="v-free">Your rules keep routing work the way they always do, and nothing more is taken. Work that rescue would have moved stays on Claude.</p>
+      </div>
+      <div class="step-out">
+        <p class="tag v-pro">under each answer</p>
+        <p class="line v-pro"><code>(model, $cost, saved ~$X)</code></p>
+        <p class="tag v-pro">before critical work, once</p>
+        <p class="line v-pro">p0ssess can take this critical work on <i>&lt;model&gt;</i> for about <i>$&lt;cost&gt;</i> while Claude's limit is near. Do it?</p>
+        <p class="idle v-free">Nothing moves. Rescue is off on Free.</p>
+      </div>
+    </li>
+    <li class="step">
+      <div class="step-say hl">
+        <h3><span class="n" aria-hidden="true">4</span>The window resets and it hands back</h3>
+        <p class="v-pro">It says that once, and the status line goes quiet. To stop sooner, say <q>turn rescue off</q>.</p>
+        <p class="v-free">When the next window fills, you get the one line again.</p>
+      </div>
+      <div class="step-out">
+        <p class="line v-pro">Claude's 5-hour window has reset: p0ssess handed routable work back to Claude.</p>
+        <p class="sl v-pro"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess $0.42/$1</p>
+        <p class="idle v-free">The window resets. Claude carries on as before.</p>
+      </div>
+    </li>
+  </ol>
+</div>
+</section>
+
+<section class="sec pro" id="pro" aria-labelledby="pro-h">
+<div class="wrap">
+  <div class="pro-head">
+    <div>
+      <h2 id="pro-h">Three reasons to pay for Pro</h2>
+      <p>The plugin stays free. Pro pays for three things that need a server, for the person who hits Claude’s usage limit.</p>
+    </div>
+    <div class="pro-buy">
+      <p class="price"><b><small>$</small>4</b> <span class="per">a month</span> <span class="price-note">or $36 a year</span></p>
+      <p class="cta"><a class="btn" href="pricing/#pro">Get Pro</a><a class="more" href="#pricing">Compare the plans</a></p>
+    </div>
+  </div>
+  <ul class="grid three why">
+    <li class="cell hl">
+      <p class="chip sl"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess $0.42/$1 · <b class="resc">rescue</b></p>
+      <h3>Usage-limit rescue</h3>
+      <p>When a Claude window is nearly used up, p0ssess takes the routable work and hands it back at the reset. You keep working.</p>
+    </li>
+    <li class="cell hl">
+      <p class="chip"><code>p0ssess savings</code></p>
+      <h3>A savings report</h3>
+      <p>Every run is priced against Claude’s list price. The figures are on your p0ssess page on every plan. Pro also emails you the month, in figures only.</p>
+    </li>
+    <li class="cell hl">
+      <p class="chip sl run"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess $0.42/$1 · queued 2nd, ~4 min</p>
+      <h3>A cloud sandbox on macOS and Windows</h3>
+      <p>Coding hand-offs run in the hosted sandbox with no podman to install. Pro includes 20 sandbox hours a month. When it is busy your job waits in a queue, and the status line says where it stands.</p>
+    </li>
+  </ul>
+</div>
+</section>
+
+<section class="sec" id="savings" aria-labelledby="savings-h">
+<div class="wrap">
+  <div class="sec-head">
+    <h2 id="savings-h">What you saved, measured run by run</h2>
+    <p>p0ssess prices each run’s tokens at Claude’s list price and sets that against what OpenRouter charged for the same call. The difference is the saving. When Claude would have been cheaper, the figure stays negative and is never claimed.</p>
+  </div>
+
+  <div class="save-cols">
+    <figure class="ledger" aria-labelledby="ledger-h">
+      <figcaption>
+        <h3 id="ledger-h">One measured call, priced twice</h3>
+        <p class="small">A PDF table turned into JSON on deepseek-v4.1-flash, from the test log in the docs.</p>
+      </figcaption>
+      <fieldset class="pick three" data-claude hidden>
+        <legend>The Claude model you run</legend>
+        <div class="pick-in">
+          <span class="pick-thumb" aria-hidden="true"></span>
+          <label><input type="radio" name="claude" value="opus"><span>Opus 5.5</span></label>
+          <label><input type="radio" name="claude" value="sonnet" checked><span>Sonnet 5.5</span></label>
+          <label><input type="radio" name="claude" value="haiku"><span>Haiku 5.5</span></label>
+        </div>
+      </fieldset>
+      <dl class="sum">
+        <div><dt>Tokens in</dt><dd>195</dd></div>
+        <div><dt>Tokens out</dt><dd>1,456</dd></div>
+        <div class="cut"><dt>The same tokens at <span data-l="name">Claude Sonnet 5.5</span>’s list price <small data-l="rate">$2 in and $10 out for a million tokens</small></dt><dd data-l="claude">$0.01495</dd></div>
+        <div><dt>What OpenRouter charged</dt><dd>$0.00073</dd></div>
+        <div class="cut total"><dt>Saved</dt><dd data-l="saved">~$0.014</dd></div>
+      </dl>
+      <p class="rcpt"><span class="tag">the receipt under the answer</span><code data-l="receipt">(deepseek-v4.1-flash, $0.0007, saved ~$0.01)</code></p>
+      <p class="small" data-l="note">A receipt names a saving once it reaches half a cent.</p>
+    </figure>
+
+    <div class="cardside">
+      <fieldset class="pick four" data-runs hidden>
+        <legend>An example month: runs like this one</legend>
+        <div class="pick-in">
+          <span class="pick-thumb" aria-hidden="true"></span>
+          <label><input type="radio" name="runs" value="1"><span>1</span></label>
+          <label><input type="radio" name="runs" value="10"><span>10</span></label>
+          <label><input type="radio" name="runs" value="100" checked><span>100</span></label>
+          <label><input type="radio" name="runs" value="1000"><span>1,000</span></label>
+        </div>
+      </fieldset>
+      <figure class="scard" aria-labelledby="scard-cap">
+        <figcaption class="sr-only" id="scard-cap">The savings card, as the p0ssess page draws it, filled in here from an example.</figcaption>
+        <div class="scard-in">
+          <p class="sc-top"><span class="sc-name">p<i>0</i>ssess</span><span class="sc-when">an example</span></p>
+          <p class="sc-big" data-c="big">~$1.42</p>
+          <p class="sc-sub" data-c="sub">saved against Claude (95%)</p>
+          <dl class="sc-stats">
+            <div><dt>runs</dt><dd data-c="runs">100</dd></div>
+            <div><dt>Claude would have cost</dt><dd data-c="claude">$1.49</dd></div>
+            <div><dt>cost</dt><dd data-c="cost">$0.073</dd></div>
+            <div><dt>Claude usage kept</dt><dd data-c="kept">165k tokens</dd></div>
+          </dl>
+          <div class="sc-models">
+            <p class="sc-k">by model</p>
+            <p class="sc-row"><span>deepseek-v4.1-fl…</span><b data-c="row">~$1.42</b></p>
+          </div>
+          <p class="sc-foot"><span><span data-c="basis">100 measured (runs)</span><br>Priced at Claude's list price for the same tokens.</span><span>p0ssess.me</span></p>
+        </div>
+      </figure>
+      <p class="small">An example, worked out on this page: <span data-c="count">100 runs</span> like the call beside it. Your card is built from your own receipts.</p>
+    </div>
+  </div>
+
+  <ul class="grid three where">
+    <li class="cell hl"><h3>On your p0ssess page</h3><p>This month, last month and all time, by model and by kind of work, with a card you can share. On every plan.</p></li>
+    <li class="cell hl"><h3>In the terminal</h3><p><code>p0ssess savings</code> prints the same figures as a card, for any month.</p></li>
+    <li class="cell hl"><h3>By email, on Pro</h3><p>Last month’s totals, once a month. Figures only: the page shows you the exact numbers before they go.</p></li>
+  </ul>
+
+  <div class="whole hl">
+    <div>
+      <h3>Measured on a whole job</h3>
+      <p>Writing unit tests for 15 Python modules, three runs each way, with one personal rule that was also written as a line in Claude’s instructions. The figures are what a run cost on average, and all 45 test files passed both ways. The datasets were built for the benchmark, a script graded them, and Claude is priced at API list price. Most jobs we tested did not clear our bar. <a href="business/">Every job we tested, with every run</a></p>
+    </div>
+    <p class="pair"><span class="fig"><b><small>$</small>1.26</b><span>a run on Claude Opus 5.5 alone</span></span><span class="fig to"><b><small>$</small>0.28</b><span>a run with p0ssess and one personal rule</span></span></p>
+  </div>
 </div>
 </section>
 
 <section class="sec" id="how" aria-labelledby="how-h">
 <div class="wrap">
-  <div class="sec-head">
-    <h2 id="how-h">One rule, then Claude handles it</h2>
-    <p>You state the rule once, in plain words or as a team setting. From then on, when a prompt matches, Claude starts a small Haiku subagent that carries the job to the cheaper model and brings back only the result. You keep talking to Claude the whole time.</p>
-  </div>
+  <h2 class="sr-only" id="how-h">How p0ssess works</h2>
+  <p class="say" data-say>Tell p0ssess once which chores don’t need Claude’s rates. From then on Claude hands them to a cheaper model, checks what comes back and answers you as usual.</p>
 
-  <figure class="relay" aria-labelledby="relay-cap" data-jobs='[["deepseek-v4.1-flash","Wrote tests for 15 modules for $0.0291.","deepseek-v4.1-flash-1017, $0.0291"],["deepseek-v4.1-flash","Triaged 300 support tickets for $0.0781.","deepseek-v4.1-flash-1017, $0.0781"],["qwen3.8-omni-flash","Watched a ten-minute film for $0.0162.","qwen3.8-omni-flash, $0.0162"],["recraft-v4.1-flash","Drew a 1024-pixel image for $0.0070.","recraft-v4.1-flash, $0.0070"]]'>
-    <figcaption class="sr-only" id="relay-cap">How a hand-off travels: Claude asks, a possessed Haiku subagent drives another model, and the answer comes back with the model and its price. On measured calls, deepseek-v4.1-flash wrote tests for 15 modules for $0.0291 and triaged 300 support tickets for $0.0781, qwen3.8-omni-flash watched a ten-minute film for $0.0162 and recraft-v4.1-flash drew a 1024-pixel image for $0.0070.</figcaption>
-    <ol class="hops">
-      <li class="hop claude"><div class="at"><span class="pill"><span class="pip"></span>Claude</span><span class="after" aria-hidden="true"><span class="g rider"><img src="ghost.svg" alt="" width="48" height="48"><i class="lid"></i></span><span class="back">(deepseek-v4.1-flash-1017, $0.0291)</span></span></div><span class="wire" aria-hidden="true"><i></i></span><p>Claude plans, reviews and answers. It starts one subagent and reads only what comes back.</p></li>
-      <li class="hop haiku"><div class="at"><span class="pill"><img class="seat" src="ghost.svg" alt="" width="32" height="32">Haiku</span></div><span class="wire" aria-hidden="true"><i></i></span><p>A possessed subagent runs in the background. It makes the call and hands the answer back unchanged.</p></li>
-      <li class="hop model"><div class="at"><span class="pill"><span class="swap"><span class="idle">a cheaper model</span><span class="live name" aria-hidden="true">deepseek-v4.1-flash</span></span></span></div><p class="swap"><span class="idle">Does the one job your rule names.</span><span class="live job" aria-hidden="true">Wrote tests for 15 modules for $0.0291.</span></p></li>
-    </ol>
-    <button class="replay" type="button" aria-label="Replay the hand-off" hidden>Replay</button>
-  </figure>
-
-  <div class="split">
-    <div class="copy">
-      <p>The cheaper model works in a sandbox, on its own git worktree. Its edits come back as a diff, and Claude reads the diff and runs the tests before anything lands in your repository. That check is in the price: on the unit-test runs, Claude’s own share was most of the bill.</p>
-      <p>When no rule covers a job, an engine prices every model that could do it, Claude included, and the work stays on Claude whenever handing it off wouldn’t save anything. Small edits and plain questions never leave.</p>
-    </div>
-    <figure class="bill hl" aria-labelledby="bill-cap">
-      <!--gen:bill-->
-      <figcaption id="bill-cap">Where one run’s $0.2763 went</figcaption>
-      <svg class="bill-bar" width="100%" height="12" role="img" aria-label="Claude Opus 5.5 took 88% of the bill, the Haiku relay 1% and deepseek-v4.1-flash 11%."><rect class="b1" width="88.22%" height="12"/><rect class="b2" x="88.22%" width="1.24%" height="12"/><rect class="b3" x="89.46%" width="10.54%" height="12"/><rect class="gap" x="88.22%" width="2" height="12" transform="translate(-1 0)"/><rect class="gap" x="89.46%" width="2" height="12" transform="translate(-1 0)"/></svg>
-      <ul class="bill-rows">
-        <li class="r1"><span class="who">Claude Opus 5.5, planning and checking</span><span class="amt"><small>$</small>0.2438</span></li>
-        <li class="r2"><span class="who">The possessed Haiku</span><span class="amt"><small>$</small>0.0034</span></li>
-        <li class="r3"><span class="who">deepseek-v4.1-flash, writing the tests</span><span class="amt"><small>$</small>0.0291</span></li>
-      </ul>
-      <p class="note">This is run 1 of the three with p0ssess. The cheaper model’s own bill was 11% of it.</p>
-      <!--/gen:bill-->
-    </figure>
-  </div>
-</div>
-</section>
-
-<section class="sec" id="team" aria-labelledby="team-h">
-<div class="wrap">
-  <div class="sec-head">
-    <h2 id="team-h">Set the rule once for the whole team</h2>
-    <p>
-      <!--gen:team-proof-->
-      On Team, an owner writes a rule once and every seat gets it. We measured one on its own, with no instructions on anyone’s machine: a team rule that always sends ticket triage to deepseek-v4.1-flash. Triaging a day’s 300 support tickets cost $0.36 instead of $0.73 with Claude Opus 5.5 in charge, and every ticket came out right.
-      <!--/gen:team-proof-->
-    </p>
-  </div>
-  <div class="split">
-    <figure class="reach hl" aria-labelledby="reach-cap">
-      <figcaption id="reach-cap">One command from the owner</figcaption>
-      <div class="cmd"><pre><code><span class="ln">p0ssess team rule add --kind only --models deepseek/deepseek-v4.1-flash-1017 --use-cases bulk-classify-tag</span></code></pre><button class="copy-btn" type="button" aria-label="Copy the command" hidden>Copy</button></div>
-      <i class="stem" aria-hidden="true"></i>
-      <ul class="seats" aria-label="The rule reaches every seat on the team">
-        <li><img src="ghost.svg" alt="" width="32" height="32"><span>owner</span></li>
-        <li><img src="ghost.svg" alt="" width="32" height="32"><span>seat 2</span></li>
-        <li><img src="ghost.svg" alt="" width="32" height="32"><span>seat 3</span></li>
-        <li><img src="ghost.svg" alt="" width="32" height="32"><span>seat 4</span></li>
-        <li><img src="ghost.svg" alt="" width="32" height="32"><span>seat 5</span></li>
-        <li><img src="ghost.svg" alt="" width="32" height="32"><span>seat 6</span></li>
-      </ul>
-    </figure>
-    <div class="copy">
-      <p>Members can still write rules of their own, but a member’s rule can only make the team’s stricter. The same holds for rules that arrive inside a cloned repository.</p>
-      <p>Each member gets a share of the monthly budget, and the tools that spend money enforce it on their machine. A spend dashboard shows the owner where it went.</p>
-      <p>People join with an invite link. Team is $8 a seat each month, and every seat includes Pro.</p>
-      <p class="next"><a class="btn" href="pricing/#team">Get Team, $8 a seat</a><a class="more" href="business/">The cost case for a team</a></p>
-      <p class="note">
-      <!--gen:team-caveat-->
-      The 300 tickets and their triage policy were built for the benchmark, and each setup ran three times. The team rule’s runs took 3.4 times as long (1.4 seconds a ticket against 0.4). At 60 tickets the hand-off cost as much as the work and there was no saving. On unit tests a team rule alone did not pass our bar: in two of its three runs one module’s tests caught three of five planted bugs, so the figures at the top of this page are from a rule set on the person’s own machine.
-      <!--/gen:team-caveat-->
-      </p>
-    </div>
-  </div>
-</div>
-</section>
-
-<section class="sec" id="senses" aria-labelledby="senses-h">
-<div class="wrap">
-  <div class="sec-head">
-    <h2 id="senses-h">It also does what Claude can’t</h2>
-    <p>Claude can’t watch a video, hear a recording or make an image. It works around each one by pulling still frames, installing a local speech model or drawing SVG. p0ssess sends the actual file to a model that can take it, through the same hand-off.</p>
-  </div>
-  <div class="duels">
-
-    <figure class="duel hl" aria-labelledby="film-h">
-      <div class="duel-head">
-        <h3 id="film-h">A ten-minute film, described</h3>
-        <p>One prompt, run twice on Claude Sonnet 5.5: describe what happens in the film, with timestamps and what you can tell about the sound. Each answer was scored by hand against a checklist written before either run, two points an event and one a sound cue.</p>
-        <p class="duel-read">Claude alone looked at twenty stills and missed four of the ten events. With p0ssess, a model watched the whole film and heard it.</p>
-        <p class="duel-meta">p0ssess cost more in total on this job, $0.1140 against $0.0999, and took 262 seconds against 40. For each point scored it cost less: $0.0046 against $0.0067. One run each. Scored strictly, one event is a close call and the total would be 23.</p>
-      </div>
-      <div class="reel">
-        <div class="reel-row alone">
-          <p class="reel-who">Claude alone <small>twenty stills, one every 30 seconds</small></p>
-          <div class="reel-lanes">
-            <div class="strip" aria-hidden="true"><i class="s-dim"></i><i class="s-slits"></i></div>
-            <ol class="evs" role="img" aria-label="Claude alone found six of the ten events and missed four"><li class="e1"></li><li class="e2"></li><li class="e3"></li><li class="e4"></li><li class="e5 miss"></li><li class="e6 miss"></li><li class="e7"></li><li class="e8 miss"></li><li class="e9 miss"></li><li class="e10"></li></ol>
-          </div>
-          <p class="score"><b>15</b><small>of 25</small></p>
-        </div>
-        <div class="reel-row poss">
-          <p class="reel-who">With p0ssess <small>qwen3.8-omni-flash, the whole film with its sound</small></p>
-          <div class="reel-lanes">
-            <div class="strip" aria-hidden="true"><i class="s-lit"></i></div>
-            <ol class="evs" role="img" aria-label="With p0ssess all ten events were found"><li class="e1"></li><li class="e2"></li><li class="e3"></li><li class="e4"></li><li class="e5"></li><li class="e6"></li><li class="e7"></li><li class="e8"></li><li class="e9"></li><li class="e10"></li></ol>
-          </div>
-          <p class="score"><b>25</b><small>of 25</small></p>
-        </div>
-      </div>
-    </figure>
-
-    <figure class="duel hl" aria-labelledby="audio-h">
-      <div class="duel-head">
-        <h3 id="audio-h">A speech recording, transcribed</h3>
-        <p>Claude Sonnet 5.5 was asked to transcribe one speech recording. Alone, it installed a local Whisper and ran it. With p0ssess, the recording went to whisper-large-v3-turbo.</p>
-        <p class="duel-read">p0ssess was faster and cheaper, and its transcript was the correct one.</p>
-        <p class="duel-meta">Measured November 11, 2026. One run each.</p>
-      </div>
-      <table class="duel-t m3" role="table">
-        <caption class="sr-only">The speech recording: time, total cost and whether the transcript was right</caption>
-        <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader"><span class="sr-only">Run</span></th><th scope="col" role="columnheader">Time</th><th scope="col" role="columnheader">Total cost</th><th scope="col" role="columnheader">Transcript</th></tr></thead>
-        <tbody role="rowgroup">
-          <tr role="row" class="alone"><th scope="row" role="rowheader">Claude alone <small>faster-whisper, base.en</small></th><td role="cell" class="lead" data-l="Time"><b><small>about</small> 7<small class="u">min</small></b><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="100%" height="100%" rx="4"/></svg></span></td><td role="cell" data-l="Total cost"><b><small>$</small>0.0845</b></td><td role="cell" data-l="Transcript"><b>Wrong</b></td></tr>
-          <tr role="row" class="poss"><th scope="row" role="rowheader">With p0ssess <small>whisper-large-v3-turbo</small></th><td role="cell" class="lead" data-l="Time"><b>8<small class="u">s</small></b><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="1.9%" height="100%" rx="4"/></svg></span></td><td role="cell" data-l="Total cost"><b><small>$</small>0.0519</b></td><td role="cell" data-l="Transcript"><b>Correct</b></td></tr>
-        </tbody>
-      </table>
-    </figure>
-
-    <figure class="duel hl" aria-labelledby="image-h">
-      <div class="duel-head">
-        <h3 id="image-h">An image, made</h3>
-        <p>Ask for a picture and Claude alone draws SVG. With p0ssess the request goes to an image model, the picture lands as a file and Claude prints the path.</p>
-        <p class="ask"><span class="sr-only">You say: </span>Make an image of a ghost holding a lantern.</p>
-        <p class="fig"><b><small>$</small>0.0070</b><span>measured, on recraft-v4.1-flash</span></p>
-      </div>
-      <img class="shot" src="ghost-lantern.webp" width="832" height="624" loading="lazy" decoding="async" alt="What came back: a figure under a sheer white sheet holds a lit oil lantern on a dark forest path.">
-    </figure>
-
-  </div>
+  <ol class="route" aria-label="How a hand-off travels">
+    <li class="stop">
+      <p class="stop-row"><span class="stop-pill"><i class="pip" aria-hidden="true"></i>Claude</span><span class="sr-only">gets back the result and its receipt:</span><code class="stop-back">(model, $cost, saved ~$X)</code></p>
+      <p>Plans, reviews and answers. Reads only what comes back.</p>
+    </li>
+    <li class="stop mid">
+      <p class="stop-row"><span class="stop-pill lit"><img src="ghost.svg" alt="" width="32" height="32">Haiku</span></p>
+      <p>A background subagent, possessed. Makes the call and hands the answer back.</p>
+    </li>
+    <li class="stop end">
+      <p class="stop-row"><span class="stop-pill line">a cheaper model</span></p>
+      <p>Does the one job your rule names. Sandboxed when it edits files.</p>
+    </li>
+  </ol>
+  <p class="aside">Small edits and plain questions never leave Claude, and critical work stays there unless you say otherwise. p0ssess also does what Claude can’t: watch a video, hear a recording, make an image.</p>
 </div>
 </section>
 
 <section class="sec" id="limits" aria-labelledby="limits-h">
 <div class="wrap">
   <div class="sec-head">
-    <h2 id="limits-h">You set the limits</h2>
-    <p>Sending work to other models only saves money if the spending can’t run away, so your limits are enforced in the tools that spend it.</p>
+    <h2 id="limits-h">One spending envelope, set by you</h2>
+    <p>The tools that spend enforce it, so it is never left to Claude’s judgment. Each call’s maximum is reserved before it is sent and settled to the measured cost after, so parallel calls cannot overshoot.</p>
   </div>
-  <div class="grid two">
-    <div class="cell hl">
-      <h3>A budget it can’t overspend</h3>
-      <p>You set a monthly cap and a per-task limit. Under the limit a job just runs. Over it, Claude asks first in one line that names the cost. Your status line shows the running total.</p>
-      <p><code class="seg idle"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess  $0.14 today</code></p>
-    </div>
-    <div class="cell hl">
-      <h3>Rules in your own words</h3>
-      <p>Say what you want and Claude writes the rule, shows it to you in one line and saves it when you confirm.</p>
-      <p class="ask">Never use grok.</p>
-      <p class="ask">Auto-approve video summaries up to 20 cents each today.</p>
-    </div>
-    <div class="cell hl">
-      <h3>A sandbox for the other model</h3>
-      <p>Coding work runs in a sandbox with no access to your home directory, your SSH keys or your credentials, and no route to your local network. Your OpenRouter key stays in a proxy the model can’t reach.</p>
-    </div>
-    <div class="cell hl">
-      <h3>What it won’t do</h3>
-      <p>It won’t send prompts to providers that train on them, and it won’t spend past your cap. Critical work such as auth, infrastructure, production or money stays with Claude unless a rule of yours says otherwise. It never creates a rule or a standing approval on its own, and it never reads, stores or relays your Claude credentials. <a href="privacy/">What it does send, and to whom</a></p>
+  <div class="env-cols">
+    <dl class="env">
+      <div class="hl"><dt><b><small>$</small>1</b> a day</dt><dd>A daily limit that warns.</dd></div>
+      <div class="hl"><dt><b><small>$</small>10</b> a month</dt><dd>A monthly cap that stops paid runs.</dd></div>
+      <div class="hl"><dt><b><small>$</small>0.25</b> a task</dt><dd>Under it a job just runs. Over it Claude asks once, in one line with the cost.</dd></div>
+      <div class="env-say"><dd>A new install starts here. Change any of them in plain words: <q>cap OpenRouter at $5</q>.</dd></div>
+    </dl>
+    <div class="looks">
+      <figure class="term me" aria-labelledby="me-cap">
+        <figcaption class="tag" id="me-cap"><code>/p0ssess:p0ssess-me</code> on a new install</figcaption>
+        <div class="tcard">
+          <p class="tc-top"><span><span class="mark" aria-hidden="true">ᗣ</span> p0ssess <span data-version></span></span><span>nothing running</span></p>
+          <p class="tc-row"><span>today</span><span>$0.00</span><span class="cells" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span>of $1.00</span></p>
+          <p class="tc-row"><span>month</span><span>$0.00</span><span class="cells" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span>of $10.00</span></p>
+          <p class="tc-row wide"><span>limits</span><span>asks above $0.25 a task · no-training</span></p>
+        </div>
+        <p class="tc-row wide under"><span>page</span><span>http://127.0.0.1:41733/t/…/</span></p>
+        <p class="tc-row wide under"><span>change</span><span>tell Claude: "cap OpenRouter at $5", "always ask before grok"</span></p>
+      </figure>
+      <figure class="term lines" aria-labelledby="sl-cap">
+        <figcaption class="tag" id="sl-cap">the status line, in each state</figcaption>
+        <ul class="sls">
+          <li><code class="sl"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess $0.42/$1</code><span>calm</span></li>
+          <li><code class="sl run"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess $0.42/$1 · 1 running (deepseek-v4.1-flash-1017)</code><span>while something runs</span></li>
+          <li><code class="sl"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess $0.42/$1 · <b class="resc">rescue</b></code><span>while rescue is on</span></li>
+          <li><code class="sl amber"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess $0.91/$1</code><span>near the daily limit</span></li>
+          <li><code class="sl red"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess month cap $10.00/$10 · paid runs stopped</code><span>the monthly cap is reached</span></li>
+        </ul>
+      </figure>
     </div>
   </div>
 </div>
@@ -376,29 +353,53 @@
 <div class="wrap">
   <div class="sec-head">
     <h2 id="pricing-h">Free, $4 a month, or $8 a seat</h2>
-    <p>Every result on this page except the team rule’s came from the free plugin. Pro runs coding hand-offs on a Mac or Windows laptop too and measures what they save you. Team puts one set of rules and one budget across every seat.</p>
+    <p>Routing, rules, budgets and receipts are free and MIT licensed. Pro is for the person who hits Claude’s usage limit. Team puts one set of rules and one budget across every seat.</p>
   </div>
-  <div class="tiers">
-    <article class="tier hl" aria-labelledby="free-h">
-      <div class="tier-head"><h3 id="free-h">Free</h3></div>
-      <p class="price"><b><small>$</small>0</b></p>
-      <p class="tier-terms">The open-source plugin, with routing, rules and budgets, on your own OpenRouter key. The sandbox for coding work runs locally on Linux.</p>
-      <div class="buy"><a class="btn quiet" href="#try">Install p0ssess</a></div>
-    </article>
-    <article class="tier hl lit" aria-labelledby="pro-h">
-      <div class="tier-head"><h3 id="pro-h">Pro</h3></div>
-      <p class="price"><b><small>$</small>4</b> <span class="per">a month</span> <span class="price-note">or $36 a year</span></p>
-      <p class="tier-terms">For one person. Usage-limit rescue when Claude’s window runs out, a monthly savings report, and a cloud sandbox so coding hand-offs work on a Mac or a Windows laptop too.</p>
-      <div class="buy"><a class="btn" href="pricing/#pro">Get Pro</a></div>
-    </article>
-    <article class="tier hl lit" aria-labelledby="teamp-h">
-      <div class="tier-head"><h3 id="teamp-h">Team</h3></div>
-      <p class="price"><b><small>$</small>8</b> <span class="per">a seat, a month</span></p>
-      <p class="tier-terms">Pro for every seat, and the rule you set once: shared rules that can only tighten, a budget share for each member and a spend dashboard.</p>
-      <div class="buy"><a class="btn" href="pricing/#team">Get Team</a></div>
-    </article>
+  <div class="plans-box">
+  <table class="plans">
+    <caption class="sr-only">What each plan includes</caption>
+    <thead>
+      <tr>
+        <td></td>
+        <th scope="col"><span class="p-name">Free</span> <span class="p-price"><b><small>$</small>0</b></span> <span class="p-per">MIT licensed</span></th>
+        <th scope="col" class="is-pro"><span class="p-name">Pro</span> <span class="p-price"><b><small>$</small>4</b></span> <span class="p-per">a month, or $36 a year</span> <span class="p-for">If you hit Claude’s limit</span></th>
+        <th scope="col"><span class="p-name">Team</span> <span class="p-price"><b><small>$</small>8</b></span> <span class="p-per">a seat, a month</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><th scope="row">Routing, rules, budgets and receipts</th><td><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td><td class="is-pro"><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td><td><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td></tr>
+      <tr><th scope="row">Savings figures on your p0ssess page <small>with a card you can share</small></th><td><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td><td class="is-pro"><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td><td><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td></tr>
+      <tr><th scope="row">Usage-limit rescue <small>p0ssess takes routable work when Claude’s window nears its limit</small></th><td><span class="part">a one-line preview</span></td><td class="is-pro"><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td><td><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td></tr>
+      <tr><th scope="row">Monthly savings report by email</th><td><span class="no" aria-hidden="true"></span><span class="sr-only">Not included</span></td><td class="is-pro"><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td><td><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td></tr>
+      <tr><th scope="row">Local sandbox for coding work <small>Linux with podman</small></th><td><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td><td class="is-pro"><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td><td><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td></tr>
+      <tr><th scope="row">Cloud sandbox on macOS and Windows <small>20 sandbox hours a month</small></th><td><span class="no" aria-hidden="true"></span><span class="sr-only">Not included</span></td><td class="is-pro"><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td><td><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td></tr>
+      <tr><th scope="row">Calibration on your own work</th><td><span class="no" aria-hidden="true"></span><span class="sr-only">Not included</span></td><td class="is-pro"><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td><td><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td></tr>
+      <tr><th scope="row">Shared rules that only tighten <small>a budget share for each member and a spend dashboard</small></th><td><span class="no" aria-hidden="true"></span><span class="sr-only">Not included</span></td><td class="is-pro"><span class="no" aria-hidden="true"></span><span class="sr-only">Not included</span></td><td><svg class="ck" viewBox="0 0 7 7" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path d="M0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM3 4h1v1h-1zM4 3h1v1h-1zM5 2h1v1h-1zM6 1h1v1h-1z"/></svg><span class="sr-only">Included</span></td></tr>
+    </tbody>
+  </table>
+  <p class="plans-cta"><a class="btn quiet" href="#try">Install p0ssess</a><a class="btn" href="pricing/#pro">Get Pro</a><a class="btn quiet" href="pricing/#team">Get Team</a></p>
   </div>
-  <p class="aside">Checkout opens soon. Until it does, the buttons on the pricing page take your email address and we write once when it opens. On every plan, model calls bill to your own OpenRouter key.</p>
+  <p class="aside">On every plan, model calls bill to your own OpenRouter key. Polar runs the checkout and works out the tax. <a href="pricing/">Pricing in full</a></p>
+</div>
+</section>
+
+<section class="sec" id="faq" aria-labelledby="faq-h">
+<div class="wrap faq-cols">
+  <div class="sec-head">
+    <h2 id="faq-h">Questions before you install</h2>
+    <p>Short answers, with the page that holds the long one. Write to <a href="mailto:support@p0ssess.me">support@p0ssess.me</a> for anything else.</p>
+  </div>
+  <div class="faq">
+    <details class="q hl"><summary><h3>What leaves my machine?</h3></summary><div class="a"><p>Your prompts and files go only to the model you hand a job to, through your own OpenRouter key, and every call tells OpenRouter not to route to providers that train on prompts. The p0ssess service never sees a prompt, a file or a file name. To rank routes it gets a short task description, sizes, the stakes and your model limits, and it keeps no request logs.</p><p>Files that look like secrets (<code>.env</code>, keys, credentials) never leave, and a <code>.p0ssess-private</code> file blocks all delegation from a repository. Anonymous outcome records, one line for each finished run with no prompt or file in it, are on by default and one sentence turns them off. With Pro, the cloud sandbox receives the files git tracks so it can run them. <a href="privacy/">Privacy policy</a></p></div></details>
+    <details class="q hl"><summary><h3>Can it spend more than I allow?</h3></summary><div class="a"><p>The limits are enforced by the tools that spend. A new install starts at $1 a day, $10 a month and $0.25 a task. The daily limit warns, the monthly cap stops paid runs, and a job over the task amount waits for one yes from you.</p><p>Each call’s maximum is reserved before it is sent, so parallel calls cannot overshoot, and rescue never spends past your limits. A repository’s own rules file can only tighten them.</p></div></details>
+    <details class="q hl"><summary><h3>What happens when my OpenRouter credit runs out?</h3></summary><div class="a"><p>The hand-off stops and says so in one line: <q>Your OpenRouter balance is too low for this run. Add credits at https://openrouter.ai/settings/credits, then ask again.</q> A run that fails before it reaches a model costs nothing. Claude itself is untouched, so the work can stay with Claude until you top up.</p></div></details>
+    <details class="q hl"><summary><h3>Does p0ssess touch my Claude account?</h3></summary><div class="a"><p>It never reads, stores or relays your Claude credentials. To know when a window is nearly used up, it reads the usage figures Claude Code reports to its own status line, on your machine.</p></div></details>
+    <details class="q hl"><summary><h3>What does rescue move, and what stays with Claude?</h3></summary><div class="a"><p>Rescue takes routable work: research, summaries, bulk and media work, and code edits that fit. Critical work, such as auth, infrastructure, production and money, is never moved silently. Claude names the model and the cost and asks once for that task. <q>Keep this on Claude</q> always wins, and <q>turn rescue off</q> ends it.</p></div></details>
+    <details class="q hl"><summary><h3>Is the saving a real number?</h3></summary><div class="a"><p>It is a price-list comparison, and your p0ssess page says so. Each run’s tokens are priced at Claude’s list price and set against what OpenRouter charged for the same call. A Claude run could have taken more or fewer tokens, and Claude’s own planning and checking is billed as usual, so what a job saves depends on the job. Runs where Claude would have been cheaper are counted and shown.</p></div></details>
+    <details class="q hl"><summary><h3>Do I need Pro to save money?</h3></summary><div class="a"><p>No. Routing, rules, budgets, receipts and the savings figures are all in the free plugin, and the unit-test runs on this page used it. Pro adds rescue, the monthly report by email and the cloud sandbox.</p></div></details>
+    <details class="q hl"><summary><h3>How do I cancel, and what happens then?</h3></summary><div class="a"><p>Polar runs the checkout and gives you a portal to cancel or change plans. When Pro ends you drop back to Free and the routing keeps working. Refunds are set out in the <a href="refunds/">refund policy</a>.</p></div></details>
+    <details class="q hl"><summary><h3>Where does it run?</h3></summary><div class="a"><p>On Linux (amd64 and arm64), macOS on Apple silicon and Windows x64, with Claude Code 2.1.319 or later. Media, read-only and one-shot jobs work everywhere. Coding hand-offs need a sandbox: rootless podman on Linux, or Pro’s cloud sandbox on macOS and Windows.</p></div></details>
+  </div>
 </div>
 </section>
 
@@ -406,7 +407,7 @@
 <div class="wrap">
   <div class="sec-head">
     <h2 id="try-h">Install the free plugin</h2>
-    <p>You need two commands and an OpenRouter key. Releases are served from the project’s own repository, next to the source, so you can see exactly what you run.</p>
+    <p>Two commands and an OpenRouter key. The tour opens in your first session and takes about a minute.</p>
   </div>
   <div class="get-cols">
     <div class="get-col">
@@ -416,13 +417,32 @@
         <li class="hl"><p>Put your OpenRouter key where p0ssess reads it.</p><div class="cmd"><pre><code><span class="ln">mkdir -p ~/.config/p0ssess/secrets</span>
 <span class="ln">install -m 600 /dev/null ~/.config/p0ssess/secrets/openrouter_key</span>
 <span class="ln">"${EDITOR:-vi}" ~/.config/p0ssess/secrets/openrouter_key</span></code></pre><button class="copy-btn" type="button" aria-label="Copy the commands" hidden>Copy</button></div></li>
-        <li class="hl"><p>Start Claude Code and run <code>/p0ssess:p0ssess-me</code>. Then tell it your first rule. Settings changes wait for your yes, and <code>p0ssess setup undo</code> reverts them.</p></li>
+        <li class="hl"><p>Start Claude Code. The tour shows your limits, runs one live demo capped at a cent, and tells you where to see spend. Settings changes wait for your yes, and <code>p0ssess setup undo</code> reverts them.</p></li>
       </ol>
       <h3>What you need</h3>
       <p class="needs">Claude Code 2.1.319 or later, on any Claude plan or an API key, and an OpenRouter API key for the other models to bill to. The local sandbox for coding work needs Linux with rootless podman. On macOS and Windows, media and one-shot jobs work without it, and Pro’s cloud sandbox covers the rest.</p>
     </div>
     <div class="get-col">
-      <h3>Downloads</h3>
+      <figure class="term tour" aria-labelledby="tour-cap">
+        <figcaption class="tag" id="tour-cap">the first thing you see</figcaption>
+        <div class="tcard">
+          <p class="tc-top"><span><span class="mark" aria-hidden="true">ᗣ</span> p0ssess tour</span><span>1 / 4</span></p>
+          <p>Welcome to p0ssess. Glad you're here.</p>
+          <p>Claude stays in charge. Heavy, bulk and media work goes to cheaper models on OpenRouter, inside limits you set.</p>
+          <p class="flow"><span>you → Claude → p0ssess → cheaper model</span><span><i class="lt" aria-hidden="true">→</i><span class="sr-only">back comes the</span> result + (model, cost, saved ~$)</span></p>
+          <p>Three quick steps: your limits, a live demo, where to look.</p>
+        </div>
+        <ul class="choices">
+          <li><b>Start the tour</b><span>about a minute; one live demo capped at $0.01</span></li>
+          <li><b>Skip the tour</b><span>/p0ssess:tour runs it again any time</span></li>
+        </ul>
+      </figure>
+    </div>
+  </div>
+
+  <details class="by-hand">
+    <summary>Download a binary by hand</summary>
+    <div class="by-hand-in">
       <p class="release-state" data-release-state>No release is published yet. These buttons turn on with the first one.</p>
       <ul class="dl">
         <li class="hl"><span class="what">Linux, x86-64</span><code class="file">p0ssess-linux-amd64</code><a class="dl-btn" role="link" aria-disabled="true" aria-label="Download p0ssess-linux-amd64" data-asset="p0ssess-linux-amd64">Download</a><code class="sum" data-sum="p0ssess-linux-amd64" hidden></code></li>
@@ -431,9 +451,14 @@
         <li class="hl"><span class="what">Windows, x64</span><code class="file">p0ssess-windows-amd64.exe</code><a class="dl-btn" role="link" aria-disabled="true" aria-label="Download p0ssess-windows-amd64.exe" data-asset="p0ssess-windows-amd64.exe">Download</a><code class="sum" data-sum="p0ssess-windows-amd64.exe" hidden></code></li>
         <li class="hl"><span class="what">The plugin with all four binaries</span><code class="file" data-archive-name>p0ssess-&lt;version&gt;.tar.gz</code><a class="dl-btn" role="link" aria-disabled="true" aria-label="Download the plugin archive" data-asset="p0ssess-{version}.tar.gz">Download</a></li>
       </ul>
-      <p>You rarely need these by hand. The plugin’s launcher fetches the binary for your platform and runs it only if its SHA-256 matches the sums committed in the repository. Builds are reproducible, so anyone can rebuild a release and compare.</p>
+      <p>You rarely need these. The plugin’s launcher fetches the binary for your platform and runs it only if its SHA-256 matches the sums committed in the repository. Builds are reproducible, so anyone can rebuild a release and compare.</p>
       <p class="get-links"><a role="link" aria-disabled="true" data-asset="SHA256SUMS">SHA256SUMS</a><a role="link" aria-disabled="true" data-link="repo">View the source</a><a role="link" aria-disabled="true" data-link="release">Release notes</a></p>
     </div>
+  </details>
+
+  <div class="last hl lit">
+    <p class="last-say">Hit Claude’s limit often? Pro keeps you working for $4 a month.</p>
+    <p class="cta"><a class="btn" href="pricing/#pro">Get Pro</a><a class="more" href="pricing/">See the pricing page</a></p>
   </div>
 </div>
 </section>
@@ -445,7 +470,7 @@
   <div>
     <nav class="foot-nav" aria-label="More pages"><a href="pricing/">Pricing</a><a href="business/">For business</a><a href="terms/">Terms</a><a href="privacy/">Privacy</a><a href="data/">Data</a><a href="refunds/">Refunds</a></nav>
     <p>The p0ssess plugin is MIT licensed. By s3ym0ur. Pro and Team are sold by New Deal Systems LLC.</p>
-    <p class="small">Every figure on this site is a measured run, and the <a href="business/#method">method</a> says how. Film frames: <cite>Big Buck Bunny</cite>, © Blender Foundation, CC BY 3.0, peach.blender.org. Set in Obel Mono and IBM Plex Sans, with one glyph from Noto Sans Canadian Aboriginal, all under the <a href="fonts/OFL-obel-mono.txt">SIL Open Font License</a>.</p>
+    <p class="small">Every figure on this site is a measured run or a price list, and the <a href="business/#method">method</a> says how. Set in Obel Mono and IBM Plex Sans, with one glyph from Noto Sans Canadian Aboriginal, all under the <a href="fonts/OFL-obel-mono.txt">SIL Open Font License</a>.</p>
   </div>
 </div>
 </footer>

@@ -4,9 +4,8 @@
 // other request. Console errors, failed requests, outside requests and horizontal overflow
 // are printed.
 // --full adds a full-page capture at each size.
-// --live also captures the motion: the hero's rule turning on at fixed moments after the line
-// of dollars is on screen (desktop and phone), the hand-off figure part-way through, and the
-// island over a later section.
+// --live also captures the motion: the hero's opening at fixed moments after the page loads
+// (desktop and phone), the rescue part-way through, and the island over a later section.
 // --pages adds full-page captures of the pages beside the home page (pricing, business, welcome,
 // data, terms, privacy, refunds) at each size, and of the pricing page in each state: as it ships,
 // then against a cloud API that this file answers itself (nothing leaves the machine): opening
@@ -39,11 +38,11 @@ const srv = http.createServer((req, res) => {
   fs.createReadStream(file).pipe(res);
 });
 
-// The hero (its line of dollars), then each section.
-const ids = ["top", "savings", "proof", "how", "team", "senses", "limits", "pricing", "try", "end"];
+// The hero, then each section.
+const ids = ["top", "rescue", "pro", "savings", "how", "limits", "pricing", "faq", "try", "end"];
 const sizes = [["desk", { width: 1440, height: 900 }], ["phone", { width: 390, height: 844 }]];
-// Moments of the hero's ride, in ms after the line of dollars is on screen: at Claude, part-way, at p0ssess.
-const sweepAt = [600, 1700, 3400];
+// Moments of the hero's opening, in ms after the page loads: the window filling, the line printed, the receipts in.
+const sweepAt = [350, 1100, 2200];
 const log = [];
 
 // The pages beside the home page.
@@ -144,8 +143,7 @@ srv.listen(0, "127.0.0.1", async () => {
     for (const [name, viewport] of sizes) {
       if (!want("hero")) continue;
       const { ctx, pg } = await open(viewport, "no-preference", "live-" + name);
-      // The ride starts once the line of dollars is on screen; on a phone that takes a scroll.
-      if (name === "phone") await scrollTo(pg, ".lanes-box", "center");
+      await pg.reload({ waitUntil: "commit" });
       const t0 = Date.now();
       for (const [i, at] of sweepAt.entries()) {
         const wait = at - (Date.now() - t0);
@@ -155,15 +153,15 @@ srv.listen(0, "127.0.0.1", async () => {
       await ctx.close();
     }
     const { ctx, pg } = await open(sizes[0][1], "no-preference", "live");
-    if (want("how")) {
-      await scrollTo(pg, ".relay", "center");
+    if (want("rescue")) {
+      await scrollTo(pg, "#seq", "center");
       await pg.waitForTimeout(2200);
-      await shot(pg, "live-how.png");
+      await shot(pg, "live-rescue.png");
     }
-    if (want("team")) {
-      await scrollTo(pg, "#team", "start");
+    if (want("limits")) {
+      await scrollTo(pg, "#limits", "start");
       await pg.waitForTimeout(700);
-      await shot(pg, "live-team.png");
+      await shot(pg, "live-limits.png");
     }
     await ctx.close();
   }
@@ -296,12 +294,15 @@ srv.listen(0, "127.0.0.1", async () => {
   if (og) {
     const { ctx, pg } = await open({ width: 1200, height: 630 }, "reduce", "og");
     await pg.waitForTimeout(500);
-    // The share image is the promise, the rule and the line of dollars. The paragraph, the page's
-    // links and the small print are left out, so the line fits and nothing is cut mid-line.
-    // The page is drawn at three quarters, as on a 1600 px screen, so the whole chart is in the frame.
+    // The share image is the promise and what p0ssess prints beside it. The page's links and the
+    // small print are left out. The page is drawn at three quarters, as on a 1600 px screen, so
+    // the whole first screen is in the frame.
     await pg.evaluate(() => {
-      document.querySelectorAll(".topnav, .lede, .terms, .dline .note, .dline .runs").forEach((el) => { el.style.display = "none"; });
+      document.querySelectorAll(".topnav, .terms, main > section:not(.hero), footer").forEach((el) => { el.style.display = "none"; });
       document.documentElement.style.zoom = "0.75";
+      // The hero sits in the middle of what is left of the frame under the top bar.
+      const hero = document.querySelector(".hero"), bar = document.querySelector(".top").offsetHeight;
+      hero.style.cssText = `display: grid; align-content: center; min-height: ${innerHeight / 0.75 - bar}px; padding-block: 0 ${bar / 2}px;`;
     });
     await pg.waitForTimeout(300);
     await pg.screenshot({ path: path.resolve(og) });

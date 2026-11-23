@@ -1,31 +1,33 @@
 # p0ssess website
 
-The site is static: `index.html`, `style.css`, `page.js`, `release.js`, `ghost.svg`, two images (`film-strip.webp`, `ghost-lantern.webp`), `og.png` (the share image) and `fonts/`. No build step, no framework, and no requests to anything but its own files, with two exceptions on the pricing and welcome pages: calls to the cloud API, and Polar's checkout in a frame once a reader opens it.
+The site is static: `index.html`, `style.css`, `page.js`, `release.js`, `ghost.svg`, one image (`film-strip.webp`, on the business page), `og.png` (the share image), `robots.txt`, `sitemap.xml` and `fonts/`. No build step, no framework, and no requests to anything but its own files, with two exceptions on the pricing and welcome pages: calls to the cloud API, and Polar's checkout in a frame once a reader opens it.
 
 Beside the home page are seven pages, each an `index.html` in its own folder: `pricing/`, `business/`, `welcome/`, `data/`, `terms/`, `privacy/` and `refunds/`. They load `style.css`, then `pages.css` and `pages.js`. `vendor/` holds the one script that is not ours, Polar's checkout embed.
 
-The home page is an advertisement, and its subject is cost. In order:
+The home page is a product page. Its subject is what p0ssess costs you and saves you, and what happens when Claude's usage limit runs out. In order:
 
-1. **The hero.** The headline, what p0ssess is, the two paid plans, and beside them one rule and one job: what a run of it costs with the rule, against three ways of running Claude without it, with every measured run on a line of dollars. A three-way switch picks which Claude setup the saving is measured against.
-2. **The proof.** The bar a comparison has to clear, and a second job that cleared it by a team rule alone, on the hero's scale.
-3. **How it works.** The hand-off drawn as three stops, and where one run's money went.
-4. **For a team.** One rule from the owner reaching every seat, with the one measured result of a team rule alone.
-5. **New senses.** What Claude can't do alone: a film watched, a recording heard, an image made. It is here, and it is second.
-6. **Your limits.** Budgets, rules, the sandbox and what it won't do.
-7. **Pricing**, then **Install**.
+1. **The hero.** The headline, the rescue line under it, what p0ssess is, and the two ways in: install, and see Pro. Beside them is what p0ssess prints: a Claude window at 91%, the line that starts a rescue, and four measured hand-offs with their receipts.
+2. **What a rescue looks like.** Four moments down one terminal, each with its note: the window fills, the one line, the work that moves, the hand-back. A switch shows what Free sees instead.
+3. **Pro.** The price and the three reasons to pay it, each under the line of p0ssess's that shows it.
+4. **Savings.** One measured call priced the way the plugin prices a run, the savings card those figures make, where the figures show up, and one whole job measured both ways.
+5. **How it works.** One statement, and the hand-off drawn as three stops.
+6. **Your limits.** The envelope a new install starts with, beside the `/p0ssess:p0ssess-me` card and the status line in each state.
+7. **Plans** side by side, then **Questions**, then **Install**.
+
+The terminal output on the page is set in HTML from the renderings in `../assets/readme/` (the hero's receipts, the hand-off, the tour card, the `/p0ssess:p0ssess-me` card and the status line), so it reflows on a phone and uses the page's fonts. When one of those renderings changes, change the page with it.
 
 A pill dock (the island) is fixed to the top once the page scrolls. It holds a dot for each part, the name of the one in view, and the way to Pro.
 
 ## The rule this site keeps
 
-Every number on these pages is a measured run, and each one is listed below with its source. Nothing is estimated, rounded up or invented, and a result that a skeptic could wave away is not shown. When a figure changes, change it here in the same commit.
+Every number on these pages is a measured run, a price or a limit the plugin ships with, or, in the savings card on the home page, a figure the page works out from a measured call and says so. Each one is listed below with its source. Nothing is estimated, rounded up or invented, and a result that a skeptic could wave away is not shown. When a figure changes, change it here in the same commit.
 
 The pages must keep saying these things, because they are true:
 
-- The benchmark's datasets were built for it, a script graded them, and Claude is priced at API list price. The note under the hero's chart says so and links to the method.
+- The benchmark's datasets were built for it, a script graded them, and Claude is priced at API list price. The home page says so beside the one whole job it prints, and the business page gives the method.
 - Most of the jobs tested did not clear the bar. The home page says so and the business page shows every one of them.
-- The hero's figures are not from a team rule. On unit tests a team rule alone failed on accuracy, so the hero calls it a rule, and its small print says it was a personal rule with one line of instructions. The only measured claim for a team rule alone is ticket triage at 300 tickets, and it is printed with its caveats: three to four times as long a run, and no saving at 60 tickets.
-- The Sonnet result is against Sonnet doing the work itself. Its own Haiku subagent came within the spread, and the hero shows that lane and says so.
+- The unit-test figures are not from a team rule. On unit tests a team rule alone failed on accuracy, so the home page calls it a personal rule and says the rule was also written as a line in Claude's instructions. The only measured claim for a team rule alone is ticket triage at 300 tickets, and it is printed with its caveats: three to four times as long a run, and no saving at 60 tickets.
+- The Sonnet result is against Sonnet doing the work itself. Its own Haiku subagent came within the spread, and the business page says so. The home page prints no Sonnet figure.
 - The savings runs used the free plugin. The pricing page says so.
 - On the film, p0ssess cost more in total and took longer. Only the cost for each point scored is lower. Do not write that it was cheaper.
 
@@ -37,18 +39,19 @@ Browsers refuse web fonts over `file://`, so serve the folder:
 python3 -m http.server --bind 127.0.0.1 --directory site 8000
 ```
 
-Then open <http://127.0.0.1:8000/>, or a page beside it such as <http://127.0.0.1:8000/pricing/>. The site is dark only. The hero is two columns from 1024 px, sections split in two from 860 px, and narrower screens stack everything.
+Then open <http://127.0.0.1:8000/>, or a page beside it such as <http://127.0.0.1:8000/pricing/>. The site is dark only. The hero is two columns from 1024 px, the rescue from 900 px, most sections split in two from 860 or 960 px, and narrower screens stack everything.
 
 ## Motion
 
-One motion language: arrivals ease out (`--out`), travel that stays on screen eases in and out (`--io`), and the spring (`--spring`) is kept for the island, the two-way switches and a press. Nothing fades up as it scrolls in. What moves:
+One motion language: arrivals ease out (`--out`), travel that stays on screen eases in and out (`--io`), and the spring (`--spring`) is kept for the island, the switches and a press. Nothing fades up as it scrolls in. What moves:
 
-- **The ride**, the page's one authored moment. With motion allowed the hero opens with the ghost where Claude stands and, once the line of dollars is on screen, it rides to p0ssess's mean run in 1.5 seconds. The line it leaves behind is the saving, and the figure counts down beside it. Choosing another view rides again, between the two views.
-- **Hairlines** draw out of their 24 px violet start when they scroll into view, a chart's **marks** land, and the bars of a side-by-side grow from the baseline, each once.
-- **The hand-off** plays once when it scrolls into view (4.8 seconds) and again on Replay.
+- **The opening.** With motion allowed the hero's terminal fills its window to 91%, prints the line and lands the four receipts, once, in about a second and a half. It is CSS alone.
+- **The rescue**, the page's one authored moment. Each of its four rows plays when it scrolls into view: the note lights and its output prints. Rows that arrive together follow one another, 1.15 seconds apart. Replay runs all four again.
+- **The statement** above the hand-off lights a word at a time as it climbs the screen, and stays lit.
+- **Hairlines** draw out of their 24 px violet start when they scroll into view, each once.
 - **The island** slides its violet dot to the part in view and resizes to its name.
 
-Every animated part has a complete still state in the markup. With `prefers-reduced-motion: reduce`, or with scripts off, the page shows that: the ghost at p0ssess's mean, every run on its lane, the hand-off possessed with one measured job named, marks and bars in place. With scripts off the switch still changes the figures, lights the lanes and moves the ghost, through `:has()`. If scripting is on but `page.js` never runs, the hero's proof shows itself after 2.5 seconds.
+Every animated part has a complete still state in the markup. With `prefers-reduced-motion: reduce`, or with scripts off, the page shows that: the window at 91%, the line and the receipts in place, all four rows of the rescue, the statement lit. With scripts off the rescue still switches between Pro and Free, through `:has()`, and the savings example shows its figures for Claude Sonnet and 100 runs without its two switches.
 
 ## The savings benchmark
 
@@ -116,11 +119,19 @@ magick strip.png -quality 78 -define webp:method=6 film-strip.webp
 | On the pages | Source |
 |---|---|
 | The speech recording. Claude alone: about 7 min, $0.0845, transcript wrong. With p0ssess: 8 s, $0.0519, transcript correct. | p0ssess benchmark run, 2026-11-11. The same speech recording was given to Claude Sonnet 5.5 twice. Alone, Claude installed faster-whisper (base.en) and ran it; with p0ssess the file went to whisper-large-v3-turbo. The page does not name the recording or quote either transcript. The bar under "8 s" is 8 of 420 seconds, 1.9%. |
-| The image of a ghost with a lantern (`ghost-lantern.webp`), $0.0070 on recraft-v4.1-flash | A real p0ssess 0.5.4 run on 2026-11-11 through the p0ssess agent: the prompt on the page word for word, recraft/recraft-v4.1-flash, no resolution set, $0.0070. It returned an 832×1280 WebP; the page shows rows 150 to 774, saved at quality 80. |
-| In the hand-off figure: $0.0162, a ten-minute film on qwen3.8-omni-flash | The film test's run B, the other model's part of $0.1140. |
-| In the hand-off figure: $0.0070, a 1024-pixel image on recraft-v4.1-flash | `../docs/MEDIA.md`, "Generate image (image API)", $0.007000, 1024×1024. |
+| The hero's receipts: `$0.03` for the unit tests of 15 Python modules and `$0.08` for 300 support tickets, on deepseek-v4.1-flash-1017 | The OpenRouter part of arm B run 1 of each job, $0.0291 and $0.0781 (the table above), printed to the cent as a receipt prints them. |
+| The hero's receipts: `$0.02`, a ten-minute film on qwen3.8-omni-flash | The film test's run B, the other model's part of $0.1140: $0.0162. |
+| The hero's receipts: `$0.0070`, a 1024-pixel image on recraft-v4.1-flash | `../docs/MEDIA.md`, "Generate image (image API)", $0.007000, 1024×1024. |
+| The rescue: its three lines, the 85% at which it starts, the example's 91% and 3:40 PM | `../internal/rescue/rescue.go`, word for word, and `../README.md`, "Usage-limit rescue". The line Free sees is printed for one routable task. The question before critical work is the one `../internal/pme/hook/rescue.go` has Claude ask, with its two blanks left as blanks. |
+| Savings: the call priced twice, 195 tokens in, 1,456 out, $0.000729 on deepseek-v4.1-flash | `../docs/MEDIA.md`, the verification table: "PDF table to JSON" with `reasoning: low`. |
+| Savings: Claude's list prices for a million tokens in and out, $4 and $20, $2 and $10, $0.10 and $0.50 | `../docs/ENGINE.md`, "Savings proof" (`calibrate.PriceTable`). |
+| Savings: the card (`~$1.42`, 95%, `$1.49`, `$0.073` and `165k tokens` for 100 runs against Sonnet) | Worked out by `page.js` from the call and the prices above, for 1, 10, 100 or 1,000 runs like it. It is an example and the page says so. The arithmetic and the way each figure prints follow `../internal/savings`, and a receipt names a saving from half a cent, as in `../internal/server/wire.go`. The markup holds the figures for Sonnet and 100 runs; change them with the script. |
+| Savings: one whole job, $1.26 a run alone and $0.28 with p0ssess, all 45 test files passing | The table above: arms A and B, `unit-tests`, Opus. |
+| Your limits: $1 a day, $10 a month, $0.25 a task. Pro: 20 sandbox hours a month, `queued 2nd, ~4 min` | `../README.md`, "The spending envelope" and "Where the sandbox runs". |
+| The `/p0ssess:p0ssess-me` card, the tour card and the status line's states | `../assets/readme/me-card.svg`, `tour.svg` and `statusline.svg`, with the version from `release.js`. The `rescue` state and its color are from `../internal/pme/statusline`. |
+| Questions: the line when OpenRouter credit runs out | `creditsLine` in `../internal/relay/heal.go`, word for word. |
 
-The rules in "Your limits" and the status line segment are from `../README.md` and `../docs/ENGINE.md`. What it won't do follows `../README.md` (Privacy, Respects a budget, Rates stakes) and `../docs/DESIGN.md`. The Team command is the client's own (`p0ssess team rule add`), with the use case the benchmark's team rule named for ticket triage (`bulk-classify-tag`), and what Team includes follows the terms of service.
+The plans table follows the Plans table in `../README.md`. The answers under Questions follow `../README.md` (Security and privacy, The spending envelope, Usage-limit rescue) and `../docs/ENGINE.md` (Savings proof). The questions and their answers are repeated in the home page's JSON-LD (`FAQPage`), and the prices in the `SoftwareApplication` block on the home and pricing pages: change the text and the block together. The Team command is the client's own (`p0ssess team rule add`), with the use case the benchmark's team rule named for ticket triage (`bulk-classify-tag`), and what Team includes follows the terms of service.
 
 ## Pricing, business and policy pages
 
@@ -203,40 +214,36 @@ The text is the policy's Markdown, set mechanically: headings get an id from the
 
 A chart is an inline SVG with no `viewBox`, so its text keeps its size and every horizontal position is a percentage of the chart's width: the CSP forbids inline styles, and attributes are not styles. The axis starts at zero.
 
-Every run is one mark. A violet square is a run with p0ssess, a gray circle is Claude alone and a gray ring is Claude with its own Haiku subagent, so the three are told apart by shape as well as color. Runs that land on the same cent are stepped apart, and each mark carries a 2 px ring of the ground. The band behind a group is its range, lowest run to highest. Each group has its name and its range in words beside it, and the hero's and the business page's charts have a table of the same runs under them, so nothing is readable only from a mark. With a pointer on a mark, `page.js` and `pages.js` show that run's figures beside it (`data-tip`).
-
-The hero's chart is five lanes on one axis, a lane for each setup (`ol.lanes`). The lanes of the view in hand are lit and the others step back. Under them, as HTML, are the ghost (`.head`), which stands on the axis at p0ssess's mean, the saving (`.span`), drawn from the ghost to the mean of the Claude setup in view, and the saving in words above it (`.span-say`). `--at` is the ghost's position and `--to` the other end, as percentages of the axis. Both are registered custom properties, so the ride between two views can be transitioned. The five means are in `.hero` in `style.css` (`--p-opus` and the rest).
+Every run is one mark. A violet square is a run with p0ssess, a gray circle is Claude alone and a gray ring is Claude with its own Haiku subagent, so the three are told apart by shape as well as color. Runs that land on the same cent are stepped apart, and each mark carries a 2 px ring of the ground. The band behind a group is its range, lowest run to highest. Each group has its name and its range in words beside it, and the business page's charts have a table of the same runs under them, so nothing is readable only from a mark. With a pointer on a mark, `pages.js` shows that run's figures beside it (`data-tip`).
 
 The marks, the legends' ranges and the tables of runs sit between `<!--gen:NAME-->` comments in the HTML, as does the table of figures above. A script kept with the benchmark writes them from its run records, so the charts and the numbers cannot drift apart. To change one by hand, change it between its comments and in the table above.
 
-Each side-by-side under "new senses" is a table (`table.duel-t`) whose first measure is also drawn as a bar, both rows on one scale from zero. The bar under "Where one run's money went" is three `rect`s whose widths are each part's share.
+Each side-by-side on the business page is a table (`table.duel-t`) whose first measure is also drawn as a bar, both rows on one scale from zero.
 
 ## The mark
 
-`ghost.svg` is a copy of `../assets/ghost.svg`. It is the tab icon, the lockup, the island's home link, the footer mark, the rider on the hero's line, both ghosts in the hand-off and the seats in the Team figure, so replacing that one file changes all of them. It is drawn on a 16-unit grid, like the wordmark's pixels, and every use is a whole multiple of the unit (`--u`) so it stays crisp. The blink covers the top of the two slit eyes with the mask's color, at columns 6 and 9, rows 5 and 6 (`.g .lid` and `--ghost-mask` in `style.css`). Move those if the eyes move. The ghost blinks when it starts a ride and when it lands, never on a loop.
+`ghost.svg` is a copy of `../assets/ghost.svg`. It is the tab icon, the lockup, the island's home link, the footer mark and the ghost in the hand-off's Haiku pill, so replacing that one file changes all of them. It is drawn on a 16-unit grid, like the wordmark's pixels, and every use is a whole multiple of the unit (`--u`) so it stays crisp. The blink covers the top of the two slit eyes with the mask's color, at columns 6 and 9, rows 5 and 6 (`.g .lid` and `--ghost-mask` in `style.css`). Move those if the eyes move. The ghost blinks once on the welcome page when a payment is confirmed, never on a loop.
 
 ## The hand-off
 
-`figure.relay` is three stops on one line: Claude, the possessed Haiku, and another model. The timeline is CSS, 4.8 seconds, with every part on the same clock; the comment above the keyframes in `style.css` gives it. It ends on the still frame, with the answer's credit beside Claude. `page.js` measures where the riding ghost lands (the seat in the Haiku pill) and names the next job on each Replay.
-
-The jobs are in `data-jobs` on the figure (model, sentence, credit), and the same four are in its screen-reader caption; change both together. Each is a measured call from the tables above.
+`ol.route` is three stops on one violet wire: Claude, the possessed Haiku, and a cheaper model, with the receipt that comes back set beside Claude. It is the README's hand-off figure (`../assets/readme/handoff-*.svg`) in HTML, and it does not move. From 860 px it runs left to right; below that the stops stack and each hangs its length of wire down to the next.
 
 ## Going live
 
-`release.js` is the one place the pages read addresses from: `repo` (the repository's page on the git server, without a trailing slash), `docs` (the documentation site), `version` (the published release, without the `v`) and `offer` (above). With `repo` and `version` set, the download buttons, `SHA256SUMS` and "Release notes" point at `<repo>/releases/download/v<version>/<file>` and `<repo>/releases/tag/v<version>`, and the install command shows `<repo>.git`. With either one empty the download controls stay disabled and no outside link is shown. With `docs` empty the Docs link is hidden.
+`release.js` is the one place the pages read addresses from: `repo` (the repository's page on the git server, without a trailing slash), `docs` (the documentation site), `version` (the published release, without the `v`) and `offer` (above). The home page prints `version` in the line under the hero's buttons and in the `/p0ssess:p0ssess-me` card. With `repo` and `version` set, the download buttons, `SHA256SUMS` and "Release notes" point at `<repo>/releases/download/v<version>/<file>` and `<repo>/releases/tag/v<version>`, and the install command shows `<repo>.git`. With either one empty the download controls stay disabled and no outside link is shown. With `docs` empty the Docs link is hidden.
 
 For each release:
 
 1. Publish it (see `../docs/RELEASE.md`), then set `version` to it. Set it only once the files are up, since the buttons link straight to them. The files are `p0ssess-linux-amd64`, `p0ssess-linux-arm64`, `p0ssess-darwin-arm64`, `p0ssess-windows-amd64.exe`, `p0ssess-<version>.tar.gz` and `SHA256SUMS`.
 2. Optionally paste that release's sums into `sha256` (from its `SHA256SUMS`, which is `../dist/SHA256SUMS` at the tag) to print each under its file. Never type one from memory.
 
-The site's own address, https://p0ssess.me, is in each page's canonical link and `og:url`, and in the home page's `og:image`. `og.png` is the share image for link previews: the top of the hero at 1200×630, taken with reduced motion at a device scale of 1, with the small print under the chart hidden so nothing is cut mid-line. Retake it when the hero changes (`shoot.js --og`), and keep `og:description` and `og:image:alt` in step.
+The site's own address, https://p0ssess.me, is in each page's canonical link and `og:url`, and in the home page's `og:image`. `og.png` is the share image for link previews: the hero alone at 1200×630, taken with reduced motion at a device scale of 1 and drawn at three quarters, with the top bar's links and the line under the buttons left out. Retake it when the hero changes (`shoot.js --og`), and keep `og:description` and `og:image:alt` in step.
 
 With scripts off the download buttons stay disabled, because the addresses live in the script.
 
 ## Screenshots
 
-`shoot.js` serves the folder on 127.0.0.1, blocks every other request, and captures 1440×900 and 390×844 with reduced motion, so the captures are deterministic: the top, the hero's line, each section and the end. `--only name,name` retakes single shots and `--full` adds full-page captures. `--pages` adds the six pages beside the home page (below). `--live` adds captures with motion allowed (`live-*.png`): the hero's ride at three moments on each size, the hand-off part-way through, and the island over a later section. `--og FILE` writes the share image. It needs Node, `playwright-core` and a Chromium-based browser:
+`shoot.js` serves the folder on 127.0.0.1, blocks every other request, and captures 1440×900 and 390×844 with reduced motion, so the captures are deterministic: the top, the hero's line, each section and the end. `--only name,name` retakes single shots and `--full` adds full-page captures. `--pages` adds the six pages beside the home page (below). `--live` adds captures with motion allowed (`live-*.png`): the hero's opening at three moments on each size, the rescue part-way through, and the island over a later section. `--og FILE` writes the share image. It needs Node, `playwright-core` and a Chromium-based browser:
 
 ```sh
 node site/shoot.js --browser /path/to/chromium --out site/shots --full --live
@@ -265,7 +272,7 @@ It prints console errors, failed and outside requests, failed checks and any hor
 
 ## Deploy
 
-Copy `index.html`, `style.css`, `pages.css`, `page.js`, `pages.js`, `release.js`, `ghost.svg`, `film-strip.webp`, `ghost-lantern.webp`, `og.png`, `fonts/`, `vendor/` and the seven page folders (`pricing/`, `business/`, `welcome/`, `data/`, `terms/`, `privacy/`, `refunds/`, each with its `index.html`) to any static host. Without `vendor/` checkout still works, as Polar's own page. The pages link to each other as folders (`../pricing/`), so the host has to serve a folder's `index.html` for its address; with nginx, `try_files $uri $uri/` and `index index.html` do that. `README.md`, `shoot.js`, `shots/` and `docs-build/` are not needed there. `film-still.png` is no longer on any page; it stays in the folder for a deploy script that copies it by name.
+Copy `index.html`, `style.css`, `pages.css`, `page.js`, `pages.js`, `release.js`, `ghost.svg`, `film-strip.webp`, `og.png`, `robots.txt`, `sitemap.xml`, `fonts/`, `vendor/` and the seven page folders (`pricing/`, `business/`, `welcome/`, `data/`, `terms/`, `privacy/`, `refunds/`, each with its `index.html`) to any static host. Without `vendor/` checkout still works, as Polar's own page. The pages link to each other as folders (`../pricing/`), so the host has to serve a folder's `index.html` for its address; with nginx, `try_files $uri $uri/` and `index index.html` do that. `README.md`, `shoot.js`, `shots/` and `docs-build/` are not needed there. `film-still.png` and `ghost-lantern.webp` are no longer on any page; they stay in the folder for a deploy script that copies them by name. `sitemap.xml` lists the seven public pages (not `welcome/`): add a page there when one is added.
 
 Every page carries a strict Content Security Policy in a `<meta>` tag. If the host can set headers, send the same policy as a header and add what a meta tag cannot express. For `/pricing/` and `/welcome/` the header also needs the page's `connect-src` (see "The offer"), and for `/pricing/` its `frame-src` and the hash in its `style-src` (see "Checkout"), or the header will block what the meta tag allows:
 
@@ -275,7 +282,7 @@ Referrer-Policy: no-referrer
 X-Content-Type-Options: nosniff
 ```
 
-Serve `.woff2` as `font/woff2` and `.webp` as `image/webp`, and cache `fonts/` and the images for a long time. Outside addresses are only followed when someone clicks a link; the pages load nothing from them, except the calls the pricing and welcome pages make to the cloud API once `offer.api` is set, and Polar's checkout in its frame once a reader opens it. Uncompressed, the home page and everything it loads come to about 190 KB.
+Serve `.woff2` as `font/woff2` and `.webp` as `image/webp`, and cache `fonts/` and the images for a long time. Outside addresses are only followed when someone clicks a link; the pages load nothing from them, except the calls the pricing and welcome pages make to the cloud API once `offer.api` is set, and Polar's checkout in its frame once a reader opens it. Uncompressed, the home page and everything it loads come to about 170 KB, with no image but the mark.
 
 ## Fonts
 
