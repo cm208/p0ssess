@@ -1,6 +1,6 @@
 # p0ssess website
 
-The site is static: `index.html`, `style.css`, `page.js`, `release.js`, `ghost.svg`, one image (`film-strip.webp`, on the business page), `og.png` (the share image), `robots.txt`, `sitemap.xml` and `fonts/`. No build step, no framework, and no requests to anything but its own files, with two exceptions on the pricing and welcome pages: calls to the cloud API, and Polar's checkout in a frame once a reader opens it.
+The site is static: `index.html`, `style.css`, `page.js`, `release.js`, `ghost.svg`, one image (`film-strip.webp`, which no page shows at present), `og.png` (the share image), `robots.txt`, `sitemap.xml` and `fonts/`. No build step, no framework, and no requests to anything but its own files, with two exceptions on the pricing and welcome pages: calls to the cloud API, and Polar's checkout in a frame once a reader opens it.
 
 Beside the home page are seven pages, each an `index.html` in its own folder: `pricing/`, `business/`, `welcome/`, `data/`, `terms/`, `privacy/` and `refunds/`. They load `style.css`, then `pages.css` and `pages.js`. `vendor/` holds the one script that is not ours, Polar's checkout embed.
 
@@ -24,10 +24,10 @@ Every number on these pages is a measured run, a price or a limit the plugin shi
 
 The pages must keep saying these things, because they are true:
 
-- The benchmark's datasets were built for it, a script graded them, and Claude is priced at API list price. The home page says so beside the one whole job it prints, and the business page gives the method.
-- Most of the jobs tested did not clear the bar. The home page says so and the business page shows every one of them.
+- The benchmark's datasets were built for it, a script graded them, and Claude is priced at API list price. The home page says so beside the one whole job it prints, and the business page says so under the results it prints.
+- Most of the jobs tested did not clear the bar. The home page says so, and the business page says that savings depend on the job and some jobs save nothing.
 - The unit-test figures are not from a team rule. On unit tests a team rule alone failed on accuracy, so the home page calls it a personal rule and says the rule was also written as a line in Claude's instructions. The only measured claim for a team rule alone is ticket triage at 300 tickets, and it is printed with its caveats: three to four times as long a run, and no saving at 60 tickets.
-- The Sonnet result is against Sonnet doing the work itself. Its own Haiku subagent came within the spread, and the business page says so. The home page prints no Sonnet figure.
+- The Sonnet result is against Sonnet doing the work itself. Its own Haiku subagent came within the spread. Neither the home page nor the business page prints a Sonnet figure from the benchmark.
 - The savings runs used the free plugin. The pricing page says so.
 - On the film, p0ssess cost more in total and took longer. Only the cost for each point scored is lower. Do not write that it was cheaper.
 
@@ -55,7 +55,7 @@ Every animated part has a complete still state in the markup. With `prefers-redu
 
 ## The savings benchmark
 
-The cost figures come from one benchmark, run on November 13, 2026. Its design was written and committed before the first measured run, with the criterion for a win. The business page's "How it was measured" is the public summary. The design, the generators, the graders and one line for every run are kept with the benchmark's records, not in this repository.
+The cost figures come from one benchmark, run on November 13, 2026. Its design was written and committed before the first measured run, with the criterion for a win. The business page's "What we measured" prints the two jobs that won and the method in two sentences. The design, the generators, the graders and one line for every run are kept with the benchmark's records, not in this repository.
 
 In short: each run is one headless Claude Code 2.1.323 session handed a whole batch, from an empty configuration, with a prompt that never mentions models or cost. Arm A is Claude alone. Arm B adds the public p0ssess 0.6.0 plugin and one rule that sends the job's kind of work to one model, which the engine picked before any run, with the rule also written as one line in Claude's standing instructions. Arm C, the control, is Claude alone told to hand the bulk of the work to its own Haiku subagent. Arms R and T use the build that ships as 1.0 with the rule alone and no line of instructions: a personal rule (R), and a team rule synced from a server (T). Cost is Claude Code's own figure at API list prices plus what OpenRouter charged. A job is a win when the most expensive p0ssess run costs less for each correct item than the cheapest Claude run, accuracy is within three points on average and five in the worst run, every p0ssess run delegated, and there are at least three runs each way. Only a win that is at least twice as cheap is advertised.
 
@@ -85,7 +85,7 @@ Every benchmark figure on the pages:
 | Pricing, "less a run" | $0.98 and $0.37 | the difference of the two means, Opus in charge; the page says it is the mean |
 <!--/gen:readme-figures-->
 
-The benchmark's own summary of what may be advertised, and with which caveats, is its MARKETING.md; the pages follow it. The business page's two charts and their tables hold every job that was tested, with Claude Opus 5.5 and with Claude Sonnet 5.5 in charge, and a third table holds every setup on the jobs that won. A mark's position there is that run's cost for each correct item divided by the mean of Claude alone on the same job, so 1× is Claude's mean. The verdict beside each row is the criterion above applied to those runs. A run with nothing right has no cost for each right answer and is drawn at the right edge.
+The benchmark's own summary of what may be advertised, and with which caveats, is its MARKETING.md; the pages follow it. The business page prints the two jobs that won with Claude Opus 5.5 in charge, from arms A and B in the table above: the mean cost of a run each way, the cost for each correct item as a ratio, and that accuracy held. It does not chart the runs or list the jobs that failed.
 
 The hero opens on the comparison with Claude's own Haiku subagent, because it answers the first thing a skeptic asks. The rule in the hero is what the p0ssess runs carried. The line in Claude's instructions began "Team rule (p0ssess):"; the hero leaves those words out, because the result is not a team rule's, and the business page quotes the line whole. In 0.6.0 a rule limited which model could be used but did not make Claude delegate, so arm B carried it in words as well. The business page says so.
 
@@ -130,17 +130,23 @@ magick strip.png -quality 78 -define webp:method=6 film-strip.webp
 | Your limits: $1 a day, $10 a month, $0.25 a task. Pro: 20 sandbox hours a month, `queued 2nd, ~4 min` | `../README.md`, "The spending envelope" and "Where the sandbox runs". |
 | The `/p0ssess:p0ssess-me` card, the tour card and the status line's states | `../assets/readme/me-card.svg`, `tour.svg` and `statusline.svg`, with the version from `release.js`. The `rescue` state and its color are from `../internal/pme/statusline`. |
 | Questions: the line when OpenRouter credit runs out | `creditsLine` in `../internal/relay/heal.go`, word for word. |
+| Business: unit tests $1.26 and $0.28 a run, 4.4 times cheaper, all 45 test files passing | The table above: arms A and B, `unit-tests`, Opus (4.45, printed as 4.4 as on the pricing page). |
+| Business: 300 tickets $0.73 and $0.33 a run, 2.2 times cheaper, every ticket right, "about three and a half times as long" | The table above: arms A and B, `ticket-triage` N=300, Opus; 1.46 s against 0.41 s a ticket. |
+| Business: the speech recording, about 7 min and $0.08 alone, 8 s and $0.05 with p0ssess | The speech recording row above, rounded to the cent. |
+| Business: rescue at 85%, 20 sandbox hours, a join link that works once for 7 days, rules on every seat within 5 minutes | `../README.md` ("Usage-limit rescue", "Where the sandbox runs"); `team_invite` and `team_rules_add` in `../internal/server/team.go`. |
+| Business: the lines in the terminal (`Every seat: ...`, `auto-approve all delegations up to $0.50 each`, `team $41.20/$50`, `team budget $50.00/$50 · paid runs stopped`) | Examples, in the words the plugin prints: `Rule.String` in `../internal/rules/rules.go` and `team_rules_add` in `../internal/server/team.go`; the status-line states and their amounts from `../docs/DESIGN.md`; the $0.50 pre-approval from `../commands/team.md`. The footer says the amounts are examples. |
+| Business: what an owner and a member see, the five fields of a spend report, the refund within 30 days, members dropping to their own plan | `privacy/` and `terms/` (Team), `refunds/`. |
 
 The plans table follows the Plans table in `../README.md`. The answers under Questions follow `../README.md` (Security and privacy, The spending envelope, Usage-limit rescue) and `../docs/ENGINE.md` (Savings proof). The questions and their answers are repeated in the home page's JSON-LD (`FAQPage`), and the prices in the `SoftwareApplication` block on the home and pricing pages: change the text and the block together. The Team command is the client's own (`p0ssess team rule add`), with the use case the benchmark's team rule named for ticket triage (`bulk-classify-tag`), and what Team includes follows the terms of service.
 
 ## Pricing, business and policy pages
 
-Seven pages sit beside the home page. They share the top bar (the lockup links home; Pricing, For business, Docs, Source and Get Pro, with the current page marked `aria-current="page"`) and the footer. The footer's row of links (Pricing, For business, Terms, Privacy, Data, Refunds) is on the home page too, and below 760 px, where the top bar keeps only Get Pro, it is the way between pages.
+Seven pages sit beside the home page. They share the top bar (the lockup links home; Pricing, For business, Docs, Source and Get Pro, with the current page marked `aria-current="page"`; on the business page the last is Get Team) and the footer. The footer's row of links (Pricing, For business, Terms, Privacy, Data, Refunds) is on the home page too, and below 760 px, where the top bar keeps only Get Pro, it is the way between pages.
 
 | Page | What it holds |
 |---|---|
 | `pricing/` | Three tiers, Free, Pro and Team, with what each includes, then what one rule is worth and how billing works. The buy buttons follow the offer (below). |
-| `business/` | The cost case for people who pay for Claude at work: every job tested, with every run; how it was measured; two side-by-sides on what Claude can't do alone; what Pro measures on your own work; and Team. |
+| `business/` | The Team product page, for whoever pays for Claude Code at work: what Team does for a team, with the lines p0ssess prints; who pays what; the measured wins; three steps to start; four questions; and the way to Team on the pricing page. Its FAQ is repeated in its JSON-LD (`FAQPage`) and its price in a `SoftwareApplication` block: change the text and the blocks together. |
 | `welcome/` | Where Polar sends a buyer after checkout: whether the payment went through, then the two things left to do, sign in and link the install. It is not linked from the other pages and asks search engines not to index it. |
 | `data/`, `terms/`, `privacy/`, `refunds/` | The full text of the policy, with its effective date and a table of contents. Each is the Markdown source of that policy, set in this page's HTML without rewording. |
 
@@ -212,13 +218,15 @@ The text is the policy's Markdown, set mechanically: headings get an id from the
 
 ## How the charts are drawn
 
+No page draws these charts at present: they were on the business page before its rewrite as a Team product page. The rules stay for the next page that charts runs.
+
 A chart is an inline SVG with no `viewBox`, so its text keeps its size and every horizontal position is a percentage of the chart's width: the CSP forbids inline styles, and attributes are not styles. The axis starts at zero.
 
-Every run is one mark. A violet square is a run with p0ssess, a gray circle is Claude alone and a gray ring is Claude with its own Haiku subagent, so the three are told apart by shape as well as color. Runs that land on the same cent are stepped apart, and each mark carries a 2 px ring of the ground. The band behind a group is its range, lowest run to highest. Each group has its name and its range in words beside it, and the business page's charts have a table of the same runs under them, so nothing is readable only from a mark. With a pointer on a mark, `pages.js` shows that run's figures beside it (`data-tip`).
+Every run is one mark. A violet square is a run with p0ssess, a gray circle is Claude alone and a gray ring is Claude with its own Haiku subagent, so the three are told apart by shape as well as color. Runs that land on the same cent are stepped apart, and each mark carries a 2 px ring of the ground. The band behind a group is its range, lowest run to highest. Each group has its name and its range in words beside it, and a chart has a table of the same runs under it, so nothing is readable only from a mark. With a pointer on a mark, `pages.js` shows that run's figures beside it (`data-tip`).
 
 The marks, the legends' ranges and the tables of runs sit between `<!--gen:NAME-->` comments in the HTML, as does the table of figures above. A script kept with the benchmark writes them from its run records, so the charts and the numbers cannot drift apart. To change one by hand, change it between its comments and in the table above.
 
-Each side-by-side on the business page is a table (`table.duel-t`) whose first measure is also drawn as a bar, both rows on one scale from zero.
+A side-by-side is a table (`table.duel-t`) whose first measure is also drawn as a bar, both rows on one scale from zero.
 
 ## The mark
 

@@ -145,29 +145,17 @@ html.anim .pay.go:not(.open) .pay-wire i { animation: cross 1.5s var(--io) 0.8s 
 .was .fig b { font-size: clamp(2.6rem, 4.4vw, 3.4rem); line-height: 0.9; }
 .was .fig:not(.to) b { color: var(--ink-2); text-decoration: line-through 2px var(--bar); }
 
-/* Business: every job as one row. The job, its runs on a shared scale, and what came of it.
-   The scale is cost for each correct item as a multiple of Claude alone's mean on that job. */
-.trows { list-style: none; margin: 0; padding: 0; display: grid; }
-.trow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.5rem; padding: 0.9rem 0 1rem; border-top: 1px solid var(--line); }
-.t-name { font-size: 0.95rem; line-height: 1.35; color: var(--ink); }
-.t-name small { display: block; font-size: 0.86rem; color: var(--ink-2); }
-.t-say { font-size: 0.9rem; line-height: 1.45; color: var(--ink-body); }
-.t-say b { display: block; font: 700 1.02rem/1.3 var(--mono); letter-spacing: -0.02em; color: var(--ink-2); }
-.trow.win .t-say b, .trow.small .t-say b { color: var(--ink); }
-.trow.win .t-say b::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 0.5rem; border-radius: 2px; background: var(--violet); }
-.plot .ref { fill: var(--line); }
-.plot .ref.one { fill: var(--dot); }
-.plot .ref.half { fill: var(--violet); }
-.taxis { display: block; }
-.taxis .plot text { font-family: var(--sans); }
-.tasks > .keys { justify-content: flex-start; gap: 0.6rem 2.4rem; }
-.tasks > .keys li:last-child { text-align: left; }
-.tasks .runs { margin-top: 1.4rem; }
-.method .copy { max-width: 38rem; }
-.tbl.arms { margin-top: 0; }
-.tbl.arms tbody th small { display: block; }
-.duel-t.under { margin-top: 1.6rem; }
-.foot-line { max-width: 44rem; margin-top: 2.4rem; font-size: 0.9rem; color: var(--ink-2); }
+/* Business: who pays what, three bills side by side, and the three steps to a team. */
+.bills { display: grid; gap: 0 clamp(28px, 4vw, 64px); margin: 0; }
+.bills div { padding: 1.5rem 0 1.4rem; }
+.bills dt { font: 700 1.14rem/1.3 var(--mono); letter-spacing: -0.015em; color: var(--ink); }
+.bills dt .tag { display: block; margin-bottom: 0.9rem; letter-spacing: 0; }
+.bills dt b { margin-right: 0.35rem; font: 700 2.9rem/1 var(--mono); letter-spacing: -0.04em; color: var(--ink); }
+.bills dt b small { margin-right: 0.08em; font-size: 0.5em; font-weight: 400; color: var(--ink-2); }
+.bills dt:has(b) { font-weight: 400; font-size: 0.9rem; color: var(--ink-body); }
+.bills dd { max-width: 26rem; margin: 0.7rem 0 0; }
+.steps.start li { align-content: start; }
+.steps.start .cmd pre { font-size: 0.8rem; }
 
 /* The reading layout, for the policies: a short table of contents beside one measure of text. */
 .doc-head { padding-block: clamp(2rem, 4.6vw, 3.6rem) 0; }
@@ -225,11 +213,11 @@ html.anim .pay.go:not(.open) .pay-wire i { animation: cross 1.5s var(--io) 0.8s 
 
 @media (min-width: 860px) {
   .tiers-sec .tier { --rows: 4; }
-  /* Every job as one chart: names down the left, the shared scale, the result on the right. */
-  .trow, .taxis { grid-template-columns: minmax(0, 15rem) minmax(0, 1fr) minmax(0, 18rem); column-gap: clamp(24px, 3vw, 48px); align-items: center; }
-  .taxis { display: grid; }
-  .taxis .plot { grid-column: 2; }
-  .tasks > .keys { margin-left: calc(15rem + clamp(24px, 3vw, 48px)); }
+  .bills { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1024px) {
+  .steps.start { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: clamp(28px, 4vw, 64px); }
 }
 
 @media (min-width: 960px) {
@@ -249,6 +237,5 @@ html.anim .pay.go:not(.open) .pay-wire i { animation: cross 1.5s var(--io) 0.8s 
 /* Forced colors drop backgrounds; keep the marks that carry data. */
 @media (forced-colors: active) {
   .wl-send { border: 1px solid ButtonText; }
-  .buy.done .buy-say::before, .trow.win .t-say b::before { background: Highlight; }
-  .plot .ref.half { fill: Highlight; }
+  .buy.done .buy-say::before { background: Highlight; }
 }

@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
-<title>p0ssess for business: the cost case, with every run shown</title>
-<meta name="description" content="What routing repetitive work to cheaper models saves, measured: unit tests between 2.2 and 7.2 times cheaper than three ways of running Claude, at the same accuracy, with the method and the jobs that failed.">
-<meta property="og:title" content="p0ssess for business: the cost case, with every run shown">
-<meta property="og:description" content="What routing repetitive work to cheaper models saves, measured: unit tests between 2.2 and 7.2 times cheaper than three ways of running Claude, at the same accuracy, with the method and the jobs that failed.">
+<title>p0ssess Team: keep your team working through Claude’s limits</title>
+<meta name="description" content="p0ssess Team, for whoever pays for Claude Code at work: when someone nears Claude’s usage limit, routine work moves to cheaper models. Spend by member and model, shared rules and a hard team budget. $8 a seat a month.">
+<meta property="og:title" content="p0ssess Team: keep your team working through Claude’s limits">
+<meta property="og:description" content="p0ssess Team, for whoever pays for Claude Code at work: when someone nears Claude’s usage limit, routine work moves to cheaper models. Spend by member and model, shared rules and a hard team budget. $8 a seat a month.">
 <meta property="og:type" content="website">
 <link rel="canonical" href="https://p0ssess.me/business/">
 <meta property="og:url" content="https://p0ssess.me/business/">
@@ -22,6 +22,8 @@
 <link rel="stylesheet" href="../pages.css">
 <script src="../release.js" defer></script>
 <script src="../pages.js" defer></script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"p0ssess Team","applicationCategory":"DeveloperApplication","operatingSystem":"Linux, macOS, Windows","url":"https://p0ssess.me/business/","description":"p0ssess Team is the p0ssess Claude Code plugin for a team: every seat includes Pro, with usage-limit rescue, spend by member and by model, shared rules that only tighten, pre-approved spend and a hard team budget. Model calls bill to each person’s own OpenRouter key.","offers":[{"@type":"Offer","name":"Team, a seat a month","price":"8","priceCurrency":"USD","url":"https://p0ssess.me/pricing/#team"}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What leaves a person’s machine?","acceptedAnswer":{"@type":"Answer","text":"Prompts and files go only to the model a job is handed to, on that person’s own OpenRouter key. The p0ssess service never sees a prompt, a file or a file name. Team reports each paid run as its day, use case, model, route and cost. The cloud sandbox receives the files git tracks, to run them."}},{"@type":"Question","name":"What do I see, and what do members see?","acceptedAnswer":{"@type":"Answer","text":"You see each member’s email or GitHub login, their share, and their spend by day, use case, model and route. You see no prompts, because we never receive them. Members see the rules and their own share and spend. A data processing agreement is available from legal@p0ssess.me."}},{"@type":"Question","name":"What happens at the cap?","acceptedAnswer":{"@type":"Answer","text":"Paid runs stop on every seat and the status line turns red. Claude itself is untouched, so people keep working in Claude Code. When a member reaches their own share, only their paid runs stop. Raise the budget with p0ssess team budget."}},{"@type":"Question","name":"How do I cancel, and what happens then?","acceptedAnswer":{"@type":"Answer","text":"Cancel or change plans in Polar’s customer portal. A first purchase can be refunded in full within 30 days, no questions asked. When Team ends, members drop to their own plan, which may be Free."}}]}</script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to the page</a>
@@ -37,306 +39,169 @@
       <a href="../business/" aria-current="page">For business</a>
       <a data-link="docs" hidden>Docs</a>
       <a data-link="repo" hidden>Source</a>
-      <a class="nav-cta" href="../pricing/#pro">Get Pro</a>
+      <a class="nav-cta" href="../pricing/#team">Get Team</a>
     </nav>
   </div>
 </header>
 
 <main id="main">
 
-<section class="page-head" aria-labelledby="page-h">
+<section class="hero" aria-labelledby="hero-h">
 <div class="wrap">
-  <h1 id="page-h">The cost case, with every run shown.</h1>
-  <p class="lede">If you pay for Claude at work, part of that bill goes to repetitive jobs like writing tests and sorting tickets. p0ssess sends that work to a cheaper model under a rule you set, and Claude stays in charge and checks the result. On writing unit tests it came out between 2.2 and 7.2 times cheaper than three ways of running Claude, with every test file passing. Below is every run we measured, how we measured it and the jobs where it didn’t pay.</p>
-  <p class="cta"><a class="btn" href="../pricing/#team">Get Team, $8 a seat</a><a class="btn quiet" href="#method">Read the method</a></p>
+  <h1 id="hero-h">Your team keeps working when Claude’s limit hits.</h1>
+
+  <div class="hero-cols">
+    <div class="pitch">
+      <p class="second">See and cap what every seat spends. <b>$8 a seat.</b></p>
+      <p class="lede">p0ssess is a Claude Code plugin. On Team, when anyone nears Claude’s limit, it moves their routine work to cheaper models and hands it back at the reset. One budget and one set of rules cover every seat.</p>
+      <p class="cta"><a class="btn" href="../pricing/#team">Get Team, $8 a seat</a><a class="btn quiet" href="#cost">Who pays what</a></p>
+      <p class="terms">Model calls bill to each person’s own OpenRouter key. A first purchase can be refunded in full within 30 days.</p>
+    </div>
+
+    <figure class="term prints" aria-labelledby="prints-cap">
+      <figcaption class="sr-only" id="prints-cap">One seat near Claude’s limit, and three settings an owner made for every seat.</figcaption>
+      <div class="win">
+        <p class="win-k">Claude’s 5-hour window</p>
+        <p class="win-v"><b>91%</b> used</p>
+        <div class="bar" aria-hidden="true"><i class="used"></i><i class="over"></i><i class="tick"></i></div>
+      </div>
+      <p class="line">Claude's 5-hour window is at 91%: p0ssess is taking routable work until it resets at 3:40 PM.</p>
+      <table class="rcpts">
+        <thead><tr><th scope="col">for example</th><th scope="col">set once by an owner, on every seat</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">A shared rule</th><td><code>only use deepseek-v4.1-flash-1017 for bulk-classify-tag</code></td></tr>
+          <tr><th scope="row">Pre-approved spend</th><td><code>auto-approve all delegations up to <b>$0.50</b> each</code></td></tr>
+          <tr><th scope="row">A hard team budget</th><td><code><span class="mark" aria-hidden="true">ᗣ</span> p0ssess $0.42/$1 · team <b>$41.20/$50</b></code></td></tr>
+        </tbody>
+      </table>
+    </figure>
+  </div>
 </div>
 </section>
 
-<section class="sec" id="results" aria-labelledby="results-h">
+<section class="sec" id="why" aria-labelledby="why-h">
+<div class="wrap">
+  <h2 class="sr-only" id="why-h">Why teams buy it</h2>
+  <p class="say">When someone’s Claude window runs out, they stop until it resets. The spend is hard to see by person, and asking people to use less slows everyone down.</p>
+</div>
+</section>
+
+<section class="sec pro" id="team" aria-labelledby="team-h">
+<div class="wrap">
+  <div class="pro-head">
+    <div>
+      <h2 id="team-h">What Team gives you</h2>
+      <p>Every seat gets Pro. You get the controls, and your people work in Claude Code as before.</p>
+    </div>
+    <div class="pro-buy">
+      <p class="price"><b><small>$</small>8</b> <span class="per">a seat, a month</span> <span class="price-note">every seat includes Pro</span></p>
+      <p class="cta"><a class="btn" href="../pricing/#team">Get Team</a><a class="more" href="../pricing/">Compare the plans</a></p>
+    </div>
+  </div>
+  <ul class="grid two why">
+    <li class="cell hl">
+      <p class="chip sl"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess $0.42/$1 · <b class="resc">rescue</b></p>
+      <h3>Nobody waits for a reset</h3>
+      <p>When someone’s 5-hour or weekly window passes 85%, p0ssess takes the work a cheaper model can do and says so in one line. It hands back at the reset. Critical work asks first.</p>
+    </li>
+    <li class="cell hl">
+      <p class="chip sl"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess $0.42/$1 · team $41.20/$50</p>
+      <h3>See who spent what</h3>
+      <p><code>/p0ssess:team spend</code> shows this month and today by member and by model, and the dashboard at p0ssess.me/team adds day and use case.</p>
+    </li>
+    <li class="cell hl">
+      <p class="chip">Every seat: only use deepseek-v4.1-flash-1017 for bulk-classify-tag.</p>
+      <h3>Set the rules once</h3>
+      <p>Say a rule in plain words in Claude Code and confirm the one line. Every seat has it within 5 minutes, and a member’s own rules can only make it stricter.</p>
+    </li>
+    <li class="cell hl">
+      <p class="chip sl red"><span class="mark" aria-hidden="true">ᗣ</span> p0ssess team budget $50.00/$50 · paid runs stopped</p>
+      <h3>Cap the month</h3>
+      <p>Set a hard team budget and a share for each member. Pre-approve spend up to an amount a task, so nobody waits for a yes below it. At the cap, paid runs stop.</p>
+    </li>
+  </ul>
+  <p class="aside">Each seat also gets the rest of Pro, including a monthly savings report by email and 20 hours a month of the cloud sandbox on macOS and Windows.</p>
+</div>
+</section>
+
+<section class="sec" id="cost" aria-labelledby="cost-h">
 <div class="wrap">
   <div class="sec-head">
-    <h2 id="results-h">Every job we tested</h2>
-    <p>The benchmark was 148 headless Claude Code runs, pilots and voided runs included: nine jobs, two models in charge and up to five setups. Of nineteen pairings of a job with a model in charge, three won, one won by less than twice, and fifteen failed. Each mark below is one run. Its position is what one correct answer cost, as a multiple of what Claude alone averaged on that job, so 1× is Claude’s own average and ½ is half the price. A job is a win when every square sits left of every circle and accuracy held.</p>
+    <h2 id="cost-h">What it costs, and who pays what</h2>
+    <p>Three separate bills. p0ssess charges only for the plan.</p>
   </div>
-
-  <figure class="tasks land" aria-labelledby="tasks-cap">
-    <ul class="keys">
-      <li class="k-poss"><i aria-hidden="true"></i><b>With p0ssess</b> <span>one run</span></li>
-      <li class="k-alone"><i aria-hidden="true"></i><b>Claude Opus 5.5 alone</b> <span>one run</span></li>
-    </ul>
-    <ol class="trows">
-      <!--gen:tasks-rows-->
-      <li class="trow win"><p class="t-name">Writing unit tests <small>15 Python modules</small></p><svg class="plot" width="100%" height="44" aria-hidden="true" focusable="false"><rect class="ref one" x="28.57%" y="0" width="1" height="100%"/><rect class="ref half" x="14.29%" y="0" width="1" height="100%"/><rect class="band a" x="24.78%" width="8.03%" y="2" height="40" rx="4"/><rect class="band p" x="6.19%" width="0.64%" y="2" height="40" rx="4"/><circle class="pt a" cx="24.78%" cy="9" r="6"/><circle class="hit" cx="24.78%" cy="9" r="13" data-tip="Run 1: $1.0966 · 15 of 15 test files pass · 276 s"/><circle class="pt a" cx="32.81%" cy="22" r="6"/><circle class="hit" cx="32.81%" cy="22" r="13" data-tip="Run 2: $1.4520 · 15 of 15 test files pass · 374 s"/><circle class="pt a" cx="28.12%" cy="35" r="6"/><circle class="hit" cx="28.12%" cy="35" r="13" data-tip="Run 3: $1.2446 · 15 of 15 test files pass · 317 s"/><rect class="pt p" x="6.24%" y="3" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="6.24%" cy="9" r="13" data-tip="Run 1: $0.2763 · Claude $0.2472 + deepseek-v4.1-flash $0.0291 · 15 of 15 test files pass · 401 s"/><rect class="pt p" x="6.19%" y="16" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="6.19%" cy="22" r="13" data-tip="Run 2: $0.2739 · Claude $0.2132 + deepseek-v4.1-flash $0.0608 · 15 of 15 test files pass · 470 s"/><rect class="pt p" x="6.83%" y="29" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="6.83%" cy="35" r="13" data-tip="Run 3: $0.3024 · Claude $0.2801 + deepseek-v4.1-flash $0.0223 · 15 of 15 test files pass · 226 s"/></svg><p class="t-say"><b>4.4<span class="x">×</span> cheaper</b> <span>Every p0ssess run cost less than every Claude run, at the same accuracy.</span></p></li>
-      <li class="trow win"><p class="t-name">Triaging support tickets, a day’s volume <small>300 tickets</small></p><svg class="plot" width="100%" height="44" aria-hidden="true" focusable="false"><rect class="ref one" x="28.57%" y="0" width="1" height="100%"/><rect class="ref half" x="14.29%" y="0" width="1" height="100%"/><rect class="band a" x="24.87%" width="10.18%" y="2" height="40" rx="4"/><rect class="band p" x="9.24%" width="5.97%" y="2" height="40" rx="4"/><circle class="pt a" cx="24.87%" cy="9" r="6"/><circle class="hit" cx="24.87%" cy="9" r="13" data-tip="Run 1: $0.6382 · 300 of 300 tickets right · 88 s"/><circle class="pt a" cx="35.05%" cy="22" r="6"/><circle class="hit" cx="35.05%" cy="22" r="13" data-tip="Run 2: $0.8993 · 300 of 300 tickets right · 169 s"/><circle class="pt a" cx="25.8%" cy="35" r="6"/><circle class="hit" cx="25.8%" cy="35" r="13" data-tip="Run 3: $0.6621 · 300 of 300 tickets right · 108 s"/><rect class="pt p" x="15.21%" y="3" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="15.21%" cy="9" r="13" data-tip="Run 1: $0.3904 · Claude $0.3123 + deepseek-v4.1-flash $0.0781 · 300 of 300 tickets right · 427 s"/><rect class="pt p" x="13.74%" y="16" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="13.74%" cy="22" r="13" data-tip="Run 2: $0.3524 · Claude $0.2871 + deepseek-v4.1-flash $0.0653 · 300 of 300 tickets right · 531 s"/><rect class="pt p" x="9.24%" y="29" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="9.24%" cy="35" r="13" data-tip="Run 3: $0.2369 · Claude $0.1780 + deepseek-v4.1-flash $0.0589 · 300 of 300 tickets right · 353 s"/></svg><p class="t-say"><b>2.2<span class="x">×</span> cheaper</b> <span>Every p0ssess run cost less than every Claude run, at the same accuracy.</span></p></li>
-      <li class="trow small"><p class="t-name">Translating interface strings <small>108 strings in three languages</small></p><svg class="plot" width="100%" height="44" aria-hidden="true" focusable="false"><rect class="ref one" x="28.57%" y="0" width="1" height="100%"/><rect class="ref half" x="14.29%" y="0" width="1" height="100%"/><rect class="band a" x="25.03%" width="5.55%" y="2" height="40" rx="4"/><rect class="band p" x="18.37%" width="5.89%" y="2" height="40" rx="4"/><circle class="pt a" cx="30.09%" cy="9" r="6"/><circle class="hit" cx="30.09%" cy="9" r="13" data-tip="Run 1: $0.5513 · 108 of 108 strings right · 126 s"/><circle class="pt a" cx="25.03%" cy="22" r="6"/><circle class="hit" cx="25.03%" cy="22" r="13" data-tip="Run 2: $0.4587 · 108 of 108 strings right · 104 s"/><circle class="pt a" cx="30.59%" cy="35" r="6"/><circle class="hit" cx="30.59%" cy="35" r="13" data-tip="Run 3: $0.5604 · 108 of 108 strings right · 131 s"/><rect class="pt p" x="18.37%" y="3" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="18.37%" cy="9" r="13" data-tip="Run 1: $0.3366 · Claude $0.3090 + deepseek-v4.1-flash $0.0277 · 108 of 108 strings right · 160 s"/><rect class="pt p" x="20.07%" y="16" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="20.07%" cy="22" r="13" data-tip="Run 2: $0.3676 · Claude $0.3467 + deepseek-v4.1-flash $0.0209 · 108 of 108 strings right · 231 s"/><rect class="pt p" x="24.26%" y="29" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="24.26%" cy="35" r="13" data-tip="Run 3: $0.4445 · Claude $0.4207 + deepseek-v4.1-flash $0.0238 · 108 of 108 strings right · 171 s"/></svg><p class="t-say"><b>1.4<span class="x">×</span> cheaper</b> <span>A clear win, but under the 2× we ask of anything we advertise.</span></p></li>
-      <li class="trow fail"><p class="t-name">Normalizing product listings <small>120 listings</small></p><svg class="plot" width="100%" height="44" aria-hidden="true" focusable="false"><rect class="ref one" x="28.57%" y="0" width="1" height="100%"/><rect class="ref half" x="14.29%" y="0" width="1" height="100%"/><rect class="band a" x="27.89%" width="2.03%" y="2" height="40" rx="4"/><rect class="band p" x="9.17%" width="46.17%" y="2" height="40" rx="4"/><circle class="pt a" cx="29.92%" cy="9" r="6"/><circle class="hit" cx="29.92%" cy="9" r="13" data-tip="Run 1: $0.7835 · 120 of 120 listings right · 179 s"/><circle class="pt a" cx="27.91%" cy="22" r="6"/><circle class="hit" cx="27.91%" cy="22" r="13" data-tip="Run 2: $0.7310 · 120 of 120 listings right · 148 s"/><circle class="pt a" cx="27.89%" cy="35" r="6"/><circle class="hit" cx="27.89%" cy="35" r="13" data-tip="Run 3: $0.7303 · 120 of 120 listings right · 140 s"/><rect class="pt p" x="26.08%" y="3" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="26.08%" cy="9" r="13" data-tip="Run 1: $0.6830 · Claude $0.6356 + gpt-6-luna $0.0474 · 120 of 120 listings right · 554 s"/><rect class="pt p" x="55.33%" y="16" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="55.33%" cy="22" r="13" data-tip="Run 2: $1.4491 · Claude $1.3769 + gpt-6-luna $0.0722 · 120 of 120 listings right · 1864 s"/><rect class="pt p" x="9.17%" y="29" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="9.17%" cy="35" r="13" data-tip="Run 3: $0.2361 · Claude $0.2013 + gpt-6-luna $0.0348 · 118 of 120 listings right · 327 s"/></svg><p class="t-say"><b>Cost more</b> <span>p0ssess cost 1.1× as much as Claude alone.</span></p></li>
-      <li class="trow fail"><p class="t-name">Triaging incident logs <small>40 logs</small></p><svg class="plot" width="100%" height="44" aria-hidden="true" focusable="false"><rect class="ref one" x="28.57%" y="0" width="1" height="100%"/><rect class="ref half" x="14.29%" y="0" width="1" height="100%"/><rect class="band a" x="24.76%" width="7.83%" y="2" height="40" rx="4"/><rect class="band p" x="16.55%" width="12.23%" y="2" height="40" rx="4"/><circle class="pt a" cx="24.76%" cy="9" r="6"/><circle class="hit" cx="24.76%" cy="9" r="13" data-tip="Run 1: $0.6497 · 40 of 40 logs right · 66 s"/><circle class="pt a" cx="32.59%" cy="22" r="6"/><circle class="hit" cx="32.59%" cy="22" r="13" data-tip="Run 2: $0.8551 · 40 of 40 logs right · 113 s"/><circle class="pt a" cx="28.36%" cy="35" r="6"/><circle class="hit" cx="28.36%" cy="35" r="13" data-tip="Run 3: $0.7442 · 40 of 40 logs right · 79 s"/><rect class="pt p" x="28.78%" y="3" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="28.78%" cy="9" r="13" data-tip="Run 1: $0.7551 · Claude $0.5303 + glm-5.3-flash $0.2248 · 40 of 40 logs right · 241 s"/><rect class="pt p" x="24.22%" y="16" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="24.22%" cy="22" r="13" data-tip="Run 2: $0.6355 · Claude $0.4497 + glm-5.3-flash $0.1857 · 40 of 40 logs right · 807 s"/><rect class="pt p" x="16.55%" y="29" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="16.55%" cy="35" r="13" data-tip="Run 3: $0.4342 · Claude $0.2385 + glm-5.3-flash $0.1957 · 40 of 40 logs right · 741 s"/></svg><p class="t-say"><b>Too close to call</b> <span>1.2× cheaper on average, but the runs overlap.</span></p></li>
-      <li class="trow fail"><p class="t-name">Triaging support tickets, a small batch <small>60 tickets</small></p><svg class="plot" width="100%" height="44" aria-hidden="true" focusable="false"><rect class="ref one" x="28.57%" y="0" width="1" height="100%"/><rect class="ref half" x="14.29%" y="0" width="1" height="100%"/><rect class="band a" x="23.67%" width="9.97%" y="2" height="40" rx="4"/><rect class="band p" x="19.33%" width="30.42%" y="2" height="40" rx="4"/><circle class="pt a" cx="28.4%" cy="9" r="6"/><circle class="hit" cx="28.4%" cy="9" r="13" data-tip="Run 1: $0.2359 · 60 of 60 tickets right · 42 s"/><circle class="pt a" cx="23.67%" cy="22" r="6"/><circle class="hit" cx="23.67%" cy="22" r="13" data-tip="Run 2: $0.1933 · 59 of 60 tickets right · 31 s"/><circle class="pt a" cx="33.64%" cy="35" r="6"/><circle class="hit" cx="33.64%" cy="35" r="13" data-tip="Run 3: $0.2794 · 60 of 60 tickets right · 54 s"/><rect class="pt p" x="39.41%" y="3" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="39.41%" cy="9" r="13" data-tip="Run 1: $0.3273 · Claude $0.2656 + deepseek-v4.1-flash $0.0616 · 60 of 60 tickets right · 335 s"/><rect class="pt p" x="49.75%" y="16" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="49.75%" cy="22" r="13" data-tip="Run 2: $0.4131 · Claude $0.3951 + deepseek-v4.1-flash $0.0180 · 60 of 60 tickets right · 196 s"/><rect class="pt p" x="19.33%" y="29" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="19.33%" cy="35" r="13" data-tip="Run 3: $0.1605 · Claude $0.1221 + deepseek-v4.1-flash $0.0384 · 60 of 60 tickets right · 121 s"/></svg><p class="t-say"><b>Cost more</b> <span>p0ssess cost 1.3× as much as Claude alone.</span></p></li>
-      <li class="trow fail"><p class="t-name">Routing voicemails <small>30 recordings</small></p><svg class="plot" width="100%" height="44" aria-hidden="true" focusable="false"><rect class="ref one" x="28.57%" y="0" width="1" height="100%"/><rect class="ref half" x="14.29%" y="0" width="1" height="100%"/><rect class="band a" x="27.32%" width="1.9%" y="2" height="40" rx="4"/><rect class="band p" x="26.02%" width="4.48%" y="2" height="40" rx="4"/><circle class="pt a" cx="29.17%" cy="9" r="6"/><circle class="hit" cx="29.17%" cy="9" r="13" data-tip="Run 1: $0.5733 · 28 of 30 voicemails right · 815 s"/><circle class="pt a" cx="27.32%" cy="22" r="6"/><circle class="hit" cx="27.32%" cy="22" r="13" data-tip="Run 2: $0.5754 · 30 of 30 voicemails right · 734 s"/><circle class="pt a" cx="29.22%" cy="35" r="6"/><circle class="hit" cx="29.22%" cy="35" r="13" data-tip="Run 3: $0.5949 · 29 of 30 voicemails right · 1142 s"/><rect class="pt p" x="26.02%" y="3" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="26.02%" cy="9" r="13" data-tip="Run 1: $0.5296 · Claude $0.5231 + whisper-large-v3-turbo $0.0065 · 29 of 30 voicemails right · 251 s"/><rect class="pt p" x="27.19%" y="16" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="27.19%" cy="22" r="13" data-tip="Run 2: $0.5536 · Claude $0.5478 + whisper-large-v3-turbo $0.0057 · 29 of 30 voicemails right · 325 s"/><rect class="pt p" x="30.5%" y="29" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="30.5%" cy="35" r="13" data-tip="Run 3: $0.5994 · Claude $0.5923 + whisper-large-v3-turbo $0.0071 · 28 of 30 voicemails right · 295 s"/></svg><p class="t-say"><b>Too close to call</b> <span>1.0× cheaper on average, but the runs overlap.</span></p></li>
-      <li class="trow fail"><p class="t-name">Finding bugs in code review <small>30 files</small></p><svg class="plot" width="100%" height="44" aria-hidden="true" focusable="false"><rect class="ref one" x="28.57%" y="0" width="1" height="100%"/><rect class="ref half" x="14.29%" y="0" width="1" height="100%"/><rect class="band a" x="26.83%" width="4.41%" y="2" height="40" rx="4"/><rect class="band p" x="29.75%" width="36.27%" y="2" height="40" rx="4"/><circle class="pt a" cx="27.64%" cy="9" r="6"/><circle class="hit" cx="27.64%" cy="9" r="13" data-tip="Run 1: $0.3828 · 30 of 30 files right · 56 s"/><circle class="pt a" cx="26.83%" cy="22" r="6"/><circle class="hit" cx="26.83%" cy="22" r="13" data-tip="Run 2: $0.3716 · 30 of 30 files right · 49 s"/><circle class="pt a" cx="31.24%" cy="35" r="6"/><circle class="hit" cx="31.24%" cy="35" r="13" data-tip="Run 3: $0.4327 · 30 of 30 files right · 61 s"/><rect class="pt p" x="29.75%" y="3" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="29.75%" cy="9" r="13" data-tip="Run 1: $0.4120 · Claude $0.3423 + glm-5.3-flash $0.0697 · 30 of 30 files right · 489 s"/><rect class="pt p" x="66.01%" y="16" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="66.01%" cy="22" r="13" data-tip="Run 2: $0.9142 · Claude $0.8624 + glm-5.3-flash $0.0519 · 30 of 30 files right · 1271 s"/><rect class="pt p" x="32.81%" y="29" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="32.81%" cy="35" r="13" data-tip="Run 3: $0.4393 · Claude $0.3744 + glm-5.3-flash $0.0649 · 29 of 30 files right · 1843 s"/></svg><p class="t-say"><b>Cost more</b> <span>p0ssess cost 1.5× as much as Claude alone.</span></p></li>
-      <li class="trow fail"><p class="t-name">Extracting contract terms <small>25 agreements</small></p><svg class="plot" width="100%" height="44" aria-hidden="true" focusable="false"><rect class="ref one" x="28.57%" y="0" width="1" height="100%"/><rect class="ref half" x="14.29%" y="0" width="1" height="100%"/><rect class="band a" x="24.02%" width="6.98%" y="2" height="40" rx="4"/><rect class="band p" x="3.59%" width="9.65%" y="2" height="40" rx="4"/><circle class="pt a" cx="30.7%" cy="9" r="6"/><circle class="hit" cx="30.7%" cy="9" r="13" data-tip="Run 1: $2.1716 · 25 of 25 contracts right · 105 s"/><circle class="pt a" cx="31%" cy="22" r="6"/><circle class="hit" cx="31%" cy="22" r="13" data-tip="Run 2: $2.1928 · 25 of 25 contracts right · 126 s"/><circle class="pt a" cx="24.02%" cy="35" r="6"/><circle class="hit" cx="24.02%" cy="35" r="13" data-tip="Run 3: $1.6992 · 25 of 25 contracts right · 79 s"/><rect class="pt p" x="4.13%" y="3" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="4.13%" cy="9" r="13" data-tip="Run 1: $0.2802 · Claude $0.2512 + gpt-6-luna $0.0289 · 24 of 25 contracts right · 198 s"/><rect class="pt p" x="13.24%" y="16" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="13.24%" cy="22" r="13" data-tip="Run 2: $0.9367 · Claude $0.8837 + gpt-6-luna $0.0530 · 25 of 25 contracts right · 292 s"/><rect class="pt p" x="3.59%" y="29" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="3.59%" cy="35" r="13" data-tip="Run 3: $0.2334 · Claude $0.2112 + gpt-6-luna $0.0222 · 23 of 25 contracts right · 166 s"/></svg><p class="t-say"><b>Accuracy fell</b> <span>4.1× cheaper, but 96% right against 100%. A cheaper wrong answer doesn’t count.</span></p></li>
-      <li class="trow fail"><p class="t-name">Pulling fields from invoices <small>40 invoices</small></p><svg class="plot" width="100%" height="44" aria-hidden="true" focusable="false"><rect class="ref one" x="28.57%" y="0" width="1" height="100%"/><rect class="ref half" x="14.29%" y="0" width="1" height="100%"/><rect class="band a" x="24.9%" width="7.1%" y="2" height="40" rx="4"/><rect class="band p" x="64.2%" width="26.67%" y="2" height="40" rx="4"/><circle class="pt a" cx="28.8%" cy="9" r="6"/><circle class="hit" cx="28.8%" cy="9" r="13" data-tip="Run 1: $0.4523 · 40 of 40 invoices right · 83 s"/><circle class="pt a" cx="32%" cy="22" r="6"/><circle class="hit" cx="32%" cy="22" r="13" data-tip="Run 2: $0.5025 · 40 of 40 invoices right · 97 s"/><circle class="pt a" cx="24.9%" cy="35" r="6"/><circle class="hit" cx="24.9%" cy="35" r="13" data-tip="Run 3: $0.3910 · 40 of 40 invoices right · 64 s"/><rect class="pt p" x="86.39%" y="3" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="86.39%" cy="9" r="13" data-tip="Run 1: $1.3565 · Claude $0.4139 + gemini-3.8-flash $0.9426 · 40 of 40 invoices right · 721 s"/><rect class="pt p" x="64.2%" y="16" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="64.2%" cy="22" r="13" data-tip="Run 2: $1.0081 · Claude $0.4361 + gemini-3.8-flash $0.5720 · 40 of 40 invoices right · 553 s"/><rect class="pt p" x="90.87%" y="29" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="90.87%" cy="35" r="13" data-tip="Run 3: $1.4268 · Claude $0.6838 + gemini-3.8-flash $0.7430 · 40 of 40 invoices right · 691 s"/></svg><p class="t-say"><b>Cost more</b> <span>p0ssess cost 2.8× as much as Claude alone.</span></p></li>
-      <!--/gen:tasks-rows-->
-    </ol>
-    <div class="taxis" aria-hidden="true"><svg class="plot" width="100%" height="24" focusable="false"><!--gen:tasks-axis-->
-      <rect class="ax" x="0" y="0" width="100%" height="1"/><rect class="tk" x="0%" y="0" width="1" height="5"/><text x="0" y="20" text-anchor="start">0</text><rect class="tk" x="14.29%" y="0" width="1" height="5"/><text x="14.29%" y="20" text-anchor="middle">½</text><rect class="tk" x="28.57%" y="0" width="1" height="5"/><text x="28.57%" y="20" text-anchor="middle">1×</text><rect class="tk" x="42.86%" y="0" width="1" height="5"/><text x="42.86%" y="20" text-anchor="middle">1.5×</text><rect class="tk" x="57.14%" y="0" width="1" height="5"/><text x="57.14%" y="20" text-anchor="middle">2×</text><rect class="tk" x="71.43%" y="0" width="1" height="5"/><text x="71.43%" y="20" text-anchor="middle">2.5×</text><rect class="tk" x="85.71%" y="0" width="1" height="5"/><text x="85.71%" y="20" text-anchor="middle">3×</text><rect class="tk" x="100%" y="0" width="1" height="5" transform="translate(-1 0)"/><text x="100%" y="20" text-anchor="end">3.5×</text>
-      <!--/gen:tasks-axis--></svg></div>
-    <figcaption class="note" id="tasks-cap">Cost for each correct item, relative to Claude Opus 5.5 alone on the same job. Claude Opus 5.5 was in charge in every run. The line at 1× is Claude’s average and the line at ½ is the bar for advertising a win. Measured November 13, 2026, on datasets built for the benchmark and graded by scripts.</figcaption>
-    <details class="runs" open>
-      <summary>The same results as a table</summary>
-      <div class="tbl"><table role="table">
-        <caption>Mean cost of one run, with the lowest and highest run, and the share of items right. Claude Opus 5.5 in charge.</caption>
-        <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Job</th><th scope="col" role="columnheader">Claude alone, a run</th><th scope="col" role="columnheader">With p0ssess, a run</th><th scope="col" role="columnheader">Right, alone</th><th scope="col" role="columnheader">Right, with p0ssess</th><th scope="col" role="columnheader">Runs each way</th><th scope="col" role="columnheader">Result</th></tr></thead>
-        <tbody role="rowgroup">
-          <!--gen:tasks-table-->
-      <tr class="win" role="row"><th scope="row" role="rowheader">Writing unit tests <small>15 Python modules, deepseek-v4.1-flash</small></th><td role="cell" data-l="Claude alone, a run"><small>$</small>1.26 <small class="rng">1.10 to 1.45</small></td><td role="cell" data-l="With p0ssess, a run"><small>$</small>0.28 <small class="rng">0.27 to 0.30</small></td><td role="cell" data-l="Right, Claude alone">100%</td><td role="cell" data-l="Right, with p0ssess">100%</td><td role="cell" data-l="Runs each way">3 and 3</td><td role="cell" data-l="Result">4.4<span class="x">×</span> cheaper</td></tr>
-          <tr class="win" role="row"><th scope="row" role="rowheader">Triaging support tickets, a day’s volume <small>300 tickets, deepseek-v4.1-flash</small></th><td role="cell" data-l="Claude alone, a run"><small>$</small>0.73 <small class="rng">0.64 to 0.90</small></td><td role="cell" data-l="With p0ssess, a run"><small>$</small>0.33 <small class="rng">0.24 to 0.39</small></td><td role="cell" data-l="Right, Claude alone">100%</td><td role="cell" data-l="Right, with p0ssess">100%</td><td role="cell" data-l="Runs each way">3 and 3</td><td role="cell" data-l="Result">2.2<span class="x">×</span> cheaper</td></tr>
-          <tr class="small" role="row"><th scope="row" role="rowheader">Translating interface strings <small>108 strings in three languages, deepseek-v4.1-flash</small></th><td role="cell" data-l="Claude alone, a run"><small>$</small>0.52 <small class="rng">0.46 to 0.56</small></td><td role="cell" data-l="With p0ssess, a run"><small>$</small>0.38 <small class="rng">0.34 to 0.44</small></td><td role="cell" data-l="Right, Claude alone">100%</td><td role="cell" data-l="Right, with p0ssess">100%</td><td role="cell" data-l="Runs each way">3 and 3</td><td role="cell" data-l="Result">1.4<span class="x">×</span> cheaper</td></tr>
-          <tr class="fail" role="row"><th scope="row" role="rowheader">Normalizing product listings <small>120 listings, gpt-6-luna</small></th><td role="cell" data-l="Claude alone, a run"><small>$</small>0.75 <small class="rng">0.73 to 0.78</small></td><td role="cell" data-l="With p0ssess, a run"><small>$</small>0.79 <small class="rng">0.24 to 1.45</small></td><td role="cell" data-l="Right, Claude alone">100%</td><td role="cell" data-l="Right, with p0ssess">99%</td><td role="cell" data-l="Runs each way">3 and 3</td><td role="cell" data-l="Result">Cost more</td></tr>
-          <tr class="fail" role="row"><th scope="row" role="rowheader">Triaging incident logs <small>40 logs, glm-5.3-flash</small></th><td role="cell" data-l="Claude alone, a run"><small>$</small>0.75 <small class="rng">0.65 to 0.86</small></td><td role="cell" data-l="With p0ssess, a run"><small>$</small>0.61 <small class="rng">0.43 to 0.76</small></td><td role="cell" data-l="Right, Claude alone">100%</td><td role="cell" data-l="Right, with p0ssess">100%</td><td role="cell" data-l="Runs each way">3 and 3</td><td role="cell" data-l="Result">Too close to call</td></tr>
-          <tr class="fail" role="row"><th scope="row" role="rowheader">Triaging support tickets, a small batch <small>60 tickets, deepseek-v4.1-flash</small></th><td role="cell" data-l="Claude alone, a run"><small>$</small>0.24 <small class="rng">0.19 to 0.28</small></td><td role="cell" data-l="With p0ssess, a run"><small>$</small>0.30 <small class="rng">0.16 to 0.41</small></td><td role="cell" data-l="Right, Claude alone">99%</td><td role="cell" data-l="Right, with p0ssess">100%</td><td role="cell" data-l="Runs each way">3 and 3</td><td role="cell" data-l="Result">Cost more</td></tr>
-          <tr class="fail" role="row"><th scope="row" role="rowheader">Routing voicemails <small>30 recordings, whisper-large-v3-turbo</small></th><td role="cell" data-l="Claude alone, a run"><small>$</small>0.58 <small class="rng">0.57 to 0.59</small></td><td role="cell" data-l="With p0ssess, a run"><small>$</small>0.56 <small class="rng">0.53 to 0.60</small></td><td role="cell" data-l="Right, Claude alone">97%</td><td role="cell" data-l="Right, with p0ssess">96%</td><td role="cell" data-l="Runs each way">3 and 3</td><td role="cell" data-l="Result">Too close to call</td></tr>
-          <tr class="fail" role="row"><th scope="row" role="rowheader">Finding bugs in code review <small>30 files, glm-5.3-flash</small></th><td role="cell" data-l="Claude alone, a run"><small>$</small>0.40 <small class="rng">0.37 to 0.43</small></td><td role="cell" data-l="With p0ssess, a run"><small>$</small>0.59 <small class="rng">0.41 to 0.91</small></td><td role="cell" data-l="Right, Claude alone">100%</td><td role="cell" data-l="Right, with p0ssess">99%</td><td role="cell" data-l="Runs each way">3 and 3</td><td role="cell" data-l="Result">Cost more</td></tr>
-          <tr class="fail" role="row"><th scope="row" role="rowheader">Extracting contract terms <small>25 agreements, gpt-6-luna</small></th><td role="cell" data-l="Claude alone, a run"><small>$</small>2.02 <small class="rng">1.70 to 2.19</small></td><td role="cell" data-l="With p0ssess, a run"><small>$</small>0.48 <small class="rng">0.23 to 0.94</small></td><td role="cell" data-l="Right, Claude alone">100%</td><td role="cell" data-l="Right, with p0ssess">96%</td><td role="cell" data-l="Runs each way">3 and 3</td><td role="cell" data-l="Result">Accuracy fell</td></tr>
-          <tr class="fail" role="row"><th scope="row" role="rowheader">Pulling fields from invoices <small>40 invoices, gemini-3.8-flash</small></th><td role="cell" data-l="Claude alone, a run"><small>$</small>0.45 <small class="rng">0.39 to 0.50</small></td><td role="cell" data-l="With p0ssess, a run"><small>$</small>1.26 <small class="rng">1.01 to 1.43</small></td><td role="cell" data-l="Right, Claude alone">100%</td><td role="cell" data-l="Right, with p0ssess">100%</td><td role="cell" data-l="Runs each way">3 and 3</td><td role="cell" data-l="Result">Cost more</td></tr>
-      <!--/gen:tasks-table-->
-        </tbody>
-      </table></div>
-    </details>
-  </figure>
-
-  <div class="sec-head sub">
-    <h3 id="sonnet-h">The same jobs with Sonnet in charge</h3>
-    <p>Claude Sonnet 5.5 costs less than Opus to begin with, so there is less to save, and on several jobs the answers got worse with p0ssess. Unit tests held up. The chart reads the same way: 1× is what Claude Sonnet 5.5 alone averaged on that job.</p>
-  </div>
-  <figure class="tasks land" aria-labelledby="sonnet-h">
-    <ul class="keys">
-      <li class="k-poss"><i aria-hidden="true"></i><b>With p0ssess</b> <span>one run</span></li>
-      <li class="k-alone"><i aria-hidden="true"></i><b>Claude Sonnet 5.5 alone</b> <span>one run</span></li>
-    </ul>
-    <ol class="trows">
-      <!--gen:sonnet-rows-->
-      <li class="trow win"><p class="t-name">Writing unit tests <small>15 Python modules</small></p><svg class="plot" width="100%" height="44" aria-hidden="true" focusable="false"><rect class="ref one" x="28.57%" y="0" width="1" height="100%"/><rect class="ref half" x="14.29%" y="0" width="1" height="100%"/><rect class="band a" x="24.49%" width="10.97%" y="2" height="40" rx="4"/><rect class="band p" x="3.73%" width="0.38%" y="2" height="40" rx="4"/><circle class="pt a" cx="35.47%" cy="9" r="6"/><circle class="hit" cx="35.47%" cy="9" r="13" data-tip="Run 1: $0.8650 · 15 of 15 test files pass · 329 s"/><circle class="pt a" cx="24.49%" cy="22" r="6"/><circle class="hit" cx="24.49%" cy="22" r="13" data-tip="Run 2: $0.5973 · 15 of 15 test files pass · 215 s"/><circle class="pt a" cx="25.75%" cy="35" r="6"/><circle class="hit" cx="25.75%" cy="35" r="13" data-tip="Run 3: $0.6280 · 15 of 15 test files pass · 224 s"/><rect class="pt p" x="3.97%" y="3" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="3.97%" cy="9" r="13" data-tip="Run 1: $0.0969 · Claude $0.0613 + deepseek-v4.1-flash $0.0356 · 15 of 15 test files pass · 242 s"/><rect class="pt p" x="3.73%" y="16" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="3.73%" cy="22" r="13" data-tip="Run 2: $0.0911 · Claude $0.0695 + deepseek-v4.1-flash $0.0216 · 15 of 15 test files pass · 153 s"/><rect class="pt p" x="4.12%" y="29" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="4.12%" cy="35" r="13" data-tip="Run 3: $0.1004 · Claude $0.0716 + deepseek-v4.1-flash $0.0288 · 15 of 15 test files pass · 193 s"/></svg><p class="t-say"><b>7.2<span class="x">×</span> cheaper</b> <span>Every p0ssess run cost less than every Claude run, at the same accuracy.</span></p></li>
-      <li class="trow fail"><p class="t-name">Translating interface strings <small>108 strings in three languages</small></p><svg class="plot" width="100%" height="44" aria-hidden="true" focusable="false"><rect class="ref one" x="28.57%" y="0" width="1" height="100%"/><rect class="ref half" x="14.29%" y="0" width="1" height="100%"/><rect class="band a" x="25.96%" width="7.01%" y="2" height="40" rx="4"/><rect class="band p" x="12.52%" width="87.48%" y="2" height="40" rx="4"/><circle class="pt a" cx="32.97%" cy="9" r="6"/><circle class="hit" cx="32.97%" cy="9" r="13" data-tip="Run 1: $0.2853 · 108 of 108 strings right · 88 s"/><circle class="pt a" cx="26.78%" cy="22" r="6"/><circle class="hit" cx="26.78%" cy="22" r="13" data-tip="Run 2: $0.2318 · 108 of 108 strings right · 74 s"/><circle class="pt a" cx="25.96%" cy="35" r="6"/><circle class="hit" cx="25.96%" cy="35" r="13" data-tip="Run 3: $0.2247 · 108 of 108 strings right · 77 s"/><rect class="pt p" x="12.52%" y="3" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="12.52%" cy="9" r="13" data-tip="Run 1: $0.1083 · Claude $0.0898 + deepseek-v4.1-flash $0.0185 · 108 of 108 strings right · 162 s"/><rect class="pt p" x="16.29%" y="16" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="16.29%" cy="22" r="13" data-tip="Run 2: $0.1410 · Claude $0.1174 + deepseek-v4.1-flash $0.0236 · 108 of 108 strings right · 147 s"/><rect class="pt p" x="100%" y="29" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="100%" cy="35" r="13" data-tip="Run 3: $0.0789 · Claude $0.0762 + deepseek-v4.1-flash $0.0027 · 0 of 108 strings right · 40 s"/></svg><p class="t-say"><b>Accuracy fell</b> <span>It got 67% right against 100%. A mark at the right edge is a run with nothing right, which has no cost for each right answer.</span></p></li>
-      <li class="trow fail"><p class="t-name">Normalizing product listings <small>120 listings</small></p><svg class="plot" width="100%" height="44" aria-hidden="true" focusable="false"><rect class="ref one" x="28.57%" y="0" width="1" height="100%"/><rect class="ref half" x="14.29%" y="0" width="1" height="100%"/><rect class="band a" x="23.06%" width="9.73%" y="2" height="40" rx="4"/><rect class="band p" x="4.54%" width="4.5%" y="2" height="40" rx="4"/><circle class="pt a" cx="23.06%" cy="9" r="6"/><circle class="hit" cx="23.06%" cy="9" r="13" data-tip="Run 1: $0.3908 · 120 of 120 listings right · 117 s"/><circle class="pt a" cx="32.78%" cy="22" r="6"/><circle class="hit" cx="32.78%" cy="22" r="13" data-tip="Run 2: $0.5557 · 120 of 120 listings right · 185 s"/><circle class="pt a" cx="29.87%" cy="35" r="6"/><circle class="hit" cx="29.87%" cy="35" r="13" data-tip="Run 3: $0.5064 · 120 of 120 listings right · 167 s"/><rect class="pt p" x="8.61%" y="3" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="8.61%" cy="9" r="13" data-tip="Run 1: $0.1410 · Claude $0.0948 + gpt-6-luna $0.0462 · 116 of 120 listings right · 391 s"/><rect class="pt p" x="9.03%" y="16" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="9.03%" cy="22" r="13" data-tip="Run 2: $0.1480 · Claude $0.0718 + gpt-6-luna $0.0761 · 116 of 120 listings right · 509 s"/><rect class="pt p" x="4.54%" y="29" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="4.54%" cy="35" r="13" data-tip="Run 3: $0.0712 · Claude $0.0495 + gpt-6-luna $0.0217 · 111 of 120 listings right · 241 s"/></svg><p class="t-say"><b>Accuracy fell</b> <span>3.9× cheaper, but 95% right against 100%. A cheaper wrong answer doesn’t count.</span></p></li>
-      <li class="trow fail"><p class="t-name">Triaging incident logs <small>40 logs</small></p><svg class="plot" width="100%" height="44" aria-hidden="true" focusable="false"><rect class="ref one" x="28.57%" y="0" width="1" height="100%"/><rect class="ref half" x="14.29%" y="0" width="1" height="100%"/><rect class="band a" x="26.3%" width="5.14%" y="2" height="40" rx="4"/><rect class="band p" x="21.89%" width="27.98%" y="2" height="40" rx="4"/><circle class="pt a" cx="31.45%" cy="9" r="6"/><circle class="hit" cx="31.45%" cy="9" r="13" data-tip="Run 1: $0.3074 · 40 of 40 logs right · 68 s"/><circle class="pt a" cx="26.3%" cy="22" r="6"/><circle class="hit" cx="26.3%" cy="22" r="13" data-tip="Run 2: $0.2571 · 40 of 40 logs right · 58 s"/><circle class="pt a" cx="27.96%" cy="35" r="6"/><circle class="hit" cx="27.96%" cy="35" r="13" data-tip="Run 3: $0.2734 · 40 of 40 logs right · 53 s"/><rect class="pt p" x="25.77%" y="3" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="25.77%" cy="9" r="13" data-tip="Run 1: $0.2519 · Claude $0.1060 + glm-5.3-flash $0.1459 · 40 of 40 logs right · 170 s"/><rect class="pt p" x="49.87%" y="16" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="49.87%" cy="22" r="13" data-tip="Run 2: $0.4875 · Claude $0.0904 + glm-5.3-flash $0.3971 · 40 of 40 logs right · 236 s"/><rect class="pt p" x="21.89%" y="29" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="21.89%" cy="35" r="13" data-tip="Run 3: $0.2140 · Claude $0.0764 + glm-5.3-flash $0.1376 · 40 of 40 logs right · 178 s"/></svg><p class="t-say"><b>Cost more</b> <span>p0ssess cost 1.1× as much as Claude alone.</span></p></li>
-      <li class="trow fail"><p class="t-name">Triaging support tickets, a small batch <small>60 tickets</small></p><svg class="plot" width="100%" height="44" aria-hidden="true" focusable="false"><rect class="ref one" x="28.57%" y="0" width="1" height="100%"/><rect class="ref half" x="14.29%" y="0" width="1" height="100%"/><rect class="band a" x="23.95%" width="9.86%" y="2" height="40" rx="4"/><rect class="band p" x="19.14%" width="21%" y="2" height="40" rx="4"/><circle class="pt a" cx="33.81%" cy="9" r="6"/><circle class="hit" cx="33.81%" cy="9" r="13" data-tip="Run 1: $0.1560 · 60 of 60 tickets right · 34 s"/><circle class="pt a" cx="27.95%" cy="22" r="6"/><circle class="hit" cx="27.95%" cy="22" r="13" data-tip="Run 2: $0.1290 · 60 of 60 tickets right · 34 s"/><circle class="pt a" cx="23.95%" cy="35" r="6"/><circle class="hit" cx="23.95%" cy="35" r="13" data-tip="Run 3: $0.1105 · 60 of 60 tickets right · 30 s"/><rect class="pt p" x="20.65%" y="3" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="20.65%" cy="9" r="13" data-tip="Run 1: $0.0953 · Claude $0.0857 + deepseek-v4.1-flash $0.0096 · 60 of 60 tickets right · 172 s"/><rect class="pt p" x="40.15%" y="16" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="40.15%" cy="22" r="13" data-tip="Run 2: $0.1852 · Claude $0.1673 + deepseek-v4.1-flash $0.0179 · 60 of 60 tickets right · 139 s"/><rect class="pt p" x="19.14%" y="29" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="19.14%" cy="35" r="13" data-tip="Run 3: $0.0883 · Claude $0.0794 + deepseek-v4.1-flash $0.0089 · 60 of 60 tickets right · 76 s"/></svg><p class="t-say"><b>Too close to call</b> <span>1.1× cheaper on average, but the runs overlap.</span></p></li>
-      <li class="trow fail"><p class="t-name">Routing voicemails <small>30 recordings</small></p><svg class="plot" width="100%" height="44" aria-hidden="true" focusable="false"><rect class="ref one" x="28.57%" y="0" width="1" height="100%"/><rect class="ref half" x="14.29%" y="0" width="1" height="100%"/><rect class="band a" x="27.27%" width="3.28%" y="2" height="40" rx="4"/><rect class="band p" x="24.11%" width="0.69%" y="2" height="40" rx="4"/><circle class="pt a" cx="27.9%" cy="9" r="6"/><circle class="hit" cx="27.9%" cy="9" r="13" data-tip="Run 1: $0.1998 · 28 of 30 voicemails right · 655 s"/><circle class="pt a" cx="30.55%" cy="22" r="6"/><circle class="hit" cx="30.55%" cy="22" r="13" data-tip="Run 2: $0.2265 · 29 of 30 voicemails right · 704 s"/><circle class="pt a" cx="27.27%" cy="35" r="6"/><circle class="hit" cx="27.27%" cy="35" r="13" data-tip="Run 3: $0.1952 · 28 of 30 voicemails right · 520 s"/><rect class="pt p" x="24.11%" y="3" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="24.11%" cy="9" r="13" data-tip="Run 1: $0.1357 · Claude $0.1319 + whisper-large-v3-turbo $0.0037 · 22 of 30 voicemails right · 145 s"/><rect class="pt p" x="24.32%" y="16" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="24.32%" cy="22" r="13" data-tip="Run 2: $0.1244 · Claude $0.1206 + whisper-large-v3-turbo $0.0038 · 20 of 30 voicemails right · 131 s"/><rect class="pt p" x="24.81%" y="29" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="24.81%" cy="35" r="13" data-tip="Run 3: $0.1459 · Claude $0.1420 + whisper-large-v3-turbo $0.0039 · 23 of 30 voicemails right · 132 s"/></svg><p class="t-say"><b>Accuracy fell</b> <span>1.2× cheaper, but 72% right against 94%. A cheaper wrong answer doesn’t count.</span></p></li>
-      <li class="trow fail"><p class="t-name">Finding bugs in code review <small>30 files</small></p><svg class="plot" width="100%" height="44" aria-hidden="true" focusable="false"><rect class="ref one" x="28.57%" y="0" width="1" height="100%"/><rect class="ref half" x="14.29%" y="0" width="1" height="100%"/><rect class="band a" x="13.96%" width="43.61%" y="2" height="40" rx="4"/><rect class="band p" x="9.36%" width="90.64%" y="2" height="40" rx="4"/><circle class="pt a" cx="14.18%" cy="9" r="6"/><circle class="hit" cx="14.18%" cy="9" r="13" data-tip="Run 1: $0.2090 · 30 of 30 files right · 55 s"/><circle class="pt a" cx="13.96%" cy="22" r="6"/><circle class="hit" cx="13.96%" cy="22" r="13" data-tip="Run 2: $0.2058 · 30 of 30 files right · 50 s"/><circle class="pt a" cx="57.57%" cy="35" r="6"/><circle class="hit" cx="57.57%" cy="35" r="13" data-tip="Run 3: $0.1697 · 6 of 30 files right · 36 s"/><rect class="pt p" x="19.63%" y="3" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="19.63%" cy="9" r="13" data-tip="Run 1: $0.2894 · Claude $0.2123 + glm-5.3-flash $0.0771 · 30 of 30 files right · 944 s"/><rect class="pt p" x="100%" y="16" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="100%" cy="22" r="13" data-tip="Run 2: $0.1215 · Claude $0.1148 + glm-5.3-flash $0.0066 · 0 of 30 files right · 75 s"/><rect class="pt p" x="9.36%" y="29" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="9.36%" cy="35" r="13" data-tip="Run 3: $0.1334 · Claude $0.0786 + glm-5.3-flash $0.0549 · 29 of 30 files right · 258 s"/></svg><p class="t-say"><b>Accuracy fell</b> <span>It got 66% right against 73%. A mark at the right edge is a run with nothing right, which has no cost for each right answer.</span></p></li>
-      <li class="trow fail"><p class="t-name">Extracting contract terms <small>25 agreements</small></p><svg class="plot" width="100%" height="44" aria-hidden="true" focusable="false"><rect class="ref one" x="28.57%" y="0" width="1" height="100%"/><rect class="ref half" x="14.29%" y="0" width="1" height="100%"/><rect class="band a" x="16.06%" width="19.31%" y="2" height="40" rx="4"/><rect class="band p" x="4.78%" width="6.74%" y="2" height="40" rx="4"/><circle class="pt a" cx="35.37%" cy="9" r="6"/><circle class="hit" cx="35.37%" cy="9" r="13" data-tip="Run 1: $0.9881 · 25 of 25 contracts right · 116 s"/><circle class="pt a" cx="34.29%" cy="22" r="6"/><circle class="hit" cx="34.29%" cy="22" r="13" data-tip="Run 2: $0.9580 · 25 of 25 contracts right · 45 s"/><circle class="pt a" cx="16.06%" cy="35" r="6"/><circle class="hit" cx="16.06%" cy="35" r="13" data-tip="Run 3: $0.4486 · 25 of 25 contracts right · 85 s"/><rect class="pt p" x="4.78%" y="3" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="4.78%" cy="9" r="13" data-tip="Run 1: $0.1122 · Claude $0.0601 + gpt-6-luna $0.0521 · 21 of 25 contracts right · 180 s"/><rect class="pt p" x="5.04%" y="16" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="5.04%" cy="22" r="13" data-tip="Run 2: $0.1071 · Claude $0.0581 + gpt-6-luna $0.0490 · 19 of 25 contracts right · 182 s"/><rect class="pt p" x="11.52%" y="29" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="11.52%" cy="35" r="13" data-tip="Run 3: $0.3218 · Claude $0.2206 + gpt-6-luna $0.1012 · 25 of 25 contracts right · 556 s"/></svg><p class="t-say"><b>Accuracy fell</b> <span>4.0× cheaper, but 87% right against 100%. A cheaper wrong answer doesn’t count.</span></p></li>
-      <li class="trow fail"><p class="t-name">Pulling fields from invoices <small>40 invoices</small></p><svg class="plot" width="100%" height="44" aria-hidden="true" focusable="false"><rect class="ref one" x="28.57%" y="0" width="1" height="100%"/><rect class="ref half" x="14.29%" y="0" width="1" height="100%"/><rect class="band a" x="27.78%" width="1.7%" y="2" height="40" rx="4"/><rect class="band p" x="35.74%" width="64.26%" y="2" height="40" rx="4"/><circle class="pt a" cx="27.78%" cy="9" r="6"/><circle class="hit" cx="27.78%" cy="9" r="13" data-tip="Run 1: $0.2004 · 40 of 40 invoices right · 50 s"/><circle class="pt a" cx="29.47%" cy="22" r="6"/><circle class="hit" cx="29.47%" cy="22" r="13" data-tip="Run 2: $0.2127 · 40 of 40 invoices right · 54 s"/><circle class="pt a" cx="28.47%" cy="35" r="6"/><circle class="hit" cx="28.47%" cy="35" r="13" data-tip="Run 3: $0.2054 · 40 of 40 invoices right · 52 s"/><rect class="pt p" x="35.74%" y="3" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="35.74%" cy="9" r="13" data-tip="Run 1: $0.2579 · 40 of 40 invoices right · 69 s"/><rect class="pt p" x="100%" y="16" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="100%" cy="22" r="13" data-tip="Run 2: $1.0197 · Claude $0.1467 + gemini-3.8-flash $0.8729 · 0 of 40 invoices right · 819 s"/><rect class="pt p" x="87.93%" y="29" width="12" height="12" rx="2.5" transform="translate(-6 0)"/><circle class="hit" cx="87.93%" cy="35" r="13" data-tip="Run 3: $0.6345 · Claude $0.2865 + gemini-3.8-flash $0.3481 · 40 of 40 invoices right · 938 s"/></svg><p class="t-say"><b>Accuracy fell</b> <span>It got 67% right against 100%. A mark at the right edge is a run with nothing right, which has no cost for each right answer.</span></p></li>
-      <!--/gen:sonnet-rows-->
-    </ol>
-    <div class="taxis" aria-hidden="true"><svg class="plot" width="100%" height="24" focusable="false"><!--gen:sonnet-axis-->
-      <rect class="ax" x="0" y="0" width="100%" height="1"/><rect class="tk" x="0%" y="0" width="1" height="5"/><text x="0" y="20" text-anchor="start">0</text><rect class="tk" x="14.29%" y="0" width="1" height="5"/><text x="14.29%" y="20" text-anchor="middle">½</text><rect class="tk" x="28.57%" y="0" width="1" height="5"/><text x="28.57%" y="20" text-anchor="middle">1×</text><rect class="tk" x="42.86%" y="0" width="1" height="5"/><text x="42.86%" y="20" text-anchor="middle">1.5×</text><rect class="tk" x="57.14%" y="0" width="1" height="5"/><text x="57.14%" y="20" text-anchor="middle">2×</text><rect class="tk" x="71.43%" y="0" width="1" height="5"/><text x="71.43%" y="20" text-anchor="middle">2.5×</text><rect class="tk" x="85.71%" y="0" width="1" height="5"/><text x="85.71%" y="20" text-anchor="middle">3×</text><rect class="tk" x="100%" y="0" width="1" height="5" transform="translate(-1 0)"/><text x="100%" y="20" text-anchor="end">3.5×</text>
-      <!--/gen:sonnet-axis--></svg></div>
-    <details class="runs">
-      <summary>The Sonnet results as a table</summary>
-      <div class="tbl"><table role="table">
-        <caption>Mean cost of one run, with the lowest and highest run, and the share of items right. Claude Sonnet 5.5 in charge.</caption>
-        <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Job</th><th scope="col" role="columnheader">Claude alone, a run</th><th scope="col" role="columnheader">With p0ssess, a run</th><th scope="col" role="columnheader">Right, alone</th><th scope="col" role="columnheader">Right, with p0ssess</th><th scope="col" role="columnheader">Runs each way</th><th scope="col" role="columnheader">Result</th></tr></thead>
-        <tbody role="rowgroup">
-          <!--gen:sonnet-table-->
-      <tr class="win" role="row"><th scope="row" role="rowheader">Writing unit tests <small>15 Python modules, deepseek-v4.1-flash</small></th><td role="cell" data-l="Claude alone, a run"><small>$</small>0.70 <small class="rng">0.60 to 0.86</small></td><td role="cell" data-l="With p0ssess, a run"><small>$</small>0.10 <small class="rng">0.09 to 0.10</small></td><td role="cell" data-l="Right, Claude alone">100%</td><td role="cell" data-l="Right, with p0ssess">100%</td><td role="cell" data-l="Runs each way">3 and 3</td><td role="cell" data-l="Result">7.2<span class="x">×</span> cheaper</td></tr>
-          <tr class="fail" role="row"><th scope="row" role="rowheader">Translating interface strings <small>108 strings in three languages, deepseek-v4.1-flash</small></th><td role="cell" data-l="Claude alone, a run"><small>$</small>0.25 <small class="rng">0.22 to 0.29</small></td><td role="cell" data-l="With p0ssess, a run"><small>$</small>0.11 <small class="rng">0.08 to 0.14</small></td><td role="cell" data-l="Right, Claude alone">100%</td><td role="cell" data-l="Right, with p0ssess">67%</td><td role="cell" data-l="Runs each way">3 and 3</td><td role="cell" data-l="Result">Accuracy fell</td></tr>
-          <tr class="fail" role="row"><th scope="row" role="rowheader">Normalizing product listings <small>120 listings, gpt-6-luna</small></th><td role="cell" data-l="Claude alone, a run"><small>$</small>0.48 <small class="rng">0.39 to 0.56</small></td><td role="cell" data-l="With p0ssess, a run"><small>$</small>0.12 <small class="rng">0.07 to 0.15</small></td><td role="cell" data-l="Right, Claude alone">100%</td><td role="cell" data-l="Right, with p0ssess">95%</td><td role="cell" data-l="Runs each way">3 and 3</td><td role="cell" data-l="Result">Accuracy fell</td></tr>
-          <tr class="fail" role="row"><th scope="row" role="rowheader">Triaging incident logs <small>40 logs, glm-5.3-flash</small></th><td role="cell" data-l="Claude alone, a run"><small>$</small>0.28 <small class="rng">0.26 to 0.31</small></td><td role="cell" data-l="With p0ssess, a run"><small>$</small>0.32 <small class="rng">0.21 to 0.49</small></td><td role="cell" data-l="Right, Claude alone">100%</td><td role="cell" data-l="Right, with p0ssess">100%</td><td role="cell" data-l="Runs each way">3 and 3</td><td role="cell" data-l="Result">Cost more</td></tr>
-          <tr class="fail" role="row"><th scope="row" role="rowheader">Triaging support tickets, a small batch <small>60 tickets, deepseek-v4.1-flash</small></th><td role="cell" data-l="Claude alone, a run"><small>$</small>0.13 <small class="rng">0.11 to 0.16</small></td><td role="cell" data-l="With p0ssess, a run"><small>$</small>0.12 <small class="rng">0.09 to 0.19</small></td><td role="cell" data-l="Right, Claude alone">100%</td><td role="cell" data-l="Right, with p0ssess">100%</td><td role="cell" data-l="Runs each way">3 and 3</td><td role="cell" data-l="Result">Too close to call</td></tr>
-          <tr class="fail" role="row"><th scope="row" role="rowheader">Routing voicemails <small>30 recordings, whisper-large-v3-turbo</small></th><td role="cell" data-l="Claude alone, a run"><small>$</small>0.21 <small class="rng">0.20 to 0.23</small></td><td role="cell" data-l="With p0ssess, a run"><small>$</small>0.14 <small class="rng">0.12 to 0.15</small></td><td role="cell" data-l="Right, Claude alone">94%</td><td role="cell" data-l="Right, with p0ssess">72%</td><td role="cell" data-l="Runs each way">3 and 3</td><td role="cell" data-l="Result">Accuracy fell</td></tr>
-          <tr class="fail" role="row"><th scope="row" role="rowheader">Finding bugs in code review <small>30 files, glm-5.3-flash</small></th><td role="cell" data-l="Claude alone, a run"><small>$</small>0.19 <small class="rng">0.17 to 0.21</small></td><td role="cell" data-l="With p0ssess, a run"><small>$</small>0.18 <small class="rng">0.12 to 0.29</small></td><td role="cell" data-l="Right, Claude alone">73%</td><td role="cell" data-l="Right, with p0ssess">66%</td><td role="cell" data-l="Runs each way">3 and 3</td><td role="cell" data-l="Result">Accuracy fell</td></tr>
-          <tr class="fail" role="row"><th scope="row" role="rowheader">Extracting contract terms <small>25 agreements, gpt-6-luna</small></th><td role="cell" data-l="Claude alone, a run"><small>$</small>0.80 <small class="rng">0.45 to 0.99</small></td><td role="cell" data-l="With p0ssess, a run"><small>$</small>0.18 <small class="rng">0.11 to 0.32</small></td><td role="cell" data-l="Right, Claude alone">100%</td><td role="cell" data-l="Right, with p0ssess">87%</td><td role="cell" data-l="Runs each way">3 and 3</td><td role="cell" data-l="Result">Accuracy fell</td></tr>
-          <tr class="fail" role="row"><th scope="row" role="rowheader">Pulling fields from invoices <small>40 invoices, gemini-3.8-flash</small></th><td role="cell" data-l="Claude alone, a run"><small>$</small>0.21 <small class="rng">0.20 to 0.21</small></td><td role="cell" data-l="With p0ssess, a run"><small>$</small>0.64 <small class="rng">0.26 to 1.02</small></td><td role="cell" data-l="Right, Claude alone">100%</td><td role="cell" data-l="Right, with p0ssess">67%</td><td role="cell" data-l="Runs each way">3 and 3</td><td role="cell" data-l="Result">Accuracy fell</td></tr>
-      <!--/gen:sonnet-table-->
-        </tbody>
-      </table></div>
-    </details>
-  </figure>
-
-  <div class="sec-head sub">
-    <h3 id="arms-h">Every setup, on the jobs that won</h3>
-    <p>The charts above compare two setups. These jobs were also run against Claude’s own Haiku subagent, and with the rule alone in the build that ships as 1.0.</p>
-  </div>
-  <div class="tbl arms"><table role="table" aria-labelledby="arms-h">
-    <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Setup</th><th scope="col" role="columnheader">A run</th><th scope="col" role="columnheader">Right</th><th scope="col" role="columnheader">Cheaper than Claude alone</th><th scope="col" role="columnheader">By the criterion</th></tr></thead>
-    <tbody role="rowgroup">
-          <!--gen:arms-table-->
-      <tr class="" role="row"><th scope="row" role="rowheader">Claude Opus 5.5 alone <small>unit tests, Opus in charge</small></th><td role="cell" data-l="A run"><small>$</small>1.26 <small class="rng">1.10 to 1.45</small></td><td role="cell" data-l="Right">100%</td><td role="cell" data-l="Cheaper than Claude alone">the baseline</td><td role="cell" data-l="By the criterion"></td></tr>
-          <tr class="" role="row"><th scope="row" role="rowheader">Claude Opus 5.5 with its own Haiku subagent <small>unit tests, Opus in charge</small></th><td role="cell" data-l="A run"><small>$</small>0.64 <small class="rng">0.60 to 0.71</small></td><td role="cell" data-l="Right">100%</td><td role="cell" data-l="Cheaper than Claude alone">2.0×</td><td role="cell" data-l="By the criterion">The control</td></tr>
-          <tr class="win" role="row"><th scope="row" role="rowheader">p0ssess 0.6.0, the rule in words <small>unit tests, Opus in charge</small></th><td role="cell" data-l="A run"><small>$</small>0.28 <small class="rng">0.27 to 0.30</small></td><td role="cell" data-l="Right">100%</td><td role="cell" data-l="Cheaper than Claude alone">4.4×</td><td role="cell" data-l="By the criterion">A win</td></tr>
-          <tr class="win" role="row"><th scope="row" role="rowheader">p0ssess 1.0 build, a personal rule alone <small>unit tests, Opus in charge</small></th><td role="cell" data-l="A run"><small>$</small>0.40 <small class="rng">0.28 to 0.48</small></td><td role="cell" data-l="Right">100%</td><td role="cell" data-l="Cheaper than Claude alone">3.2×</td><td role="cell" data-l="By the criterion">A win</td></tr>
-          <tr class="fail" role="row"><th scope="row" role="rowheader">p0ssess 1.0 build, a team rule alone <small>unit tests, Opus in charge</small></th><td role="cell" data-l="A run"><small>$</small>0.34 <small class="rng">0.18 to 0.48</small></td><td role="cell" data-l="Right">95.6%</td><td role="cell" data-l="Cheaper than Claude alone">3.6×</td><td role="cell" data-l="By the criterion">Fails: accuracy fell</td></tr>
-          <tr class="" role="row"><th scope="row" role="rowheader">Claude Sonnet 5.5 alone <small>unit tests, Sonnet in charge</small></th><td role="cell" data-l="A run"><small>$</small>0.70 <small class="rng">0.60 to 0.86</small></td><td role="cell" data-l="Right">100%</td><td role="cell" data-l="Cheaper than Claude alone">the baseline</td><td role="cell" data-l="By the criterion"></td></tr>
-          <tr class="" role="row"><th scope="row" role="rowheader">Claude Sonnet 5.5 with its own Haiku subagent <small>unit tests, Sonnet in charge</small></th><td role="cell" data-l="A run"><small>$</small>0.16 <small class="rng">0.09 to 0.22</small></td><td role="cell" data-l="Right">97.8%</td><td role="cell" data-l="Cheaper than Claude alone">4.3×</td><td role="cell" data-l="By the criterion">The control, within p0ssess’s spread</td></tr>
-          <tr class="win" role="row"><th scope="row" role="rowheader">p0ssess 0.6.0, the rule in words <small>unit tests, Sonnet in charge</small></th><td role="cell" data-l="A run"><small>$</small>0.10 <small class="rng">0.09 to 0.10</small></td><td role="cell" data-l="Right">100%</td><td role="cell" data-l="Cheaper than Claude alone">7.2×</td><td role="cell" data-l="By the criterion">A win against Sonnet alone</td></tr>
-          <tr class="" role="row"><th scope="row" role="rowheader">Claude Opus 5.5 alone <small>300 tickets, Opus in charge</small></th><td role="cell" data-l="A run"><small>$</small>0.73 <small class="rng">0.64 to 0.90</small></td><td role="cell" data-l="Right">100%</td><td role="cell" data-l="Cheaper than Claude alone">the baseline</td><td role="cell" data-l="By the criterion"></td></tr>
-          <tr class="" role="row"><th scope="row" role="rowheader">Claude Opus 5.5 with its own Haiku subagent <small>300 tickets, Opus in charge</small></th><td role="cell" data-l="A run"><small>$</small>0.75 <small class="rng">0.60 to 0.90</small></td><td role="cell" data-l="Right">100%</td><td role="cell" data-l="Cheaper than Claude alone">1.0×</td><td role="cell" data-l="By the criterion">The control</td></tr>
-          <tr class="win" role="row"><th scope="row" role="rowheader">p0ssess 0.6.0, the rule in words <small>300 tickets, Opus in charge</small></th><td role="cell" data-l="A run"><small>$</small>0.33 <small class="rng">0.24 to 0.39</small></td><td role="cell" data-l="Right">100%</td><td role="cell" data-l="Cheaper than Claude alone">2.2×</td><td role="cell" data-l="By the criterion">A win</td></tr>
-          <tr class="small" role="row"><th scope="row" role="rowheader">p0ssess 1.0 build, a personal rule alone <small>300 tickets, Opus in charge</small></th><td role="cell" data-l="A run"><small>$</small>0.45 <small class="rng">0.29 to 0.56</small></td><td role="cell" data-l="Right">100%</td><td role="cell" data-l="Cheaper than Claude alone">1.6×</td><td role="cell" data-l="By the criterion">Passes, under the 2× bar</td></tr>
-          <tr class="win" role="row"><th scope="row" role="rowheader">p0ssess 1.0 build, a team rule alone <small>300 tickets, Opus in charge</small></th><td role="cell" data-l="A run"><small>$</small>0.36 <small class="rng">0.20 to 0.56</small></td><td role="cell" data-l="Right">100%</td><td role="cell" data-l="Cheaper than Claude alone">2.0×</td><td role="cell" data-l="By the criterion">A win</td></tr>
-      <!--/gen:arms-table-->
-    </tbody>
-  </table></div>
-
-  <div class="sec-head sub">
-    <h3 id="why-h">Why most jobs didn’t pay</h3>
-  </div>
-  <div class="split">
-    <div class="copy">
-      <p>Claude alone is cheap and accurate on batches of text. Opus and Sonnet scored 99 to 100% on every text job but one, where a Sonnet code-review run gave line numbers from a combined file and scored 20%. Sixty tickets cost Claude Opus 5.5 about $0.24, so there is little left to save. The hand-off also has a fixed cost that a small batch cannot carry: Claude still pays for its own session, for the Haiku relay and for a review of what comes back, and Opus reviews thoroughly.</p>
-    </div>
-    <div class="copy">
-      <p>The cheaper models lost accuracy on long, legalistic input and on strict normalizing: contract terms came out 96% right against 100%, and product listings 95% with Sonnet in charge. Sonnet reviews less than Opus, so it saved more when the other model was right and lost more when it was not. Audio wasn’t a cost win either. Claude alone installed a local Whisper, and with p0ssess the cost was the same on Opus and the accuracy lower on Sonnet.</p>
-    </div>
-  </div>
+  <dl class="bills">
+    <div class="hl"><dt><span class="tag">to p0ssess</span><b><small>$</small>8</b> a seat, a month</dt><dd>For the plan, with Pro on every seat. Polar handles the payment and the tax.</dd></div>
+    <div class="hl"><dt><span class="tag">to OpenRouter</span>Model calls</dt><dd>Each person’s calls bill to their own OpenRouter key. p0ssess never holds or moves a member’s money.</dd></div>
+    <div class="hl"><dt><span class="tag">to Anthropic, as now</span>Your Claude plans</dt><dd>Unchanged. p0ssess never reads, stores or relays Claude credentials.</dd></div>
+  </dl>
 </div>
 </section>
 
 <section class="sec" id="method" aria-labelledby="method-h">
 <div class="wrap">
   <div class="sec-head">
-    <h2 id="method-h">How it was measured</h2>
-    <p>The design was written and committed before the first measured run, including what would count as a win. This is a summary of it, with what changed afterwards and why.</p>
+    <h2 id="method-h">What we measured</h2>
+    <p>Two routine jobs, three runs each way, with Claude Opus 5.5 in charge and one rule sending the work to a cheaper model. Accuracy held both ways.</p>
   </div>
-  <div class="split method">
-    <div class="copy">
-      <h3>The question</h3>
-      <p>Does Claude Code with p0ssess, and a rule that sends one kind of repetitive work to a cheaper model, cost less for each correct answer than Claude Code alone, at the same quality?</p>
-      <h3>The jobs</h3>
-      <p>We built repetitive jobs of the kind a team hands Claude Code day after day: sorting support tickets, pulling fields from invoices, triaging incident logs, translating interface strings, finding bugs in review, writing unit tests, extracting contract terms, normalizing product listings and routing voicemails.</p>
-      <p>Every dataset was made for the benchmark by a generator with a fixed seed, so the right answers are known by construction, and every answer is graded by a script, never by a model. None of it is customer data.</p>
-      <h3>One run</h3>
-      <p>A run is one headless Claude Code session, version 2.1.323, handed the whole batch the way a team member hands Claude the day’s work. Each starts from an empty configuration, with no plugins, memory or instructions file. The prompt is the same both ways and never mentions models, cost or delegation.</p>
-      <p>Runs alternate between the two setups, so the time of night affects both alike. A run that crashed for an infrastructure reason was rerun and logged. A run where Claude or p0ssess simply did the job badly was kept.</p>
-      <h3>The two setups</h3>
-      <p>Claude alone is stock Claude Code. It may use its built-in tools and its own subagents. Claude with p0ssess adds the public p0ssess 0.6.0 plugin and one rule: always send this kind of work to one named model. The model for each job is the engine’s own top pick that isn’t Claude, chosen before any run. Nothing was picked by hand.</p>
-      <p>In 0.6.0 that rule limited which model could be used but didn’t by itself make Claude delegate, so the p0ssess runs also carried it as one line of standing instructions, where a team would write one: “Team rule (p0ssess): always send unit test writing to deepseek/deepseek-v4.1-flash-1017.”</p>
-    </div>
-    <div class="copy">
-      <h3>What it costs</h3>
-      <p>Claude’s cost is what Claude Code reports for the session at API list prices, from exact token counts. It includes every Claude token: the model in charge, the Haiku relay and anything else Claude ran. The p0ssess runs add what OpenRouter charged for the other model. Subscription plans are not modeled.</p>
-      <h3>What counts as a win</h3>
-      <p>All four must hold, for at least three runs each way on the same data. The most expensive p0ssess run has to cost less for each correct item than the cheapest Claude run. Its average accuracy has to be within three points of Claude’s, and its worst run within five points of Claude’s worst. And every p0ssess run has to have actually delegated.</p>
-      <p>A win goes in an ad only if it is also at least twice as cheap on average. Jobs that fail are reported here with their numbers.</p>
-      <h3>The control: Claude’s own cheap model</h3>
-      <p>Claude Haiku 5.5 is cheap too, so the obvious question is whether Claude Code’s own delegation does the same thing. On the jobs that won we ran a third setup to find out: Claude alone, with one sentence added to the prompt telling it to hand the bulk of the work to a Haiku subagent and check what comes back.
-      <!--gen:control-->
-      On unit tests with Claude Opus 5.5 that cost $0.60 to $0.71 a run. The p0ssess runs cost $0.27 to $0.30, which is 2.2 times cheaper with no overlap, and every test file passed in both. On ticket triage the Haiku route saved nothing ($0.60 to $0.90 a run), and p0ssess was 2.3 times cheaper than it. With Claude Sonnet 5.5 in charge of the unit tests, its own Haiku subagent came within the spread of the p0ssess runs ($0.09 to $0.22 a run, with 97.8% of test files passing), so that result stands only against Sonnet doing the work itself.
-      <!--/gen:control-->
-      </p>
-      <h3>The rule alone, and a team rule</h3>
-      <p>The runs charted here used p0ssess 0.6.0, where the rule also had to be written out in Claude’s instructions. The build that ships as 1.0 has Claude hand matching work over from the rule alone, so we ran that too, with no line of instructions: once with a personal rule, and once with a real team rule, set by an owner on a server and synced to the member.
-      <!--gen:rule-alone-->
-      On unit tests the personal rule alone was 3.2 times cheaper than Claude alone ($0.28 to $0.48 a run), with every test file passing. The team rule alone failed there: in two of its three runs one module’s tests caught three of five planted bugs, 95.6% against 100%. On ticket triage the team rule alone was 2.0 times cheaper ($0.36 a run against $0.73) with every ticket right, and the personal rule alone 1.6 times, which passes the criterion and is under the 2× bar for an ad.
-      <!--/gen:rule-alone-->
-      </p>
-      <h3>What changed along the way</h3>
-      <p>Each change was written into the design when it was made, with its reason, and none changed a criterion after seeing the result it decides.</p>
-      <p>Headless runs have nobody to answer a question, so when a session stopped to ask one, the harness answered “Yes, go ahead and finish”, at most twice, in every setup. Claude Code pays a fixed cost for each session whatever the work, so ticket triage was also run at a day’s volume of 300, and both sizes are reported.</p>
-      <p>Voicemail routing was added as a ninth job after the first runs. Its first runs were thrown out and repeated, because a bug in the harness had kept Claude alone from installing a speech model. Runs on Gemini were priced again from their token counts at the highest list price for the model, because the first cost figures for them were too low. The raw transcripts of the earliest runs were lost to another harness bug. Their costs and grades had been recorded before that. Six runs were in progress when the benchmark machine put itself to sleep. Their times and costs meant nothing after that, so they were thrown out and run again.</p>
-      <h3>What we don’t claim</h3>
-      <p>The translation job grades rule-following only, so these results say nothing about translation quality. Claude is priced at API list price, so they say nothing about subscription plans either. The datasets are constructed, and your own work will give different numbers. Pro’s savings report measures them for you.</p>
-    </div>
-  </div>
-</div>
-</section>
-
-<section class="sec" id="senses" aria-labelledby="senses-h">
-<div class="wrap">
-  <div class="sec-head">
-    <h2 id="senses-h">And the jobs Claude can’t do alone</h2>
-    <p>Claude can’t watch a video or hear a recording. It has a workaround for each: it pulls still frames with ffmpeg, or installs a local speech model. p0ssess sends the actual file to a model that takes it. Each test here is one file, run both ways.</p>
-  </div>
-  <div class="duels">
-
-    <figure class="duel hl" aria-labelledby="t-audio-h">
-      <div class="duel-head">
-        <h3 id="t-audio-h">A speech recording, transcribed</h3>
-        <p>Claude Sonnet 5.5 was asked to transcribe one speech recording. Alone, it installed faster-whisper with the base.en model and ran it. With p0ssess, the recording went to whisper-large-v3-turbo.</p>
-        <p class="duel-read">p0ssess was faster and cheaper, and its transcript was the correct one.</p>
-        <p class="duel-meta">Measured November 11, 2026. One run each.</p>
-      </div>
-      <table class="duel-t m3" role="table">
-        <caption class="sr-only">The speech recording: time, total cost and whether the transcript was right</caption>
-        <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader"><span class="sr-only">Run</span></th><th scope="col" role="columnheader">Time</th><th scope="col" role="columnheader">Total cost</th><th scope="col" role="columnheader">Transcript</th></tr></thead>
-        <tbody role="rowgroup">
-          <tr role="row" class="alone"><th scope="row" role="rowheader">Claude alone <small>faster-whisper, base.en</small></th><td role="cell" class="lead" data-l="Time"><b><small>about</small> 7<small class="u">min</small></b><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="100%" height="100%" rx="4"/></svg></span></td><td role="cell" data-l="Total cost"><b><small>$</small>0.0845</b></td><td role="cell" data-l="Transcript"><b>Wrong</b></td></tr>
-          <tr role="row" class="poss"><th scope="row" role="rowheader">With p0ssess <small>whisper-large-v3-turbo</small></th><td role="cell" class="lead" data-l="Time"><b>8<small class="u">s</small></b><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="1.9%" height="100%" rx="4"/></svg></span></td><td role="cell" data-l="Total cost"><b><small>$</small>0.0519</b></td><td role="cell" data-l="Transcript"><b>Correct</b></td></tr>
-        </tbody>
-      </table>
+  <div class="grid three worth">
+    <figure class="cell hl">
+      <figcaption><h3>Unit tests for 15 Python modules</h3></figcaption>
+      <p class="was"><span class="fig"><b><small>$</small>1.26</b><span>a run, Claude alone</span></span><span class="fig to"><b><small>$</small>0.28</b><span>with p0ssess</span></span></p>
+      <p>4.4 times cheaper for each passing test file. All 45 passed both ways.</p>
     </figure>
-
-    <figure class="duel hl" aria-labelledby="t-film-h">
-      <div class="duel-head">
-        <h3 id="t-film-h">A ten-minute film, described</h3>
-        <p>One prompt, run twice on Claude Sonnet 5.5. Alone, Claude pulled twenty stills with ffmpeg and measured the loudness. With p0ssess, qwen3.8-omni-flash watched the whole film with its sound. Each answer was scored by hand out of 25, against a checklist written before either run.</p>
-        <p class="duel-read">p0ssess cost more in total and took longer on this job. For each point scored it cost less.</p>
-        <p class="duel-meta">Cost per point is derived from the two totals: $0.0999 / 15 and $0.1140 / 25. One run each. Scored strictly, one event is a close call and the total would be 23.</p>
-      </div>
-      <div>
-        <div class="reel">
-          <div class="reel-row alone">
-            <p class="reel-who">Claude alone <small>twenty stills, one every 30 seconds</small></p>
-            <div class="reel-lanes">
-              <div class="strip" aria-hidden="true"><i class="s-dim"></i><i class="s-slits"></i></div>
-              <ol class="evs" role="img" aria-label="Claude alone found six of the ten events and missed four"><li class="e1"></li><li class="e2"></li><li class="e3"></li><li class="e4"></li><li class="e5 miss"></li><li class="e6 miss"></li><li class="e7"></li><li class="e8 miss"></li><li class="e9 miss"></li><li class="e10"></li></ol>
-            </div>
-            <p class="score"><b>15</b><small>of 25</small></p>
-          </div>
-          <div class="reel-row poss">
-            <p class="reel-who">With p0ssess <small>qwen3.8-omni-flash, the whole film with its sound</small></p>
-            <div class="reel-lanes">
-              <div class="strip" aria-hidden="true"><i class="s-lit"></i></div>
-              <ol class="evs" role="img" aria-label="With p0ssess all ten events were found"><li class="e1"></li><li class="e2"></li><li class="e3"></li><li class="e4"></li><li class="e5"></li><li class="e6"></li><li class="e7"></li><li class="e8"></li><li class="e9"></li><li class="e10"></li></ol>
-            </div>
-            <p class="score"><b>25</b><small>of 25</small></p>
-          </div>
-        </div>
-        <table class="duel-t m3 under" role="table">
-          <caption class="sr-only">The film: cost per point scored, total cost and time</caption>
-          <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader"><span class="sr-only">Run</span></th><th scope="col" role="columnheader">Cost per point</th><th scope="col" role="columnheader">Total cost</th><th scope="col" role="columnheader">Time</th></tr></thead>
-          <tbody role="rowgroup">
-            <tr role="row" class="alone"><th scope="row" role="rowheader">Claude alone</th><td role="cell" class="lead" data-l="Cost per point"><b><small>$</small>0.0067</b><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="100%" height="100%" rx="4"/></svg></span></td><td role="cell" data-l="Total cost"><b><small>$</small>0.0999</b></td><td role="cell" data-l="Time"><b>40<small class="u">s</small></b></td></tr>
-            <tr role="row" class="poss"><th scope="row" role="rowheader">With p0ssess</th><td role="cell" class="lead" data-l="Cost per point"><b><small>$</small>0.0046</b><span class="len" aria-hidden="true"><svg width="100%" height="100%"><rect class="b" width="68.47%" height="100%" rx="4"/></svg></span></td><td role="cell" data-l="Total cost"><b><small>$</small>0.1140</b></td><td role="cell" data-l="Time"><b>262<small class="u">s</small></b></td></tr>
-          </tbody>
-        </table>
-      </div>
+    <figure class="cell hl">
+      <figcaption><h3>300 support tickets, triaged</h3></figcaption>
+      <p class="was"><span class="fig"><b><small>$</small>0.73</b><span>a run, Claude alone</span></span><span class="fig to"><b><small>$</small>0.33</b><span>with p0ssess</span></span></p>
+      <p>2.2 times cheaper for each ticket sorted right, with every ticket right both ways. These runs took about three and a half times as long.</p>
     </figure>
-
+    <figure class="cell hl">
+      <figcaption><h3>A speech recording, transcribed</h3></figcaption>
+      <p class="was"><span class="fig"><b>7<small class="u">min</small></b><span>Claude alone, about</span></span><span class="fig to"><b>8<small class="u">s</small></b><span>with p0ssess</span></span></p>
+      <p>Claude can’t hear audio. Alone it installed a local speech model, spent $0.08 and got the transcript wrong. With p0ssess it cost $0.05 and was correct.</p>
+    </figure>
   </div>
+  <p class="aside">The datasets were built for the test and graded by a script, Claude is priced at API list price, and the rule was also a line in Claude’s instructions. The recording was one run each way, on Claude Sonnet 5.5. Savings depend on the job, and some jobs save nothing. Each person’s p0ssess page shows theirs.</p>
 </div>
 </section>
 
-<section class="sec" id="own" aria-labelledby="own-h">
+<section class="sec" id="start" aria-labelledby="start-h">
 <div class="wrap">
   <div class="sec-head">
-    <h2 id="own-h">Then measure your own work</h2>
-    <p>The runs above are ours, on data we built. Pro measures your own work the same way and gives you a report you can forward.</p>
+    <h2 id="start-h">Start in three steps</h2>
   </div>
-  <div class="split">
-    <div class="copy">
-      <h3>Calibration</h3>
-      <p>Calibration runs built-in tasks with known answers on your own OpenRouter key, plus your own samples if you add them. It shows the cost before it starts, and the results tune which model p0ssess picks for each kind of job.</p>
-    </div>
-    <div class="copy">
-      <h3>The savings report</h3>
-      <p>For each kind of task, the report shows cost per correct answer and time, Claude alone against Claude with p0ssess. The Claude side is given in API dollars and as the share of your weekly limit saved. It is a local page, with a PDF export for whoever asks what the tool is worth.</p>
-    </div>
-  </div>
+  <ol class="steps start">
+    <li class="hl"><p>Get Team. Sign in, name the team and choose the seats. Polar runs the checkout, and a setup email follows.</p></li>
+    <li class="hl"><p>Invite people from Claude Code. Each gets a join link that works once, for 7 days, and installs the free plugin with their own OpenRouter key.</p><div class="cmd"><pre><code><span class="ln">/p0ssess:team invite EMAIL</span></code></pre></div></li>
+    <li class="hl"><p>Set a rule and a budget. Every seat has the rules within 5 minutes.</p><div class="cmd"><pre><code><span class="ln">/p0ssess:team rules add never use grok</span>
+<span class="ln">p0ssess team budget 50</span></code></pre></div></li>
+  </ol>
 </div>
 </section>
 
-<section class="sec" id="team" aria-labelledby="team-h">
+<section class="sec" id="faq" aria-labelledby="faq-h">
 <div class="wrap">
+  <div class="faq-cols">
   <div class="sec-head">
-    <h2 id="team-h">For a team</h2>
-    <p>Team is Pro for every seat, plus one owner who sets the rules once for everyone. A member’s own rules can only make them stricter. Each member gets a share of the monthly budget, and a spend dashboard shows the owner where it went.</p>
+    <h2 id="faq-h">Questions before you buy</h2>
+    <p>Short answers. Write to <a href="mailto:support@p0ssess.me">support@p0ssess.me</a> for anything they leave out.</p>
   </div>
-  <p class="next"><a class="btn" href="../pricing/#team">Get Team, $8 a seat</a><a class="more" href="../data/">What the cloud sandbox does with your code</a></p>
-  <p class="foot-line">Every figure on this page is a measured run. The sources are listed in the site’s README. <a data-link="repo" hidden>View the source</a></p>
+  <div class="faq">
+    <details class="q hl"><summary><h3>What leaves a person’s machine?</h3></summary><div class="a"><p>Prompts and files go only to the model a job is handed to, on that person’s own OpenRouter key. The p0ssess service never sees a prompt, a file or a file name. Team reports each paid run as its day, use case, model, route and cost. The cloud sandbox receives the files git tracks, to run them. <a href="../privacy/">Privacy policy</a></p></div></details>
+    <details class="q hl"><summary><h3>What do I see, and what do members see?</h3></summary><div class="a"><p>You see each member’s email or GitHub login, their share, and their spend by day, use case, model and route. You see no prompts, because we never receive them. Members see the rules and their own share and spend. A data processing agreement is available from <a href="mailto:legal@p0ssess.me">legal@p0ssess.me</a>.</p></div></details>
+    <details class="q hl"><summary><h3>What happens at the cap?</h3></summary><div class="a"><p>Paid runs stop on every seat and the status line turns red. Claude itself is untouched, so people keep working in Claude Code. When a member reaches their own share, only their paid runs stop. Raise the budget with <code>p0ssess team budget</code>.</p></div></details>
+    <details class="q hl"><summary><h3>How do I cancel, and what happens then?</h3></summary><div class="a"><p>Cancel or change plans in Polar’s customer portal. A first purchase can be refunded in full within 30 days, no questions asked. When Team ends, members drop to their own plan, which may be Free. <a href="../refunds/">Refund policy</a></p></div></details>
+  </div>
+  </div>
+  <div class="last hl lit">
+    <p class="last-say">Keep every seat working through Claude’s limits, for $8 a seat.</p>
+    <p class="cta"><a class="btn" href="../pricing/#team">Get Team</a><a class="more" href="../pricing/">See the pricing page</a></p>
+  </div>
 </div>
 </section>
 
 </main>
+
 
 <footer class="site-foot">
 <div class="wrap foot-in">
@@ -344,7 +209,7 @@
   <div>
     <nav class="foot-nav" aria-label="More pages"><a href="../pricing/">Pricing</a><a href="../business/" aria-current="page">For business</a><a href="../terms/">Terms</a><a href="../privacy/">Privacy</a><a href="../data/">Data</a><a href="../refunds/">Refunds</a></nav>
     <p>The p0ssess plugin is MIT licensed. By s3ym0ur. Pro and Team are sold by New Deal Systems LLC.</p>
-    <p class="small">Film frames: <cite>Big Buck Bunny</cite>, © Blender Foundation, CC BY 3.0, peach.blender.org. Set in Obel Mono and IBM Plex Sans, both under the <a href="../fonts/OFL-obel-mono.txt">SIL Open Font License</a>.</p>
+    <p class="small">The results under “What we measured” are measured runs. The amounts in the terminal lines are examples. Set in Obel Mono and IBM Plex Sans, with one glyph from Noto Sans Canadian Aboriginal, all under the <a href="../fonts/OFL-obel-mono.txt">SIL Open Font License</a>.</p>
   </div>
 </div>
 </footer>
