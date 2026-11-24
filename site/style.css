@@ -499,6 +499,9 @@ p { text-wrap: pretty; }
 .site-foot .small { font-size: 0.82rem; max-width: 46rem; }
 .site-foot cite { color: inherit; }
 .foot-g { flex: none; width: 32px; height: 32px; }
+.foot-badge { margin: 1.4rem 0 0; }
+.foot-badge a { display: inline-block; }
+.foot-badge img { display: block; width: 216px; max-width: 100%; height: auto; }
 
 /* Below the two-column hero the bar keeps the links that leave the page; the island has the sections. */
 @media (max-width: 1023.98px) {
